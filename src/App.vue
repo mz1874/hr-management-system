@@ -5,11 +5,11 @@ import pageFooter from "@/components/footer/index.vue"
 </script>
 
 <template>
-<!--  <div></div>-->
+  <router-view class="col"></router-view>-->
 <!--  <div class="container-fluid">-->
 <!--    <div class="row">-->
 <!--      <siderbar></siderbar>-->
-      <router-view class="col"></router-view>
+<!--      <router-view class="col"></router-view>-->
 <!--      <page-footer></page-footer>-->
 <!--    </div>-->
 <!--  </div>-->

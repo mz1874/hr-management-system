@@ -1,29 +1,44 @@
 <script setup lang="ts">
+import { reactive } from "vue";
 
-</script>
+const navItems = reactive([
+  { name: "Home", link: "#" },
+  { name: "Notification Center", link: "admin_notification.html" },
+  { name: "KPI Management", link: "#" },
+  { name: "Leave Application", link: "#" },
+  { name: "Reward Mall", link: "admin_reward_management.html" },
+  { name: "Leaderboard", link: "leaderboard.html" },
+  { name: "Staff Management", link: "#" },
+  { name: "Department Management", link: "#" },
+  { name: "Evaluation Center", link: "#" },
+]);
 
-<script lang="ts">
-  export default {
-    name: 'side-bar',
-  }
+const systemSubmenu = reactive([
+  { name: "User Settings", link: "#" },
+  { name: "Permission Management", link: "#" },
+  { name: "System Logs", link: "#" },
+]);
+
 </script>
 
 <template>
-  <!--  <router-view></router-view>-->
-  <nav class="sidebar col-auto" style="border: 1px red solid">
+  <nav class="sidebar col-auto">
     <div class="logo-container">
       <img src="/logo.png" alt="ROWY Hardware" class="logo-img">
     </div>
-    <a href="#" class="nav-item"><i class="fas fa-home me-2"></i> Home</a>
-    <a href="admin_notification.html" class="nav-item"><i class="fas fa-bell me-2"></i> Notification Center</a>
-    <a href="#" class="nav-item"><i class="fas fa-chart-bar me-2"></i> KPI Management</a>
-    <a href="#" class="nav-item"><i class="fas fa-calendar me-2"></i> Leave Application</a>
-    <a href="admin_reward_management.html" class="nav-item"><i class="fas fa-gift me-2"></i> Reward Mall</a>
-    <a href="leaderboard.html" class="nav-item"><i class="fas fa-trophy me-2"></i> Leaderboard</a>
-    <a href="#" class="nav-item"><i class="fas fa-users me-2"></i> Staff Management</a>
-    <a href="#" class="nav-item"><i class="fas fa-building me-2"></i> Department Management</a>
-    <a href="#" class="nav-item"><i class="fas fa-clipboard me-2"></i> Evaluation Center</a>
-    <a href="#" class="nav-item"><i class="fas fa-cogs me-2"></i> System Management</a>
+
+    <router-link v-for="item in navItems" :key="item.name" :to="item.link" class="nav-item">
+      {{ item.name }}
+    </router-link>
+
+    <a href="#" class="nav-item" data-bs-toggle="collapse" data-bs-target="#system-submenu">
+      System Management
+    </a>
+    <div class="collapse" id="system-submenu">
+      <router-link v-for="sub in systemSubmenu" :key="sub.name" :to="sub.link" class="nav-item sub-item">
+        {{ sub.name }}
+      </router-link>
+    </div>
   </nav>
 </template>
 
@@ -190,4 +205,15 @@ body {
   }
 
 }
+
+.sub-item {
+  padding-left: 2rem; /* 增加缩进以区分子项 */
+  font-size: 0.9rem;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sub-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 </style>
