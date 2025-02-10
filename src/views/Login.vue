@@ -54,15 +54,13 @@ export default {
 </script>
 
 <style scoped>
-<
-style scoped >
-  /* 确保根元素扩展到全高 */
+/* 确保根元素扩展到全高 */
 html, body {
   height: 100%;
   margin: 0;
 }
 
-•⁠ ⁠ {
+•⁠  ⁠{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -77,7 +75,7 @@ html, body {
   height: 100%; /* 确保行占据整个容器的高度 */
 }
 
-.left {
+.left{
   margin-top: -80px;
 }
 
@@ -94,6 +92,9 @@ html, body {
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
+
+
+
 
 
 /* Typography */
@@ -153,5 +154,4 @@ button {
 button:hover {
   background-color: #8faf39;
 }
-
 </style>
