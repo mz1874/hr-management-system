@@ -14,9 +14,9 @@ const navItems = reactive([
 ]);
 
 const systemSubmenu = reactive([
-  { name: "User management", link: "/user-management" },
-  { name: "Department management", link: "/department-management" },
-  { name: "System Logs", link: "/system-log" },
+  { name: "User management", link: "/home/user-management" },
+  { name: "Department management", link: "/home/department-management" },
+  { name: "System Logs", link: "/home/system-log" },
 ]);
 
 </script>

@@ -18,7 +18,7 @@
               <input type="password" id="password" placeholder="**">
             </div>
             <br>
-            <button type="submit">Login</button>
+            <button @click="submitData()">Login</button>
           </form>
         </div>
       </div>
@@ -30,25 +30,31 @@
   </div>
 </template>
 
-<script>
-import logo from '../assets/logo.png';
-
+<script lang="ts">
 export default {
   name: 'Login',
-  data() {
-    return {
-      email: '',
-      password: '',
-      logoUrl: logo
-    };
-  },
-  methods: {
-    handleSubmit() {
-      console.log("Logging in:", this.email);
-      this.$router.push("/dashboard");  // Redirect on login
-    }
-  }
 }
+</script>
+
+
+<script setup lang="ts">
+import logo from '../assets/logo.png';
+import {reactive, ref} from "vue";
+import {useRouter} from "vue-router";
+
+const router = useRouter()
+
+const email = ref("")
+const password = ref("")
+const logoUrl = ref(logo)
+
+function submitData()
+{
+  router.push({
+    name:'home'
+  })
+}
+
 </script>
 
 <style scoped>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import siderbar from "@/components/siderbar/index.vue";
+import pageFooter from "@/components/footer/index.vue"
 </script>
 
 <script lang="ts">
@@ -8,12 +10,13 @@
 </script>
 
 <template>
-  <div class="home-content">
-    <h1>Welcome to Hr-Management system</h1>
-    <br>
-    <h3>Current router path is :/</h3>
-    <p>You can change the path to <b>/home</b> to visit another page</p>
-  </div>
+    <div class="container-fluid">
+      <div class="row">
+        <siderbar></siderbar>
+        <router-view class="col"></router-view>
+        <page-footer></page-footer>
+      </div>
+    </div>
 </template>
 
 <style scoped>
