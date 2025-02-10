@@ -6,6 +6,8 @@ import Login from "../views/Login.vue";
 import systemLog from "@/views/SystemLog/index.vue";
 import departmentManagement from "@/views/DepartmentManagement/index.vue"
 import userManagement from "@/views/UserManagement/index.vue";
+import authorizationManagement from "@/views/AuthorizationManagement/index.vue";
+import routerManagement from "@/views/RouterManagement/index.vue";
 
 /**
  * Please define your page router to the below
@@ -38,6 +40,17 @@ const router = createRouter({
                     name: 'department-management',
                     component: departmentManagement,
                 },
+                {
+                    path: 'authorization-management',
+                    name: 'authorization-management',
+                    component: authorizationManagement,
+                },
+                {
+                    path: "router-management",
+                    name: 'router-management',
+                    component: routerManagement,
+                }
+
             ]
         },
         {

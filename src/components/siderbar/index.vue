@@ -17,6 +17,8 @@ const systemSubmenu = reactive([
   { name: "User management", link: "/home/user-management" },
   { name: "Department management", link: "/home/department-management" },
   { name: "System Logs", link: "/home/system-log" },
+  { name: "Authorization Management", link: "/home/authorization-management" },
+  { name: "Router Management", link: "/home/router-management" },
 ]);
 
 </script>

@@ -5,7 +5,6 @@ import { RouterLink, RouterView } from 'vue-router'
 
 <template>
   <router-view class="col"></router-view>
-
 </template>
 
 <style scoped>
