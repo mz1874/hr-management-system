@@ -3,6 +3,7 @@
 This template should help get you started developing with Vue 3 in Vite.
 # Before you start , please read this file
 
+
 * Assets are store static files
 * components are store the components that can displayed by using the tag of <xxxx></xxxx>
 * hooks are used for store all components functions and variables 
@@ -24,6 +25,7 @@ TypeScript cannot handle type information for `.vue` imports by default, so we r
 See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
+* Locally you have to install node js, pls search and install it, the version at least need 18+
 
 ```sh
 npm install
