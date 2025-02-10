@@ -2,7 +2,8 @@
   <div class="container-fluid h-100">
     <div class="row h-100">
       <!-- 左侧部分 -->
-      <div class="col-md-6 left d-flex align-items-center justify-content-center">
+      <div class="col-md-6 left d-flex flex-column align-items-center justify-content-center">
+        <img :src="logoUrl" alt="Logo" class="logo">
         <div class="box">
           <h2>Welcome back</h2>
           <p class="login">Log In</p>
@@ -29,10 +30,8 @@
   </div>
 </template>
 
-
 <script>
 import logo from '../assets/logo.png';
-
 
 export default {
   name: 'Login',
@@ -47,7 +46,6 @@ export default {
     handleSubmit() {
       console.log("Logging in:", this.email);
       this.$router.push("/dashboard");  // Redirect on login
-      //dummies
     }
   }
 }
@@ -60,7 +58,7 @@ html, body {
   margin: 0;
 }
 
-•⁠  ⁠{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -75,13 +73,22 @@ html, body {
   height: 100%; /* 确保行占据整个容器的高度 */
 }
 
-.left{
-  margin-top: -80px;
+.left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .right {
   height: 100vh;
   background: linear-gradient(to bottom, #3c7dbb, #a1c349); /* 设置右侧背景渐变 */
+}
+
+.logo {
+  width: 100px; /* 调整图片大小 */
+  margin-bottom: 20px; /* 图片与表单之间的间距 */
 }
 
 .box {
@@ -90,12 +97,8 @@ html, body {
   padding: 20px;
   background-color: white; /* 设置表单背景颜色 */
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: left;
 }
-
-
-
-
 
 /* Typography */
 h2 {
@@ -154,4 +157,12 @@ button {
 button:hover {
   background-color: #8faf39;
 }
+
+.logo {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 150px;
+}
+
 </style>
