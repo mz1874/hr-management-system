@@ -1,7 +1,8 @@
 import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import AboutView from "@/views/AboutView.vue";
-import Login from "@/views/Login.vue";
+import Login from "../views/Login.vue";
+
 import systemLog from "@/views/SystemLog/index.vue";
 import departmentManagement from "@/views/DepartmentManagement/index.vue"
 import userManagement from "@/views/UserManagement/index.vue";
