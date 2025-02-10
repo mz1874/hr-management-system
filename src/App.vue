@@ -5,7 +5,7 @@ import pageFooter from "@/components/footer/index.vue"
 </script>
 
 <template>
-  <router-view class="col"></router-view>-->
+  <router-view class="col"></router-view>
 <!--  <div class="container-fluid">-->
 <!--    <div class="row">-->
 <!--      <siderbar></siderbar>-->
