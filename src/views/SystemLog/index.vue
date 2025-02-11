@@ -173,6 +173,10 @@ const viewDetails = (log:any) => {
 
 
 <style scoped>
+
+.modal{
+  margin-top: 200px;
+}
 .nav {
   margin-top: 40px;
 }
