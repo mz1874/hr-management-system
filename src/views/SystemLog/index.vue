@@ -134,7 +134,7 @@ const logs = ref([
 
 // 分页相关
 const currentPage = ref(1);
-const itemsPerPage = 5; // 每页显示 10 条
+const itemsPerPage = 10; // 每页显示 10 条
 
 const totalLogs = computed(() => logs.value.length);
 const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
