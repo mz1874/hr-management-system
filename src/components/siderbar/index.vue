@@ -2,7 +2,7 @@
 import { reactive } from "vue";
 
 const navItems = reactive([
-  { name: "Home", link: "#" },
+  { name: "Home", link: "/home" },
   { name: "Notification Center", link: "/home/notification-center" },
   { name: "KPI Management", link: "/home/KPI-management" },
   { name: "Leave Application", link: "/home/leave-application" },

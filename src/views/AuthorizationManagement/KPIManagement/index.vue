@@ -5,16 +5,15 @@ import contentHeader from "@/components/header/index.vue";
 
 <script lang="ts">
 export default {
-  name: "Main-page",
+  name: 'LeaderBoard'
 }
-
 </script>
 
 
 <template>
   <div class="col">
     <contentHeader></contentHeader>
-    <h1>主页</h1>
+    <h1>LeaderBoard</h1>
   </div>
 </template>
 
