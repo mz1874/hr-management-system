@@ -143,9 +143,10 @@ const viewDetails = (id: number) => {
 };
 </script>
 
+
 <style scoped>
 .nav {
-  margin-top: 20px;
+  margin-top: 40px;
 }
 
 .table {
@@ -153,12 +154,19 @@ const viewDetails = (id: number) => {
   border-collapse: collapse;
 }
 
-.table th, .table td {
+/* Add background color to the header row */
+.table th {
+  background-color: #46d2d9; /* Light gray background for header */
+  text-align: center;
+  padding: 8px;
+  font-weight: bold;
+}
+
+.table td {
   text-align: center;
   padding: 8px;
 }
 
-/* 分页按钮居中 */
 .pagination {
   display: flex;
   justify-content: center;
@@ -179,3 +187,4 @@ const viewDetails = (id: number) => {
   cursor: pointer;
 }
 </style>
+
