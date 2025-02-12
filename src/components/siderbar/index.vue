@@ -9,6 +9,7 @@ const navItems = reactive([
   { name: "Reward Mall", link: "/home/reward-mall" },
   { name: "Leaderboard", link: "/home/leader-board" },
   { name: "Evaluation Center", link: "/home/survey-management" },
+  { name: "Personal KPI Management", link: "/home/personal-KPI-Management" },
 ]);
 
 const systemSubmenu = reactive([

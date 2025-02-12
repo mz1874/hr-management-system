@@ -496,7 +496,7 @@ onMounted(() => {
 
 
 .duration-select, .leave-type-select {
-  border-radius: 20x;
+  border-radius: 20px;
 }
 
 .document-link {

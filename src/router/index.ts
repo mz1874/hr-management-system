@@ -1,4 +1,4 @@
-import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router'
+import {createRouter, createWebHashHistory} from 'vue-router'
 import HomeView from '@/views/HomeView/Index.vue'
 import AboutView from "@/views/AboutView.vue";
 import Login from "../views/Login/Index.vue";
@@ -14,6 +14,7 @@ import leaderBoard from "@/views/LeaderBoard/index.vue";
 import KPIManagement from "@/views/KPIManagement/index.vue";
 import notificationCenter from "@/views/NotificationCenter/index.vue";
 import HomeDefault from "@/views/HomeView/HomeDefault/index.vue";
+import personalKPIManagement from "@/views/PersonalKPIManagement/index.vue";
 
 /**
  * Please define your page router to the below
@@ -92,6 +93,11 @@ const router = createRouter({
                     path : "notification-center",
                     name: 'notification-center',
                     component: notificationCenter,
+                },
+                {
+                    path : "personal-KPI-Management",
+                    name: 'personal-KPI-Management',
+                    component: personalKPIManagement,
                 }
             ]
         },

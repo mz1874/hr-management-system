@@ -10,7 +10,7 @@ export default {
 
 
 <template>
-    <h1>LeaderBoard</h1>
+    <h1>LeaderBoa333rd</h1>
 
 </template>
 
