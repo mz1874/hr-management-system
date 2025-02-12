@@ -62,7 +62,14 @@ const router = createRouter({
                     path: "router-management",
                     name: 'router-management',
                     component: routerManagement,
+                },
+                {
+                        path: "leaveApplication",
+                        name: 'leaveApplication',
+                        component: leaveApplication,
                 }
+                
+
 
             ]
         },
