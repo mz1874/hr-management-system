@@ -8,6 +8,8 @@ import departmentManagement from "@/views/DepartmentManagement/index.vue"
 import userManagement from "@/views/UserManagement/index.vue";
 import authorizationManagement from "@/views/AuthorizationManagement/index.vue";
 import routerManagement from "@/views/RouterManagement/index.vue";
+import leaveManagement from "@/views/LeaveManagement/index.vue";
+
 
 /**
  * Please define your page router to the below
@@ -49,6 +51,11 @@ const router = createRouter({
                     path: "router-management",
                     name: 'router-management',
                     component: routerManagement,
+                },
+                {
+                    path: "leaveManagement",
+                    name: 'leaveManagement',
+                    component: leaveManagement,
                 }
 
             ]
