@@ -2,14 +2,14 @@
 
 </script>
 
-<script  lang="ts">
+<script lang="ts">
   export default {
-    name : 'routerManagement',
+    name : "survey-management",
   }
 </script>
 
 <template>
-  <h1>路由管理</h1>
+  <h1>问卷中心</h1>
 
 </template>
 

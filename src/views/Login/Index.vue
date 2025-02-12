@@ -38,7 +38,7 @@ export default {
 
 
 <script setup lang="ts">
-import logo from '../assets/logo.png';
+import logo from '../../assets/logo.png';
 import {reactive, ref} from "vue";
 import {useRouter} from "vue-router";
 

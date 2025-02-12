@@ -1,15 +1,16 @@
 <script setup lang="ts">
 
+
 </script>
 
 <script  lang="ts">
   export default {
-    name : 'routerManagement',
+    name : 'notification-center',
   }
 </script>
 
 <template>
-  <h1>路由管理</h1>
+  <h1>Notification Center</h1>
 
 </template>
 

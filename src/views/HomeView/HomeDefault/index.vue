@@ -3,13 +3,14 @@
 </script>
 
 <script  lang="ts">
-  export default {
-    name : 'routerManagement',
-  }
+export default {
+  name : "HomeDefault",
+}
 </script>
 
+
 <template>
-  <h1>路由管理</h1>
+  <h1>我是默认的home信息</h1>
 
 </template>
 

@@ -4,13 +4,13 @@
 
 <script lang="ts">
 export default {
-  name: 'department-management'
+  name: 'LeaderBoard'
 }
 </script>
 
 
 <template>
-  <h1>部门管理</h1>
+    <h1>LeaderBoard</h1>
 
 </template>
 

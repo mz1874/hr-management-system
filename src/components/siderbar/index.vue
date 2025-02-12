@@ -2,15 +2,13 @@
 import { reactive } from "vue";
 
 const navItems = reactive([
-  { name: "Home", link: "#" },
-  { name: "Notification Center", link: "admin_notification.html" },
-  { name: "KPI Management", link: "#" },
-  { name: "Leave Application", link: "#" },
-  { name: "Reward Mall", link: "admin_reward_management.html" },
-  { name: "Leaderboard", link: "leaderboard.html" },
-  { name: "Staff Management", link: "#" },
-  { name: "Department Management", link: "#" },
-  { name: "Evaluation Center", link: "#" },
+  { name: "Home", link: "/home" },
+  { name: "Notification Center", link: "/home/notification-center" },
+  { name: "KPI Management", link: "/home/KPI-management" },
+  { name: "Leave Application", link: "/home/leave-application" },
+  { name: "Reward Mall", link: "/home/reward-mall" },
+  { name: "Leaderboard", link: "/home/leader-board" },
+  { name: "Evaluation Center", link: "/home/survey-management" },
 ]);
 
 const systemSubmenu = reactive([

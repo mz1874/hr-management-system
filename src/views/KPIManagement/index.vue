@@ -4,12 +4,12 @@
 
 <script  lang="ts">
   export default {
-    name : 'routerManagement',
+    name : 'KPIManagement',
   }
 </script>
 
 <template>
-  <h1>路由管理</h1>
+  <h1>KPI管理</h1>
 
 </template>
 
