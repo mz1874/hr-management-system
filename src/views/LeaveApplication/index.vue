@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import contentHeader from "@/components/header/index.vue";
 
 </script>
 
@@ -12,10 +11,8 @@ export default {
 
 
 <template>
-  <div class="col">
-    <contentHeader></contentHeader>
-    <h1>请假相关</h1>
-  </div>
+  <h1>请假相关</h1>
+
 </template>
 
 <style scoped>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import contentHeader from "@/components/header/index.vue";
 
 </script>
 
@@ -10,10 +9,9 @@ import contentHeader from "@/components/header/index.vue";
 </script>
 
 <template>
-  <div class="col">
-    <contentHeader></contentHeader>
-    <h1>授权管理</h1>
-  </div>
+
+  <h1>授权管理</h1>
+
 </template>
 
 <style scoped>

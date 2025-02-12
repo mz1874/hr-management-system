@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import contentHeader from "@/components/header/index.vue";
 
 </script>
 
@@ -11,10 +10,8 @@ export default {
 
 
 <template>
-  <div class="col">
-    <contentHeader></contentHeader>
-    <h1>LeaderBoard</h1>
-  </div>
+  <h1>LeaderBoard</h1>
+
 </template>
 
 <style scoped>

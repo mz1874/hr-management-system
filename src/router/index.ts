@@ -15,6 +15,7 @@ import leaderBoard from "@/views/LeaderBoard/index.vue";
 import KPIManagement from "@/views/KPIManagement/index.vue";
 import notificationCenter from "@/views/NotificationCenter/index.vue";
 import HomeDefault from "@/views/HomeView/HomeDefault/index.vue";
+import pointDetails from "../views/RewardMall/PointDetails/index.vue";
 
 /**
  * Please define your page router to the below
@@ -93,6 +94,12 @@ const router = createRouter({
                     path : "notification-center",
                     name: 'notification-center',
                     component: notificationCenter,
+                },
+
+                {
+                    path: "reward-mall/point-details", 
+                    name: "point-details",
+                    component: pointDetails,
                 }
             ]
         },

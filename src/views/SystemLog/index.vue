@@ -1,94 +1,90 @@
 <template>
-  <div class="col">
-    <contentHeader></contentHeader>
-
-    <!-- 筛选条件 -->
-    <div class="row align-items-center nav">
-      <div class="col-6">
-        <h5>System log</h5>
-      </div>
-
-      <div class="col-md-2">
-        <input ref="datepickerStart" class="form-control" placeholder="Start Time">
-      </div>
-
-      <div class="col-md-2">
-        <input ref="datepickerEnd" class="form-control" placeholder="End Time">
-      </div>
-
-      <div class="col-md-2">
-        <button type="button" class="btn btn-primary" @click="fetchLogs">Search</button>
-      </div>
+  <!-- 筛选条件 -->
+  <div class="row align-items-center nav">
+    <div class="col-6">
+      <h5>System log</h5>
     </div>
 
-    <!-- 日志表格 -->
-    <div class="table-responsive mt-4">
-      <table class="table table-striped">
-        <thead>
-        <tr>
-          <th>ID</th>
-          <th>User Name</th>
-          <th>Operation Time</th>
-          <th>Action</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="log in paginatedLogs" :key="log.id">
-          <td>{{ log.id }}</td>
-          <td>{{ log.user }}</td>
-          <td>{{ log.time }}</td>
-          <td>
-            <button class="btn btn-sm btn-info" @click="viewDetails(log)">View</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+    <div class="col-md-2">
+      <input ref="datepickerStart" class="form-control" placeholder="Start Time">
     </div>
 
-    <!-- 分页 & 总条数 -->
-    <div class="d-flex align-items-center mt-3 justify-content-start">
-      <!-- 左侧: 总条数 -->
-      <span class="me-3">Total Logs: {{ totalLogs }}</span>
-
-      <!-- 右侧: 分页按钮也靠左 -->
-      <nav>
-        <ul class="pagination">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <button class="page-link" @click="prevPage">Previous</button>
-          </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="nextPage">Next</button>
-          </li>
-        </ul>
-      </nav>
+    <div class="col-md-2">
+      <input ref="datepickerEnd" class="form-control" placeholder="End Time">
     </div>
 
-    <!-- 模态框 -->
-    <div class="modal fade" id="logDetailsModal" ref="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="logDetailsModalLabel">Log Details</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p><strong>ID:</strong> {{ selectedLog.id }}</p>
-            <p><strong>User:</strong> {{ selectedLog.user }}</p>
-            <p><strong>Time:</strong> {{ selectedLog.time }}</p>
-            <p><strong>Action:</strong> {{ selectedLog.action }}</p>
-            <!-- 你可以在这里添加更多的日志详细信息 -->
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
+    <div class="col-md-2">
+      <button type="button" class="btn btn-primary" @click="fetchLogs">Search</button>
+    </div>
+  </div>
+
+  <!-- 日志表格 -->
+  <div class="table-responsive mt-4">
+    <table class="table table-striped">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>User Name</th>
+        <th>Operation Time</th>
+        <th>Action</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr v-for="log in paginatedLogs" :key="log.id">
+        <td>{{ log.id }}</td>
+        <td>{{ log.user }}</td>
+        <td>{{ log.time }}</td>
+        <td>
+          <button class="btn btn-sm btn-info" @click="viewDetails(log)">View</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 分页 & 总条数 -->
+  <div class="d-flex align-items-center mt-3 justify-content-start">
+    <!-- 左侧: 总条数 -->
+    <span class="me-3">Total Logs: {{ totalLogs }}</span>
+
+    <!-- 右侧: 分页按钮也靠左 -->
+    <nav>
+      <ul class="pagination">
+        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+          <button class="page-link" @click="prevPage">Previous</button>
+        </li>
+        <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+          <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+        </li>
+        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+          <button class="page-link" @click="nextPage">Next</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- 模态框 -->
+  <div class="modal fade" id="logDetailsModal" ref="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="logDetailsModalLabel">Log Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>ID:</strong> {{ selectedLog.id }}</p>
+          <p><strong>User:</strong> {{ selectedLog.user }}</p>
+          <p><strong>Time:</strong> {{ selectedLog.time }}</p>
+          <p><strong>Action:</strong> {{ selectedLog.action }}</p>
+          <!-- 你可以在这里添加更多的日志详细信息 -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
-
   </div>
+
 </template>
 
 
