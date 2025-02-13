@@ -10,6 +10,7 @@ import routerManagement from "@/views/RouterManagement/index.vue";
 import surveyManagement from "@/views/SurveyManagement/index.vue";
 import leaveApplication from "@/views/LeaveApplication/index.vue";
 import rewardMall from "@/views/RewardMall/index.vue";
+import pointDetails from "../views/RewardMall/PointDetails/index.vue";
 import leaderBoard from "@/views/LeaderBoard/index.vue";
 import KPIManagement from "@/views/KPIManagement/index.vue";
 import notificationCenter from "@/views/NotificationCenter/index.vue";
@@ -76,6 +77,11 @@ const router = createRouter({
                     path : "reward-mall",
                     name: 'reward-mall',
                     component: rewardMall,
+                },
+                {
+                    path: "reward-mall/point-details", 
+                    name: "point-details",
+                    component: pointDetails,
                 },
                 {
                     path : "leader-board",

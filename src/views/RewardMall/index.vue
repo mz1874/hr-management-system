@@ -80,7 +80,6 @@
 </template>
 
 <script setup lang="ts">
-import contentHeader from "@/components/header/index.vue";
 import { ref } from 'vue';
 import {Modal} from "bootstrap";
 import {useRouter} from "vue-router";

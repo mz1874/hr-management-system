@@ -26,16 +26,19 @@ import contentHeader from "@/components/header/index.vue";
 </template>
 
 <style scoped>
-  .home-content{
-    background-color: #d4dada;
-  }
-  .col {
-    padding: 0;
-  }
-  .main-content {
-    padding: 2rem;
-    flex: 1;
-    margin-bottom: 50px;
-    transition: margin-left 0.3s ease; /* Smooth transition */
-  }
+.container-fluid {
+    font-family: 'Nunito', sans-serif;
+}
+.home-content{
+  background-color: #d4dada;
+}
+.col {
+  padding: 0;
+}
+.main-content {
+  padding: 2rem;
+  flex: 1;
+  margin-bottom: 50px;
+  transition: margin-left 0.3s ease; /* Smooth transition */
+}
 </style>
