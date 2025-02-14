@@ -68,7 +68,7 @@
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="logDetailsModalLabel">Log Details</h5>
+          <h5 class="modal-title table-bg" id="logDetailsModalLabel">Log Details</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -177,14 +177,24 @@ const viewDetails = (log:any) => {
   margin-top: 40px;
 }
 
+.modal-header{
+  background-color: #7DA0CA;
+  color: white;
+  padding: 1rem 2rem;
+}
+
+
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-radius: 10px; /* Rounded corners */
+  overflow: hidden; /* Ensures the rounded corners are applied properly */
+  border-collapse: separate; /* Ensures border-spacing works with rounded corners */
+  border-spacing: 0; /* Removes any space between table cells */
 }
 
 /* Add background color to the header row */
 .table th {
-  background-color: #46d2d9; /* Light gray background for header */
+  background-color: #f8f9fa;
   text-align: center;
   padding: 8px;
   font-weight: bold;
