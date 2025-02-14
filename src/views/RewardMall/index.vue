@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Reward Mall</h2>
-      <button class="view-history-button">View History</button>
+      <button class="view-history-button" @click="goToRewardHistory()">View History</button>
   </div>
 
   <button type="button" class="iconButton"  @click="goToPointDetails()"> 
@@ -14,7 +14,7 @@
   <div class="row row-cols-md-3 g-4" >
     <div class="col" v-for="(item, index) in reward" :key="index">
       <div class="card shadow-sm mt-4" >
-        <img src="https://via.placeholder.com/100" alt="Reward Image" class="image">
+        <img :src="getImagePath(item.img)" alt="Reward Image" class="image">
         <div class="card-body">
             <h4 class="rewardTitle"><b>{{ item.name }}</b></h4>
             <p>{{ item.description }}</p>
@@ -48,7 +48,9 @@
           </div>
         </div>
         <div class="modal-body">
-          <li v-for="(term, index) in selectedTerms.terms" :key="index">{{ term }}</li>
+          <div class="modal-body">
+  <div class="terms-text">{{ selectedTerms.terms }}</div>
+</div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -84,32 +86,44 @@ import { ref } from 'vue';
 import {Modal} from "bootstrap";
 import {useRouter} from "vue-router";
 
+const getImagePath = (img: any) => {
+  return new URL(`/dist/assets/${img}`, import.meta.url).href;
+};
+
 const reward = ref([
   {
+    img: "Jaya_Grocer_Gift_Card.png",
     name: "Jaya Grocer's Gift Card", 
     description: "RM100 Jaya Grocer's Gift Card. Vouchers received will be valid for a minimum period of 6 months.", 
     valid: "30/06/2024, 23:59", 
     quantity: "20",
     rewardPrice: "50",
-    terms: [
-            "This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.",
-            "This gift card is valid at all Jaya Grocer outlets.",
-            "This gift card is valid for 6 months only from the date of card activation.",
-            "During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.",
-            "If the value of goods is more than the amount on the gift card, then the difference should be paid by the bearer."
-        ]
+    terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
+
+    2. This gift card is valid at all Jaya Grocer outlets.
+
+    3. This gift card is valid for 6 months only from the date of card activation.
+
+    4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.
+
+    5. If the value of goods is more than the amount on the gift card, then the difference should be paid by the bearer.
+    `
   },
   {
+    img: "McDonald_Gift_Card.png",
     name: "Starbucks Gift Card", 
     description: "RM50 Starbucks Gift Card. Vouchers received will be valid for a minimum period of 4 months.", 
     valid: "31/12/2024, 23:59", 
     quantity: "10",
     rewardPrice: "25",
-    terms: [
-            "This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.",
-            "This gift card is valid at all Jaya Grocer outlets.",
-            "This gift card is valid for 6 months only from the date of card activation.",
-        ]
+    terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
+
+    2. This gift card is valid at all Starbuck outlets.
+
+    3. This gift card is valid for 6 months only from the date of card activation.
+
+    4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.
+    `
   },
 ]);
 
@@ -133,14 +147,24 @@ const openSelectedRewardModal = (item:any) => {
   modal.show();
 };
 
+//go to point details page
 const router = useRouter()
 function goToPointDetails()
 {
   router.push('/home/reward-mall/point-details');
 }
+
+//go to reward history page
+function goToRewardHistory()
+{
+  router.push('/home/reward-mall/reward-history');
+}
 </script>
 
 <style scoped>
+.terms-text {
+  white-space: pre-line;
+}
 .view-history-button {
   background-color: #ABD3AB;
   padding: 8px; /* Add padding for better appearance */
@@ -154,8 +178,11 @@ function goToPointDetails()
 }
 
 .image {
-  border-radius: 0.25rem 0.25rem 0px 0px;
+  width: 100%;  
+  /* height: 400px; 
+  object-fit: cover;  */
   margin-bottom: 0.75rem;
+  overflow: hidden;
 }
 
 .rewardTitle {

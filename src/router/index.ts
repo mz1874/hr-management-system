@@ -11,11 +11,14 @@ import surveyManagement from "@/views/SurveyManagement/index.vue";
 import leaveApplication from "@/views/LeaveApplication/index.vue";
 import rewardMall from "@/views/RewardMall/index.vue";
 import pointDetails from "../views/RewardMall/PointDetails/index.vue";
+import rewardHistory from "../views/RewardMall/RewardHistory/index.vue";
 import leaderBoard from "@/views/LeaderBoard/index.vue";
 import KPIManagement from "@/views/KPIManagement/index.vue";
 import notificationCenter from "@/views/NotificationCenter/index.vue";
 import HomeDefault from "@/views/HomeView/HomeDefault/index.vue";
 import personalKPIManagement from "@/views/PersonalKPIManagement/index.vue";
+import rewardManagement from "@/views/RewardManagement/index.vue";
+import redemptionStatus from "@/views/RedemptionStatus/index.vue";
 
 /**
  * Please define your page router to the below
@@ -84,17 +87,20 @@ const router = createRouter({
                     component: pointDetails,
                 },
                 {
+                    path: "reward-mall/reward-history", 
+                    name: "rewardHistory",
+                    component: rewardHistory,
+                },
+                {
                     path : "leader-board",
                     name: 'leader-board',
                     component: leaderBoard,
                 },
-
                 {
                     path : "KPI-Management",
                     name: 'KPI-Management',
                     component: KPIManagement,
                 },
-
                 {
                     path : "notification-center",
                     name: 'notification-center',
@@ -104,7 +110,17 @@ const router = createRouter({
                     path : "personal-KPI-Management",
                     name: 'personal-KPI-Management',
                     component: personalKPIManagement,
-                }
+                },
+                {
+                    path : "reward-management",
+                    name: 'reward-management',
+                    component: rewardManagement,
+                },
+                {
+                    path : "redemption-status",
+                    name: 'redemption-status',
+                    component: redemptionStatus,
+                },
             ]
         },
         {

@@ -12,6 +12,11 @@ const navItems = reactive([
   { name: "Personal KPI Management", link: "/home/personal-KPI-Management" },
 ]);
 
+const rewardSubmenu = reactive([
+  { name: "Reward Management", link: "/home/reward-management" },
+  { name: "Redemption Status", link: "/home/redemption-status" },
+]);
+
 const systemSubmenu = reactive([
   { name: "User management", link: "/home/user-management" },
   { name: "Department management", link: "/home/department-management" },
@@ -31,6 +36,15 @@ const systemSubmenu = reactive([
     <router-link v-for="item in navItems" :key="item.name" :to="item.link" class="nav-item">
       {{ item.name }}
     </router-link>
+
+    <a href="#" class="nav-item" data-bs-toggle="collapse" data-bs-target="#reward-submenu">
+      Reward Administration
+    </a>
+    <div class="collapse" id="reward-submenu">
+      <router-link v-for="sub in rewardSubmenu" :key="sub.name" :to="sub.link" class="nav-item sub-item">
+        {{ sub.name }}
+      </router-link>
+    </div>
 
     <a href="#" class="nav-item" data-bs-toggle="collapse" data-bs-target="#system-submenu">
       System Management
