@@ -10,3 +10,8 @@ import { RouterLink, RouterView } from 'vue-router'
 <style scoped>
 
 </style>
+
+
+<style>
+@import '@fortawesome/fontawesome-free/css/all.css';
+</style>
