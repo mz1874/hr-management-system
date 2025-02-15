@@ -19,7 +19,7 @@ import HomeDefault from "@/views/HomeView/HomeDefault/index.vue";
 import personalKPIManagement from "@/views/PersonalKPIManagement/index.vue";
 import rewardManagement from "@/views/RewardManagement/index.vue";
 import redemptionStatus from "@/views/RedemptionStatus/index.vue";
-import PersonalKPIManagement_Details from "@/views/PersonalKPIManagementDetails/index.vue";
+import PersonalKPIDetails from "@/views/PersonalKPIManagementDetails/index.vue";
 /**
  * Please define your page router to the below
  */
@@ -112,9 +112,9 @@ const router = createRouter({
                     component: personalKPIManagement,
                 },
                 {
-                    path:'PersonalKPIManagement_Details',
-                    name:'PersonalKPIManagement_Details',
-                    component:PersonalKPIManagement_Details
+                    path:'/PersonalKPIDetails',
+                    name:'PersonalKPIDetails',
+                    component:PersonalKPIDetails
                 },
                 {
                     path : "reward-management",

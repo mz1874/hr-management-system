@@ -3,7 +3,7 @@
   <div class="container mt-4">
     <div class="row g-4" id="kpi-container">
       <div v-for="kpi in kpiData" :key="kpi.title" class="col-md-4">
-        <div class="kpi-card">
+        <div class="kpi-card" @click="navigateToDetails(kpi)" role="button" tabindex="0">
           <h5>{{ kpi.title }}</h5>
           <div class="progress-circle">
             <svg viewBox="0 0 36 36" class="circular-chart green">
@@ -36,16 +36,29 @@ export default {
   data() {
     return {
       kpiData: [
-        { title: "Completeness of Order", value: 50 },
-        { title: "Accuracy of Inventory", value: 60 },
-        { title: "Average Pick Time", value: 30 },
-        { title: "Warehouse Utilization", value: 50 },
-        { title: "Inventory Turnover", value: 50 },
+        { title: "Completeness of Order", value: 50, id: 1 },
+        { title: "Accuracy of Inventory", value: 60, id: 2 },
+        { title: "Average Pick Time", value: 30, id: 3 },
+        { title: "Warehouse Utilization", value: 50, id: 4 },
+        { title: "Inventory Turnover", value: 50, id: 5 }
       ]
+    }
+  },
+  methods: {
+    navigateToDetails(kpi) {
+      this.$router.push({
+        path: '/PersonalKPIDetails',
+        query: {
+          kpiId: kpi.id,
+          title: kpi.title,
+          value: kpi.value
+        }
+      })
     }
   }
 }
 </script>
+
 
 <style scoped>
 /* Parent container of the KPI cards */
