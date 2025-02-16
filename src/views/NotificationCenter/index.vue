@@ -148,12 +148,79 @@
         </div>
       </div>
     </div>
+
+    <!-- todo add edit announcement modal -->
+    <div class="modal fade" id="editAnnouncementModal" tabindex="-1" aria-labelledby="editAnnouncementModal" aria-hidden="true" v-if="showModal">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editAnnouncement">Edit Announcement</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="closeModal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <!-- Left Column - Announcement Details -->
+              <div class="col-md-7 border-end">
+                <form>
+                  <!-- Title -->
+                  <div class="mb-3">
+                    <label for="editTitle" class="form-label">Title:</label>
+                    <input type="text" class="form-control" v-model="announcement.title" placeholder="Enter title">
+                  </div>
+
+                  <!-- Description -->
+                  <div class="mb-3">
+                    <label for="editDescription" class="form-label">Description:</label>
+                    <textarea class="form-control" v-model="announcement.description" rows="3" placeholder="Enter description" style="height: 250px;"></textarea>
+                  </div>
+
+                  <!-- Attachment -->
+                  <div class="mb-3">
+                    <label class="form-label">Attachment:</label>
+                    <div class="input-group">
+                      <input type="file" class="form-control" accept=".pdf, .jpg" @change="handleFileUpload">
+                    </div>
+                    <span>Support pdf and jpg</span>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Right Column - Schedule and Availability -->
+              <div class="col-md-5">
+                <!-- Schedule Post -->
+                <div class="mb-3">
+                  <input type="checkbox" id="editSchedulePost" v-model="schedulePost" :disabled="true">
+                  <label for="editSchedulePost" class="form-label">Schedule Post</label>
+                  <div class="d-flex gap-2">
+                    <input type="date" class="form-control" v-model="postDate" :disabled="!schedulePost">
+                    <input type="time" class="form-control" v-model="postTime" :disabled="!schedulePost">
+                  </div>
+                </div>
+
+                <!-- Available For -->
+                <div class="mb-3">
+                  <input type="checkbox" id="editAvailableFor" v-model="availableFor">
+                  <label for="editAvailableFor" class="form-label">Available for</label>
+                  <input type="text" class="form-control" v-model="department" placeholder="Department" :disabled="!availableFor">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="closeModal">Close</button>
+            <button type="button" class="btn btn-success" @click="submitAnnouncement">Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   
 </template>
 
 <script>
+// todo add script for edit announcement
 import { ref, computed } from 'vue'
 import { Modal } from 'bootstrap'
 
