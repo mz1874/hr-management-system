@@ -4,29 +4,48 @@
     <!-- Main Content Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Current Announcement</h2>
-      <button class="btn btn-success" @click="openNewAnnouncementModal">New Announcement</button>
+      <!-- <button class="btn btn-success" @click="openNewAnnouncementModal">New Announcement</button> -->
     </div>
 
-    <!-- Search Bar -->
-    <div class="search-container">
-      <i class="fas fa-search"></i>
-      <input type="text" class="form-control" placeholder="Search" v-model="searchQuery">
-    </div>
-
-    <!-- Announcement Cards -->
-    <div class="announcement-card" v-for="announcement in filteredAnnouncements" :key="announcement.id">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h5>{{ announcement.title }}</h5>
-          <p class="mb-0">{{ announcement.description }}</p>
-        </div>
-        <div>
-          <button class="btn btn-primary btn-action" @click="viewAnnouncement(announcement)">View</button>
-          <button class="btn btn-warning btn-action" @click="editAnnouncement(announcement)">Edit</button>
-          <button class="btn btn-danger btn-action" @click="confirmDelete(announcement)">Delete</button>
-        </div>
+    <!-- Search and New Announcement Button Row -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <!-- Search Input -->
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input 
+          v-model="searchQuery" 
+          type="text" 
+          class="search-input" 
+          placeholder="Search"
+        >
       </div>
+
+      <!-- New Announcement Button -->
+      <button class="btn btn-success new-announcement-btn" @click="openNewAnnouncementModal">
+        New Announcement
+      </button>
     </div>
+
+
+      <!-- Announcement Cards -->
+  <div class="announcement-card d-flex align-items-center" v-for="announcement in filteredAnnouncements" :key="announcement.id">
+    <!-- Status Indicator -->
+    <div :class="['status-indicator', announcement.posted ? 'posted' : 'not-posted']"></div>
+    
+    <!-- Announcement Content -->
+    <div class="flex-grow-1">
+      <h5>{{ announcement.title }}</h5>
+      <p class="mb-0">{{ announcement.description }}</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div>
+      <button class="btn btn-primary btn-action" @click="viewAnnouncement(announcement)">View</button>
+      <button class="btn btn-warning btn-action" @click="editAnnouncement(announcement)">Edit</button>
+      <button class="btn btn-danger btn-action" @click="confirmDelete(announcement)">Delete</button>
+    </div>
+    </div>
+
 
     <!-- New Announcement Modal -->
     <div class="modal fade" id="newAnnouncement" ref="newAnnouncementModal">
@@ -149,9 +168,19 @@ export default {
         description: "We're excited to launch our new announcement center. Stay tuned for important updates!",
         author: 'HR Chloe',
         datetime: '18/10/2024 12 p.m.',
-        attachment: '1701exercise1.pdf'
+        attachment: '1701exercise1.pdf',
+        posted: true  // This announcement is posted
+      },
+      {
+        id: 2,
+        title: 'Upcoming Maintenance',
+        description: "Scheduled maintenance will take place this weekend. Expect some downtime.",
+        author: 'Admin Team',
+        datetime: '20/10/2024 5 p.m.',
+        posted: false  // This one is NOT posted
       }
     ])
+
 
     const newAnnouncement = ref({
       title: '',
@@ -176,6 +205,10 @@ export default {
         announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
       )
     })
+
+    const togglePostedStatus = (announcement) => {
+      announcement.isPosted = !announcement.isPosted;
+    };
 
     const initializeModals = () => {
       modalInstances.new = new Modal(newAnnouncementModal.value)
@@ -246,6 +279,7 @@ export default {
       searchQuery,
       announcements,
       newAnnouncement,
+      togglePostedStatus,
       selectedAnnouncement,
       filteredAnnouncements,
       newAnnouncementModal,
@@ -271,20 +305,43 @@ export default {
 
 <style scoped>
 .search-container {
-    position: relative;
-    margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 8px 12px;
+  width: 80%;
+  position: relative;
 }
 
-.search-container input {
-    padding-left: 40px;
+.search-icon {
+  font-size: 16px;
+  color: #555;
+  margin-right: 10px;
 }
 
-.search-container i {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
+.search-input {
+  border: none;
+  outline: none;
+  flex-grow: 1;
+  font-size: 16px;
 }
+
+.new-announcement-btn {
+  width: 15%;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.new-announcement-btn:hover {
+  background-color: #799c7b;
+}
+
 
 .announcement-card {
     border: 1px solid #ddd;
@@ -293,9 +350,30 @@ export default {
     border-radius: 4px;
 }
 
+.status-indicator {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  margin-right: 20px;
+}
+
+.posted {
+  background-color: green;
+}
+
+.not-posted {
+  background-color: gray;
+}
+
+
 .form-container {
     display: flex;
     gap: 30px;
+}
+
+.btn-action {
+  padding: 0.25rem 1rem;
+  margin-left: 0.5rem;
 }
 
 .btn-action {
@@ -345,79 +423,68 @@ export default {
     margin: 1.75rem auto;
 }
 
+/* Center align the modal header title */
+#viewAnnouncementModal .modal-header {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+
+#viewAnnouncementModal .modal-title {
+    margin: 0 auto;
+    text-align: center;
+    flex-grow: 1;
+}
+
+
 #viewAnnouncementModal .modal-content {
     border-radius: 20px !important;
     border: none;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-/* Modal Header Styles */
+#viewAnnouncementModal .modal-dialog {
+    max-width: 800px !important;
+    margin: 1.75rem auto;
+}
+
+#viewAnnouncementModal .modal-content {
+    border-radius: 20px !important;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
 #viewAnnouncementModal .modal-header {
-    border-bottom: 1px solid #dee2e6;
-    padding: 1rem 1.5rem;
-    background-color: #fff;
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
+    border-radius: 20px !important;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-#viewAnnouncementModal .modal-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #000;
-}
-
-#viewAnnouncementModal .btn-close {
-    padding: 1rem;
-}
-
-/* Modal Body Styles */
+/* Make the modal body scrollable */
 #viewAnnouncementModal .modal-body {
+    max-height: 800px; /* Adjust height as needed */
+    overflow-y: auto;
     padding: 1.5rem;
     background-color: #fff;
 }
 
-#viewAnnouncementModal .modal-body p {
-    margin-bottom: 1rem;
-    color: #333;
-}
-
-#viewAnnouncementModal .modal-body h6 {
-    margin: 1.5rem 0;
-    font-size: 1rem;
-}
-
-/* Description Box Styles */
-#viewAnnouncementModal .border.p-3.rounded {
-    background-color: #f8f9fa !important;
-    border: 1px solid #dee2e6 !important;
-    margin: 1rem 0;
-    padding: 1.5rem !important;
-}
-
-/* PDF Viewer Container */
+/* Optional: Make the attachment viewer fixed */
 #viewAnnouncementModal .mt-3 {
-    margin-top: 2rem !important;
     background-color: #e9ecef;
     padding: 1rem;
     border-radius: 8px;
 }
 
+/* Ensure the iframe doesn't take too much space */
 #viewAnnouncementModal iframe {
     width: 100%;
-    height: 400px;
+    height: 300px;
     border: none;
     background-color: #fff;
     border-radius: 4px;
 }
 
-/* Modal Footer Styles */
-#viewAnnouncementModal .modal-footer {
-    border-top: 1px solid #dee2e6;
-    padding: 1rem 1.5rem;
-    background-color: #fff;
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
-}
+
 
 /* Text Styles specific to announcement modal */
 #viewAnnouncementModal .text-center {
