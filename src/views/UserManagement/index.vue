@@ -15,7 +15,7 @@ const selectedDepartment = ref('Sales Department')
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
-const totalItems = 100
+const totalItems = computed(() => staffList.value.length)
 
 const staffList = ref<Staff[]>([
   {
@@ -116,6 +116,20 @@ const staffList = ref<Staff[]>([
   }
 ])
 
+// Modals
+const showAddStaffModal = ref(false)
+const showViewStaffModal = ref(false)
+const showEditStaffModal = ref(false)
+const showDeleteStaffModal = ref(false)
+const selectedStaff = ref<Staff>({
+  id: 0,
+  name: '',
+  dateOfBirth: '',
+  role: '',
+  department: '',
+  status: 'Active'
+})
+
 // Statistics
 const statistics = computed(() => ({
   total: staffList.value.length,
@@ -132,28 +146,62 @@ const filteredStaff = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.ceil(totalItems / itemsPerPage))
+const paginatedStaff = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredStaff.value.slice(start, end)
+})
+
+const totalPages = computed(() => Math.ceil(filteredStaff.value.length / itemsPerPage))
 
 // Methods
 const searchStaff = () => {
-  // Implement search logic
   currentPage.value = 1
 }
 
+const openAddStaffModal = () => {
+  selectedStaff.value = {
+    id: staffList.value.length + 1,
+    name: '',
+    dateOfBirth: '',
+    role: '',
+    department: selectedDepartment.value,
+    status: 'Active'
+  }
+  showAddStaffModal.value = true
+}
+
+const openViewStaffModal = (staff: Staff) => {
+  selectedStaff.value = { ...staff }
+  showViewStaffModal.value = true
+}
+
+const openEditStaffModal = (staff: Staff) => {
+  selectedStaff.value = { ...staff }
+  showEditStaffModal.value = true
+}
+
+const openDeleteStaffModal = (staff: Staff) => {
+  selectedStaff.value = staff
+  showDeleteStaffModal.value = true
+}
+
 const addStaff = () => {
-  // Implement add staff logic
+  staffList.value.push({ ...selectedStaff.value })
+  showAddStaffModal.value = false
 }
 
-const viewStaff = (staff: Staff) => {
-  // Implement view staff logic
+const saveEditedStaff = () => {
+  const index = staffList.value.findIndex(staff => staff.id === selectedStaff.value.id)
+  if (index !== -1) {
+    staffList.value[index] = { ...selectedStaff.value }
+  }
+  showEditStaffModal.value = false
 }
 
-const editStaff = (staff: Staff) => {
-  // Implement edit staff logic
-}
-
-const deleteStaff = (staff: Staff) => {
-  // Implement delete staff logic
+const confirmDeleteStaff = () => {
+  staffList.value = staffList.value.filter(staff => staff.id !== selectedStaff.value.id)
+  showDeleteStaffModal.value = false
 }
 
 const changePage = (page: number) => {
@@ -163,7 +211,6 @@ const changePage = (page: number) => {
 }
 </script>
 
-<!-- Rest of the template and style sections remain unchanged -->
 <template>
   <div class="p-4">
     <h1>Staff Management</h1>
@@ -178,7 +225,6 @@ const changePage = (page: number) => {
         <option>IT Department</option>
         <option>Operations</option>
       </select>
-      <button @click="searchStaff" class="btn btn-success">Search</button>
     </div>
 
     <!-- Name search -->
@@ -191,6 +237,7 @@ const changePage = (page: number) => {
           class="form-control" 
           placeholder="Search Full Name"
         >
+        <button @click="searchStaff" class="btn btn-success">Search</button>
       </div>
     </div>
 
@@ -198,7 +245,7 @@ const changePage = (page: number) => {
     <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-end mb-3">
-          <button @click="addStaff" class="btn btn-success">Add New Staff</button>
+          <button @click="openAddStaffModal" class="btn btn-success">Add New Staff</button>
         </div>
 
         <div class="table-responsive">
@@ -215,7 +262,7 @@ const changePage = (page: number) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="staff in filteredStaff" :key="staff.id">
+              <tr v-for="staff in paginatedStaff" :key="staff.id">
                 <td>{{ staff.id }}</td>
                 <td>
                   <div class="d-flex align-items-center">
@@ -237,9 +284,9 @@ const changePage = (page: number) => {
                   </span>
                 </td>
                 <td>
-                  <button @click="viewStaff(staff)" class="btn btn-primary btn-sm">View</button>
-                  <button @click="editStaff(staff)" class="btn btn-warning btn-sm">Edit</button>
-                  <button @click="deleteStaff(staff)" class="btn btn-danger btn-sm">Delete</button>
+                  <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
+                  <button @click="openEditStaffModal(staff)" class="btn btn-warning btn-sm">Edit</button>
+                  <button @click="openDeleteStaffModal(staff)" class="btn btn-danger btn-sm">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -248,14 +295,14 @@ const changePage = (page: number) => {
 
         <!-- Pagination -->
         <div class="d-flex justify-content-between align-items-center mt-3">
-          <div>Total: {{ totalItems }}</div>
+          <div>Total: {{ filteredStaff.length }}</div>
           <nav>
             <ul class="pagination mb-0">
               <li 
                 :class="['page-item', { disabled: currentPage === 1 }]"
                 @click="changePage(currentPage - 1)"
               >
-                <a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a>
+                <button class="page-link">&laquo;</button>
               </li>
               <li 
                 v-for="page in totalPages"
@@ -263,13 +310,13 @@ const changePage = (page: number) => {
                 :class="['page-item', { active: currentPage === page }]"
                 @click="changePage(page)"
               >
-                <a class="page-link" href="#">{{ page }}</a>
+                <button class="page-link">{{ page }}</button>
               </li>
               <li 
                 :class="['page-item', { disabled: currentPage === totalPages }]"
                 @click="changePage(currentPage + 1)"
               >
-                <a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>
+                <button class="page-link">&raquo;</button>
               </li>
             </ul>
           </nav>
@@ -325,6 +372,246 @@ const changePage = (page: number) => {
         </div>
       </div>
     </div>
+
+    <!-- Add Staff Modal -->
+    <div v-if="showAddStaffModal" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add New Staff</h5>
+          <button 
+            type="button" 
+            class="btn-close" 
+            @click="showAddStaffModal = false"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="staffName" class="form-label">Name</label>
+            <input 
+              v-model="selectedStaff.name"
+              type="text" 
+              class="form-control" 
+              id="staffName" 
+              placeholder="Enter name"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
+            <input 
+              v-model="selectedStaff.dateOfBirth"
+              type="date" 
+              class="form-control" 
+              id="staffDateOfBirth" 
+              placeholder="Enter date of birth"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="staffRole" class="form-label">Role</label>
+            <input 
+              v-model="selectedStaff.role"
+              type="text" 
+              class="form-control" 
+              id="staffRole" 
+              placeholder="Enter role"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="staffDepartment" class="form-label">Department</label>
+            <select 
+              v-model="selectedStaff.department"
+              class="form-select" 
+              id="staffDepartment"
+            >
+              <option>Sales Department</option>
+              <option>Marketing Department</option>
+              <option>Human Resources</option>
+              <option>Finance Department</option>
+              <option>IT Department</option>
+              <option>Operations</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="staffStatus" class="form-label">Status</label>
+            <select 
+              v-model="selectedStaff.status"
+              class="form-select" 
+              id="staffStatus"
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            @click="showAddStaffModal = false"
+          >
+            Close
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary" 
+            @click="addStaff"
+          >
+            Add Staff
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Staff Modal -->
+    <div v-if="showViewStaffModal" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">View Staff</h5>
+          <button 
+            type="button" 
+            class="btn-close" 
+            @click="showViewStaffModal = false"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Name:</strong> {{ selectedStaff.name }}</p>
+          <p><strong>Date of Birth:</strong> {{ selectedStaff.dateOfBirth }}</p>
+          <p><strong>Role:</strong> {{ selectedStaff.role }}</p>
+          <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
+          <p><strong>Status:</strong> {{ selectedStaff.status }}</p>
+        </div>
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            @click="showViewStaffModal = false"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Staff Modal -->
+    <div v-if="showEditStaffModal" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Staff</h5>
+          <button 
+            type="button" 
+            class="btn-close" 
+            @click="showEditStaffModal = false"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editStaffName" class="form-label">Name</label>
+            <input 
+              v-model="selectedStaff.name"
+              type="text" 
+              class="form-control" 
+              id="editStaffName" 
+              placeholder="Enter name"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="editStaffDateOfBirth" class="form-label">Date of Birth</label>
+            <input 
+              v-model="selectedStaff.dateOfBirth"
+              type="date" 
+              class="form-control" 
+              id="editStaffDateOfBirth" 
+              placeholder="Enter date of birth"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="editStaffRole" class="form-label">Role</label>
+            <input 
+              v-model="selectedStaff.role"
+              type="text" 
+              class="form-control" 
+              id="editStaffRole" 
+              placeholder="Enter role"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="editStaffDepartment" class="form-label">Department</label>
+            <select 
+              v-model="selectedStaff.department"
+              class="form-select" 
+              id="editStaffDepartment"
+            >
+              <option>Sales Department</option>
+              <option>Marketing Department</option>
+              <option>Human Resources</option>
+              <option>Finance Department</option>
+              <option>IT Department</option>
+              <option>Operations</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="editStaffStatus" class="form-label">Status</label>
+            <select 
+              v-model="selectedStaff.status"
+              class="form-select" 
+              id="editStaffStatus"
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            @click="showEditStaffModal = false"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary" 
+            @click="saveEditedStaff"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Staff Modal -->
+    <div v-if="showDeleteStaffModal" class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Delete Staff</h5>
+          <button 
+            type="button" 
+            class="btn-close" 
+            @click="showDeleteStaffModal = false"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete staff member "{{ selectedStaff.name }}"?</p>
+          <p class="text-danger">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            @click="showDeleteStaffModal = false"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-danger" 
+            @click="confirmDeleteStaff"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -367,5 +654,46 @@ const changePage = (page: number) => {
 .card {
   border-radius: 10px;
   border: 1px solid #eee;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 1rem;
+}
+
+.modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+.modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 </style>
