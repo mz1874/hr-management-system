@@ -1,4 +1,3 @@
-
 <template>
   <div class="main-content">
     <!-- Main Content Header -->
@@ -12,11 +11,11 @@
       <!-- Search Input -->
       <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          class="search-input" 
-          placeholder="Search"
+        <input
+            v-model="searchQuery"
+            type="text"
+            class="search-input"
+            placeholder="Search"
         >
       </div>
 
@@ -27,23 +26,24 @@
     </div>
 
 
-      <!-- Announcement Cards -->
-  <div class="announcement-card d-flex align-items-center" v-for="announcement in filteredAnnouncements" :key="announcement.id">
-    <!-- Status Indicator -->
-    <div :class="['status-indicator', announcement.posted ? 'posted' : 'not-posted']"></div>
-    
-    <!-- Announcement Content -->
-    <div class="flex-grow-1">
-      <h5>{{ announcement.title }}</h5>
-      <p class="mb-0">{{ announcement.description }}</p>
-    </div>
+    <!-- Announcement Cards -->
+    <div class="announcement-card d-flex align-items-center" v-for="announcement in filteredAnnouncements"
+         :key="announcement.id">
+      <!-- Status Indicator -->
+      <div :class="['status-indicator', announcement.posted ? 'posted' : 'not-posted']"></div>
 
-    <!-- Action Buttons -->
-    <div>
-      <button class="btn btn-primary btn-action" @click="viewAnnouncement(announcement)">View</button>
-      <button class="btn btn-warning btn-action" @click="editAnnouncement(announcement)">Edit</button>
-      <button class="btn btn-danger btn-action" @click="confirmDelete(announcement)">Delete</button>
-    </div>
+      <!-- Announcement Content -->
+      <div class="flex-grow-1">
+        <h5>{{ announcement.title }}</h5>
+        <p class="mb-0">{{ announcement.description }}</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div>
+        <button class="btn btn-primary btn-action" @click="viewAnnouncement(announcement)">View</button>
+        <button class="btn btn-warning btn-action" @click="editAnnouncement(announcement)">Edit</button>
+        <button class="btn btn-danger btn-action" @click="confirmDelete(announcement)">Delete</button>
+      </div>
     </div>
 
 
@@ -61,12 +61,14 @@
                 <form @submit.prevent="submitNewAnnouncement">
                   <div class="mb-3">
                     <label for="title" class="form-label">Title:</label>
-                    <input type="text" class="form-control" id="title" v-model="newAnnouncement.title" placeholder="Enter title">
+                    <input type="text" class="form-control" id="title" v-model="newAnnouncement.title"
+                           placeholder="Enter title">
                   </div>
 
                   <div class="mb-3">
                     <label for="description" class="form-label">Description:</label>
-                    <textarea class="form-control" id="description" rows="3" v-model="newAnnouncement.description" placeholder="Enter description" style="height: 250px;"></textarea>
+                    <textarea class="form-control" id="description" rows="3" v-model="newAnnouncement.description"
+                              placeholder="Enter description" style="height: 250px;"></textarea>
                   </div>
 
                   <div class="mb-3">
@@ -84,15 +86,18 @@
                   <input type="checkbox" id="schedulePost" v-model="newAnnouncement.isScheduled">
                   <label for="schedulePost" class="form-label">Schedule Post</label>
                   <div class="d-flex gap-2">
-                    <input type="date" class="form-control" v-model="newAnnouncement.scheduleDate" :disabled="!newAnnouncement.isScheduled">
-                    <input type="time" class="form-control" v-model="newAnnouncement.scheduleTime" :disabled="!newAnnouncement.isScheduled">
+                    <input type="date" class="form-control" v-model="newAnnouncement.scheduleDate"
+                           :disabled="!newAnnouncement.isScheduled">
+                    <input type="time" class="form-control" v-model="newAnnouncement.scheduleTime"
+                           :disabled="!newAnnouncement.isScheduled">
                   </div>
                 </div>
 
                 <div class="mb-3">
                   <input type="checkbox" id="availableFor" v-model="newAnnouncement.hasAvailability">
                   <label for="availableFor" class="form-label">Available for</label>
-                  <input type="text" class="form-control" v-model="newAnnouncement.department" placeholder="Department" :disabled="!newAnnouncement.hasAvailability">
+                  <input type="text" class="form-control" v-model="newAnnouncement.department" placeholder="Department"
+                         :disabled="!newAnnouncement.hasAvailability">
                 </div>
               </div>
             </div>
@@ -150,12 +155,14 @@
     </div>
 
     <!-- todo add edit announcement modal -->
-    <div class="modal fade" id="editAnnouncementModal" tabindex="-1" aria-labelledby="editAnnouncementModal" aria-hidden="true" v-if="showModal">
+    <div class="modal fade" id="editAnnouncementModal" :ref="editAnnouncementModal" tabindex="-1"
+         aria-labelledby="editAnnouncementModal" aria-hidden="true" v-if="showModal">
       <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="editAnnouncement">Edit Announcement</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="closeModal"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                    @click="closeModal"></button>
           </div>
           <div class="modal-body">
             <div class="row">
@@ -171,7 +178,8 @@
                   <!-- Description -->
                   <div class="mb-3">
                     <label for="editDescription" class="form-label">Description:</label>
-                    <textarea class="form-control" v-model="announcement.description" rows="3" placeholder="Enter description" style="height: 250px;"></textarea>
+                    <textarea class="form-control" v-model="announcement.description" rows="3"
+                              placeholder="Enter description" style="height: 250px;"></textarea>
                   </div>
 
                   <!-- Attachment -->
@@ -201,7 +209,8 @@
                 <div class="mb-3">
                   <input type="checkbox" id="editAvailableFor" v-model="availableFor">
                   <label for="editAvailableFor" class="form-label">Available for</label>
-                  <input type="text" class="form-control" v-model="department" placeholder="Department" :disabled="!availableFor">
+                  <input type="text" class="form-control" v-model="department" placeholder="Department"
+                         :disabled="!availableFor">
                 </div>
               </div>
             </div>
@@ -216,17 +225,21 @@
 
   </div>
 
-  
+
 </template>
 
 <script>
 // todo add script for edit announcement
-import { ref, computed } from 'vue'
-import { Modal } from 'bootstrap'
+import {ref, computed} from 'vue'
+import {Modal} from 'bootstrap'
 
 export default {
   name: 'notification-center',
   setup() {
+
+    const editAnnouncementModal = ref();
+    const showModal = ref(false);
+
     const searchQuery = ref('')
     const announcements = ref([
       {
@@ -267,9 +280,9 @@ export default {
     let modalInstances = {}
 
     const filteredAnnouncements = computed(() => {
-      return announcements.value.filter(announcement => 
-        announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+      return announcements.value.filter(announcement =>
+          announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+          announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
       )
     })
 
@@ -300,6 +313,10 @@ export default {
         datetime: new Date().toLocaleString()
       })
       closeNewAnnouncementModal()
+    }
+
+    function editAnnouncement() {
+      modalInstances.view.show()
     }
 
     const viewAnnouncement = (announcement) => {
@@ -352,10 +369,12 @@ export default {
       newAnnouncementModal,
       viewModal,
       deleteModal,
+      showModal,
       openNewAnnouncementModal,
       closeNewAnnouncementModal,
       submitNewAnnouncement,
       viewAnnouncement,
+      editAnnouncement,
       closeViewModal,
       confirmDelete,
       deleteAnnouncement,
@@ -411,10 +430,10 @@ export default {
 
 
 .announcement-card {
-    border: 1px solid #ddd;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
 }
 
 .status-indicator {
@@ -434,8 +453,8 @@ export default {
 
 
 .form-container {
-    display: flex;
-    gap: 30px;
+  display: flex;
+  gap: 30px;
 }
 
 .btn-action {
@@ -444,125 +463,123 @@ export default {
 }
 
 .btn-action {
-    padding: 0.25rem 1rem;
-    margin-left: 0.5rem;
+  padding: 0.25rem 1rem;
+  margin-left: 0.5rem;
 }
 
 .pagination {
-    justify-content: center;
-    margin-top: 2rem;
+  justify-content: center;
+  margin-top: 2rem;
 }
 
 .footer-links {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 
 .footer-links a {
-    color: white;
-    text-decoration: none;
-    font-size: 0.9rem;
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
 }
 
 .content-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .close-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0;
-    color: #666;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  color: #666;
 }
-
 
 
 /* Specifically target the announcement modal */
 #viewAnnouncementModal .modal-dialog {
-    max-width: 800px !important;
-    margin: 1.75rem auto;
+  max-width: 800px !important;
+  margin: 1.75rem auto;
 }
 
 /* Center align the modal header title */
 #viewAnnouncementModal .modal-header {
-    text-align: center;
-    display: flex;
-    justify-content: center;
+  text-align: center;
+  display: flex;
+  justify-content: center;
 }
 
 #viewAnnouncementModal .modal-title {
-    margin: 0 auto;
-    text-align: center;
-    flex-grow: 1;
+  margin: 0 auto;
+  text-align: center;
+  flex-grow: 1;
 }
 
 
 #viewAnnouncementModal .modal-content {
-    border-radius: 20px !important;
-    border: none;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-radius: 20px !important;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 #viewAnnouncementModal .modal-dialog {
-    max-width: 800px !important;
-    margin: 1.75rem auto;
+  max-width: 800px !important;
+  margin: 1.75rem auto;
 }
 
 #viewAnnouncementModal .modal-content {
-    border-radius: 20px !important;
-    border: none;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-radius: 20px !important;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 #viewAnnouncementModal .modal-header {
-    border-radius: 20px !important;
-    border: none;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-radius: 20px !important;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Make the modal body scrollable */
 #viewAnnouncementModal .modal-body {
-    max-height: 800px; /* Adjust height as needed */
-    overflow-y: auto;
-    padding: 1.5rem;
-    background-color: #fff;
+  max-height: 800px; /* Adjust height as needed */
+  overflow-y: auto;
+  padding: 1.5rem;
+  background-color: #fff;
 }
 
 /* Optional: Make the attachment viewer fixed */
 #viewAnnouncementModal .mt-3 {
-    background-color: #e9ecef;
-    padding: 1rem;
-    border-radius: 8px;
+  background-color: #e9ecef;
+  padding: 1rem;
+  border-radius: 8px;
 }
 
 /* Ensure the iframe doesn't take too much space */
 #viewAnnouncementModal iframe {
-    width: 100%;
-    height: 300px;
-    border: none;
-    background-color: #fff;
-    border-radius: 4px;
+  width: 100%;
+  height: 300px;
+  border: none;
+  background-color: #fff;
+  border-radius: 4px;
 }
-
 
 
 /* Text Styles specific to announcement modal */
 #viewAnnouncementModal .text-center {
-    text-align: center !important;
+  text-align: center !important;
 }
 
 #viewAnnouncementModal .text-end {
-    text-align: right !important;
+  text-align: right !important;
 }
 
 #viewAnnouncementModal .fw-bold {
-    font-weight: 600 !important;
+  font-weight: 600 !important;
 }
 </style>
