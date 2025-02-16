@@ -3,7 +3,6 @@
     <!-- Main Content Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Current Announcement</h2>
-      <!-- <button class="btn btn-success" @click="openNewAnnouncementModal">New Announcement</button> -->
     </div>
 
     <!-- Search and New Announcement Button Row -->
@@ -16,7 +15,7 @@
             type="text"
             class="search-input"
             placeholder="Search"
-        >
+        />
       </div>
 
       <!-- New Announcement Button -->
@@ -25,10 +24,12 @@
       </button>
     </div>
 
-
     <!-- Announcement Cards -->
-    <div class="announcement-card d-flex align-items-center" v-for="announcement in filteredAnnouncements"
-         :key="announcement.id">
+    <div
+        class="announcement-card d-flex align-items-center"
+        v-for="announcement in filteredAnnouncements"
+        :key="announcement.id"
+    >
       <!-- Status Indicator -->
       <div :class="['status-indicator', announcement.posted ? 'posted' : 'not-posted']"></div>
 
@@ -45,7 +46,6 @@
         <button class="btn btn-danger btn-action" @click="confirmDelete(announcement)">Delete</button>
       </div>
     </div>
-
 
     <!-- New Announcement Modal -->
     <div class="modal fade" id="newAnnouncement" ref="newAnnouncementModal">
@@ -154,9 +154,9 @@
       </div>
     </div>
 
-    <!-- todo add edit announcement modal -->
-    <div class="modal fade" id="editAnnouncementModal" :ref="editAnnouncementModal" tabindex="-1"
-         aria-labelledby="editAnnouncementModal" aria-hidden="true" v-if="showModal">
+    <!-- Edit Announcement Modal -->
+    <div class="modal fade" ref="editModal" tabindex="-1"
+         aria-labelledby="editAnnouncementModal" aria-hidden="true">
       <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header">
@@ -172,13 +172,13 @@
                   <!-- Title -->
                   <div class="mb-3">
                     <label for="editTitle" class="form-label">Title:</label>
-                    <input type="text" class="form-control" v-model="announcement.title" placeholder="Enter title">
+                    <input type="text" class="form-control" v-model="selectedAnnouncement.title" placeholder="Enter title">
                   </div>
 
                   <!-- Description -->
                   <div class="mb-3">
                     <label for="editDescription" class="form-label">Description:</label>
-                    <textarea class="form-control" v-model="announcement.description" rows="3"
+                    <textarea class="form-control" v-model="selectedAnnouncement.description" rows="3"
                               placeholder="Enter description" style="height: 250px;"></textarea>
                   </div>
 
@@ -197,20 +197,22 @@
               <div class="col-md-5">
                 <!-- Schedule Post -->
                 <div class="mb-3">
-                  <input type="checkbox" id="editSchedulePost" v-model="schedulePost" :disabled="true">
+                  <input type="checkbox" id="editSchedulePost" v-model="selectedAnnouncement.isScheduled">
                   <label for="editSchedulePost" class="form-label">Schedule Post</label>
                   <div class="d-flex gap-2">
-                    <input type="date" class="form-control" v-model="postDate" :disabled="!schedulePost">
-                    <input type="time" class="form-control" v-model="postTime" :disabled="!schedulePost">
+                    <input type="date" class="form-control" v-model="selectedAnnouncement.scheduleDate"
+                           :disabled="!selectedAnnouncement.isScheduled">
+                    <input type="time" class="form-control" v-model="selectedAnnouncement.scheduleTime"
+                           :disabled="!selectedAnnouncement.isScheduled">
                   </div>
                 </div>
 
                 <!-- Available For -->
                 <div class="mb-3">
-                  <input type="checkbox" id="editAvailableFor" v-model="availableFor">
+                  <input type="checkbox" id="editAvailableFor" v-model="selectedAnnouncement.hasAvailability">
                   <label for="editAvailableFor" class="form-label">Available for</label>
-                  <input type="text" class="form-control" v-model="department" placeholder="Department"
-                         :disabled="!availableFor">
+                  <input type="text" class="form-control" v-model="selectedAnnouncement.department" placeholder="Department"
+                         :disabled="!selectedAnnouncement.hasAvailability">
                 </div>
               </div>
             </div>
@@ -222,25 +224,17 @@
         </div>
       </div>
     </div>
-
   </div>
-
-
 </template>
 
 <script>
-// todo add script for edit announcement
-import {ref, computed} from 'vue'
-import {Modal} from 'bootstrap'
+import { ref, computed, onMounted } from 'vue';
+import { Modal } from 'bootstrap';
 
 export default {
-  name: 'notification-center',
+  name: 'NotificationCenter',
   setup() {
-
-    const editAnnouncementModal = ref();
-    const showModal = ref(false);
-
-    const searchQuery = ref('')
+    const searchQuery = ref('');
     const announcements = ref([
       {
         id: 1,
@@ -249,18 +243,27 @@ export default {
         author: 'HR Chloe',
         datetime: '18/10/2024 12 p.m.',
         attachment: '1701exercise1.pdf',
-        posted: true  // This announcement is posted
+        posted: true,
+        isScheduled: false,
+        scheduleDate: '',
+        scheduleTime: '',
+        hasAvailability: false,
+        department: '',
       },
       {
         id: 2,
         title: 'Upcoming Maintenance',
-        description: "Scheduled maintenance will take place this weekend. Expect some downtime.",
+        description: 'Scheduled maintenance will take place this weekend. Expect some downtime.',
         author: 'Admin Team',
         datetime: '20/10/2024 5 p.m.',
-        posted: false  // This one is NOT posted
-      }
-    ])
-
+        posted: false,
+        isScheduled: false,
+        scheduleDate: '',
+        scheduleTime: '',
+        hasAvailability: false,
+        department: '',
+      },
+    ]);
 
     const newAnnouncement = ref({
       title: '',
@@ -270,77 +273,93 @@ export default {
       scheduleTime: '',
       hasAvailability: false,
       department: '',
-      attachment: null
-    })
+      attachment: null,
+    });
 
-    const selectedAnnouncement = ref({})
-    const newAnnouncementModal = ref(null)
-    const viewModal = ref(null)
-    const deleteModal = ref(null)
-    let modalInstances = {}
+    const selectedAnnouncement = ref({});
+    const newAnnouncementModal = ref(null);
+    const viewModal = ref(null);
+    const deleteModal = ref(null);
+    const editModal = ref(null);
+    let modalInstances = {};
 
     const filteredAnnouncements = computed(() => {
-      return announcements.value.filter(announcement =>
-          announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
-    })
-
-    const togglePostedStatus = (announcement) => {
-      announcement.isPosted = !announcement.isPosted;
-    };
+      return announcements.value.filter(
+          (announcement) =>
+              announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+              announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+      );
+    });
 
     const initializeModals = () => {
-      modalInstances.new = new Modal(newAnnouncementModal.value)
-      modalInstances.view = new Modal(viewModal.value)
-      modalInstances.delete = new Modal(deleteModal.value)
-    }
+      modalInstances.new = new Modal(newAnnouncementModal.value);
+      modalInstances.view = new Modal(viewModal.value);
+      modalInstances.delete = new Modal(deleteModal.value);
+      modalInstances.edit = new Modal(editModal.value);
+    };
 
     const openNewAnnouncementModal = () => {
-      modalInstances.new.show()
-    }
+      modalInstances.new.show();
+    };
 
     const closeNewAnnouncementModal = () => {
-      modalInstances.new.hide()
-      resetNewAnnouncement()
-    }
+      modalInstances.new.hide();
+      resetNewAnnouncement();
+    };
 
     const submitNewAnnouncement = () => {
       announcements.value.push({
         id: announcements.value.length + 1,
         ...newAnnouncement.value,
         author: 'Current User',
-        datetime: new Date().toLocaleString()
-      })
-      closeNewAnnouncementModal()
-    }
+        datetime: new Date().toLocaleString(),
+      });
+      closeNewAnnouncementModal();
+    };
 
-    function editAnnouncement() {
-      modalInstances.view.show()
-    }
+    const editAnnouncement = (announcement) => {
+      selectedAnnouncement.value = { ...announcement };
+      if (modalInstances.edit) {
+        modalInstances.edit.show();
+      } else {
+        console.error('editModal instance is not initialized');
+      }
+    };
+
+    const submitAnnouncement = () => {
+      const index = announcements.value.findIndex((a) => a.id === selectedAnnouncement.value.id);
+      if (index !== -1) {
+        announcements.value[index] = { ...selectedAnnouncement.value };
+      }
+      modalInstances.edit.hide();
+    };
+
+    const closeModal = () => {
+      modalInstances.edit.hide();
+    };
 
     const viewAnnouncement = (announcement) => {
-      selectedAnnouncement.value = announcement
-      modalInstances.view.show()
-    }
+      selectedAnnouncement.value = announcement;
+      modalInstances.view.show();
+    };
 
     const closeViewModal = () => {
-      modalInstances.view.hide()
-    }
+      modalInstances.view.hide();
+    };
 
     const confirmDelete = (announcement) => {
-      selectedAnnouncement.value = announcement
-      modalInstances.delete.show()
-    }
+      selectedAnnouncement.value = announcement;
+      modalInstances.delete.show();
+    };
 
     const deleteAnnouncement = () => {
-      announcements.value = announcements.value.filter(a => a.id !== selectedAnnouncement.value.id)
-      modalInstances.delete.hide()
-    }
+      announcements.value = announcements.value.filter((a) => a.id !== selectedAnnouncement.value.id);
+      modalInstances.delete.hide();
+    };
 
     const closeDeleteModal = () => {
-      modalInstances.delete.hide()
-    }
+      modalInstances.delete.hide();
+    };
 
     const resetNewAnnouncement = () => {
       newAnnouncement.value = {
@@ -351,43 +370,45 @@ export default {
         scheduleTime: '',
         hasAvailability: false,
         department: '',
-        attachment: null
-      }
-    }
+        attachment: null,
+      };
+    };
 
     const handleFileUpload = (event) => {
-      newAnnouncement.value.attachment = event.target.files[0]
-    }
+      newAnnouncement.value.attachment = event.target.files[0];
+    };
+
+    onMounted(() => {
+      initializeModals();
+    });
 
     return {
       searchQuery,
       announcements,
       newAnnouncement,
-      togglePostedStatus,
       selectedAnnouncement,
       filteredAnnouncements,
       newAnnouncementModal,
       viewModal,
       deleteModal,
-      showModal,
+      editModal,
       openNewAnnouncementModal,
       closeNewAnnouncementModal,
       submitNewAnnouncement,
-      viewAnnouncement,
       editAnnouncement,
+      submitAnnouncement,
+      closeModal,
+      viewAnnouncement,
       closeViewModal,
       confirmDelete,
       deleteAnnouncement,
       closeDeleteModal,
       handleFileUpload,
-      initializeModals
-    }
+    };
   },
-  mounted() {
-    this.initializeModals()
-  }
-}
+};
 </script>
+
 
 <style scoped>
 .search-container {

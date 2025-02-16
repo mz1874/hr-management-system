@@ -89,7 +89,6 @@
 
 
 <script setup lang="ts">
-import contentHeader from "@/components/header/index.vue";
 import { onMounted, ref, computed, nextTick } from 'vue';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
