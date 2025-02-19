@@ -9,7 +9,7 @@
 </script>
 
 <template>
-  <h1>KPI管理</h1>
+  <h1>KPI Management</h1>
 
 </template>
 
