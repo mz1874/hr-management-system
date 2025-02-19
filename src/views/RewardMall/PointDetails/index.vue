@@ -8,8 +8,8 @@
 
   <div class="filter-container d-flex align-items-center gap-5">
     <!-- Search Bar (Left) -->
-    <form class="search-container d-flex align-items-center" role="search">
-      <i class="fas fa-search"></i>
+    <form class="search-container" role="search">
+      <i class="fas fa-search search-icon"></i>
       <input class="form-control" type="search" placeholder="Search Task Name" v-model="searchQuery">
     </form>
 
@@ -207,8 +207,25 @@ function goToRewardMall()
     margin-bottom: 0; 
 }
 
+.search-container {
+  width: 100%; /* Ensure form controls take up available width */
+    max-width: 350px; /* Set a fixed maximum width */
+    display: flex;
+    align-items: center;
+    position: relative;
+}
 .filter-container {
     margin-bottom: 2rem;
+}
+.search-icon {
+    position: absolute;
+    left: 10px;  /* Adjust left padding */
+    top: 50%;
+    transform: translateY(-50%);
+    color: gray; /* Icon color */
+}
+.filter-container .form-control {
+    padding-left: 35px; /* Ensure text doesn't overlap the icon */
 }
 
 .table-card {
@@ -218,8 +235,7 @@ function goToRewardMall()
     border-radius: 20px;
 }
 
-.table th,
-.table td {
+.table th, .table td {
   padding: 1rem;
   vertical-align: middle;
   border-bottom: 1px solid #707070;

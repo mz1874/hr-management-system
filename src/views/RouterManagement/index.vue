@@ -6,7 +6,7 @@ interface RouteItem {
   parentId: number | null
   name: string
   order: number
-  path: string
+  path: string  
   type: 'directory' | 'menu' | 'button'
   visible: boolean
   permission: string
@@ -111,7 +111,7 @@ const updateRoute = (updatedRoute: RouteItem) => {
   if (route) {
     Object.assign(route, updatedRoute)
   }
-}
+}   
 
 // 处理添加根路由
 const handleAddRoot = () => {
