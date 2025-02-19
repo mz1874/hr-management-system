@@ -22,7 +22,7 @@ import personalKPIManagement from "@/views/PersonalKPIManagement/index.vue";
 import rewardManagement from "@/views/RewardManagement/index.vue";
 import redemptionStatus from "@/views/RedemptionStatus/index.vue";
 import PersonalKPIDetails from "@/views/PersonalKPIManagementDetails/index.vue";
-import KPIDashboard from "@/views/KPIDashboard/index.vue";
+import KPIDashboard from "@/views/KPIDashboard/index.vue" ;
 /**
  * Please define your page router to the below
  */
@@ -142,7 +142,7 @@ const router = createRouter({
                 {
                     path : "KPI-Dashboard",
                     name: 'KPI-Dashboard',
-                    component: KPIDashboard,
+                    component: KPIDashboard ,
                 }
             ]
         },

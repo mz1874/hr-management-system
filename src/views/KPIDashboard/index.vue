@@ -1,5 +1,5 @@
 <template>
-  <h1>KPI Dashboard</h1>
+  <h1>KPI Dashboard </h1>
 </template>
 
 
