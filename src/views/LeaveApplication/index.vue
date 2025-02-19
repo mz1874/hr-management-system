@@ -1,98 +1,161 @@
 <script lang="ts">
 export default {
-  name: "leaveApplication"
+  name: "leaveManagement"
 }
 </script>
 
 
 <script setup lang="ts">
-import {Modal} from "bootstrap";
-import {ref, onMounted} from 'vue'
+import {Modal,Dropdown} from "bootstrap";
+import {ref, onMounted, computed} from 'vue'
+
+
+
 
 const leaveDetailsModal = ref();
 
 const leaveApplications = ref([
   {
     id: 1,
-    employeeName: 'Jack',
+    name: 'WangChong',
+    // department ='A',
     leaveType: 'AL',
     status: 'Reject',
     appliedOn: '2024-06-30 11:27:07',
-    selected: false
-  },
-  {
-    id: 2,
-    employeeName: 'Wang Chong',
-    leaveType: 'AL',
-    status: 'Pending',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false
-  }
-])
-
-const summaryStats = ref({
-  pending: 2,
-  approved: 2,
-  rejected: 2
-})
-
-const selectedLeave = ref({
-  name: 'Wang Chong',
-  department: 'Department A',
-  reasons: 'Travel',
-  document: 'Prove.pdf',
-  remainingAnnualLeave: 5,
-  remainingMedicalLeave: 5,
-  dates: [
-    {
-      date: '21/11/2024',
-      duration: 'whole',
-      leaveType: 'AL'
-    },
-    {
-      date: '22/11/2024',
-      duration: 'whole',
-      leaveType: 'AL'
-    }
-  ],
-  remarks: ''
-})
-
-const openDocument = () => {
-  window.open('path/to/your/document.pdf', '_blank')
-}
-
-
-const showLeaveDetails = (application: any) => {
-  selectedLeave.value = {
-    name: application.employeeName,
-    department: 'Department A',
-    reasons: 'Travel',
-    document: 'Prove.pdf',
-    remainingAnnualLeave: 5,
-    remainingMedicalLeave: 5,
+    selected: false,
     dates: [
       {
         date: '21/11/2024',
         duration: 'whole',
         leaveType: 'AL'
-      },
+      }
+    ],
+    reasons: 'Personal matters',
+    document: 'doc1.pdf'
+  },
+  {
+    id: 2,
+    leaveType: 'AL',
+    status: 'Pending',
+    appliedOn: '2024-06-30 11:27:07',
+    selected: false,
+    dates: [
       {
-        date: '22/11/2024',
+        date: '25/11/2024',
         duration: 'whole',
         leaveType: 'AL'
       }
     ],
-    remarks: ''
+    reasons: 'Family event',
+    document: 'doc2.pdf'
+  },
+  {
+    id: 3,
+    leaveType: 'MC',
+    status: 'Approved',
+    appliedOn: '2024-06-30 11:27:07',
+    selected: false,
+    dates: [
+      {
+        date: '28/11/2024',
+        duration: 'whole',
+        leaveType: 'MC'
+      }
+    ],
+    reasons: 'Medical appointment',
+    document: 'mc1.pdf'
+  },
+  {
+    id: 4,
+    leaveType: 'MC',
+    status: 'Cancelled',
+    appliedOn: '2024-06-30 11:27:07',
+    selected: false,
+    dates: [
+      {
+        date: '29/11/2024',
+        duration: 'whole',
+        leaveType: 'MC'
+      }
+    ],
+    reasons: 'Dental checkup',
+    document: 'mc2.pdf'
   }
-  //TODO 修改成REF的方式
-  const modal = new Modal(leaveDetailsModal.value)
-  modal.show()
+])
+
+const summaryStats = ref({
+  pending: 2,
+  medical: 2,
+  annual: 2
+})
+
+
+const getStatusBadgeClass = (status: string) => {
+  switch (status) {
+    case 'Reject':
+      return 'badge-reject';
+    case 'Pending':
+      return 'badge-pending';
+    case 'Approved':
+      return 'badge-approved';
+    case 'Cancelled':
+      return 'badge-cancelled';
+    default:
+      return '';
+  }
 }
 
+
+
+const withdrawModal = ref<HTMLElement | null>(null)
+
+const withdrawApplication = (id: number) => {
+  const applicationIndex = leaveApplications.value.findIndex(app => app.id === id);
+  
+  if (applicationIndex !== -1 && leaveApplications.value[applicationIndex].status === 'Pending') {
+    if (withdrawModal.value) {
+      const modal = new Modal(withdrawModal.value);
+      modal.show();
+
+      // Confirm withdrawal function
+      const confirmWithdrawal = () => {
+        leaveApplications.value[applicationIndex].status = 'Cancelled'; // Change status
+        summaryStats.value.pending--; // Reduce pending count
+        modal.hide();
+      };
+
+      // Ensure button exists before adding event listener
+      const confirmButton = withdrawModal.value.querySelector(".btn-success");
+      if (confirmButton) {
+        confirmButton.addEventListener("click", confirmWithdrawal, { once: true }); 
+        // { once: true } ensures the event runs only once per modal open
+      }
+    }
+  }
+};
+
+// Reactive state for selected filter
+const selectedFilter = ref("All");
+
+// Dropdown reference
+const filterDropdown = ref<HTMLElement | null>(null);
+
+// Function to update the filter selection
+const filterLeaves = (status: string) => {
+  selectedFilter.value = status;
+  console.log("Selected Filter:", selectedFilter.value); // Debugging log to confirm selection
+};
+
+
+// Initialize Bootstrap Dropdown on Mounted
 onMounted(() => {
-  import('bootstrap')
-})
+  import("bootstrap").then(() => {
+    if (filterDropdown.value) {
+      new Dropdown(filterDropdown.value);
+    }
+  });
+});
+
 </script>
 
 
@@ -121,7 +184,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Approved Applications Card -->
+        <!-- Annual Leave  Card -->
         <div class="col">
           <div class="card shadow-sm mt-5 p-2">
             <div class="card-body d-flex align-items-center justify-content-center">
@@ -132,14 +195,14 @@ onMounted(() => {
                 </svg>
               </div>
               <div class="task-overall ms-4">
-                <span class="task-text">Approved Application</span>
-                <span class="task-num">{{ summaryStats.approved }}</span>
+                <span class="task-text">Remaining Annual Leave</span>
+                <span class="task-num">{{ summaryStats.annual }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Rejected Applications Card -->
+        <!-- Medical Leave Card -->
         <div class="col">
           <div class="card shadow-sm mt-5 p-2">
             <div class="card-body d-flex align-items-center justify-content-center">
@@ -150,8 +213,8 @@ onMounted(() => {
                 </svg>
               </div>
               <div class="task-overall ms-4">
-                <span class="task-text">Rejected Application</span>
-                <span class="task-num">{{ summaryStats.rejected }}</span>
+                <span class="task-text">Remaining Medical Leave</span>
+                <span class="task-num">{{ summaryStats.medical }}</span>
               </div>
             </div>
           </div>
@@ -161,9 +224,26 @@ onMounted(() => {
 
     <!-- Action Buttons -->
     <div class="d-flex justify-content-end mt-3 buttons">
-      <button class="btn custom-approve me-2" data-bs-toggle="modal" data-bs-target="#approveModal">Approve</button>
-      <button class="btn custom-reject" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button>
+      <!-- New Application Button -->
+      <button class="btn custom-approve me-2" data-bs-toggle="modal" data-bs-target="#newApplication">
+        New Application
+      </button>
+
+      <!-- Filter Button with Icon -->
+      <div class="dropdown">
+        <button class="btn filter-btn p-2" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-funnel"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
+          <li><button class="dropdown-item" @click="filterLeaves('All')">All</button></li>
+          <li><button class="dropdown-item" @click="filterLeaves('Pending')">Pending</button></li>
+          <li><button class="dropdown-item" @click="filterLeaves('Approved')">Approved</button></li>
+          <li><button class="dropdown-item" @click="filterLeaves('Cancelled')">Cancelled</button></li>
+          <li><button class="dropdown-item" @click="filterLeaves('Reject')">Rejected</button></li>
+        </ul>
+      </div>
     </div>
+
 
     <!-- Applications Table -->
     <table class="table table-bordered">
@@ -171,10 +251,10 @@ onMounted(() => {
       <tr>
         <th style="width: 50px"></th>
         <th>ID</th>
-        <th>Employee Name</th>
         <th>Leave Type</th>
         <th>Status</th>
         <th>Applied On</th>
+        <th></th>
         <th style="width: 50px"></th> <!-- Added header for info button column -->
       </tr>
       </thead>
@@ -182,13 +262,11 @@ onMounted(() => {
       <tr v-for="application in leaveApplications" :key="application.id">
         <td><input type="checkbox" v-model="application.selected" class="select-checkbox"></td>
         <td>{{ application.id }}</td>
-        <td>{{ application.employeeName }}</td>
         <td>{{ application.leaveType }}</td>
         <td>
-          <span :class="['badge', {
-            'custom-reject': application.status === 'Reject',
-            'bg-warning': application.status === 'Pending'
-          }]">{{ application.status }}</span>
+          <span :class="['badge', getStatusBadgeClass(application.status)]">
+          {{ application.status }}
+        </span>
         </td>
         <td>{{ application.appliedOn }}</td>
         <td>
@@ -199,32 +277,24 @@ onMounted(() => {
             <i class="bi bi-info-circle"></i>
           </button>
         </td>
+        <td>
+        <template v-if="application.status === 'Pending'">
+          <button class="btn btn-withdraw"
+                  @click="withdrawApplication(application.id)">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </template>
+      </td>
       </tr>
       </tbody>
     </table>
 
 
-    <!-- Approve Modal -->
-    <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal_small">
-          <div class="modal-content d-flex flex-column h-100" style="padding: 2em;">
-            <div class="flex-grow-1">
-              <h3 class="mb-3">Are you sure?</h3>
-              <p class="text-muted">This action cannot be undone. This will permanently approve the leave
-                application.</p>
-            </div>
-            <div class="modal-buttons d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-success">Confirm Approval</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Reject Modal -->
-    <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+
+    
+    <!-- Withdrawal Confirmation Modal -->
+    <div class="modal fade" id="withdrawModal" ref="withdrawModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal_small">
           <div class="modal-content d-flex flex-column h-100" style="padding: 2em;">
@@ -242,91 +312,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Leave Details Modal -->
-    <div class="modal fade" ref="leaveDetailsModal" id="leaveDetailsModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-          <div class="modal-header d-flex align-items-center">
-            <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-file-earmark-text"></i>
-              <h5 class="modal-title mb-0">Leave Application Details</h5>
-            </div>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row mb-4">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="info-label">Name:</label>
-                  <div class="info-badge">{{ selectedLeave.name }}</div>
-                </div>
-                <div class="mb-3">
-                  <label class="info-label">Department:</label>
-                  <div class="info-badge">{{ selectedLeave.department }}</div>
-                </div>
-                <div class="mb-3">
-                  <label class="info-label">Reasons:</label>
-                  <div class="info-badge">{{ selectedLeave.reasons }}</div>
-                </div>
-                <div class="mb-3">
-                  <label class="info-label">Attach Document:</label>
-                  <div class="info-badge document-link" @click="openDocument">
-                    <i class="fas fa-file-pdf me-2"></i>
-                    <a href="#" class="text-decoration-none">{{ selectedLeave.document }}</a>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="leave-info">
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <i class="bi bi-info-circle"></i>
-                    <span>Remaining Annual Leave</span>
-                  </div>
-                  <h5 class="mb-0">{{ selectedLeave.remainingAnnualLeave }} days</h5>
-                </div>
-                <div class="leave-info">
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <i class="bi bi-info-circle"></i>
-                    <span>Remaining Medical Leave</span>
-                  </div>
-                  <h5 class="mb-0">{{ selectedLeave.remainingMedicalLeave }} days</h5>
-                </div>
-              </div>
-            </div>
 
-            <div class="dates-section mb-4">
-              <h6 class="mb-3">Dates Selected:</h6>
-              <div v-for="(date, index) in selectedLeave.dates" :key="index" class="date-entry mb-2">
-                <div class="info-badge d-flex align-items-center justify-content-between">
-                  <span>{{ date.date }}</span>
-                  <select v-model="date.duration" class="form-select form-select-sm ms-2 duration-select">
-                    <option value="whole">Whole Day Leave</option>
-                    <option value="am">Half Day (AM)</option>
-                    <option value="pm">Half Day (PM)</option>
-                  </select>
-                  <select v-model="date.leaveType" class="form-select form-select-sm ms-2 leave-type-select">
-                    <option value="AL">Annual Leave</option>
-                    <option value="MC">MC Leave</option>
-                    <option value="ML">Marriage Leave</option>
-                    <option value="CL">Compassionate Leave</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="mb-4">
-              <h6 class="mb-3">Remarks</h6>
-              <textarea v-model="selectedLeave.remarks" class="form-control" rows="4" readonly></textarea>
-            </div>
-
-            <div class="d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-approve">Approved</button>
-              <button type="button" class="btn btn-reject">Reject</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -385,11 +371,7 @@ onMounted(() => {
   margin: 3%;
 }
 
-.badge {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+
 
 .btn-light {
   background-color: transparent !important;
@@ -509,6 +491,55 @@ onMounted(() => {
 
 .date-entry {
   margin-bottom: 10px;
+}
+
+
+.badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.badge-reject {
+  background-color: #FF6F61;
+  color: white;
+}
+
+.badge-pending {
+  background-color: #FFC107;
+  color: white;
+}
+
+.badge-approved {
+  background-color: #82AD82;
+  color: white;
+}
+
+.badge-cancelled {
+  background-color: #6c757d;
+  color: white;
+}
+
+.filter-btn {
+  color: #C9E9D2; /* Light green like the image */
+  fill:#C9E9D2;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease-in-out;
+}
+
+.filter-btn:hover {
+  color: #b7e4c7; /* Slightly darker green on hover */
+}
+
+.filter-btn i {
+  font-size: 20px;
+  color: #6b9e75; /* Match the filter icon color */
 }
 
 
