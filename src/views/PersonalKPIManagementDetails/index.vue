@@ -40,12 +40,17 @@ export default {
           {
             id: 1,
             description: 'Picking list completed/ month (pcs)',
-            progress: 50
+            progress: 20
           },
           {
             id: 2,
             description: 'Return rate/ month (times)',
             progress: 50
+          },
+          {
+            id: 3,
+            description: 'Return rate/ month (times)',
+            progress: 80
           }
         ]
       }

@@ -1,87 +1,48 @@
+
 <script lang="ts">
 export default {
-  name: "leaveManagement"
+  name: "leaveManagement",
+  components: {
+    LeaveApplicationModal
+  }
 }
 </script>
 
 
 <script setup lang="ts">
+import LeaveApplicationModal from '@/components/LeaveApplicationModal/index.vue'
+import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/LeaveApplicationDetailsModal.vue'
 import {Modal,Dropdown} from "bootstrap";
 import {ref, onMounted, computed} from 'vue'
 
 
-
-
-const leaveDetailsModal = ref();
-
-const leaveApplications = ref([
+const leaveApplications = ref<LeaveApplication[]>([
   {
     id: 1,
-    name: 'WangChong',
-    // department ='A',
+    name: 'Wang Chong',
+    department: 'A', 
     leaveType: 'AL',
     status: 'Reject',
     appliedOn: '2024-06-30 11:27:07',
     selected: false,
-    dates: [
-      {
-        date: '21/11/2024',
-        duration: 'whole',
-        leaveType: 'AL'
-      }
-    ],
+    dates: [{ date: '21/11/2024', duration: 'whole', leaveType: 'AL' }],
     reasons: 'Personal matters',
     document: 'doc1.pdf'
   },
   {
     id: 2,
+    name: 'Wang Chong',
+    department: 'A', 
     leaveType: 'AL',
     status: 'Pending',
     appliedOn: '2024-06-30 11:27:07',
     selected: false,
-    dates: [
-      {
-        date: '25/11/2024',
-        duration: 'whole',
-        leaveType: 'AL'
-      }
-    ],
+    dates: [{ date: '25/11/2024', duration: 'whole', leaveType: 'AL' }],
     reasons: 'Family event',
     document: 'doc2.pdf'
-  },
-  {
-    id: 3,
-    leaveType: 'MC',
-    status: 'Approved',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    dates: [
-      {
-        date: '28/11/2024',
-        duration: 'whole',
-        leaveType: 'MC'
-      }
-    ],
-    reasons: 'Medical appointment',
-    document: 'mc1.pdf'
-  },
-  {
-    id: 4,
-    leaveType: 'MC',
-    status: 'Cancelled',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    dates: [
-      {
-        date: '29/11/2024',
-        duration: 'whole',
-        leaveType: 'MC'
-      }
-    ],
-    reasons: 'Dental checkup',
-    document: 'mc2.pdf'
   }
-])
+]);
+
 
 const summaryStats = ref({
   pending: 2,
@@ -103,6 +64,23 @@ const getStatusBadgeClass = (status: string) => {
     default:
       return '';
   }
+}
+
+interface LeaveApplication {
+  id: number;
+  name: string;
+  department: string; // ✅ Add this
+  leaveType: string;
+  status: string;
+  appliedOn: string;
+  selected: boolean;
+  dates: {
+    date: string;
+    duration: string;
+    leaveType: string;
+  }[];
+  reasons: string;
+  document: string;
 }
 
 
@@ -144,6 +122,20 @@ const filterDropdown = ref<HTMLElement | null>(null);
 const filterLeaves = (status: string) => {
   selectedFilter.value = status;
   console.log("Selected Filter:", selectedFilter.value); // Debugging log to confirm selection
+};
+
+const addNewApplication = (newApplication: LeaveApplication) => {
+  leaveApplications.value.push(newApplication);
+  summaryStats.value.pending++; // Increase pending count
+};
+
+
+// **State for Selected Application**
+const selectedApplication = ref<LeaveApplication | null>(null);
+
+// Open Modal for Viewing an Existing Application (Disable Fields)
+const openApplicationDetails = (application: LeaveApplication) => {
+  selectedApplication.value = application;
 };
 
 
@@ -225,7 +217,7 @@ onMounted(() => {
     <!-- Action Buttons -->
     <div class="d-flex justify-content-end mt-3 buttons">
       <!-- New Application Button -->
-      <button class="btn custom-approve me-2" data-bs-toggle="modal" data-bs-target="#newApplication">
+      <button class="btn custom-approve me-2" data-bs-toggle="modal" data-bs-target="#leaveApplicationModal">
         New Application
       </button>
 
@@ -270,12 +262,10 @@ onMounted(() => {
         </td>
         <td>{{ application.appliedOn }}</td>
         <td>
-          <button
-              class="btn btn-light btn-sm"
-              data-bs-toggle="modal" data-bs-target="#leaveDetailsModal"
-          >
+          <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
             <i class="bi bi-info-circle"></i>
           </button>
+
         </td>
         <td>
         <template v-if="application.status === 'Pending'">
@@ -313,6 +303,16 @@ onMounted(() => {
     </div>
 
 
+    
+    <!-- Leave Application Modal -->
+    <LeaveApplicationModal @submit="addNewApplication" />
+
+      <!-- Leave Application Details Modal -->
+      <LeaveApplicationDetailsModal 
+      v-if="selectedApplication" 
+      :selectedApplication="selectedApplication"
+    />
+    
   </div>
 </template>
 
