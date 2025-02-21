@@ -3,7 +3,7 @@ import { reactive } from "vue";
 
 const navItems = reactive([
   { name: "Home", link: "/home" },
-  { name: "KPI Dashboard", link: "/home/KPI-Dashboard" }, 
+  { name: "KPI Dashboard", link: "/home/KPI-Dashboard" },
   { name: "Notification Center", link: "/home/notification-center" },
   { name: "Notification View", link: "/home/notification-view" },
   { name: "KPI Management", link: "/home/KPI-management" },
@@ -22,6 +22,7 @@ const rewardSubmenu = reactive([
 
 const systemSubmenu = reactive([
   { name: "User management", link: "/home/user-management" },
+  { name: "Role management", link: "/home/role-management" },
   { name: "Department management", link: "/home/department-management" },
   { name: "System Logs", link: "/home/system-log" },
   { name: "Authorization Management", link: "/home/authorization-management" },

@@ -8,8 +8,8 @@ import userManagement from "@/views/UserManagement/index.vue";
 import authorizationManagement from "@/views/AuthorizationManagement/index.vue";
 import routerManagement from "@/views/RouterManagement/index.vue";
 import surveyManagement from "@/views/SurveyManagement/index.vue";
-import leaveManagement from "@/views/leaveManagement/index.vue";
-import leaveApplication from "@/views/leaveApplication/index.vue";
+import leaveManagement from "@/views/LeaveManagement/index.vue";
+import leaveApplication from "@/views/LeaveApplication/index.vue";
 import notificationCenter from "@/views/NotificationCenter/index.vue";
 import notificationView from "@/views/NotificationView/index.vue";
 import rewardMall from "@/views/RewardMall/index.vue";
@@ -23,6 +23,7 @@ import rewardManagement from "@/views/RewardManagement/index.vue";
 import redemptionStatus from "@/views/RedemptionStatus/index.vue";
 import PersonalKPIDetails from "@/views/PersonalKPIManagementDetails/index.vue";
 import KPIDashboard from "@/views/KPIDashboard/index.vue" ;
+import roleManagement from "@/views/RoleManagement/index.vue";
 /**
  * Please define your page router to the below
  */
@@ -78,7 +79,7 @@ const router = createRouter({
                     path : "leave-management",
                     name: 'leave-management',
                     component: leaveManagement,
-                },                
+                },
                 {
                     path : "leave-application",
                     name: 'leave-application',
@@ -90,12 +91,12 @@ const router = createRouter({
                     component: rewardMall,
                 },
                 {
-                    path: "reward-mall/point-details", 
+                    path: "reward-mall/point-details",
                     name: "point-details",
                     component: pointDetails,
                 },
                 {
-                    path: "reward-mall/reward-history", 
+                    path: "reward-mall/reward-history",
                     name: "rewardHistory",
                     component: rewardHistory,
                 },
@@ -138,11 +139,16 @@ const router = createRouter({
                     path : "redemption-status",
                     name: 'redemption-status',
                     component: redemptionStatus,
-                }, 
+                },
                 {
                     path : "KPI-Dashboard",
                     name: 'KPI-Dashboard',
                     component: KPIDashboard ,
+                },
+                {
+                    path: "role-management",
+                    name : "role-management",
+                    component : roleManagement,
                 }
             ]
         },

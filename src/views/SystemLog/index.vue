@@ -19,14 +19,14 @@
   </div>
 
   <!-- 日志表格 -->
-  <div class="table-responsive mt-4">
-    <table class="table table-striped">
+  <div class="table-card mt-4">
+    <table class="table">
       <thead>
       <tr>
-        <th>ID</th>
-        <th>User Name</th>
-        <th>Operation Time</th>
-        <th>Action</th>
+        <th scope="col">ID</th>
+        <th scope="col">User Name</th>
+        <th scope="col">Operation Time</th>
+        <th scope="col">Action</th>
       </tr>
       </thead>
       <tbody>
@@ -35,7 +35,7 @@
         <td>{{ log.user }}</td>
         <td>{{ log.time }}</td>
         <td>
-          <button class="btn btn-sm btn-info" @click="viewDetails(log)">View</button>
+          <button class="btn btn-sm btn-info btn-action" @click="viewDetails(log)">View</button>
         </td>
       </tr>
       </tbody>
@@ -48,7 +48,7 @@
     <span class="me-3">Total Logs: {{ totalLogs }}</span>
 
     <!-- 右侧: 分页按钮也靠左 -->
-    <nav>
+    <nav aria-label="Page navigation">
       <ul class="pagination">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
           <button class="page-link" @click="prevPage">Previous</button>
@@ -84,9 +84,7 @@
       </div>
     </div>
   </div>
-
 </template>
-
 
 <script setup lang="ts">
 import { onMounted, ref, computed, nextTick } from 'vue';
@@ -166,61 +164,92 @@ const viewDetails = (log:any) => {
 };
 </script>
 
-
 <style scoped>
-
-.modal{
-  margin-top: 200px;
-}
+/* 导航栏样式 */
 .nav {
   margin-top: 40px;
 }
 
-.modal-header{
+/* 表格卡片样式 */
+.table-card {
+  border: 1px solid #707070;
+  padding: 2rem;
+  margin-bottom: 1rem;
+  border-radius: 20px;
+}
+
+/* 表格样式 */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th,
+.table td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #707070;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+  text-align: center;
+}
+
+.table td {
+  text-align: center;
+}
+
+/* 按钮样式 */
+.btn-action {
+  padding: 0.25rem 1rem;
+  margin-left: 0.5rem;
+}
+
+/* 分页样式 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.page-link {
+  border: 1px solid #cccccc;
+}
+
+.page-item .page-link {
+  color: #008080;
+}
+
+.page-item.active .page-link {
+  color: #fff;
+  background-color: #008080;
+  border-color: #008080;
+}
+
+/* 模态框样式 */
+.modal {
+  margin-top: 200px;
+}
+
+.modal-header {
   background-color: #7DA0CA;
   color: white;
   padding: 1rem 2rem;
 }
 
-
-.table {
-  width: 100%;
-  border-radius: 10px; /* Rounded corners */
-  overflow: hidden; /* Ensures the rounded corners are applied properly */
-  border-collapse: separate; /* Ensures border-spacing works with rounded corners */
-  border-spacing: 0; /* Removes any space between table cells */
+.modal-title {
+  margin-bottom: 0;
 }
 
-/* Add background color to the header row */
-.table th {
-  background-color: #f8f9fa;
-  text-align: center;
-  padding: 8px;
-  font-weight: bold;
+.modal-body p {
+  margin-bottom: 0.5rem;
 }
 
-.table td {
-  text-align: center;
-  padding: 8px;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.pagination .page-item.active .page-link {
-  background-color: #b4d382;
-  border-color: #007bff;
-}
-
-.float-start {
-  margin-left: 10px; /* 防止贴边 */
-}
-
-.pagination .page-link {
-  color: #007bff;
-  cursor: pointer;
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem;
 }
 </style>
