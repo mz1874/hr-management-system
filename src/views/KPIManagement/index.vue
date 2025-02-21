@@ -3,6 +3,21 @@
         <h2>Department KPI Management</h2>
     </div>
 
+     <!-- department filter -->
+
+    <div class="gap-3 mb-4">
+        <select class="form-select w-25">
+            <option value="1">Sales</option>
+            <option value="2">Marketing</option>
+            <option value="3">Account</option>
+            <option value="4">Purchasing</option>
+            <option value="5">Warehouse & Warehouse Office</option>
+            <option value="6">Logistics</option>
+        </select>
+    </div>
+
+    <div class="line mb-4"></div>
+
     <!-- Search and filter -->
     <div class="d-flex gap-3 mb-4 mt-3">
       <div class="input-group w-25">
@@ -764,37 +779,9 @@ const createTask = () => {
   color: #666;
 }
 
-/* button */
-/* .btn-create, .btn-view, .btn-edit, .btn-delete {
-    border: none;
-    color: white;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.25rem;
+.line {
+  border: 1px solid #e3e3e3;   
 }
-.btn-create {
-    background-color: #6CBD6C;
-}
-.btn-create:hover {
-    background-color: #5ba25b;
-}
-.btn-view {
-    background-color: #4EA5EF;
-}
-.btn-view:hover {
-    background-color: #3d95e2;
-}
-.btn-edit {
-    background-color: #FFC107;
-}
-.btn-edit:hover {
-    background-color: #e4ac03;
-}
-.btn-delete {
-    background-color: #FF6F61;
-}
-.btn-delete:hover {
-    background-color: #e26256;
-} */
 
 /* statistic card */
 .card {

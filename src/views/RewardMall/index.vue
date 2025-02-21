@@ -5,14 +5,14 @@
   </div>
 
   <button type="button" class="iconButton"  @click="goToPointDetails()"> 
-      <span class="buttonText">100</span>
+      <span class="buttonText">{{ points }}</span>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671"/>
       </svg>
   </button>
 
   <div class="row row-cols-md-3 g-4" >
-    <div class="col" v-for="(item, index) in reward" :key="index">
+    <div class="col" v-for="item in tableData" :key="item.id">
       <div class="card shadow-sm mt-4" >
         <img :src="getImagePath(item.img)" alt="Reward Image" class="image">
         <div class="card-body">
@@ -28,14 +28,16 @@
                 </svg>
               </button>
             </p>
-            <button class="rewardButton d-block mx-auto" @click="openSelectedRewardModal(item)">{{ item.rewardPrice }}</button>
-        </div>
+            <button class="rewardButton d-block mx-auto" @click="openSelectedRewardModal(item)" :disabled="item.redeemed">
+              {{ item.redeemed ? "Redeemed" : item.rewardPrice }}
+            </button>        
+          </div>
       </div>
     </div>
   </div>
 
   <!-- View T&C Modal -->
-  <div class="modal fade" id="termsAndConditionsModal" ref="termsAndConditionsModal" tabindex="-1" aria-labelledby="termsAndConditionsModal" aria-hidden="true">
+  <div class="modal fade" id="termsAndConditionsModal" :class="{ show: showTermsModal }" style="display: block" v-if="showTermsModal">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -49,18 +51,19 @@
         </div>
         <div class="modal-body">
           <div class="modal-body">
-            <div class="terms-text">{{ selectedTerms.terms }}</div>
+            <div class="terms-text">{{ selectedReward.terms }}</div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-secondary"  @click="showTermsModal = false">Close</button>
         </div>
       </div>
     </div>
   </div>
+  <div class="modal-backdrop fade show" v-if="showTermsModal"></div>
 
   <!-- Selected Reward Confirmation Modal-->
-  <div class="modal fade" id="selectRewardModal" ref="selectRewardModal" tabindex="-1" aria-labelledby="selectRewardModal" aria-hidden="true">
+  <div class="modal fade" id="selectRewardModal" :class="{ show: showSelectedRewardModal }" style="display: block" v-if="showSelectedRewardModal">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -70,12 +73,13 @@
           <span class="text-muted">Are you sure you want to redeem <b>{{ selectedReward.name }}</b>? This action cannot be undone.</span>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-success" data-bs-dismiss="modal">Confirm</button>
+          <button type="button" class="btn btn-secondary"  @click="showSelectedRewardModal = false">Close</button>
+          <button type="button" class="btn btn-success" @click="confirmedReward">Confirm</button>
         </div>
       </div>
     </div>
   </div>
+  <div class="modal-backdrop fade show" v-if="showSelectedRewardModal"></div>
 
 
 
@@ -83,21 +87,36 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import {Modal} from "bootstrap";
 import {useRouter} from "vue-router";
 
 const getImagePath = (img: any) => {
   return new URL(`/dist/assets/${img}`, import.meta.url).href;
 };
 
-const reward = ref([
+const points = ref(100)
+
+interface RewardItem {
+    id: number
+    img: string
+    name: string
+    description: string
+    valid: string
+    quantity: number
+    rewardPrice: number
+    terms: string
+    redeemed: boolean
+}
+
+const tableData = ref([
   {
+    id: 1,
     img: "Jaya_Grocer_Gift_Card.png",
     name: "Jaya Grocer's Gift Card", 
     description: "RM100 Jaya Grocer's Gift Card. Vouchers received will be valid for a minimum period of 6 months.", 
     valid: "30/06/2024, 23:59", 
-    quantity: "20",
-    rewardPrice: "50",
+    quantity: 20,
+    rewardPrice: 50,
+    redeemed: false,
     terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
 
     2. This gift card is valid at all Jaya Grocer outlets.
@@ -107,15 +126,17 @@ const reward = ref([
     4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.
 
     5. If the value of goods is more than the amount on the gift card, then the difference should be paid by the bearer.
-    `
+    `,
   },
   {
+    id: 2,
     img: "McDonald_Gift_Card.png",
     name: "Starbucks Gift Card", 
     description: "RM50 Starbucks Gift Card. Vouchers received will be valid for a minimum period of 4 months.", 
     valid: "31/12/2024, 23:59", 
-    quantity: "10",
-    rewardPrice: "25",
+    quantity: 10,
+    rewardPrice: 25,
+    redeemed: false,
     terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
 
     2. This gift card is valid at all Starbuck outlets.
@@ -128,23 +149,42 @@ const reward = ref([
 ]);
 
 //View T&C Modal
-const termsAndConditionsModal = ref();
-const selectedTerms = ref({ terms: '' });
+const showTermsModal = ref(false);
+const selectedReward = ref<RewardItem>({
+  id: 0,
+  name: '',
+  quantity: 0,
+  redeemed: false
+} as RewardItem);
 
-const openTermsModal = (item:any) => {
-  selectedTerms.value = item;
-  const modal = new Modal(termsAndConditionsModal.value);
-  modal.show();
+const openTermsModal = (reward: RewardItem) => {
+  selectedReward.value = reward;
+  showTermsModal.value = true;
 };
 
-//Selected Reward Confirmation Modal
-const selectRewardModal = ref();
-const selectedReward = ref({ name: '' });
+const showSelectedRewardModal = ref(false);
 
-const openSelectedRewardModal = (item:any) => {
-  selectedReward.value = item;
-  const modal = new Modal(selectRewardModal.value);
-  modal.show();
+const openSelectedRewardModal = (reward: RewardItem) => {
+  selectedReward.value = reward;
+  showSelectedRewardModal.value = true;
+};
+
+const confirmedReward = () => {
+  if (selectedReward.value) {
+    const reward = tableData.value.find(r => r.id === selectedReward.value.id);
+    if (reward) {
+      reward.redeemed = true;
+    }
+
+    if (points.value >= selectedReward.value.rewardPrice) {
+      points.value -= selectedReward.value.rewardPrice;
+      selectedReward.value.quantity = selectedReward.value.quantity - 1
+    } else {
+      alert ("Not enough points")
+    }
+  }
+
+  showSelectedRewardModal.value = false;
 };
 
 //go to point details page

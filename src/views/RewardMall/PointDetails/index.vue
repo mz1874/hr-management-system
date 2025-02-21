@@ -36,7 +36,7 @@
         <tr v-for="details in paginatedLogs" :key="details.id">
           <td>{{ details.id}}</td>
           <td>{{ details.received}}</td>
-          <td>+ {{ details.points}}</td>
+          <td class="text-success">+ {{ details.points}}</td>
           <td>{{ details.taskName}}</td>
           <td><button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button></td>
         </tr>
