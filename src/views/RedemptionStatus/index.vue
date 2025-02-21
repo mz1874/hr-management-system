@@ -151,12 +151,6 @@ const selectedStatus = ref<'Received' | 'Not Received'>('Not Received'); // Hold
 
 const showModal = ref(false)
 
-// onMounted(() => {
-//     if (modalElement.value) {
-//         modalInstance.value = new Modal(modalElement.value);
-//     }
-// });
-
 // Open modal and set current status
 const handleChange = (reward: RewardItem) => {
     currentReward.value = { ...reward };

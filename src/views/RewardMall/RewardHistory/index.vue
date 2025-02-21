@@ -85,25 +85,25 @@
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Image:</label>
                                 <div id="drop-area">
-                                    <img :src="getImagePath(selectedDetails.img)" alt="Reward Image" class="image">
+                                    <img :src="getImagePath(selectedDetails.img)" alt="Reward Image" class="image" disabled>
                                 </div>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Name:</label>
-                                <input type="text" class="form-control" :value=" selectedDetails.rewardName ">
+                                <input type="text" class="form-control" :value=" selectedDetails.rewardName " disabled>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Points:</label>
-                                <input type="text" class="form-control" :value="selectedDetails.points">
+                                <input type="text" class="form-control" :value="selectedDetails.points" disabled>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">End Date & Time:</label>
                                 <div class="row g-2">
                                     <div class="col-md-6">
-                                        <input type="date" class="form-control" :value="selectedDetails.endDate">
+                                        <input type="date" class="form-control" :value="selectedDetails.endDate" disabled>
                                     </div>
                                     <div class="col-md-6">
-                                        <input type="time" class="form-control" :value="selectedDetails.endTime">
+                                        <input type="time" class="form-control" :value="selectedDetails.endTime" disabled>
                                     </div>
                                 </div>
                             </div>
@@ -115,11 +115,11 @@
                         <form>
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Description:</label>
-                                <textarea class="form-control auto-resize" rows="6" oninput="resizeTextarea(this)">{{ selectedDetails.rewardDescription }}</textarea>
+                                <textarea class="form-control auto-resize" rows="6" oninput="resizeTextarea(this)" disabled>{{ selectedDetails.rewardDescription }}</textarea>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Terms & Conditions:</label>
-                                <textarea class="form-control auto-resize" rows="15" oninput="resizeTextarea(this)">{{ selectedDetails.terms }}</textarea>
+                                <textarea class="form-control auto-resize" rows="15" oninput="resizeTextarea(this)" disabled>{{ selectedDetails.terms }}</textarea>
                             </div>
                         </form>
                     </div>
@@ -341,7 +341,10 @@ function goToRewardMall()
     resize: none; 
     overflow: hidden; 
 } */
-
+input:disabled, textarea:disabled {
+  background-color: transparent !important; 
+  color: black !important; 
+}
 
 #drop-area {
     width: 100%;  

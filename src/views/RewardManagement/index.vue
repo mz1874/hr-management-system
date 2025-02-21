@@ -111,7 +111,7 @@
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Image:</label>
                                     <label for="input-file" id="drop-area">
-                                        <input type="file" accept="image/*" id="input-file" hidden @change="handleImageChange">
+                                        <input type="file" accept="image/*" id="input-file" hidden @change="handleImageChange" :disabled="modalType === 'view'">
                                         <div id="img-view" v-if="currentReward.image">
                                             <img :src="getImagePath(currentReward.image)" alt="Reward Image" class="img-fluid">
                                         </div>
@@ -126,24 +126,24 @@
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Name:</label>
-                                    <input type="text" class="form-control" placeholder="Enter reward name" v-model="currentReward.rewardName">
+                                    <input type="text" class="form-control" placeholder="Enter reward name" v-model="currentReward.rewardName" :disabled="modalType === 'view'">
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Points:</label>
-                                    <input type="number" class="form-control" placeholder="Enter points" v-model="currentReward.points">
+                                    <input type="number" class="form-control" placeholder="Enter points" v-model="currentReward.points" :disabled="modalType === 'view'">
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Quantity Available:</label>
-                                    <input type="number" class="form-control" placeholder="Enter quantity of the reward" v-model="currentReward.quantity">
+                                    <input type="number" class="form-control" placeholder="Enter quantity of the reward" v-model="currentReward.quantity" :disabled="modalType === 'view'">
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">End Date & Time:</label>
                                     <div class="row g-2">
                                         <div class="col-md-6">
-                                            <input type="date" class="form-control" placeholder="Select end date" v-model="currentReward.endDate">
+                                            <input type="date" class="form-control" placeholder="Select end date" v-model="currentReward.endDate" :disabled="modalType === 'view'">
                                         </div>
                                         <div class="col-md-6">
-                                            <input type="time" class="form-control" placeholder="Select end time" v-model="currentReward.endTime">
+                                            <input type="time" class="form-control" placeholder="Select end time" v-model="currentReward.endTime" :disabled="modalType === 'view'">
                                         </div>
                                     </div>
                                 </div>
@@ -155,11 +155,11 @@
                             <form>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Description:</label>
-                                    <textarea class="form-control auto-resize" placeholder="Enter reward description" rows="6" oninput="resizeTextarea(this)" v-model="currentReward.description"></textarea>
+                                    <textarea class="form-control auto-resize" placeholder="Enter reward description" rows="6" v-model="currentReward.description" :disabled="modalType === 'view'"></textarea>
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Terms & Conditions:</label>
-                                    <textarea class="form-control auto-resize" placeholder="Enter terms & conditions" rows="15" oninput="resizeTextarea(this)" v-model="currentReward.terms"></textarea>
+                                    <textarea class="form-control auto-resize" placeholder="Enter terms & conditions" rows="15" v-model="currentReward.terms" :disabled="modalType === 'view'"></textarea>
                                 </div>
                             </form>
                         </div>
@@ -527,6 +527,11 @@ const goToPage = (page: number) => {
     font-size: 16px;
     color: #bbb;
     text-align: center;
+}
+
+input:disabled, textarea:disabled {
+  background-color: transparent !important; 
+  color: black !important; 
 }
 
 /* For image preview */

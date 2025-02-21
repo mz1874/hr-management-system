@@ -1,9 +1,10 @@
 <template>
-  <div class="p-4">
-    <h1>Department KPI Management</h1>
+    <div class="d-flex mb-4">
+        <h2>Department KPI Management</h2>
+    </div>
 
     <!-- Search and filter -->
-    <div class="d-flex gap-3 mb-4">
+    <div class="d-flex gap-3 mb-4 mt-3">
       <div class="input-group w-25">
         <span class="input-group-text"><i class="fas fa-search"></i></span>
         <input 
@@ -23,7 +24,7 @@
         >
       </div>
       <select v-model="selectedStatus" class="form-select w-25">
-        <option>Select Status</option>
+        <option value="">All Status</option>
         <option>Completed</option>
         <option>Ongoing</option>
         <option>Delayed</option>
@@ -80,33 +81,65 @@
         <div class="row mt-4">
           <div class="col-md-3">
             <div class="card text-center">
-              <div class="card-body">
-                <h5 class="card-title">Total Tasks</h5>
-                <p class="card-text">{{ totalTasks }}</p>
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="circle circle-total-task">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
+                      <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5" />
+                      <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" />
+                    </svg>
+                  </div>
+                  <div class="task-overall ms-3">
+                    <span class="task-text">Total Tasks</span>
+                    <span class="task-num">{{ totalTasks }}</span>
+                  </div>
               </div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card text-center">
-              <div class="card-body">
-                <h5 class="card-title">Completed</h5>
-                <p class="card-text">{{ completedTasks }}</p>
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="circle circle-completed">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-check" viewBox="0 0 16 16">
+                      <path d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0" />
+                      <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
+                    </svg>
+                </div>
+                <div class="task-overall ms-3">
+                  <span class="task-text">Completed</span>
+                  <span class="task-num">{{ completedTasks }}</span>
+                </div>
               </div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card text-center">
-              <div class="card-body">
-                <h5 class="card-title">Ongoing</h5>
-                <p class="card-text">{{ ongoingTasks }}</p>
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="circle circle-ongoing">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+                  </svg>
+                </div>
+                <div class="task-overall ms-3">
+                  <span class="task-text">Ongoing</span>
+                  <span class="task-num">{{ ongoingTasks }}</span>
+                </div>
               </div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card text-center">
-              <div class="card-body">
-                <h5 class="card-title">Delayed</h5>
-                <p class="card-text">{{ delayedTasks }}</p>
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="circle circle-delayed">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-x" viewBox="0 0 16 16">
+                    <path d="M6.146 7.146a.5.5 0 0 1 .708 0L8 8.293l1.146-1.147a.5.5 0 1 1 .708.708L8.707 9l1.147 1.146a.5.5 0 0 1-.708.708L8 9.707l-1.146 1.147a.5.5 0 0 1-.708-.708L7.293 9 6.146 7.854a.5.5 0 0 1 0-.708" />
+                    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
+                  </svg>
+                </div>
+                <div class="task-overall ms-3">
+                  <span class="task-text">Delayed</span>
+                  <span class="task-num">{{ delayedTasks }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -145,8 +178,8 @@
 
     <!-- Modals -->
     <!-- Create Task Modal -->
-    <div v-if="showCreateTaskModal" class="modal-backdrop">
-      <div class="modal-dialog modal-lg">
+    <div class="modal fade" :class="{ show: showCreateTaskModal }" style="display: block" v-if="showCreateTaskModal">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Create New Task</h5>
@@ -159,7 +192,7 @@
           <div class="modal-body">
             <div class="row">
               <!-- Left Column - Task Details -->
-              <div class="col-md-7 border-end">
+              <div class="col-md-6 border-end">
                 <form>
                   <!-- Task Name -->
                   <div class="mb-3">
@@ -222,7 +255,7 @@
               </div>
 
               <!-- Right Column - Assign To -->
-              <div class="col-md-5">
+              <div class="col-md-6">
                 <div class="mb-3">
                   <label for="assignTo" class="form-label">Assign To:</label>
                   <div class="input-group">
@@ -286,10 +319,11 @@
         </div>
       </div>
     </div>
+    <div class="modal-backdrop fade show" v-if="showCreateTaskModal"></div>
 
     <!-- View Task Modal -->
-    <div v-if="showViewTaskModal" class="modal-backdrop">
-      <div class="modal-dialog modal-lg">
+    <div class="modal fade" :class="{ show: showViewTaskModal }" style="display: block" v-if="showViewTaskModal">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">View Task Details</h5>
@@ -360,10 +394,11 @@
         </div>
       </div>
     </div>
+    <div class="modal-backdrop fade show" v-if="showViewTaskModal"></div>
 
     <!-- Edit Task Modal -->
-    <div v-if="showEditTaskModal" class="modal-backdrop">
-      <div class="modal-dialog modal-lg">
+    <div class="modal fade" :class="{ show: showEditTaskModal }" style="display: block" v-if="showEditTaskModal">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Edit Task Details</h5>
@@ -437,10 +472,11 @@
         </div>
       </div>
     </div>
+    <div class="modal-backdrop fade show" v-if="showEditTaskModal"></div>
 
     <!-- Delete Task Modal -->
-    <div v-if="showDeleteTaskModal" class="modal-backdrop">
-      <div class="modal-dialog">
+    <div class="modal fade" :class="{ show: showDeleteTaskModal }" style="display: block" v-if="showDeleteTaskModal">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Delete Task</h5>
@@ -472,7 +508,9 @@
         </div>
       </div>
     </div>
-  </div>
+    <div class="modal-backdrop fade show" v-if="showDeleteTaskModal"></div>
+    
+
 </template>
 
 <script setup lang="ts">
@@ -693,9 +731,6 @@ const createTask = () => {
 }
 </script>
 
-<style scoped>
-/* Add your custom styles here */
-</style>
 
 <style scoped>
 .search-container .input-group-text {
@@ -729,16 +764,90 @@ const createTask = () => {
   color: #666;
 }
 
-.pagination {
-  margin-bottom: 0;
+/* button */
+/* .btn-create, .btn-view, .btn-edit, .btn-delete {
+    border: none;
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
 }
+.btn-create {
+    background-color: #6CBD6C;
+}
+.btn-create:hover {
+    background-color: #5ba25b;
+}
+.btn-view {
+    background-color: #4EA5EF;
+}
+.btn-view:hover {
+    background-color: #3d95e2;
+}
+.btn-edit {
+    background-color: #FFC107;
+}
+.btn-edit:hover {
+    background-color: #e4ac03;
+}
+.btn-delete {
+    background-color: #FF6F61;
+}
+.btn-delete:hover {
+    background-color: #e26256;
+} */
 
+/* statistic card */
 .card {
   border-radius: 10px;
   border: 1px solid #eee;
 }
 
-.modal-backdrop {
+.circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.circle-total-task {
+    background-color: #B3CFE6;
+}
+.circle-completed {
+    background-color: #ABE3A5;
+}
+.circle-ongoing {
+    background-color: #F9E394;
+}
+.circle-delayed {
+    background-color: #F3C5C1;
+}
+
+.circle svg {
+    width: 30px; 
+    height: 30px;
+}
+
+.task-overall {
+    display: flex;
+    flex-direction: column; 
+}
+
+.task-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+.task-num {
+    font-size: 1.2rem;
+    color: #5e5e5e;
+}
+
+.pagination {
+  margin-bottom: 0;
+}
+
+/* .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -749,13 +858,12 @@ const createTask = () => {
   justify-content: center;
   align-items: center;
   z-index: 1050;
-}
+} */
 
 .modal-content {
   background: white;
   border-radius: 8px;
   width: 100%;
-  max-width: 800px;
   margin: 0 1rem;
 }
 
@@ -779,21 +887,4 @@ const createTask = () => {
   gap: 0.5rem;
 }
 
-/* styling for modal 
-.modal {
-    display: none;
-}
-.modal-content {
-    padding: 15px;
-}
-.form-label {
-    font-weight: bold;
-}
-.form-control {
-    border-color: #000000;
-}
-
-.modal-footer {
-    border-top: none;
-}*/
 </style>

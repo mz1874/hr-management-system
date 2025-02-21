@@ -76,30 +76,30 @@
           <form>
             <div class="form-group mb-4">
               <label class="form-label">Task Name: </label>
-              <input type="text" class="form-control" :value="selectedDetails.taskName">
+              <input type="text" class="form-control" :value="selectedDetails.taskName" disabled>
             </div>
 
             <div class="form-group mb-4">
               <label class="form-label">Task Description:</label>
-              <textarea class="form-control">{{ selectedDetails.taskDescription }}</textarea>
+              <textarea class="form-control" disabled>{{ selectedDetails.taskDescription }}</textarea>
             </div>
 
             <div class="form-group mb-4">
               <div class="row">
                 <div class="col-md-6 mb-2">
                   <label class="form-label">Start Date:</label>
-                  <input type="date" class="form-control" id="startDate" placeholder="Start Date" :value="selectedDetails.startDate">
+                  <input type="date" class="form-control" id="startDate" placeholder="Start Date" :value="selectedDetails.startDate" disabled>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Completion Date:</label>
-                  <input type="date" class="form-control" id="endDate" placeholder="End Date" :value="selectedDetails.endDate">
+                  <input type="date" class="form-control" id="endDate" placeholder="End Date" :value="selectedDetails.endDate" disabled>
                 </div>
               </div>
             </div>
 
             <div class="form-group mb-4">
               <label class="form-label">Points Given:</label>
-              <input type="number" class="form-control" :value="selectedDetails.points">
+              <input type="number" class="form-control" :value="selectedDetails.points" disabled>
             </div>
           </form>          
         </div>
@@ -286,4 +286,10 @@ function goToRewardMall()
 .textarea {
   height: auto;
 }
+
+input:disabled, textarea:disabled {
+  background-color: transparent !important; 
+  color: black !important; 
+}
+
 </style>
