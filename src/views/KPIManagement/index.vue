@@ -4,15 +4,14 @@
     </div>
 
      <!-- department filter -->
-
     <div class="gap-3 mb-4">
-        <select class="form-select w-25">
-            <option value="1">Sales</option>
-            <option value="2">Marketing</option>
-            <option value="3">Account</option>
-            <option value="4">Purchasing</option>
-            <option value="5">Warehouse & Warehouse Office</option>
-            <option value="6">Logistics</option>
+        <select class="form-select w-25" v-model="selectedDepartment">
+            <option>Sales Department</option>
+            <option>Marketing Department</option>
+            <option>Account Department</option>
+            <option>Purchasing Department</option>
+            <option>Warehouse & Warehouse Office</option>
+            <option>Logistics Department</option>
         </select>
     </div>
 
@@ -20,24 +19,17 @@
 
     <!-- Search and filter -->
     <div class="d-flex gap-3 mb-4 mt-3">
+      <!-- search username -->
       <div class="input-group w-25">
         <span class="input-group-text"><i class="fas fa-search"></i></span>
-        <input 
-          v-model="searchUsername"
-          type="text" 
-          class="form-control" 
-          placeholder="Search Username"
-        >
+        <input v-model="searchUsername"type="text" class="form-control" placeholder="Search Username">
       </div>
+      <!-- search task name -->
       <div class="input-group w-25">
         <span class="input-group-text"><i class="fas fa-search"></i></span>
-        <input 
-          v-model="searchTaskName"
-          type="text" 
-          class="form-control" 
-          placeholder="Search Task Name"
-        >
+        <input v-model="searchTaskName"type="text" class="form-control" placeholder="Search Task Name">
       </div>
+      <!-- search status -->
       <select v-model="selectedStatus" class="form-select w-25">
         <option value="">All Status</option>
         <option>Completed</option>
@@ -72,9 +64,7 @@
                 <td>{{ task.role }}</td>
                 <td>{{ task.taskName }}</td>
                 <td>
-                  <span 
-                    :class="[
-                      'badge',
+                  <span :class="['badge',
                       task.status === 'Completed' ? 'bg-success' : 
                       task.status === 'Ongoing' ? 'bg-warning' : 'bg-danger'
                     ]"
@@ -198,11 +188,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Create New Task</h5>
-            <button 
-              type="button" 
-              class="btn-close" 
-              @click="showCreateTaskModal = false"
-            ></button>
+            <button type="button" class="btn-close" @click="showCreateTaskModal = false"></button>
           </div>
           <div class="modal-body">
             <div class="row">
@@ -212,59 +198,31 @@
                   <!-- Task Name -->
                   <div class="mb-3">
                     <label for="taskName" class="form-label">Task Name:</label>
-                    <input 
-                      type="text" 
-                      class="form-control" 
-                      id="taskName" 
-                      placeholder="Enter task name"
-                      v-model="newTask.taskName"
-                    >
+                    <input type="text" class="form-control" id="taskName" placeholder="Enter task name"v-model="newTask.taskName">
                   </div>
 
                   <!-- Task Description -->
                   <div class="mb-3">
                     <label for="taskDescription" class="form-label">Task Description:</label>
-                    <textarea 
-                      class="form-control" 
-                      id="taskDescription" 
-                      rows="3" 
-                      placeholder="Enter task description"
-                      v-model="newTask.taskDescription"
-                    ></textarea>
+                    <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description"v-model="newTask.taskDescription"></textarea>
                   </div>
 
                   <!-- Dates Row -->
                   <div class="row mb-3">
                     <div class="col-md-6">
                       <label for="startDate" class="form-label">Start Date:</label>
-                      <input 
-                        type="date" 
-                        class="form-control" 
-                        id="startDate"
-                        v-model="newTask.startDate"
-                      >
+                      <input type="date" class="form-control" id="startDate"v-model="newTask.startDate">
                     </div>
                     <div class="col-md-6">
                       <label for="completionDate" class="form-label">Completion Date:</label>
-                      <input 
-                        type="date" 
-                        class="form-control" 
-                        id="completionDate"
-                        v-model="newTask.completionDate"
-                      >
+                      <input type="date" class="form-control" id="completionDate"v-model="newTask.completionDate">
                     </div>
                   </div>
 
                   <!-- Points Given -->
                   <div class="mb-3">
                     <label for="pointsGiven" class="form-label">Points Given:</label>
-                    <input 
-                      type="number" 
-                      class="form-control" 
-                      id="pointsGiven" 
-                      placeholder="Enter points"
-                      v-model="newTask.pointsGiven"
-                    >
+                    <input type="number" class="form-control" id="pointsGiven" placeholder="Enter points"v-model="newTask.pointsGiven">
                   </div>
                 </form>
               </div>
@@ -274,39 +232,17 @@
                 <div class="mb-3">
                   <label for="assignTo" class="form-label">Assign To:</label>
                   <div class="input-group">
-                    <input 
-                      type="text" 
-                      class="form-control" 
-                      id="assignTo" 
-                      placeholder="Enter username"
-                      v-model="newTask.assignedTo"
-                    >
-                    <button 
-                      class="btn" 
-                      type="button" 
-                      style="background-color: #6CBD6C; color: white;"
-                      @click="addAssignedUser"
-                    >
-                      Add
-                    </button>
+                    <input type="text" class="form-control" id="assignTo" placeholder="Enter username"v-model="newTask.assignedTo">
+                    <button class="btn" type="button" style="background-color: #6CBD6C; color: white;"@click="addAssignedUser">Add</button>
                   </div>
 
                   <!-- Assigned Users Tags -->
                   <div class="mt-3">
                     <div class="d-flex flex-wrap gap-2">
-                      <span 
-                        v-for="(user, index) in newTask.assignedUsers" 
-                        :key="index" 
-                        class="badge bg-light text-dark border d-flex align-items-center py-2 px-3"
-                      >
+                      <span v-for="(user, index) in newTask.assignedUsers" :key="index" class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
                         <i class="fas fa-user-circle me-2"></i>
                         {{ user }}
-                        <button 
-                          type="button" 
-                          class="btn-close ms-2" 
-                          aria-label="Remove"
-                          @click="removeAssignedUser(index)"
-                        ></button>
+                        <button type="button" class="btn-close ms-2" aria-label="Remove"@click="removeAssignedUser(index)"></button>
                       </span>
                     </div>
                   </div>
@@ -315,21 +251,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button 
-              type="button" 
-              class="btn btn-secondary" 
-              @click="showCreateTaskModal = false"
-            >
-              Close
-            </button>
-            <button 
-              type="button" 
-              class="btn" 
-              style="background-color: #6CBD6C; color: white;"
-              @click="createTask"
-            >
-              Create
-            </button>
+            <button type="button" class="btn btn-secondary" @click="showCreateTaskModal = false">Close</button>
+            <button type="button" class="btn" style="background-color: #6CBD6C; color: white;"@click="createTask">Create</button>
           </div>
         </div>
       </div>
@@ -342,68 +265,36 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">View Task Details</h5>
-            <button 
-              type="button" 
-              class="btn-close" 
-              @click="showViewTaskModal = false"
-            ></button>
+            <button type="button" class="btn-close" @click="showViewTaskModal = false"></button>
           </div>
           <div class="modal-body">
             <form>
               <div class="mb-3">
                 <label class="form-label">Task Name:</label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  :value="selectedTask.taskName" 
-                  readonly
-                >
+                <input type="text" class="form-control" :value="selectedTask.taskName" readonly>
               </div>
               <div class="mb-3">
                 <label class="form-label">Task Description:</label>
-                <textarea 
-                  class="form-control" 
-                  readonly
-                >{{ selectedTask.taskDescription }}</textarea>
+                <textarea class="form-control" readonly>{{ selectedTask.taskDescription }}</textarea>
               </div>
               <div class="row mb-3">
                 <div class="col-md-6">
                   <label class="form-label">Start Date:</label>
-                  <input 
-                    type="date" 
-                    class="form-control" 
-                    :value="selectedTask.startDate" 
-                    readonly
-                  >
+                  <input type="date" class="form-control" :value="selectedTask.startDate" readonly>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Completion Date:</label>
-                  <input 
-                    type="date" 
-                    class="form-control" 
-                    :value="selectedTask.completionDate" 
-                    readonly
-                  >
+                  <input type="date" class="form-control" :value="selectedTask.completionDate" readonly>
                 </div>
               </div>
               <div class="mb-3">
                 <label class="form-label">Points Given:</label>
-                <input 
-                  type="number" 
-                  class="form-control" 
-                  :value="selectedTask.pointsGiven" 
-                  readonly
-                >
+                <input type="number" class="form-control" :value="selectedTask.pointsGiven" readonly>
               </div>
             </form>
           </div>
           <div class="modal-footer">
-            <button 
-              type="button" 
-              class="btn btn-secondary" 
-              @click="showViewTaskModal = false"
-            >
-              Close
+            <button type="button" class="btn btn-secondary" @click="showViewTaskModal = false">Close
             </button>
           </div>
         </div>
@@ -417,72 +308,37 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Edit Task Details</h5>
-            <button 
-              type="button" 
-              class="btn-close" 
-              @click="showEditTaskModal = false"
-            ></button>
+            <button type="button" class="btn-close" @click="showEditTaskModal = false"></button>
           </div>
           <div class="modal-body">
             <form>
               <div class="mb-3">
                 <label class="form-label">Task Name:</label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  v-model="selectedTask.taskName"
-                >
+                <input type="text" class="form-control" v-model="selectedTask.taskName">
               </div>
               <div class="mb-3">
                 <label class="form-label">Task Description:</label>
-                <textarea 
-                  class="form-control" 
-                  v-model="selectedTask.taskDescription"
-                ></textarea>
+                <textarea class="form-control" v-model="selectedTask.taskDescription"></textarea>
               </div>
               <div class="row mb-3">
                 <div class="col-md-6">
                   <label class="form-label">Start Date:</label>
-                  <input 
-                    type="date" 
-                    class="form-control" 
-                    v-model="selectedTask.startDate"
-                  >
+                  <input type="date" class="form-control" v-model="selectedTask.startDate">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Completion Date:</label>
-                  <input 
-                    type="date" 
-                    class="form-control" 
-                    v-model="selectedTask.completionDate"
-                  >
+                  <input type="date" class="form-control" v-model="selectedTask.completionDate">
                 </div>
               </div>
               <div class="mb-3">
                 <label class="form-label">Points Given:</label>
-                <input 
-                  type="number" 
-                  class="form-control" 
-                  v-model="selectedTask.pointsGiven"
-                >
+                <input type="number" class="form-control" v-model="selectedTask.pointsGiven">
               </div>
             </form>
           </div>
           <div class="modal-footer">
-            <button 
-              type="button" 
-              class="btn btn-secondary" 
-              @click="showEditTaskModal = false"
-            >
-              Close
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-primary" 
-              @click="saveEditedTask"
-            >
-              Save
-            </button>
+            <button type="button" class="btn btn-secondary" @click="showEditTaskModal = false">Close</button>
+            <button type="button" class="btn btn-primary" @click="saveEditedTask">Save</button>
           </div>
         </div>
       </div>
@@ -495,36 +351,19 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Delete Task</h5>
-            <button 
-              type="button" 
-              class="btn-close" 
-              @click="showDeleteTaskModal = false"
-            ></button>
+            <button type="button" class="btn-close" @click="showDeleteTaskModal = false"></button>
           </div>
           <div class="modal-body">
             <p>Are you sure you want to delete this task?</p>
           </div>
           <div class="modal-footer">
-            <button 
-              type="button" 
-              class="btn btn-secondary" 
-              @click="showDeleteTaskModal = false"
-            >
-              Cancel
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-danger" 
-              @click="confirmDeleteTask"
-            >
-              Delete
-            </button>
+            <button type="button" class="btn btn-secondary" @click="showDeleteTaskModal = false">Cancel</button>
+            <button type="button" class="btn btn-danger" @click="confirmDeleteTask">Delete</button>
           </div>
         </div>
       </div>
     </div>
     <div class="modal-backdrop fade show" v-if="showDeleteTaskModal"></div>
-    
 
 </template>
 
@@ -543,6 +382,7 @@ interface Task {
   pointsGiven: number
   assignedTo: string
   assignedUsers: string[]
+  department: string
 }
 
 // State
@@ -558,7 +398,8 @@ const tasks = ref<Task[]>([
     completionDate: '2023-10-10',
     pointsGiven: 50,
     assignedTo: '',
-    assignedUsers: []
+    assignedUsers: [],
+    department: "Sales Department"
   },
   { 
     id: 2, 
@@ -571,7 +412,8 @@ const tasks = ref<Task[]>([
     completionDate: '2023-10-15',
     pointsGiven: 30,
     assignedTo: '',
-    assignedUsers: []
+    assignedUsers: [],
+    department: "Sales Department"
   },
   { 
     id: 3, 
@@ -584,13 +426,15 @@ const tasks = ref<Task[]>([
     completionDate: '2023-10-12',
     pointsGiven: 20,
     assignedTo: '',
-    assignedUsers: []
+    assignedUsers: [],
+    department: "Marketing Department"
   }
 ])
 
 const searchUsername = ref('')
 const searchTaskName = ref('')
 const selectedStatus = ref('')
+const selectedDepartment = ref('Sales Department')
 const currentPage = ref(1)
 const itemsPerPage = 10
 
@@ -599,7 +443,8 @@ const filteredTasks = computed(() => {
     const matchesUsername = task.username.toLowerCase().includes(searchUsername.value.toLowerCase())
     const matchesTaskName = task.taskName.toLowerCase().includes(searchTaskName.value.toLowerCase())
     const matchesStatus = !selectedStatus.value || task.status === selectedStatus.value
-    return matchesUsername && matchesTaskName && matchesStatus
+    const matchesDepartment = !selectedDepartment.value || task.department === selectedDepartment.value
+    return matchesUsername && matchesTaskName && matchesStatus && matchesDepartment
   })
 })
 
@@ -648,7 +493,8 @@ const selectedTask = ref<Task>({
   completionDate: '',
   pointsGiven: 0,
   assignedTo: '',
-  assignedUsers: []
+  assignedUsers: [],
+  department: selectedDepartment.value
 })
 
 const newTask = ref<Task>({
@@ -662,7 +508,8 @@ const newTask = ref<Task>({
   completionDate: '',
   pointsGiven: 0,
   assignedTo: '',
-  assignedUsers: []
+  assignedUsers: [],
+  department: selectedDepartment.value
 })
 
 const openCreateTaskModal = () => {
@@ -677,7 +524,8 @@ const openCreateTaskModal = () => {
     completionDate: '',
     pointsGiven: 0,
     assignedTo: '',
-    assignedUsers: []
+    assignedUsers: [],
+    department: selectedDepartment.value
   }
   showCreateTaskModal.value = true
 }
@@ -738,7 +586,8 @@ const createTask = () => {
     completionDate: newTask.value.completionDate,
     pointsGiven: newTask.value.pointsGiven,
     assignedTo: newTask.value.assignedTo,
-    assignedUsers: newTask.value.assignedUsers
+    assignedUsers: newTask.value.assignedUsers,
+    department: selectedDepartment.value
   }
 
   tasks.value.push(task)
@@ -780,7 +629,7 @@ const createTask = () => {
 }
 
 .line {
-  border: 1px solid #e3e3e3;   
+  border: 1px solid #eee;   
 }
 
 /* statistic card */
