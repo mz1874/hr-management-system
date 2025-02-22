@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import { ref, reactive } from "vue";
 
 const navItems = reactive([
   { name: "Home", link: "/home" },
@@ -14,7 +14,6 @@ const navItems = reactive([
   { name: "Notification Center", link: "/home/notification-center" },
   { name: "Leave Management", link: "/home/leave-management" },
   { name: "Evaluation Center", link: "/home/survey-management" },
-
 ]);
 
 const rewardSubmenu = reactive([
@@ -31,6 +30,17 @@ const systemSubmenu = reactive([
   { name: "Router Management", link: "/home/router-management" },
 ]);
 
+// 控制子目录的展开和收起
+const showRewardSubmenu = ref(false);
+const showSystemSubmenu = ref(false);
+
+const toggleRewardSubmenu = () => {
+  showRewardSubmenu.value = !showRewardSubmenu.value;
+};
+
+const toggleSystemSubmenu = () => {
+  showSystemSubmenu.value = !showSystemSubmenu.value;
+};
 </script>
 
 <template>
@@ -39,23 +49,28 @@ const systemSubmenu = reactive([
       <img src="/logo.png" alt="ROWY Hardware" class="logo-img">
     </div>
 
+    <!-- 普通导航项 -->
     <router-link v-for="item in navItems" :key="item.name" :to="item.link" class="nav-item">
       {{ item.name }}
     </router-link>
 
-    <a href="#" class="nav-item" data-bs-toggle="collapse" data-bs-target="#reward-submenu">
+    <!-- Reward Administration -->
+    <a href="#" class="nav-item" @click.prevent="toggleRewardSubmenu">
       Reward Administration
+      <span class="arrow-icon">{{ showRewardSubmenu ? '▲' : '▼' }}</span>
     </a>
-    <div class="collapse" id="reward-submenu">
+    <div v-if="showRewardSubmenu" class="submenu">
       <router-link v-for="sub in rewardSubmenu" :key="sub.name" :to="sub.link" class="nav-item sub-item">
         {{ sub.name }}
       </router-link>
     </div>
 
-    <a href="#" class="nav-item" data-bs-toggle="collapse" data-bs-target="#system-submenu">
+    <!-- System Management -->
+    <a href="#" class="nav-item" @click.prevent="toggleSystemSubmenu">
       System Management
+      <span class="arrow-icon">{{ showSystemSubmenu ? '▲' : '▼' }}</span>
     </a>
-    <div class="collapse" id="system-submenu">
+    <div v-if="showSystemSubmenu" class="submenu">
       <router-link v-for="sub in systemSubmenu" :key="sub.name" :to="sub.link" class="nav-item sub-item">
         {{ sub.name }}
       </router-link>
@@ -64,7 +79,6 @@ const systemSubmenu = reactive([
 </template>
 
 <style scoped>
-
 /* General Layout */
 body {
   min-height: 100vh;
@@ -123,6 +137,7 @@ body {
   color: white;
   text-decoration: none;
   display: block;
+  position: relative;
 }
 
 .nav-item:hover {
@@ -213,8 +228,6 @@ body {
   .sidebar.show {
     left: 0;
   }
-
-
 }
 
 @media (min-width: 769px) {
@@ -225,7 +238,6 @@ body {
   .sidebar {
     left: 0;
   }
-
 }
 
 .sub-item {
@@ -238,4 +250,16 @@ body {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* 子目录样式 */
+.submenu {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.arrow-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+}
 </style>
