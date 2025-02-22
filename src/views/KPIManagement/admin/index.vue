@@ -629,13 +629,13 @@ const createTask = () => {
 }
 
 .line {
-  border: 1px solid #eee;   
+  border: 1px solid #e9e9e9;   
 }
 
 /* statistic card */
 .card {
   border-radius: 10px;
-  border: 1px solid #eee;
+  border: 1px solid #e9e9e9;
 }
 
 .circle {

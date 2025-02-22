@@ -140,10 +140,10 @@ interface RewardItem {
 const tableData = ref<RewardItem[]>([
     {id: 1, username: 'Alex', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Jaya Grocer Gift Card', status: 'Not Received'}, 
     {id: 2, username: 'Amanda', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Jaya Grocer Gift Card', status: 'Not Received'}, 
-    {id: 3, username: 'Jester', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Starbuck Gift Card', status: 'Received'}, 
+    {id: 3, username: 'Jester', redeemedOn: '2024-06-30 11:27:07', rewardName: 'McDonald Coupon', status: 'Received'}, 
     {id: 4, username: 'Jester', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Jaya Grocer Gift Card', status: 'Received'}, 
-    {id: 5, username: 'Siti', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Starbuck Gift Card', status: 'Received'},
-    {id: 6, username: 'Alex', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Starbuck Gift Card', status: 'Not Received'}
+    {id: 5, username: 'Siti', redeemedOn: '2024-06-30 11:27:07', rewardName: 'McDonald Coupon', status: 'Received'},
+    {id: 6, username: 'Alex', redeemedOn: '2024-06-30 11:27:07', rewardName: 'McDonald Coupon', status: 'Not Received'}
 ])
 
 const currentReward = ref<Partial<RewardItem>>({});
