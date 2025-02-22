@@ -1,13 +1,23 @@
 <template>
   <h1>Leaderboard</h1>
-
+  
    <!-- Podium -->
    <div class="podium">
     <!-- Second Place (left) -->
     <div v-if="tableData.length >= 2" class="podium-block rotate-left">
-      <img :src="tableData[1].image" :alt="tableData[1].username">
+      <i class="fa-solid fa-crown crown-second"></i>
+      <div>
+        <img :src="tableData[1].image" :alt="tableData[1].username">
+      </div>
       <div class="name-size">{{ tableData[1].username }}</div>
-      <div class="point-size">{{ tableData[1].points }}</div>
+      <div class="point-container">
+        <div class="icon-container">
+          <i class="fa-solid fa-circle border-circle-icon"></i>
+          <i class="fa-solid fa-circle circle-icon"></i>
+          <i class="fa-solid fa-star star-icon"></i>
+        </div>
+        <span class="point-size">{{ tableData[1].points }}</span>
+      </div>
       <div class="trapezoid-second"></div>
       <div class="rectangle-second">
         <p class="second-size">{{ tableData[1].rank }}</p>
@@ -16,9 +26,19 @@
 
     <!-- First Place (center) -->
     <div v-if="tableData.length >= 1" class="podium-block">
-      <img :src="tableData[0].image" :alt="tableData[0].username">
+      <i class="fa-solid fa-crown crown-first"></i>
+      <div>
+        <img :src="tableData[0].image" :alt="tableData[0].username">
+      </div>
       <div class="name-size">{{ tableData[0].username }}</div>
-      <div class="point-size">{{ tableData[0].points }}</div>
+      <div class="point-container">
+        <div class="icon-container">
+          <i class="fa-solid fa-circle border-circle-icon"></i>
+          <i class="fa-solid fa-circle circle-icon"></i>
+          <i class="fa-solid fa-star star-icon"></i>
+        </div>
+        <span class="point-size">{{ tableData[0].points }}</span>
+      </div>
       <div class="trapezoid-first"></div>
       <div class="rectangle-first">
         <p class="first-size">{{ tableData[0].rank }}</p>
@@ -27,9 +47,19 @@
 
     <!-- Third Place (right) -->
     <div v-if="tableData.length >= 3" class="podium-block rotate-right">
-      <img :src="tableData[2].image" :alt="tableData[2].username">
+      <i class="fa-solid fa-crown crown-third"></i>
+      <div>
+        <img :src="tableData[2].image" :alt="tableData[2].username">
+      </div>
       <div class="name-size">{{ tableData[2].username }}</div>
-      <div class="point-size">{{ tableData[2].points }}</div>
+      <div class="point-container">
+        <div class="icon-container">
+          <i class="fa-solid fa-circle border-circle-icon"></i>
+          <i class="fa-solid fa-circle circle-icon"></i>
+          <i class="fa-solid fa-star star-icon"></i>
+        </div>
+        <span class="point-size">{{ tableData[2].points }}</span>
+      </div>
       <div class="trapezoid-third"></div>
       <div class="rectangle-third">
         <p class="third-size">{{ tableData[2].rank }}</p>
@@ -45,7 +75,14 @@
           <div class="empty"></div>
           <div class="rank-title">Rank</div>
           <div class="username-title">Username</div>
-          <div class="point-title">Points</div>
+          <div class="point-title d-flex align-items-center">
+            <div class="icon-container" style="transform: scale(0.45);">
+              <i class="fa-solid fa-circle border-circle-icon"></i>
+              <i class="fa-solid fa-circle circle-icon"></i>
+              <i class="fa-solid fa-star star-icon"></i>
+            </div>
+            Points
+          </div>
         </div>
         <div v-for="(user, index) in tableData.slice(3)" :key="user.rank" class="leaderboard-item">
           <div class="empty"></div>
@@ -92,6 +129,42 @@ const tableData = ref<leaderboard[]>([
 
 
 <style scoped>
+/* point icon */
+.point-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  gap: 25px;
+}
+
+.icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transform: scale(0.6);
+}
+
+.border-circle-icon {
+  font-size: 4em !important;
+  color: #FFDE59;
+  position: absolute;
+  text-shadow: 0px 2px 5px rgba(176, 176, 176, 0.5);
+}
+
+.circle-icon {
+  font-size: 3em !important;
+  color: #FDC14B;
+  position: absolute;
+}
+
+.star-icon {
+  font-size: 1.6em !important;
+  color: white;
+  position: absolute;
+}
+
 .podium {
     display: flex;
     justify-content: center;
@@ -99,13 +172,16 @@ const tableData = ref<leaderboard[]>([
 }
   
 .podium .podium-block {
-   text-align: center;
-    position: relative;
-    transform-style: preserve-3d;
-    z-index: 1; /* Default z-index */
+  text-align: center;
+  position: relative;
 }
 
-/* top 3 profile pic, name, point */
+/* top 3 crown, profile pic, name, point */
+.crown-second, .crown-first, .crown-third {
+  font-size: 3em;
+  margin-bottom: none;
+  transform: translateY(18%);
+}
 .podium .podium-block img {
   width: 80px;
     height: 80px;
@@ -119,10 +195,12 @@ const tableData = ref<leaderboard[]>([
 .point-size {
     font-size: 35px;
     font-weight: bold;
-    margin-bottom: 10px;
 }
   
 /* first podium */
+.crown-first {
+  color: #FFDC5E;
+}
 .trapezoid-first {
     border-bottom: 30px solid #FFDF6E;
     border-right: 30px solid transparent;
@@ -144,6 +222,9 @@ const tableData = ref<leaderboard[]>([
 }
 
 /* second podium */
+.crown-second {
+  color: #c9c5c5;
+}
 .podium .rotate-left {
   transform: rotate(-2deg);
   z-index: 0;
@@ -170,6 +251,9 @@ const tableData = ref<leaderboard[]>([
 }
   
 /* third podium */
+.crown-third {
+  color: #ECA64F;
+}
 .podium .rotate-right {
     transform: rotate(2deg);
     z-index: 0; /* Ensure this podium stays behind the middle podium */
@@ -232,6 +316,7 @@ const tableData = ref<leaderboard[]>([
 .point-title {
   flex: 0.3; 
   text-align: left;
+  gap: 25px;
 }
 
 /* Leaderboard Item Styling */

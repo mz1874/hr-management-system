@@ -224,7 +224,6 @@ function goToRewardHistory()
   align-items: center;
 }
 
-/* Point Icon Container */
 .icon-container {
   display: flex;
   align-items: center;
