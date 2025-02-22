@@ -24,6 +24,7 @@ import redemptionStatus from "@/views/RedemptionStatus/index.vue";
 import PersonalKPIDetails from "@/views/PersonalKPIManagementDetails/index.vue";
 import KPIDashboard from "@/views/KPIDashboard/index.vue" ;
 import roleManagement from "@/views/RoleManagement/index.vue";
+import reportGeneration from "@/views/ReportGeneration/index.vue" ;
 /**
  * Please define your page router to the below
  */
@@ -149,6 +150,11 @@ const router = createRouter({
                     path: "role-management",
                     name : "role-management",
                     component : roleManagement,
+                },
+                {
+                    path : "report-generation",
+                    name: 'report-generation',
+                    component: reportGeneration ,
                 }
             ]
         },

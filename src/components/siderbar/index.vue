@@ -4,15 +4,17 @@ import { reactive } from "vue";
 const navItems = reactive([
   { name: "Home", link: "/home" },
   { name: "KPI Dashboard", link: "/home/KPI-Dashboard" },
-  { name: "Notification Center", link: "/home/notification-center" },
+  { name: "Personal KPI Management", link: "/home/personal-KPI-Management" },
   { name: "Notification View", link: "/home/notification-view" },
-  { name: "KPI Management", link: "/home/KPI-management" },
-  { name: "Leave Management", link: "/home/leave-management" },
   { name: "Leave Application", link: "/home/leave-application" },
   { name: "Reward Mall", link: "/home/reward-mall" },
   { name: "Leaderboard", link: "/home/leader-board" },
+  { name: "Report Generation", link: "/home/report-generation" },
+  { name: "KPI Management", link: "/home/KPI-management" },
+  { name: "Notification Center", link: "/home/notification-center" },
+  { name: "Leave Management", link: "/home/leave-management" },
   { name: "Evaluation Center", link: "/home/survey-management" },
-  { name: "Personal KPI Management", link: "/home/personal-KPI-Management" },
+
 ]);
 
 const rewardSubmenu = reactive([
