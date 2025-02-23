@@ -60,7 +60,7 @@ const leaveApplications = ref<LeaveApplication[]>([
 ]);
 
 const summaryStats = ref({
-  pending: 2,
+  pending: leaveApplications.value.filter(app => app.status === 'Pending').length,
   medical: 2,
   annual: 2
 });
