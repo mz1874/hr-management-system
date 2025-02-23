@@ -87,11 +87,11 @@
         <div v-for="(user, index) in tableData.slice(3)" :key="user.rank" class="leaderboard-item">
           <div class="empty"></div>
           <div class="rank">{{ user.rank }}</div>
-          <div class="profile-pic">
+          <div class="profile-pic" v-if="index < tableData.length - 5">
               <img :src="user.image" :alt="user.username">
           </div>
           <div class="username">
-            {{ index >= tableData.length - 5 ? '***' : user.username }}
+            {{ index >= tableData.length - 5 ? '********' : user.username }}
           </div>
           <div class="point">{{ user.points }}</div>
         </div>
