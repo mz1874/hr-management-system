@@ -38,7 +38,7 @@
             <tr v-for="details in paginatedLogs" :key="details.id">
                 <td>{{ details.id}}</td>
                 <td>{{ details.redeemed}}</td>
-                <td>{{ details.points}}</td>
+                <td>- {{ details.points}}</td>
                 <td>{{ details.rewardName}}</td>
                 <td :class="details.status === 'Not Received' ? 'text-danger' : 'text-success'">
                     {{ details.status }}

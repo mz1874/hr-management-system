@@ -241,14 +241,14 @@ const tableData = ref<RewardItem[]>([
     },
     {
         id: 2, 
-        rewardName: 'McDonald Gift Card', 
+        rewardName: 'McDonald Coupon', 
         points: 100, 
         createdOn: '2024-06-30 11:27:07', 
         image: "/dist/assets/McDonald_Gift_Card.png",
         quantity: 20, 
         endDate: "2025-02-05", 
         endTime: "23:59",
-        description: "RM50 Starbucks Gift Card. Vouchers received will be valid for a minimum period of 4 months.", 
+        description: "Exclusive Sweet Chili Fish Wrap Drive Thru Combo Promo for only RM11.50. ", 
         terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
 
 2. This gift card is valid at all Starbuck outlets.

@@ -16,7 +16,7 @@ import rewardMall from "@/views/RewardMall/index.vue";
 import pointDetails from "../views/RewardMall/PointDetails/index.vue";
 import rewardHistory from "../views/RewardMall/RewardHistory/index.vue";
 import leaderBoard from "@/views/LeaderBoard/index.vue";
-import KPIManagement from "@/views/KPIManagement/index.vue";
+import KPIManagement from "@/views/KPIManagement/admin/index.vue";
 import HomeDefault from "@/views/HomeView/HomeDefault/index.vue";
 import personalKPIManagement from "@/views/PersonalKPIManagement/index.vue";
 import rewardManagement from "@/views/RewardManagement/index.vue";

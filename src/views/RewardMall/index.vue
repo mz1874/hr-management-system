@@ -1,17 +1,27 @@
 <template>
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
       <h2>Reward Mall</h2>
       <button class="view-history-button" @click="goToRewardHistory()">View History</button>
   </div>
 
-  <button type="button" class="iconButton"  @click="goToPointDetails()"> 
+<!-- point -->
+  <div class="point-container mb-3"> 
+    <div class="icon-container" style="margin-top: 10px; margin-right: -20px; transform: scale(0.9);">
+      <i class="fa-solid fa-circle border-circle-icon"></i>
+      <i class="fa-solid fa-circle circle-icon"></i>
+      <i class="fa-solid fa-star star-icon"></i>
+    </div>
+    <button type="button" class="iconButton"  @click="goToPointDetails()"> 
       <span class="buttonText">{{ points }}</span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671"/>
       </svg>
-  </button>
+    </button>
+  </div>
 
-  <div class="row row-cols-md-3 g-4" >
+  <!-- reward item -->
+  <div class="container">
+    <div class="row row-cols-md-3 g-4" >
     <div class="col" v-for="item in tableData" :key="item.id">
       <div class="card shadow-sm mt-4" >
         <img :src="getImagePath(item.img)" alt="Reward Image" class="image">
@@ -28,12 +38,18 @@
                 </svg>
               </button>
             </p>
-            <button class="rewardButton d-block mx-auto" @click="openSelectedRewardModal(item)" :disabled="item.redeemed">
-              {{ item.redeemed ? "Redeemed" : item.rewardPrice }}
+            <button class="rewardButton mx-auto" @click="openSelectedRewardModal(item)" :disabled="item.redeemed">
+              <div class="icon-container" v-if="!item.redeemed">
+                <i class="fa-solid fa-circle border-circle-icon"></i>
+                <i class="fa-solid fa-circle circle-icon"></i>
+                <i class="fa-solid fa-star star-icon"></i>
+              </div>
+              <span class="rewardText">{{ item.redeemed ? "Redeemed" : item.rewardPrice }}</span>
             </button>        
           </div>
       </div>
     </div>
+  </div>
   </div>
 
   <!-- View T&C Modal -->
@@ -131,8 +147,8 @@ const tableData = ref([
   {
     id: 2,
     img: "McDonald_Gift_Card.png",
-    name: "Starbucks Gift Card", 
-    description: "RM50 Starbucks Gift Card. Vouchers received will be valid for a minimum period of 4 months.", 
+    name: "McDonald Coupon", 
+    description: "Exclusive Sweet Chili Fish Wrap Drive Thru Combo Promo for only RM11.50. ", 
     valid: "31/12/2024, 23:59", 
     quantity: 10,
     rewardPrice: 25,
@@ -202,21 +218,76 @@ function goToRewardHistory()
 </script>
 
 <style scoped>
-.terms-text {
-  white-space: pre-line;
+/* point icon */
+.point-container {
+  display: flex;
+  align-items: center;
 }
+
+.icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.border-circle-icon {
+  font-size: 4em;
+  color: #FFDE59;
+  position: absolute;
+  text-shadow: 0px 2px 5px rgba(176, 176, 176, 0.5);
+}
+
+.circle-icon {
+  font-size: 3em;
+  color: #FDC14B;
+  position: absolute;
+}
+
+.star-icon {
+  font-size: 1.6em;
+  color: white;
+  position: absolute;
+}
+
+.iconButton {
+  background-color: white;
+  margin-top: 1.5rem;
+  margin-bottom: 15px;
+  padding: 7px;
+  width: auto;
+  border-radius: 5px;
+  border: 1px solid #707070;
+  display: flex;             
+  justify-content: space-between;   
+  align-items: center;        
+}
+.iconButton:hover {
+  background-color: rgb(236, 236, 236); 
+}
+
+.buttonText {
+  font-size: 18px;      
+  margin-left: 2rem;
+  margin-right: 1rem;
+}
+
+/* view history button */
 .view-history-button {
   background-color: #ABD3AB;
-  padding: 8px; /* Add padding for better appearance */
+  padding: 8px; 
   width: 11%;
   border: none;
-  border-radius: 30px; /* Make corners curved */
+  border-radius: 30px; 
   cursor: pointer;
 }
 .view-history-button:hover {
   background-color: #95c395; 
 }
 
+/* Card sytling*/
 .image {
   width: 100%;  
   /* height: 400px; 
@@ -247,41 +318,38 @@ function goToRewardHistory()
   background-color: #adcce6; 
 }
 
+/* modal TNC */
+.terms-text {
+  white-space: pre-line;
+}
+
+/* Confirmation button in card */
 .rewardButton{
   background-color: #ABD3AB;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
-  padding: 8px; 
   width: 70%;
   border: none;
   border-radius: 15px; 
-  cursor: pointer;
+  display: flex;
+  align-items: center; 
+  justify-content: center;
+  text-align: center;
+  height: 45px; /* Adjust the height as needed */
 }
+
 .rewardButton:hover {
   background-color: #95c395; 
 }
 
-.iconButton {
-  background-color: white;
-  margin-top: 1.5rem;
-  margin-bottom: 15px;
-  padding: 7px;
-  width: 10%;
-  border-radius: 5px;
-  border: 1px solid #707070;
-  display: flex;              /* Using flexbox to align the content */
-  justify-content: space-between;    /* Centers the text horizontally */
-  align-items: center;        /* Vertically aligns the content */
-}
-.iconButton:hover {
-  background-color: rgb(236, 236, 236); 
+.rewardButton .icon-container {
+  width: 40px;
+  height: 40px;
+  transform: scale(0.5);
+  text-shadow: none;
 }
 
-.buttonText {
-  text-align: center;         
-  flex-grow: 1;  
-}
-
+/* modal styling */
 .modal-content, .modal-body {
   padding: 10px;
 }
