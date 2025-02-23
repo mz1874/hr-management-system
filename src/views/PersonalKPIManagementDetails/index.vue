@@ -1,3 +1,82 @@
+<template>
+  <div class="container-fluid main-content">
+    <!-- Row 1: Circular Chart and KPI Overview -->
+    <div class="kpi-row d-flex flex-column flex-md-row align-items-center gap-3">
+      <div class="progress-circle">
+        <svg viewBox="0 0 36 36" class="circular-chart">
+          <path
+            class="circle-bg"
+            d="M18 2.0845
+               a 15.9155 15.9155 0 0 1 0 31.831
+               a 15.9155 15.9155 0 0 1 0 -31.831"
+          ></path>
+          <path
+            class="circle"
+            :style="{ '--value': kpiData.value }"
+            :stroke-dasharray="`${kpiData.value}, 100`"
+            d="M18 2.0845
+               a 15.9155 15.9155 0 0 1 0 31.831
+               a 15.9155 15.9155 0 0 1 0 -31.831"
+          ></path>
+        </svg>
+        <div class="percentage">{{ kpiData.value }}%</div>
+      </div>
+
+      <div class="kpi-statistic">
+        <h4>{{ kpiData.title }}</h4>
+        <div class="status">
+          <div>
+            <i class="fas fa-check-circle text-success"></i> 
+            {{ kpiData.statistics.onTrack }} on Track
+          </div>
+          <div>
+            <i class="fas fa-exclamation-circle text-danger"></i> 
+            {{ kpiData.statistics.offTrack }} off Track
+          </div>
+          <div>
+            <i class="fas fa-check text-primary"></i> 
+            {{ kpiData.statistics.completed }} completed
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Statistics Table -->
+    <div class="details mt-4">
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Order</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in kpiData.details" :key="item.id">
+              <td>{{ item.id }}</td>
+              <td>{{ item.description }}</td>
+              <td>
+                <div class="progress">
+                  <div 
+                    class="progress-bar" 
+                    :class="getProgressBarClass(item.progress)"
+                    role="progressbar" 
+                    :style="{ width: item.progress + '%' }" 
+                    :aria-valuenow="item.progress" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100"
+                  ></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script>
 export default {
   name: 'KpiDetailView',
@@ -62,90 +141,20 @@ export default {
 }
 </script>
 
-
-<template>
-    <div class="container">
-      <!-- Row 1: Circular Chart and KPI Overview -->
-      <div class="kpi-row">
-        <div class="progress-circle">
-          <svg viewBox="0 0 36 36" class="circular-chart">
-            <path
-              class="circle-bg"
-              d="M18 2.0845
-                a 15.9155 15.9155 0 0 1 0 31.831
-                a 15.9155 15.9155 0 0 1 0 -31.831"
-            ></path>
-            <path
-              class="circle"
-              :style="{ '--value': kpiData.value }"
-              :stroke-dasharray="`${kpiData.value}, 100`"
-              d="M18 2.0845
-                a 15.9155 15.9155 0 0 1 0 31.831
-                a 15.9155 15.9155 0 0 1 0 -31.831"
-            ></path>
-          </svg>
-          <div class="percentage">{{ kpiData.value }}%</div>
-        </div>
-  
-        <div class="kpi-statistic">
-          <h4>{{ kpiData.title }}</h4>
-          <div class="status">
-            <div>
-              <i class="fas fa-check-circle text-success"></i> 
-              {{ kpiData.statistics.onTrack }} on Track
-            </div>
-            <div>
-              <i class="fas fa-exclamation-circle text-danger"></i> 
-              {{ kpiData.statistics.offTrack }} off Track
-            </div>
-            <div>
-              <i class="fas fa-check text-primary"></i> 
-              {{ kpiData.statistics.completed }} completed
-            </div>
-          </div>
-        </div>
-      </div>
-  
-      <!-- Row 2: Statistics Table -->
-      <div class="details">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Order</th>
-              <th>Progress</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in kpiData.details" :key="item.id">
-              <td>{{ item.id }}</td>
-              <td>{{ item.description }}</td>
-              <td>
-                <div class="progress">
-                  <div 
-                    class="progress-bar" 
-                    :class="getProgressBarClass(item.progress)"
-                    role="progressbar" 
-                    :style="{ width: item.progress + '%' }" 
-                    :aria-valuenow="item.progress" 
-                    aria-valuemin="0" 
-                    aria-valuemax="100"
-                  ></div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </template>
 <style scoped>
+/* Container padding */
+.main-content {
+  padding: 20px;
+}
+
+/* KPI Row */
 .kpi-row {
   display: flex;
   gap: 20px;
   margin-bottom: 30px;
 }
 
+/* Circular Chart */
 .progress-circle {
   width: 150px;
   height: 150px;
@@ -189,13 +198,11 @@ export default {
   }
 }
 
+/* KPI Statistic */
 .kpi-statistic {
   background-color: white;
   padding: 20px;
-  margin: 0;
   border-radius: 10px;
-  display: grid;
-  align-items: center;
   flex-grow: 1;
 }
 
@@ -206,20 +213,17 @@ export default {
 
 .kpi-statistic .status {
   display: flex;
-  align-items: center;
   gap: 20px;
-  margin-bottom: 20px;
-}
-
-.kpi-statistic .status div {
-  display: flex;
-  align-items: center;
-  gap: 5px;
   font-size: 14px;
 }
 
+/* Details Table */
 .details {
   margin-top: 5%;
+}
+
+.table-responsive {
+  overflow-x: auto;
 }
 
 .table {
@@ -229,8 +233,10 @@ export default {
   border-spacing: 0;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   vertical-align: middle;
+  padding: 8px;
 }
 
 .table th {
@@ -242,12 +248,34 @@ export default {
   border: 1px solid #dee2e6;
 }
 
-.table-bordered th, .table-bordered td {
+.table-bordered th,
+.table-bordered td {
   border: 1px solid #dee2e6;
 }
 
 .progress {
   height: 20px;
   background-color: #f8f9fa;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+  .kpi-row {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .kpi-statistic {
+    width: 100%;
+  }
+  
+  .progress-circle {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .percentage {
+    font-size: 20px;
+  }
 }
 </style>
