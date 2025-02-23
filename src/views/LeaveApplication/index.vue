@@ -8,13 +8,29 @@ export default {
 }
 </script>
 
-
 <script setup lang="ts">
 import LeaveApplicationModal from '@/components/LeaveApplicationModal/index.vue'
+import dropdownMenu from '@/components/LeaveApplicationModal/Dropdown.vue'
 import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/LeaveApplicationDetailsModal.vue'
-import {Modal,Dropdown} from "bootstrap";
-import {ref, onMounted, computed} from 'vue'
+import { Modal, Dropdown } from "bootstrap";
+import { ref, onMounted, computed } from 'vue'
 
+interface LeaveApplication {
+  id: number;
+  name: string;
+  department: string;
+  leaveType: string;
+  status: string;
+  appliedOn: string;
+  selected: boolean;
+  dates: {
+    date: string;
+    duration: string;
+    leaveType: string;
+  }[];
+  reasons: string;
+  document: string;
+}
 
 const leaveApplications = ref<LeaveApplication[]>([
   {
@@ -43,13 +59,11 @@ const leaveApplications = ref<LeaveApplication[]>([
   }
 ]);
 
-
 const summaryStats = ref({
   pending: 2,
   medical: 2,
   annual: 2
-})
-
+});
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
@@ -66,26 +80,25 @@ const getStatusBadgeClass = (status: string) => {
   }
 }
 
-interface LeaveApplication {
-  id: number;
-  name: string;
-  department: string; // ✅ Add this
-  leaveType: string;
-  status: string;
-  appliedOn: string;
-  selected: boolean;
-  dates: {
-    date: string;
-    duration: string;
-    leaveType: string;
-  }[];
-  reasons: string;
-  document: string;
-}
+// **Filter Functionality**
+const filterStatus = ref('All');
 
+const filteredApplications = computed(() => {
+  if (filterStatus.value === 'All') {
+    return leaveApplications.value;
+  } else if (filterStatus.value === 'Pending') {
+    return leaveApplications.value.filter(app => app.status === 'Pending');}
+  else if (filterStatus.value === 'Cancelled') {
+      return leaveApplications.value.filter(app => app.status === 'Cancelled');
+  } else if (filterStatus.value === 'Rejected') {
+    return leaveApplications.value.filter(app => app.status === 'Reject');
+  } else if (filterStatus.value === 'Approved') {
+    return leaveApplications.value.filter(app => app.status === 'Approved');
+  }
+  return leaveApplications.value;
+});
 
-
-const withdrawModal = ref<HTMLElement | null>(null)
+const withdrawModal = ref<HTMLElement | null>(null);
 
 const withdrawApplication = (id: number) => {
   const applicationIndex = leaveApplications.value.findIndex(app => app.id === id);
@@ -105,30 +118,16 @@ const withdrawApplication = (id: number) => {
       // Ensure button exists before adding event listener
       const confirmButton = withdrawModal.value.querySelector(".btn-success");
       if (confirmButton) {
-        confirmButton.addEventListener("click", confirmWithdrawal, { once: true }); 
-        // { once: true } ensures the event runs only once per modal open
+        confirmButton.addEventListener("click", confirmWithdrawal, { once: true });
       }
     }
   }
-};
-
-// Reactive state for selected filter
-const selectedFilter = ref("All");
-
-// Dropdown reference
-const filterDropdown = ref<HTMLElement | null>(null);
-
-// Function to update the filter selection
-const filterLeaves = (status: string) => {
-  selectedFilter.value = status;
-  console.log("Selected Filter:", selectedFilter.value); // Debugging log to confirm selection
 };
 
 const addNewApplication = (newApplication: LeaveApplication) => {
   leaveApplications.value.push(newApplication);
   summaryStats.value.pending++; // Increase pending count
 };
-
 
 // **State for Selected Application**
 const selectedApplication = ref<LeaveApplication | null>(null);
@@ -138,16 +137,10 @@ const openApplicationDetails = (application: LeaveApplication) => {
   selectedApplication.value = application;
 };
 
-
 // Initialize Bootstrap Dropdown on Mounted
 onMounted(() => {
-  import("bootstrap").then(() => {
-    if (filterDropdown.value) {
-      new Dropdown(filterDropdown.value);
-    }
-  });
+  import("bootstrap");
 });
-
 </script>
 
 
@@ -176,7 +169,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Annual Leave  Card -->
+        <!-- Annual Leave Card -->
         <div class="col">
           <div class="card shadow-sm mt-5 p-2">
             <div class="card-body d-flex align-items-center justify-content-center">
@@ -214,75 +207,65 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Action Buttons -->
+    <!-- Action Buttons and Filter -->
     <div class="d-flex justify-content-end mt-3 buttons">
       <!-- New Application Button -->
       <button class="btn custom-approve me-2" data-bs-toggle="modal" data-bs-target="#leaveApplicationModal">
         New Application
       </button>
 
-      <!-- Filter Button with Icon -->
-      <div class="dropdown">
-        <button class="btn filter-btn p-2" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="bi bi-funnel"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
-          <li><button class="dropdown-item" @click="filterLeaves('All')">All</button></li>
-          <li><button class="dropdown-item" @click="filterLeaves('Pending')">Pending</button></li>
-          <li><button class="dropdown-item" @click="filterLeaves('Approved')">Approved</button></li>
-          <li><button class="dropdown-item" @click="filterLeaves('Cancelled')">Cancelled</button></li>
-          <li><button class="dropdown-item" @click="filterLeaves('Reject')">Rejected</button></li>
-        </ul>
-      </div>
+      <!-- Filter Dropdown -->
+      <select v-model="filterStatus" class="form-select w-auto">
+        <option value="All">All</option>
+        <option value="Pending">Pending</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Cancelled">Cancelled</option>
+        <option value="Approved">Approved</option>
+      </select>
     </div>
-
 
     <!-- Applications Table -->
     <table class="table table-bordered">
       <thead>
-      <tr>
-        <th style="width: 50px"></th>
-        <th>ID</th>
-        <th>Leave Type</th>
-        <th>Status</th>
-        <th>Applied On</th>
-        <th></th>
-        <th style="width: 50px"></th> <!-- Added header for info button column -->
-      </tr>
+        <tr>
+          <th style="width: 50px"></th>
+          <th>ID</th>
+          <th>Leave Type</th>
+          <th>Status</th>
+          <th>Applied On</th>
+          <th></th>
+          <th style="width: 50px"></th> <!-- Info button column -->
+        </tr>
       </thead>
       <tbody>
-      <tr v-for="application in leaveApplications" :key="application.id">
-        <td><input type="checkbox" v-model="application.selected" class="select-checkbox"></td>
-        <td>{{ application.id }}</td>
-        <td>{{ application.leaveType }}</td>
-        <td>
-          <span :class="['badge', getStatusBadgeClass(application.status)]">
-          {{ application.status }}
-        </span>
-        </td>
-        <td>{{ application.appliedOn }}</td>
-        <td>
-          <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
-            <i class="bi bi-info-circle"></i>
-          </button>
-
-        </td>
-        <td>
-        <template v-if="application.status === 'Pending'">
-          <button class="btn btn-withdraw"
-                  @click="withdrawApplication(application.id)">
-            <i class="bi bi-x-circle"></i>
-          </button>
-        </template>
-      </td>
-      </tr>
+        <tr v-for="application in filteredApplications" :key="application.id">
+          <td>
+            <input type="checkbox" v-model="application.selected" class="select-checkbox">
+          </td>
+          <td>{{ application.id }}</td>
+          <td>{{ application.leaveType }}</td>
+          <td>
+            <span :class="['badge', getStatusBadgeClass(application.status)]">
+              {{ application.status }}
+            </span>
+          </td>
+          <td>{{ application.appliedOn }}</td>
+          <td>
+            <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
+              <i class="bi bi-info-circle"></i>
+            </button>
+          </td>
+          <td>
+            <template v-if="application.status === 'Pending'">
+              <button class="btn btn-withdraw" @click="withdrawApplication(application.id)">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </template>
+          </td>
+        </tr>
       </tbody>
     </table>
 
-
-
-
-    
     <!-- Withdrawal Confirmation Modal -->
     <div class="modal fade" id="withdrawModal" ref="withdrawModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -290,8 +273,9 @@ onMounted(() => {
           <div class="modal-content d-flex flex-column h-100" style="padding: 2em;">
             <div class="flex-grow-1">
               <h3 class="mb-3">Are you sure?</h3>
-              <p class="text-muted">This action cannot be undone. This will permanently withdraw your leave
-                application.</p>
+              <p class="text-muted">
+                This action cannot be undone. This will permanently withdraw your leave application.
+              </p>
             </div>
             <div class="modal-buttons d-flex justify-content-end gap-2">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -302,13 +286,11 @@ onMounted(() => {
       </div>
     </div>
 
-
-    
     <!-- Leave Application Modal -->
     <LeaveApplicationModal @submit="addNewApplication" />
 
-      <!-- Leave Application Details Modal -->
-      <LeaveApplicationDetailsModal 
+    <!-- Leave Application Details Modal -->
+    <LeaveApplicationDetailsModal 
       v-if="selectedApplication" 
       :selectedApplication="selectedApplication"
     />
@@ -520,27 +502,39 @@ onMounted(() => {
   color: white;
 }
 
+
 .filter-btn {
-  color: #C9E9D2; /* Light green like the image */
-  fill:#C9E9D2;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  background-color: white;
+  color: #789DBC;
+  border: 1px solid #dee2e6;
+  padding: 8px 16px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: background 0.3s ease-in-out;
+  gap: 8px;
 }
 
 .filter-btn:hover {
-  color: #b7e4c7; /* Slightly darker green on hover */
+  background-color: #f8f9fa;
 }
 
-.filter-btn i {
-  font-size: 20px;
-  color: #6b9e75; /* Match the filter icon color */
+.dropdown-menu {
+  min-width: 120px;
+  padding: 8px 0;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+.dropdown-item {
+  padding: 8px 16px;
+  color: #495057;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #789DBC;
+}
+
 
 
 </style>
