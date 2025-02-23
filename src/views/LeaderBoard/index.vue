@@ -1,520 +1,369 @@
-<script lang="ts">
-export default {
-  name: "leaveManagement",
-  components: {
-    LeaveApplicationModal
-  }
-}
-</script>
-
-<script setup lang="ts">
-import LeaveApplicationModal from '@/components/LeaveApplicationModal/index.vue'
-import dropdownMenu from '@/components/LeaveApplicationModal/Dropdown.vue'
-import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/LeaveApplicationDetailsModal.vue'
-import { Modal, Dropdown } from "bootstrap";
-import { ref, onMounted, computed } from 'vue'
-
-interface LeaveApplication {
-  id: number;
-  name: string;
-  department: string;
-  leaveType: string;
-  status: string;
-  appliedOn: string;
-  selected: boolean;
-  dates: {
-    date: string;
-    duration: string;
-    leaveType: string;
-  }[];
-  reasons: string;
-  document: string;
-}
-
-const leaveApplications = ref<LeaveApplication[]>([
-  {
-    id: 1,
-    name: 'Wang Chong',
-    department: 'A', 
-    leaveType: 'AL',
-    status: 'Reject',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    dates: [{ date: '21/11/2024', duration: 'whole', leaveType: 'AL' }],
-    reasons: 'Personal matters',
-    document: 'doc1.pdf'
-  },
-  {
-    id: 2,
-    name: 'Wang Chong',
-    department: 'A', 
-    leaveType: 'AL',
-    status: 'Pending',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    dates: [{ date: '25/11/2024', duration: 'whole', leaveType: 'AL' }],
-    reasons: 'Family event',
-    document: 'doc2.pdf'
-  }
-]);
-
-// Define summaryStats as a computed property so it always reflects the current leaveApplications
-const summaryStats = computed(() => ({
-  pending: leaveApplications.value.filter(app => app.status === 'Pending').length,
-  // Assuming these are fixed for now
-  medical: 2,
-  annual: 2
-}));
-
-const getStatusBadgeClass = (status: string) => {
-  switch (status) {
-    case 'Reject':
-      return 'badge-reject';
-    case 'Pending':
-      return 'badge-pending';
-    case 'Approved':
-      return 'badge-approved';
-    case 'Cancelled':
-      return 'badge-cancelled';
-    default:
-      return '';
-  }
-}
-
-// **Filter Functionality**
-const filterStatus = ref('All');
-
-const filteredApplications = computed(() => {
-  if (filterStatus.value === 'All') {
-    return leaveApplications.value;
-  } else if (filterStatus.value === 'Pending') {
-    return leaveApplications.value.filter(app => app.status === 'Pending');
-  } else if (filterStatus.value === 'Cancelled') {
-    return leaveApplications.value.filter(app => app.status === 'Cancelled');
-  } else if (filterStatus.value === 'Rejected') {
-    return leaveApplications.value.filter(app => app.status === 'Reject');
-  } else if (filterStatus.value === 'Approved') {
-    return leaveApplications.value.filter(app => app.status === 'Approved');
-  }
-  return leaveApplications.value;
-});
-
-// Remove manual update to summaryStats from addNewApplication
-const addNewApplication = (newApplication: LeaveApplication) => {
-  leaveApplications.value.push(newApplication);
-};
-
-const withdrawModal = ref<HTMLElement | null>(null);
-
-const withdrawApplication = (id: number) => {
-  const applicationIndex = leaveApplications.value.findIndex(app => app.id === id);
-  if (applicationIndex !== -1 && leaveApplications.value[applicationIndex].status === 'Pending') {
-    if (withdrawModal.value) {
-      const modal = new Modal(withdrawModal.value);
-      modal.show();
-
-      // Confirm withdrawal function
-      const confirmWithdrawal = () => {
-        leaveApplications.value[applicationIndex].status = 'Cancelled';
-        modal.hide();
-      };
-
-      const confirmButton = withdrawModal.value.querySelector(".btn-success");
-      if (confirmButton) {
-        confirmButton.addEventListener("click", confirmWithdrawal, { once: true });
-      }
-    }
-  }
-};
-
-// **State for Selected Application**
-const selectedApplication = ref<LeaveApplication | null>(null);
-
-// Open Modal for Viewing an Existing Application (Disable Fields)
-const openApplicationDetails = (application: LeaveApplication) => {
-  selectedApplication.value = application;
-};
-
-// Initialize Bootstrap Dropdown on Mounted
-onMounted(() => {
-  import("bootstrap");
-});
-</script>
-
 <template>
-  <div class="main-content">
-    <!-- Summary Cards -->
-    <div class="d-flex justify-content-between mb-3">
-      <div class="row row-cols-1 row-cols-md-3 g-4 w-100">
-        <!-- Pending Applications Card -->
-        <div class="col">
-          <div class="card shadow-sm mt-5 p-2">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-total-task">
-                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-file-earmark-text icon-large" viewBox="0 0 16 16">
-                  <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-                  <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-4">
-                <span class="task-text">Pending Application</span>
-                <span class="task-num">{{ summaryStats.pending }}</span>
-              </div>
-            </div>
-          </div>
+  <h1>Leaderboard</h1>
+  
+   <!-- Podium -->
+   <div class="podium">
+    <!-- Second Place (left) -->
+    <div v-if="tableData.length >= 2" class="podium-block rotate-left">
+      <i class="fa-solid fa-crown crown-second"></i>
+      <div>
+        <img :src="tableData[1].image" :alt="tableData[1].username">
+      </div>
+      <div class="name-size">{{ tableData[1].username }}</div>
+      <div class="point-container">
+        <div class="icon-container">
+          <i class="fa-solid fa-circle border-circle-icon"></i>
+          <i class="fa-solid fa-circle circle-icon"></i>
+          <i class="fa-solid fa-star star-icon"></i>
         </div>
-
-        <!-- Annual Leave Card -->
-        <div class="col">
-          <div class="card shadow-sm mt-5 p-2">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-completed">
-                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-check-circle icon-large" viewBox="0 0 16 16">
-                  <path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16zM3.5 7.5a.5.5 0 0 0-.5.5V9a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5V8a.5.5 0 0 0-.5-.5H3.5zM8 11a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H8z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-4">
-                <span class="task-text">Remaining Annual Leave</span>
-                <span class="task-num">{{ summaryStats.annual }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Medical Leave Card -->
-        <div class="col">
-          <div class="card shadow-sm mt-5 p-2">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-ongoing">
-                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-x-circle icon-large" viewBox="0 0 16 16">
-                  <path d="M16 8a8 8 0 1 0-8 8 8 8 0 0 0 8-8zM4.146 4.146a.5.5 0 0 1 .708 0L8 6.293l3.146-3.147a.5.5 0 0 1 .708.708L8.707 7l3.147 3.146a.5.5 0 0 1-.708.708L8 7.707l-3.146 3.147a.5.5 0 0 1-.708-.708L7.293 7 4.146 3.854a.5.5 0 0 1 0-.708z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-4">
-                <span class="task-text">Remaining Medical Leave</span>
-                <span class="task-num">{{ summaryStats.medical }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <span class="point-size">{{ tableData[1].points }}</span>
+      </div>
+      <div class="trapezoid-second"></div>
+      <div class="rectangle-second">
+        <p class="second-size">{{ tableData[1].rank }}</p>
       </div>
     </div>
 
-    <!-- Action Buttons and Filter -->
-    <div class="d-flex justify-content-end mt-3 buttons">
-      <!-- New Application Button -->
-      <button class="btn custom-approve me-2" data-bs-toggle="modal" data-bs-target="#leaveApplicationModal">
-        New Application
-      </button>
-
-      <!-- Filter Dropdown -->
-      <select v-model="filterStatus" class="form-select w-auto">
-        <option value="All">All</option>
-        <option value="Pending">Pending</option>
-        <option value="Rejected">Rejected</option>
-        <option value="Cancelled">Cancelled</option>
-        <option value="Approved">Approved</option>
-      </select>
-    </div>
-
-    <!-- Applications Table -->
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th style="width: 50px"></th>
-          <th>ID</th>
-          <th>Leave Type</th>
-          <th>Status</th>
-          <th>Applied On</th>
-          <th></th>
-          <th style="width: 50px"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="application in filteredApplications" :key="application.id">
-          <td>
-            <input type="checkbox" v-model="application.selected" class="select-checkbox">
-          </td>
-          <td>{{ application.id }}</td>
-          <td>{{ application.leaveType }}</td>
-          <td>
-            <span :class="['badge', getStatusBadgeClass(application.status)]">
-              {{ application.status }}
-            </span>
-          </td>
-          <td>{{ application.appliedOn }}</td>
-          <td>
-            <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
-              <i class="bi bi-info-circle"></i>
-            </button>
-          </td>
-          <td>
-            <template v-if="application.status === 'Pending'">
-              <button class="btn btn-withdraw" @click="withdrawApplication(application.id)">
-                <i class="bi bi-x-circle"></i>
-              </button>
-            </template>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Withdrawal Confirmation Modal -->
-    <div class="modal fade" id="withdrawModal" ref="withdrawModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal_small">
-          <div class="modal-content d-flex flex-column h-100" style="padding: 2em;">
-            <div class="flex-grow-1">
-              <h3 class="mb-3">Are you sure?</h3>
-              <p class="text-muted">
-                This action cannot be undone. This will permanently withdraw your leave application.
-              </p>
-            </div>
-            <div class="modal-buttons d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-success">Confirm Withdrawal</button>
-            </div>
-          </div>
+    <!-- First Place (center) -->
+    <div v-if="tableData.length >= 1" class="podium-block">
+      <i class="fa-solid fa-crown crown-first"></i>
+      <div>
+        <img :src="tableData[0].image" :alt="tableData[0].username">
+      </div>
+      <div class="name-size">{{ tableData[0].username }}</div>
+      <div class="point-container">
+        <div class="icon-container">
+          <i class="fa-solid fa-circle border-circle-icon"></i>
+          <i class="fa-solid fa-circle circle-icon"></i>
+          <i class="fa-solid fa-star star-icon"></i>
         </div>
+        <span class="point-size">{{ tableData[0].points }}</span>
+      </div>
+      <div class="trapezoid-first"></div>
+      <div class="rectangle-first">
+        <p class="first-size">{{ tableData[0].rank }}</p>
       </div>
     </div>
 
-    <!-- Leave Application Modal -->
-    <LeaveApplicationModal @submit="addNewApplication" />
-
-    <!-- Leave Application Details Modal -->
-    <LeaveApplicationDetailsModal 
-      v-if="selectedApplication" 
-      :selectedApplication="selectedApplication"
-    />
-    
+    <!-- Third Place (right) -->
+    <div v-if="tableData.length >= 3" class="podium-block rotate-right">
+      <i class="fa-solid fa-crown crown-third"></i>
+      <div>
+        <img :src="tableData[2].image" :alt="tableData[2].username">
+      </div>
+      <div class="name-size">{{ tableData[2].username }}</div>
+      <div class="point-container">
+        <div class="icon-container">
+          <i class="fa-solid fa-circle border-circle-icon"></i>
+          <i class="fa-solid fa-circle circle-icon"></i>
+          <i class="fa-solid fa-star star-icon"></i>
+        </div>
+        <span class="point-size">{{ tableData[2].points }}</span>
+      </div>
+      <div class="trapezoid-third"></div>
+      <div class="rectangle-third">
+        <p class="third-size">{{ tableData[2].rank }}</p>
+      </div>
+    </div>
   </div>
+
+  <!-- Leaderboard Section -->
+  <div class="container">
+    <div class="card p-4">
+      <div class="card-body">
+        <div class="leaderboard-header">
+          <div class="empty"></div>
+          <div class="rank-title">Rank</div>
+          <div class="username-title">Username</div>
+          <div class="point-title d-flex align-items-center">
+            <div class="icon-container" style="transform: scale(0.45);">
+              <i class="fa-solid fa-circle border-circle-icon"></i>
+              <i class="fa-solid fa-circle circle-icon"></i>
+              <i class="fa-solid fa-star star-icon"></i>
+            </div>
+            Points
+          </div>
+        </div>
+        <div v-for="(user, index) in tableData.slice(3)" :key="user.rank" class="leaderboard-item">
+          <div class="empty"></div>
+          <div class="rank">{{ user.rank }}</div>
+          <div class="profile-pic">
+              <img :src="user.image" :alt="user.username">
+          </div>
+          <div class="username">
+            {{ index >= tableData.length - 5 ? '***' : user.username }}
+          </div>
+          <div class="point">{{ user.points }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </template>
 
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+interface leaderboard {
+  rank: number
+  image: string
+  username: string
+  points: number
+}
+
+const tableData = ref<leaderboard[]>([
+ {rank: 1, image: "/dist/assets/McDonald_Gift_Card.png", username: "Amanda", points: 500},
+ {rank: 2, image: "/dist/assets/McDonald_Gift_Card.png", username: "David", points: 400},
+ {rank: 3, image: "/dist/assets/McDonald_Gift_Card.png", username: "Ashley", points: 300},
+ {rank: 4, image: "/dist/assets/McDonald_Gift_Card.png", username: "Alexander", points: 250},
+ {rank: 5, image: "/dist/assets/McDonald_Gift_Card.png", username: "Katy", points: 200},
+ {rank: 6, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jester", points: 150},
+ {rank: 7, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jackson", points: 100},
+ {rank: 8, image: "/dist/assets/McDonald_Gift_Card.png", username: "Katy", points: 200},
+ {rank: 9, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jester", points: 150},
+ {rank: 10, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jackson", points: 100},
+])
+
+</script>
+
+
 <style scoped>
-.table {
-  border-radius: 10px;
-  overflow: hidden;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.table th, .table td {
-  text-align: center;
-  vertical-align: middle;
-  padding: 8px;
-}
-
-.table th {
-  background-color: #f8f9fa;
-  text-align: center;
-}
-
-.table-bordered {
-  border: 1px solid #dee2e6;
-}
-
-.table-bordered th, .table-bordered td {
-  border: 1px solid #dee2e6;
-}
-
-.custom-approve {
-  background-color: #82AD82;
-  border-color: #82AD82;
-  color: white;
-}
-
-.custom-reject {
-  background-color: #FF6F61;
-  border-color: #FF6F61;
-  color: white;
-}
-
-.custom-reject:hover {
-  background-color: #FF8A80;
-  border-color: #FF8A80;
-}
-
-.custom-approve:hover {
-  background-color: #A0CFA0;
-  border-color: #A0CFA0;
-}
-
-.buttons {
-  margin: 3%;
-}
-
-.btn-light {
-  background-color: transparent !important;
-  border: none !important;
-  color: #789DBC !important;
-}
-
-.btn-light i {
-  font-size: 1.2rem;
-}
-
-.task-text,
-.task-num {
-  display: block;
-}
-
-.icon-large {
-  width: 32px;
-  height: 32px;
-  fill: #789DBC;
-}
-
-.task-text {
-  color: #789DBC;
-  font-weight: 700;
-}
-
-.modal_small .modal-content {
-  height: 100%;
+/* point icon */
+.point-container {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.modal-content {
-  border-radius: 20px;
-  border: none;
-  padding: 0;
-}
-
-.modal-header {
-  background-color: #7DA0CA;
-  color: white;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  padding: 1rem 2rem;
-}
-
-.modal-header .close {
-  color: white;
-  opacity: 1;
-}
-
-.modal-body {
-  padding: 2rem;
-}
-
-.info-box {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.info-label {
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
-.info-badge {
-  background-color: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-}
-
-.leave-info {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.leave-info i {
-  color: #789DBC;
-}
-
-.btn-approve {
-  background-color: #80B192;
-  color: white;
-  border: none;
-  padding: 0.5rem 2rem;
-}
-
-.btn-reject {
-  background-color: #FF6B6B;
-  color: white;
-  border: none;
-  padding: 0.5rem 2rem;
-}
-
-.duration-select, .leave-type-select {
-  border-radius: 20px;
-}
-
-.document-link {
-  cursor: pointer;
-}
-
-.document-link:hover {
-  text-decoration: underline;
-}
-
-.date-entry {
-  margin-bottom: 10px;
-}
-
-.badge {
-  display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: center;
+  margin-bottom: 10px;
+  gap: 25px;
 }
 
-.badge-reject {
-  background-color: #FF6F61;
-  color: white;
-}
-
-.badge-pending {
-  background-color: #FFC107;
-  color: white;
-}
-
-.badge-approved {
-  background-color: #82AD82;
-  color: white;
-}
-
-.badge-cancelled {
-  background-color: #6c757d;
-  color: white;
-}
-
-.filter-btn {
-  background-color: white;
-  color: #789DBC;
-  border: 1px solid #dee2e6;
-  padding: 8px 16px;
-  border-radius: 4px;
+.icon-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  position: relative;
+  transform: scale(0.6);
 }
 
-.filter-btn:hover {
-  background-color: #f8f9fa;
+.border-circle-icon {
+  font-size: 4em !important;
+  color: #FFDE59;
+  position: absolute;
+  text-shadow: 0px 2px 5px rgba(176, 176, 176, 0.5);
 }
 
-.dropdown-menu {
-  min-width: 120px;
-  padding: 8px 0;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.circle-icon {
+  font-size: 3em !important;
+  color: #FDC14B;
+  position: absolute;
 }
 
-.dropdown-item {
-  padding: 8px 16px;
-  color: #495057;
+.star-icon {
+  font-size: 1.6em !important;
+  color: white;
+  position: absolute;
 }
 
-.dropdown-item:hover {
-  background-color: #f8f9fa;
-  color: #789DBC;
+.podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
 }
+  
+.podium .podium-block {
+  text-align: center;
+  position: relative;
+}
+
+/* top 3 crown, profile pic, name, point */
+.crown-second, .crown-first, .crown-third {
+  font-size: 3em;
+  margin-bottom: none;
+  transform: translateY(18%);
+}
+.podium .podium-block img {
+  width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+}
+.name-size {
+    font-size: 24px;
+}
+.point-size {
+    font-size: 35px;
+    font-weight: bold;
+}
+  
+/* first podium */
+.crown-first {
+  color: #FFDC5E;
+}
+.trapezoid-first {
+    border-bottom: 30px solid #FFDF6E;
+    border-right: 30px solid transparent;
+    border-left: 30px solid transparent;
+    height: 0;
+    width: 250px;
+}
+.podium .podium-block .rectangle-first {
+    background: linear-gradient(to bottom, #FFBD30, #FFE074);
+    height: 270px;
+    width: 250px;
+    z-index: 3; /* Make sure the top podium is always on top */
+} 
+.first-size {
+    color: #fff;
+    font-weight: bold;
+    font-size: 80px;
+    padding-top: 10px; /* Adjust as needed */
+}
+
+/* second podium */
+.crown-second {
+  color: #c9c5c5;
+}
+.podium .rotate-left {
+  transform: rotate(-2deg);
+  z-index: 0;
+  margin-right: -1px;
+  margin-bottom: -4px;
+}
+.trapezoid-second {
+    border-bottom: 20px solid #CDCDCD;
+    border-left: 20px solid transparent;
+    height: 0;
+    width: 250px;
+}
+.podium .podium-block .rectangle-second {
+    background: linear-gradient(to bottom, #969696, #DBDBDB);
+    height: 170px;
+    width: 250px;
+    z-index: 2; /* Ensure the second podium stays below the first */
+}
+.second-size {
+    color: #fff;
+    font-weight: bold;
+    font-size: 70px;
+    padding-top:10px; /* Adjust as needed */
+}
+  
+/* third podium */
+.crown-third {
+  color: #ECA64F;
+}
+.podium .rotate-right {
+    transform: rotate(2deg);
+    z-index: 0; /* Ensure this podium stays behind the middle podium */
+    margin-right: -1px;
+    margin-bottom: -4px;
+}
+.trapezoid-third {
+    border-bottom: 20px solid #ECA64F;
+    border-right: 30px solid transparent;
+    height: 0;
+    width: 250px;
+}
+.podium .podium-block .rectangle-third {
+  background: linear-gradient(to bottom, #D18F3C, #F5BE7A);
+    height: 120px;
+    width: 250px;
+    z-index: 1; /* Make sure the third podium stays at the back */
+}
+.third-size {
+    color: #fff;
+    font-weight: bold;
+    font-size: 60px;
+    padding-top: 10px; 
+}
+
+/* leaderboard */
+.container .card {
+    background: linear-gradient(to bottom, #CEE7FF, #F0F9FF);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    border-radius:  15px;
+}
+.container {
+    width: 80%;
+
+}
+.card {
+  border: none;
+}
+
+/* Leaderboard Header Styling */
+.leaderboard-header {
+  display: flex;
+  margin-bottom: 12px;
+  align-items: center; 
+}
+.rank-title, .username-title, .point-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #004177;
+  padding-right: 10px;
+}
+.rank-title {
+  flex: 0.18;
+  text-align: left;
+}
+.username-title {
+  flex: 0.5; 
+  text-align: left;
+}
+.point-title {
+  flex: 0.3; 
+  text-align: left;
+  gap: 25px;
+}
+
+/* Leaderboard Item Styling */
+.leaderboard-item {
+  display: flex;
+  align-items: center; 
+  background: white;
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+  transition: transform 0.2s ease-in-out; 
+}
+.leaderboard-item:hover {
+  transform: scale(1.05); 
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); 
+}
+.empty {
+  flex: 0.1;
+}
+.rank, .username, .point {
+  font-size: 1.2rem; 
+  text-align: left;
+  padding-right: 10px;
+}
+
+.rank {
+  flex: 0.2; /* Adjusted to match header */
+  font-weight: bold;
+}
+
+.profile-pic img{
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
+  margin-right: 10px;
+}
+.username {
+  flex: 0.5; /* Adjusted to match header */
+  color: #333;
+}
+
+.point {
+  flex: 0.32; /* Adjusted to match header */
+  color: #333;
+}
+
 </style>
