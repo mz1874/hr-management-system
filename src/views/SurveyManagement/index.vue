@@ -183,6 +183,16 @@ const nextPage = () => {
 const goToPage = (page: number) => {
   currentPage.value = page
 }
+
+function saveEditedEvaluation()
+{
+
+}
+
+function fetchLogs()
+{
+
+}
 </script>
 
 <template>

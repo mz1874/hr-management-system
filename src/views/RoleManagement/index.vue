@@ -181,6 +181,11 @@ const nextPage = () => {
 const goToPage = (page: number) => {
   currentPage.value = page;
 };
+
+function fetchLogs()
+{
+
+}
 </script>
 
 <script lang="ts">
