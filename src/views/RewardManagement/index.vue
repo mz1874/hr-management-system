@@ -16,6 +16,11 @@
                 <input class="form-control" type="number" placeholder="Search Points" v-model="searchPoint">
                 <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
+            <select class="search-container form-select" v-model="searchStatus">
+                <option value="">All Status</option>
+                <option value="Ongoing">Ongoing</option>
+                <option value="Expired">Expired</option>
+            </select>
         </div>
         
         <!-- filter -->
@@ -52,6 +57,7 @@
                     <th scope="col">Reward Name</th>
                     <th scope="col">Points</th>
                     <th scope="col">Created On</th>
+                    <th scope="col">Status</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
@@ -61,6 +67,7 @@
                     <td>{{ item.rewardName}}</td>
                     <td>{{ item.points}}</td>
                     <td>{{ item.createdOn}}</td>
+                    <td :class="item.status === 'Ongoing' ? 'text-success' : 'text-danger'">{{ item.status}}</td>
                     <td>
                         <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">View</button>
                         <button type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
@@ -140,6 +147,7 @@
                                     <label class="form-label">End Date & Time:</label>
                                     <div class="row g-2">
                                         <div class="col-md-6">
+                                            <!-- @change="validateEndDate" -->
                                             <input type="date" class="form-control" placeholder="Select end date" v-model="currentReward.endDate" :disabled="modalType === 'view'">
                                         </div>
                                         <div class="col-md-6">
@@ -216,6 +224,7 @@ interface RewardItem {
     endTime: string
     description: string
     terms: string
+    status: string
 }
 
 const tableData = ref<RewardItem[]>([
@@ -226,8 +235,9 @@ const tableData = ref<RewardItem[]>([
         createdOn: '2024-06-30 11:27:07', 
         image: "/dist/assets/Jaya_Grocer_Gift_Card.png",
         quantity: 20,  
-        endDate: "2025-02-05", 
+        endDate: "2025-02-26", 
         endTime: "23:59", 
+        status: "",
         description: "RM100 Jaya Grocer's Gift Card. Vouchers received will be valid for a minimum period of 6 months.",
         terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
 
@@ -248,6 +258,7 @@ const tableData = ref<RewardItem[]>([
         quantity: 20, 
         endDate: "2025-02-05", 
         endTime: "23:59",
+        status: "",
         description: "Exclusive Sweet Chili Fish Wrap Drive Thru Combo Promo for only RM11.50. ", 
         terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
 
@@ -258,6 +269,18 @@ const tableData = ref<RewardItem[]>([
 4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance. `
     }, 
 ])
+
+const updateRewardStatus = (reward: RewardItem) => {
+    const currentDate = new Date();
+    const endDateTime = new Date(`${reward.endDate} ${reward.endTime}`);
+
+    reward.status = currentDate < endDateTime ? 'Ongoing' : 'Expired';
+};
+
+// Update statuses on mount
+onMounted(() => {
+    tableData.value.forEach(updateRewardStatus);
+});
 
 const showModal = ref(false)
 const currentReward = ref<Partial<RewardItem>>({});
@@ -277,7 +300,7 @@ const openRewardModal = () => {
         description: "",
         terms: "",
     }
-    modalType.value = 'create'
+    modalType.value = 'create'  
     showModal.value = true
 }
 
@@ -309,9 +332,17 @@ const saveEditedReward = () => {
     const index = tableData.value.findIndex(item => item.id === currentReward.value.id)
     if (index !== -1) {
         tableData.value[index] = { ...(currentReward.value as RewardItem) }
+        updateRewardStatus(tableData.value[index]); 
     }
     showModal.value = false
 }
+
+// const currentDate = new Date().toISOString().split("T")[0];
+// const validateEndDate = () => {
+//     if (currentReward.value.endDate && currentReward.value.endDate < currentDate) {
+//         alert("End date cannot be earlier than today.");
+//     }
+// };
 
 const addReward = () => {
     tableData.value.push({
@@ -325,6 +356,7 @@ const addReward = () => {
         endTime: currentReward.value.endTime || "",
         description: currentReward.value.description || "",
         terms: currentReward.value.terms || "",
+        status: "Ongoing"
     })
     showModal.value = false
 }
@@ -357,6 +389,7 @@ const handleImageChange = (event: Event) => {
 // filter
 const searchReward = ref('')
 const searchPoint = ref('')
+const searchStatus = ref('')
 const startDate = ref('')
 const endDate = ref('')
 
@@ -367,6 +400,9 @@ const filteredLogs = computed(() => {
 
     //search bar for points
     const matchPointSearch = searchPoint.value === '' || detail.points.toString().includes(searchPoint.value);
+
+     //search for specific status
+     const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value
     
     //custom date range for received date
     const taskDate = new Date(detail.createdOn); // Convert string date to Date object
@@ -375,7 +411,7 @@ const filteredLogs = computed(() => {
 
     const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
 
-    return matchRewardSearch && matchesDateRange && matchPointSearch;
+    return matchRewardSearch && matchesDateRange && matchPointSearch && matchStatusSearch;
   });
 });
 
@@ -474,7 +510,7 @@ const goToPage = (page: number) => {
 .form-label {
     font-weight: bold;
 }
-.form-control {
+.form-control, .form-select {
     border-color: #000000;
 }
 .row {
