@@ -27,15 +27,15 @@
         <div class="status">
           <div>
             <i class="fas fa-check-circle text-success"></i> 
-            {{ kpiData.statistics.onTrack }} on Track
+            {{ dynamicStatistics.onTrack }} on Track
           </div>
           <div>
             <i class="fas fa-exclamation-circle text-danger"></i> 
-            {{ kpiData.statistics.offTrack }} off Track
+            {{ dynamicStatistics.offTrack }} off Track
           </div>
           <div>
             <i class="fas fa-check text-primary"></i> 
-            {{ kpiData.statistics.completed }} completed
+            {{ dynamicStatistics.completed }} completed
           </div>
         </div>
       </div>
@@ -49,6 +49,7 @@
             <tr>
               <th>ID</th>
               <th>Order</th>
+              <th>Current</th>
               <th>Progress</th>
             </tr>
           </thead>
@@ -56,8 +57,10 @@
             <tr v-for="item in kpiData.details" :key="item.id">
               <td>{{ item.id }}</td>
               <td>{{ item.description }}</td>
+              <td>{{ item.progress }}</td>
               <td>
-                <div class="progress">
+                <!-- Wrap the progress bar in a container to show a tooltip on hover -->
+                <div class="progress progress-container">
                   <div 
                     class="progress-bar" 
                     :class="getProgressBarClass(item.progress)"
@@ -67,6 +70,7 @@
                     aria-valuemin="0" 
                     aria-valuemax="100"
                   ></div>
+                  <span class="progress-tooltip">{{ item.progress }}%</span>
                 </div>
               </td>
             </tr>
@@ -85,13 +89,29 @@ export default {
       kpiData: {
         title: '',
         value: 0,
-        statistics: {
-          onTrack: 0,
-          offTrack: 0,
-          completed: 0
-        },
         details: []
       }
+    }
+  },
+  computed: {
+    dynamicStatistics() {
+      let onTrack = 0;
+      let offTrack = 0;
+      let completed = 0;
+      
+      // Dynamically calculate statistics based on each detail's progress.
+      // You can adjust thresholds as needed.
+      this.kpiData.details.forEach(item => {
+        if (item.progress === 100) {
+          completed++;
+        } else if (item.progress >= 75) {
+          onTrack++;
+        } else {
+          offTrack++;
+        }
+      });
+      
+      return { onTrack, offTrack, completed };
     }
   },
   methods: {
@@ -102,19 +122,13 @@ export default {
       return 'bg-danger'
     },
     loadKpiData() {
-      // In a real application, you would fetch this data from your API
-      // For now, we'll use the route query parameters and mock data
+      // In a real application, you would fetch this data from an API.
+      // Here we use route query parameters and mock data.
       const { kpiId, title, value } = this.$route.query
-
-      // Mock data - replace with actual API call
+      
       this.kpiData = {
         title: title || 'Completeness of Order',
-        value: Number(value) || 50,
-        statistics: {
-          onTrack: 2,
-          offTrack: 0,
-          completed: 0
-        },
+        value: (value !== undefined && value !== null) ? Number(value) : 50,
         details: [
           {
             id: 1,
@@ -128,7 +142,7 @@ export default {
           },
           {
             id: 3,
-            description: 'Return rate/ month (times)',
+            description: 'Packing orders/ month (pcs)',
             progress: 80
           }
         ]
@@ -137,6 +151,15 @@ export default {
   },
   mounted() {
     this.loadKpiData()
+  },
+  watch: {
+    '$route.query': {
+      handler() {
+        this.loadKpiData()
+      },
+      immediate: true,
+      deep: true
+    }
   }
 }
 </script>
@@ -256,6 +279,33 @@ export default {
 .progress {
   height: 20px;
   background-color: #f8f9fa;
+  position: relative;
+}
+
+/* Tooltip for progress bar */
+.progress-container {
+  position: relative;
+}
+
+.progress-tooltip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.progress-container:hover .progress-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Responsive Adjustments */
