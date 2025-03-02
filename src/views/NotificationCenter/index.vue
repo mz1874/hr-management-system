@@ -249,190 +249,176 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted } from 'vue';
-import { Modal } from 'bootstrap';
+<script setup lang="ts">
+import {computed, onMounted, ref} from "vue";
+import {Modal} from "bootstrap";
 
-export default {
-  name: 'NotificationCenter',
-  setup() {
-    const searchQuery = ref('');
-    const announcements = ref([
-      {
-        id: 1,
-        title: 'Welcome to new website',
-        description: "We're excited to launch our new announcement center. Stay tuned for important updates!",
-        author: 'HR Chloe',
-        datetime: '18/10/2024 12 p.m.',
-        attachment: '1701exercise1.pdf',
-        posted: true,
-        isScheduled: false,
-        scheduleDate: '',
-        scheduleTime: '',
-        hasAvailability: false,
-        department: '',
-      },
-      {
-        id: 2,
-        title: 'Upcoming Maintenance',
-        description: 'Scheduled maintenance will take place this weekend. Expect some downtime.',
-        author: 'Admin Team',
-        datetime: '20/10/2024 5 p.m.',
-        posted: false,
-        isScheduled: false,
-        scheduleDate: '',
-        scheduleTime: '',
-        hasAvailability: false,
-        department: '',
-      },
-    ]);
-
-    const newAnnouncement = ref({
-      title: '',
-      description: '',
-      isScheduled: false,
-      scheduleDate: '',
-      scheduleTime: '',
-      hasAvailability: false,
-      department: '',
-      attachment: null,
-    });
-
-    const selectedAnnouncement = ref({});
-    const newAnnouncementModal = ref(null);
-    const viewModal = ref(null);
-    const deleteModal = ref(null);
-    const editModal = ref(null);
-    let modalInstances = {};
-
-    const filteredAnnouncements = computed(() => {
-      return announcements.value.filter(
-          (announcement) =>
-              announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-              announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-      );
-    });
-
-    const initializeModals = () => {
-      modalInstances.new = new Modal(newAnnouncementModal.value);
-      modalInstances.view = new Modal(viewModal.value);
-      modalInstances.delete = new Modal(deleteModal.value);
-      modalInstances.edit = new Modal(editModal.value);
-    };
-
-    const openNewAnnouncementModal = () => {
-      modalInstances.new.show();
-    };
-
-    const closeNewAnnouncementModal = () => {
-      modalInstances.new.hide();
-      resetNewAnnouncement();
-    };
-
-    const submitNewAnnouncement = () => {
-      announcements.value.push({
-        id: announcements.value.length + 1,
-        ...newAnnouncement.value,
-        author: 'Current User',
-        datetime: new Date().toLocaleString(),
-        posted: false
-      });
-      closeNewAnnouncementModal();
-    };
-
-    const editAnnouncement = (announcement) => {
-      selectedAnnouncement.value = { ...announcement };
-      modalInstances.edit.show();
-    };
-
-    const submitAnnouncement = () => {
-      const index = announcements.value.findIndex((a) => a.id === selectedAnnouncement.value.id);
-      if (index !== -1) {
-        announcements.value[index] = { ...selectedAnnouncement.value };
-      }
-      modalInstances.edit.hide();
-    };
-
-    const closeModal = () => {
-      modalInstances.edit.hide();
-    };
-
-    const viewAnnouncement = (announcement) => {
-      selectedAnnouncement.value = announcement;
-      modalInstances.view.show();
-    };
-
-    const closeViewModal = () => {
-      modalInstances.view.hide();
-    };
-
-    const confirmDelete = (announcement) => {
-      selectedAnnouncement.value = announcement;
-      modalInstances.delete.show();
-    };
-
-    const deleteAnnouncement = () => {
-      announcements.value = announcements.value.filter((a) => a.id !== selectedAnnouncement.value.id);
-      modalInstances.delete.hide();
-    };
-
-    const closeDeleteModal = () => {
-      modalInstances.delete.hide();
-    };
-
-    const resetNewAnnouncement = () => {
-      newAnnouncement.value = {
-        title: '',
-        description: '',
-        isScheduled: false,
-        scheduleDate: '',
-        scheduleTime: '',
-        hasAvailability: false,
-        department: '',
-        attachment: null,
-      };
-    };
-
-    const handleFileUpload = (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        if (selectedAnnouncement.value.id) {
-          selectedAnnouncement.value.attachment = file;
-        } else {
-          newAnnouncement.value.attachment = file;
-        }
-      }
-    };
-
-    onMounted(() => {
-      initializeModals();
-    });
-
-    return {
-      searchQuery,
-      announcements,
-      newAnnouncement,
-      selectedAnnouncement,
-      filteredAnnouncements,
-      newAnnouncementModal,
-      viewModal,
-      deleteModal,
-      editModal,
-      openNewAnnouncementModal,
-      closeNewAnnouncementModal,
-      submitNewAnnouncement,
-      editAnnouncement,
-      submitAnnouncement,
-      closeModal,
-      viewAnnouncement,
-      closeViewModal,
-      confirmDelete,
-      deleteAnnouncement,
-      closeDeleteModal,
-      handleFileUpload,
-    };
+const searchQuery = ref('');
+const announcements = ref([
+  {
+    id: 1,
+    title: 'Welcome to new website',
+    description: "We're excited to launch our new announcement center. Stay tuned for important updates!",
+    author: 'HR Chloe',
+    datetime: '18/10/2024 12 p.m.',
+    attachment: '1701exercise1.pdf',
+    posted: true,
+    isScheduled: false,
+    scheduleDate: '',
+    scheduleTime: '',
+    hasAvailability: false,
+    department: '',
   },
+  {
+    id: 2,
+    title: 'Upcoming Maintenance',
+    description: 'Scheduled maintenance will take place this weekend. Expect some downtime.',
+    author: 'Admin Team',
+    datetime: '20/10/2024 5 p.m.',
+    posted: false,
+    isScheduled: false,
+    scheduleDate: '',
+    scheduleTime: '',
+    hasAvailability: false,
+    department: '',
+  },
+]);
+
+const newAnnouncement = ref({
+  title: '',
+  description: '',
+  isScheduled: false,
+  scheduleDate: '',
+  scheduleTime: '',
+  hasAvailability: false,
+  department: '',
+  attachment: null,
+});
+
+interface ModalInstances {
+  new: Modal;
+  view: Modal;
+  delete: Modal;
+  edit: Modal;
+}
+const modalInstances: ModalInstances = {} as ModalInstances;
+
+
+const selectedAnnouncement = ref<any>({});
+const newAnnouncementModal = ref(null);
+const viewModal = ref(null);
+const deleteModal = ref(null);
+const editModal = ref(null);
+
+const filteredAnnouncements = computed(() => {
+  return announcements.value.filter(
+      (announcement) =>
+          announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+          announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+const initializeModals = () => {
+  modalInstances.new = new Modal(newAnnouncementModal.value);
+  modalInstances.view = new Modal(viewModal.value);
+  modalInstances.delete = new Modal(deleteModal.value);
+  modalInstances.edit = new Modal(editModal.value);
 };
+
+const openNewAnnouncementModal = () => {
+  modalInstances.new.show();
+};
+
+const closeNewAnnouncementModal = () => {
+  modalInstances.new.hide();
+  resetNewAnnouncement();
+};
+
+const submitNewAnnouncement = () => {
+  announcements.value.push({
+    id: announcements.value.length + 1,
+    ...newAnnouncement.value,
+    author: 'Current User',
+    datetime: new Date().toLocaleString(),
+    posted: false
+  });
+  closeNewAnnouncementModal();
+};
+
+const editAnnouncement = (announcement) => {
+  selectedAnnouncement.value = { ...announcement };
+  modalInstances.edit.show();
+};
+
+const submitAnnouncement = () => {
+  const index = announcements.value.findIndex((a) => a.id === selectedAnnouncement.value.id);
+  if (index !== -1) {
+    announcements.value[index] = { ...selectedAnnouncement.value };
+  }
+  modalInstances.edit.hide();
+};
+
+const closeModal = () => {
+  modalInstances.edit.hide();
+};
+
+const viewAnnouncement = (announcement) => {
+  selectedAnnouncement.value = announcement;
+  modalInstances.view.show();
+};
+
+const closeViewModal = () => {
+  modalInstances.view.hide();
+};
+
+const confirmDelete = (announcement) => {
+  selectedAnnouncement.value = announcement;
+  modalInstances.delete.show();
+};
+
+const deleteAnnouncement = () => {
+  announcements.value = announcements.value.filter((a) => a.id !== selectedAnnouncement.value.id);
+  modalInstances.delete.hide();
+};
+
+const closeDeleteModal = () => {
+  modalInstances.delete.hide();
+};
+
+const resetNewAnnouncement = () => {
+  newAnnouncement.value = {
+    title: '',
+    description: '',
+    isScheduled: false,
+    scheduleDate: '',
+    scheduleTime: '',
+    hasAvailability: false,
+    department: '',
+    attachment: null,
+  };
+};
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (selectedAnnouncement.value.id) {
+      selectedAnnouncement.value.attachment = file;
+    } else {
+      newAnnouncement.value.attachment = file;
+    }
+  }
+};
+
+onMounted(() => {
+  initializeModals();
+});
+</script>
+
+
+<script lang="ts">
+export default {
+  name : "NotificationCenter",
+}
 </script>
 
 <style scoped>

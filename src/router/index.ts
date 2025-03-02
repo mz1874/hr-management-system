@@ -10,8 +10,8 @@ import routerManagement from "@/views/RouterManagement/index.vue";
 import surveyManagement from "@/views/SurveyManagement/index.vue";
 import leaveManagement from "@/views/LeaveManagement/index.vue";
 import leaveApplication from "@/views/LeaveApplication/index.vue";
-import notificationCenter from "@/views/NotificationCenter/index.vue";
-import notificationView from "@/views/NotificationView/index.vue";
+import NotificationCenter from "@/views/NotificationCenter/index.vue";
+import NotificationView from "@/views/NotificationView/index.vue";
 import rewardMall from "@/views/RewardMall/index.vue";
 import pointDetails from "../views/RewardMall/PointDetails/index.vue";
 import rewardHistory from "../views/RewardMall/RewardHistory/index.vue";
@@ -114,12 +114,12 @@ const router = createRouter({
                 {
                     path : "notification-center",
                     name: 'notification-center',
-                    component: notificationCenter,
+                    component: NotificationCenter,
                 },
                 {
                     path : "notification-view",
                     name: 'notification-view',
-                    component: notificationView,
+                    component: NotificationView,
                 },
                 {
                     path : "personal-KPI-Management",

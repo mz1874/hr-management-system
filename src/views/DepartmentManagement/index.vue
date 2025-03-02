@@ -10,12 +10,9 @@ interface Department {
 
 const searchQuery = ref('')
 const statusFilter = ref('')
-const showAddDepartmentModal = ref(false)
-const showEditDepartmentModal = ref(false)
-const showRemoveDepartmentModal = ref(false)
-const newDepartmentName = ref('')
-const newDepartmentSorting = ref(1)
-const selectedDepartment = ref<Department | null>(null)
+const currentPage = ref(1)
+const itemsPerPage = 4
+const totalItems = computed(() => departments.value.length)
 
 const departments = ref<Department[]>([
   {
@@ -44,9 +41,14 @@ const departments = ref<Department[]>([
   }
 ])
 
-const currentPage = ref(1)
-const itemsPerPage = 4
-const totalItems = 40
+// Modals
+const showAddDepartmentModal = ref(false)
+const showEditDepartmentModal = ref(false)
+const showRemoveDepartmentModal = ref(false)
+const newDepartmentName = ref('')
+const newDepartmentSorting = ref(1)
+const newDepartmentStatus = ref<'NORMAL' | 'ON HOLD'>('NORMAL')
+const selectedDepartment = ref<Department | null>(null)
 
 const filteredDepartments = computed(() => {
   return departments.value.filter(dept => {
@@ -56,7 +58,13 @@ const filteredDepartments = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.ceil(totalItems / itemsPerPage))
+const totalPages = computed(() => Math.ceil(filteredDepartments.value.length / itemsPerPage))
+
+const paginatedDepartments = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredDepartments.value.slice(start, end)
+})
 
 const addDepartment = () => {
   if (newDepartmentName.value.trim() === '') {
@@ -67,7 +75,7 @@ const addDepartment = () => {
   const newDepartment: Department = {
     name: newDepartmentName.value,
     sorting: newDepartmentSorting.value,
-    status: 'NORMAL',
+    status: newDepartmentStatus.value,
     creationTime: new Date().toISOString()
   }
 
@@ -75,6 +83,7 @@ const addDepartment = () => {
   showAddDepartmentModal.value = false
   newDepartmentName.value = ''
   newDepartmentSorting.value = 1
+  newDepartmentStatus.value = 'NORMAL'
 }
 
 const openEditDepartmentModal = (department: Department) => {
@@ -107,17 +116,18 @@ const confirmRemoveDepartment = () => {
 }
 
 const changePage = (page: number) => {
-  currentPage.value = page
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
 }
 </script>
 
 <template>
   <div class="p-4">
-    <h2>Department Management</h2>
+    <h1 class="mb-4">Department Management</h1> <!-- Added margin-bottom -->
 
-    <!-- Search and Filter -->
-    <div class="d-flex gap-3 mb-4">
-      <!-- Search Bar -->
+    <!-- Search and filter section -->
+    <div class="d-flex gap-3 mb-4 align-items-center">
       <div class="input-group w-50">
         <span class="input-group-text"><i class="fas fa-search"></i></span>
         <input 
@@ -127,8 +137,6 @@ const changePage = (page: number) => {
           placeholder="Search Department"
         >
       </div>
-
-      <!-- Status Filter -->
       <select 
         v-model="statusFilter"
         class="form-select w-25"
@@ -137,16 +145,80 @@ const changePage = (page: number) => {
         <option value="NORMAL">Normal</option>
         <option value="ON HOLD">On Hold</option>
       </select>
-    </div>
-
-    <!-- Add Department Button -->
-    <div class="d-flex justify-content-end mb-3">
       <button 
         @click="showAddDepartmentModal = true"
         class="btn btn-success"
       >
         <i class="fas fa-plus me-2"></i>Add New Department
       </button>
+    </div>
+
+    <!-- Table section -->
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Department Name</th>
+                <th>Sorting</th>
+                <th>Status</th>
+                <th>Creation Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="department in paginatedDepartments" :key="department.name">
+                <td>{{ department.name }}</td>
+                <td>{{ department.sorting }}</td>
+                <td>
+                  <span 
+                    :class="[
+                      'badge',
+                      department.status === 'NORMAL' ? 'bg-success' : 'bg-warning text-dark'
+                    ]"
+                  >
+                    {{ department.status }}
+                  </span>
+                </td>
+                <td>{{ department.creationTime }}</td>
+                <td>
+                  <button 
+                    @click="openEditDepartmentModal(department)"
+                    class="btn btn-warning btn-sm"
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    @click="openRemoveDepartmentModal(department)"
+                    class="btn btn-danger btn-sm ms-2"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center mt-3 justify-content-start">
+          <span class="me-3">Total: {{ filteredDepartments.length }}</span>
+          <nav aria-label="Page navigation">
+            <ul class="pagination">
+              <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                <button class="page-link" @click="changePage(currentPage - 1)">Previous</button>
+              </li>
+              <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+                <button class="page-link" @click="changePage(page)">{{ page }}</button>
+              </li>
+              <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                <button class="page-link" @click="changePage(currentPage + 1)">Next</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
     </div>
 
     <!-- Add Department Modal -->
@@ -180,6 +252,17 @@ const changePage = (page: number) => {
               id="departmentSorting" 
               placeholder="Enter sorting number"
             >
+          </div>
+          <div class="mb-3">
+            <label for="departmentStatus" class="form-label">Status</label>
+            <select 
+              v-model="newDepartmentStatus"
+              class="form-select" 
+              id="departmentStatus"
+            >
+              <option value="NORMAL">Normal</option>
+              <option value="ON HOLD">On Hold</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -233,6 +316,17 @@ const changePage = (page: number) => {
               placeholder="Enter sorting number"
             >
           </div>
+          <div class="mb-3">
+            <label for="editDepartmentStatus" class="form-label">Status</label>
+            <select 
+              v-model="selectedDepartment.status"
+              class="form-select" 
+              id="editDepartmentStatus"
+            >
+              <option value="NORMAL">Normal</option>
+              <option value="ON HOLD">On Hold</option>
+            </select>
+          </div>
         </div>
         <div class="modal-footer">
           <button 
@@ -240,7 +334,7 @@ const changePage = (page: number) => {
             class="btn btn-secondary" 
             @click="showEditDepartmentModal = false"
           >
-            Close
+            Cancel
           </button>
           <button 
             type="button" 
@@ -285,89 +379,6 @@ const changePage = (page: number) => {
         </div>
       </div>
     </div>
-
-    <!-- Departments Table -->
-    <div class="card">
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Department Name</th>
-                <th>Sorting</th>
-                <th>Status</th>
-                <th>Creation Time</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="department in filteredDepartments" :key="department.name">
-                <td>{{ department.name }}</td>
-                <td>{{ department.sorting }}</td>
-                <td>
-                  <span 
-                    :class="[
-                      'badge',
-                      department.status === 'NORMAL' ? 'bg-success' : 'bg-warning text-dark'
-                    ]"
-                  >
-                    {{ department.status }}
-                  </span>
-                </td>
-                <td>{{ department.creationTime }}</td>
-                <td>
-                  <button 
-                    @click="openEditDepartmentModal(department)"
-                    class="btn btn-warning btn-sm"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    @click="openRemoveDepartmentModal(department)"
-                    class="btn btn-danger btn-sm ms-2"
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-         <!-- Pagination -->
-<div class="d-flex justify-content-between align-items-center mt-3">
-  <div>Total: {{ totalItems }}</div>
-  <nav>
-    <ul class="pagination mb-0">
-      <li 
-        :class="['page-item', { disabled: currentPage === 1 }]"
-        @click="changePage(currentPage - 1)"
-      >
-        <button class="page-link">
-          &laquo; <!-- Left chevron -->
-        </button>
-      </li>
-      <li 
-        v-for="page in totalPages"
-        :key="page"
-        :class="['page-item', { active: currentPage === page }]"
-        @click="changePage(page)"
-      >
-        <button class="page-link">{{ page }}</button>
-      </li>
-      <li 
-        :class="['page-item', { disabled: currentPage === totalPages }]"
-        @click="changePage(currentPage + 1)"
-      >
-        <button class="page-link">
-          &raquo; <!-- Right chevron -->
-        </button>
-      </li>
-    </ul>
-  </nav>
-</div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -389,7 +400,9 @@ const changePage = (page: number) => {
   background-color: white;
   padding: 20px;
   border-radius: 8px;
-  width: 400px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 1rem;
 }
 
 .modal-header {

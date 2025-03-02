@@ -57,62 +57,6 @@ const staffList = ref<Staff[]>([
     role: 'Accountant',
     department: 'Finance Department',
     status: 'Inactive'
-  },
-  {
-    id: 6,
-    name: 'Lisa Anderson',
-    dateOfBirth: '1993-12-08',
-    role: 'Sales Representative',
-    department: 'Sales Department',
-    status: 'Active'
-  },
-  {
-    id: 7,
-    name: 'James Taylor',
-    dateOfBirth: '1987-06-14',
-    role: 'IT Specialist',
-    department: 'IT Department',
-    status: 'Active'
-  },
-  {
-    id: 8,
-    name: 'Maria Garcia',
-    dateOfBirth: '1994-02-28',
-    role: 'Customer Service',
-    department: 'Sales Department',
-    status: 'Inactive'
-  },
-  {
-    id: 9,
-    name: 'Robert Brown',
-    dateOfBirth: '1989-08-11',
-    role: 'Operations Manager',
-    department: 'Operations',
-    status: 'Active'
-  },
-  {
-    id: 10,
-    name: 'Jennifer Lee',
-    dateOfBirth: '1992-01-19',
-    role: 'Marketing Coordinator',
-    department: 'Marketing Department',
-    status: 'Active'
-  },
-  {
-    id: 11,
-    name: 'William Martinez',
-    dateOfBirth: '1990-05-07',
-    role: 'Sales Representative',
-    department: 'Sales Department',
-    status: 'Active'
-  },
-  {
-    id: 12,
-    name: 'Emma Thompson',
-    dateOfBirth: '1993-10-23',
-    role: 'HR Specialist',
-    department: 'Human Resources',
-    status: 'Inactive'
   }
 ])
 
@@ -213,10 +157,10 @@ const changePage = (page: number) => {
 
 <template>
   <div class="p-4">
-    <h1>Staff Management</h1>
+    <h1 class="mb-4">Staff Management</h1> <!-- Added margin-bottom -->
 
-    <!-- Department filter -->
-    <div class="d-flex gap-3 mb-4">
+    <!-- Department filter and search section -->
+    <div class="d-flex gap-3 mb-4 align-items-center">
       <select v-model="selectedDepartment" class="form-select w-25">
         <option>Sales Department</option>
         <option>Marketing Department</option>
@@ -225,20 +169,16 @@ const changePage = (page: number) => {
         <option>IT Department</option>
         <option>Operations</option>
       </select>
-    </div>
-
-    <!-- Name search -->
-    <div class="search-container mb-4">
-      <div class="input-group w-25">
-        <span class="input-group-text"><i class="fas fa-search"></i></span>
+      <form class="search-container" role="search">
+        <i class="fas fa-search search-icon"></i>
         <input 
           v-model="searchQuery"
           type="text" 
           class="form-control" 
           placeholder="Search Full Name"
         >
-        <button @click="searchStaff" class="btn btn-success">Search</button>
-      </div>
+      </form>
+      <button @click="searchStaff" class="btn btn-primary">Search</button>
     </div>
 
     <!-- Table section -->
@@ -294,29 +234,18 @@ const changePage = (page: number) => {
         </div>
 
         <!-- Pagination -->
-        <div class="d-flex justify-content-between align-items-center mt-3">
-          <div>Total: {{ filteredStaff.length }}</div>
-          <nav>
-            <ul class="pagination mb-0">
-              <li 
-                :class="['page-item', { disabled: currentPage === 1 }]"
-                @click="changePage(currentPage - 1)"
-              >
-                <button class="page-link">&laquo;</button>
+        <div class="d-flex align-items-center mt-3 justify-content-start">
+          <span class="me-3">Total: {{ filteredStaff.length }}</span>
+          <nav aria-label="Page navigation">
+            <ul class="pagination">
+              <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                <button class="page-link" @click="changePage(currentPage - 1)">Previous</button>
               </li>
-              <li 
-                v-for="page in totalPages"
-                :key="page"
-                :class="['page-item', { active: currentPage === page }]"
-                @click="changePage(page)"
-              >
-                <button class="page-link">{{ page }}</button>
+              <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+                <button class="page-link" @click="changePage(page)">{{ page }}</button>
               </li>
-              <li 
-                :class="['page-item', { disabled: currentPage === totalPages }]"
-                @click="changePage(currentPage + 1)"
-              >
-                <button class="page-link">&raquo;</button>
+              <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                <button class="page-link" @click="changePage(currentPage + 1)">Next</button>
               </li>
             </ul>
           </nav>
@@ -695,5 +624,45 @@ const changePage = (page: number) => {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+/* Search container */
+.search-container {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: gray;
+}
+
+.search-container .form-control {
+  padding-left: 35px;
+}
+
+/* Pagination styles */
+.page-link {
+  border: 1px solid #cccccc;
+}
+
+.page-item .page-link {
+  color: #008080;
+}
+
+.page-item.active .page-link {
+  color: #fff;
+  background-color: #008080;
+  border-color: #008080;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 3px;
 }
 </style>

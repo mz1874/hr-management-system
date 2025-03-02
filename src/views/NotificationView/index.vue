@@ -1,75 +1,82 @@
-  
-  <script>
-  import { ref, computed, onMounted } from 'vue';
-  import { Modal } from 'bootstrap';
-  
+<script setup lang="ts">
+import {ref, computed, onMounted} from 'vue';
+import {Modal} from 'bootstrap';
+
+const searchQuery = ref('');
+const announcements = ref([
+  {
+    id: 1,
+    title: 'Welcome to new website',
+    description: "We're excited to launch our new announcement center.",
+    author: 'HR Chloe',
+    datetime: '2024-01-19T12:00',
+    attachment: '',
+    read: false
+  },
+  {
+    id: 2,
+    title: "Upcoming Maintenance",
+    description: "Scheduled maintenance will take place this weekend.",
+    author: 'Admin Team',
+    datetime: '2024-10-30T08:00',
+    attachment: '',
+    read: false
+  },
+]);
+
+const selectedAnnouncement = ref<any>({});
+const viewModal = ref(null);
+let modalInstance:any = null;
+
+const filteredAnnouncements = computed(() => {
+  return announcements.value.filter(announcement =>
+      announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+const viewAnnouncement = (announcement: any) => {
+  // Mark as read when clicked
+  announcement.read = true;
+  announcements.value = [...announcements.value];
+
+  selectedAnnouncement.value = announcement;
+  modalInstance.show();
+};
+
+const markAsRead = (announcement : any) => {
+  announcement.read = true;
+  announcements.value = [...announcements.value];
+};
+
+const closeViewModal = () => {
+  modalInstance.hide();
+};
+
+const markAllAsRead = () => {
+  announcements.value.forEach(a => a.read = true);
+  announcements.value = [...announcements.value];
+};
+
+const formatDate = (datetime : any) => {
+  const date = new Date(datetime);
+  return date.toLocaleDateString();
+};
+
+onMounted(() => {
+  if (viewModal.value) modalInstance = new Modal(viewModal.value);
+});
+
+</script>
+
+
+<script lang="ts">
   export default {
     name: 'NotificationView',
-    setup() {
-      const searchQuery = ref('');
-      const announcements = ref([
-        { id: 1, title: 'Welcome to new website', description: "We're excited to launch our new announcement center.", author: 'HR Chloe', datetime: '2024-01-19T12:00', attachment: '', read: false },
-        { id: 2, title: "Upcoming Maintenance", description: "Scheduled maintenance will take place this weekend.", author: 'Admin Team', datetime: '2024-10-30T08:00', attachment: '', read: false },
-      ]);
-  
-      const selectedAnnouncement = ref({});
-      const viewModal = ref(null);
-      let modalInstance = null;
-  
-      const filteredAnnouncements = computed(() => {
-        return announcements.value.filter(announcement =>
-          announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-        );
-      });
-  
-      const viewAnnouncement = (announcement) => {
-        // Mark as read when clicked
-        announcement.read = true;
-        announcements.value = [...announcements.value];
-        
-        selectedAnnouncement.value = announcement;
-        modalInstance.show();
-      };
-  
-      const markAsRead = (announcement) => {
-        announcement.read = true;
-        announcements.value = [...announcements.value];
-      };
-  
-      const closeViewModal = () => {
-        modalInstance.hide();
-      };
-  
-      const markAllAsRead = () => {
-        announcements.value.forEach(a => a.read = true);
-        announcements.value = [...announcements.value];
-      };
-  
-      const formatDate = (datetime) => {
-        const date = new Date(datetime);
-        return date.toLocaleDateString();
-      };
-  
-      onMounted(() => {
-        if (viewModal.value) modalInstance = new Modal(viewModal.value);
-      });
-  
-      return {
-        searchQuery,
-        announcements,
-        selectedAnnouncement,
-        filteredAnnouncements,
-        viewModal,
-        viewAnnouncement,
-        closeViewModal,
-        markAsRead,
-        markAllAsRead,
-        formatDate,
-      };
-    },
-  };
-  </script>
+  }
+</script>
+
+
 <template>
   <div class="main-content">
     <!-- Header -->
@@ -81,7 +88,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input v-model="searchQuery" type="text" class="search-input" placeholder="Search" />
+        <input v-model="searchQuery" type="text" class="search-input" placeholder="Search"/>
       </div>
       <button class="mark-all-btn" @click="markAllAsRead">
         ✔ Mark all as read
@@ -91,9 +98,9 @@
     <!-- Announcement List -->
     <div class="announcement-list">
       <div
-        v-for="announcement in filteredAnnouncements"
-        :key="announcement.id"
-        class="announcement-card"
+          v-for="announcement in filteredAnnouncements"
+          :key="announcement.id"
+          class="announcement-card"
       >
         <!-- Status Indicator (Hidden when read) -->
         <div v-if="!announcement.read" class="status-indicator unread"></div>
@@ -102,9 +109,10 @@
         <div class="announcement-content" @click="viewAnnouncement(announcement)">
           <strong class="announcement-title">{{ announcement.title }}</strong>
           <p class="announcement-description">
-            {{ announcement.description.length > 50 
-              ? announcement.description.substring(0, 50) + '...' 
-              : announcement.description 
+            {{
+              announcement.description.length > 50
+                  ? announcement.description.substring(0, 50) + '...'
+                  : announcement.description
             }}
           </p>
         </div>
@@ -131,8 +139,8 @@
               <p>{{ selectedAnnouncement.description }}</p>
               <p class="text-end">Best Regards<br>HR Team</p>
             </div>
-            <div class="mt-3" v-if="selectedAnnouncement.attachment">
-              <iframe :src="selectedAnnouncement.attachment" width="100%" height="400px" style="border: none;"></iframe>
+            <div class="mt-3" v-if="selectedAnnouncement?.attachment">
+              <iframe :src="selectedAnnouncement?.attachment" width="100%" height="400px" style="border: none;"></iframe>
             </div>
           </div>
           <div class="modal-footer">

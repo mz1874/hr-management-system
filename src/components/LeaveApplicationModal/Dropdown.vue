@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted} from 'vue'
 
 const isOpen = ref(false)
 const selectedFilter = ref('All')
