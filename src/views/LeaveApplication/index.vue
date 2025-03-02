@@ -1,4 +1,3 @@
-
 <script lang="ts">
 export default {
   name: "leaveManagement",
@@ -87,9 +86,9 @@ const filteredApplications = computed(() => {
   if (filterStatus.value === 'All') {
     return leaveApplications.value;
   } else if (filterStatus.value === 'Pending') {
-    return leaveApplications.value.filter(app => app.status === 'Pending');}
-  else if (filterStatus.value === 'Cancelled') {
-      return leaveApplications.value.filter(app => app.status === 'Cancelled');
+    return leaveApplications.value.filter(app => app.status === 'Pending');
+  } else if (filterStatus.value === 'Cancelled') {
+    return leaveApplications.value.filter(app => app.status === 'Cancelled');
   } else if (filterStatus.value === 'Rejected') {
     return leaveApplications.value.filter(app => app.status === 'Reject');
   } else if (filterStatus.value === 'Approved') {
@@ -143,63 +142,60 @@ onMounted(() => {
 });
 </script>
 
-
 <template>
-  <div class="main-content">
+  <div class="container-fluid main-content">
     <!-- Summary Cards -->
-    <div class="d-flex justify-content-between mb-3">
-      <div class="row row-cols-1 row-cols-md-3 g-4 w-100">
-        <!-- Pending Applications Card -->
-        <div class="col">
-          <div class="card shadow-sm mt-5 p-2">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-total-task">
-                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-file-earmark-text icon-large" viewBox="0 0 16 16">
-                  <path
-                      d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-                  <path
-                      d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-4">
-                <span class="task-text">Pending Application</span>
-                <span class="task-num">{{ summaryStats.pending }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Annual Leave Card -->
-        <div class="col">
-          <div class="card shadow-sm mt-5 p-2">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-completed">
-                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-check-circle icon-large" viewBox="0 0 16 16">
-                  <path
-                      d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16zM3.5 7.5a.5.5 0 0 0-.5.5V9a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5V8a.5.5 0 0 0-.5-.5H3.5zM8 11a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H8z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-4">
-                <span class="task-text">Remaining Annual Leave</span>
-                <span class="task-num">{{ summaryStats.annual }}</span>
+    <div class="row my-3">
+      <div class="col-12">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+          <!-- Pending Applications Card -->
+          <div class="col">
+            <div class="card shadow-sm p-2">
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="circle circle-total-task">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-file-earmark-text icon-large" viewBox="0 0 16 16">
+                    <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
+                    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                  </svg>
+                </div>
+                <div class="task-overall ms-4">
+                  <span class="task-text">Pending Application</span>
+                  <span class="task-num">{{ summaryStats.pending }}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Medical Leave Card -->
-        <div class="col">
-          <div class="card shadow-sm mt-5 p-2">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-ongoing">
-                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-x-circle icon-large" viewBox="0 0 16 16">
-                  <path
-                      d="M16 8a8 8 0 1 0-8 8 8 8 0 0 0 8-8zM4.146 4.146a.5.5 0 0 1 .708 0L8 6.293l3.146-3.147a.5.5 0 0 1 .708.708L8.707 7l3.147 3.146a.5.5 0 0 1-.708.708L8 7.707l-3.146 3.147a.5.5 0 0 1-.708-.708L7.293 7 4.146 3.854a.5.5 0 0 1 0-.708z"/>
-                </svg>
+          <!-- Annual Leave Card -->
+          <div class="col">
+            <div class="card shadow-sm p-2">
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="circle circle-completed">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-check-circle icon-large" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16zM3.5 7.5a.5.5 0 0 0-.5.5V9a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5V8a.5.5 0 0 0-.5-.5H3.5zM8 11a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H8z"/>
+                  </svg>
+                </div>
+                <div class="task-overall ms-4">
+                  <span class="task-text">Remaining Annual Leave</span>
+                  <span class="task-num">{{ summaryStats.annual }}</span>
+                </div>
               </div>
-              <div class="task-overall ms-4">
-                <span class="task-text">Remaining Medical Leave</span>
-                <span class="task-num">{{ summaryStats.medical }}</span>
+            </div>
+          </div>
+
+          <!-- Medical Leave Card -->
+          <div class="col">
+            <div class="card shadow-sm p-2">
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="circle circle-ongoing">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-x-circle icon-large" viewBox="0 0 16 16">
+                    <path d="M16 8a8 8 0 1 0-8 8 8 8 0 0 0 8-8zM4.146 4.146a.5.5 0 0 1 .708 0L8 6.293l3.146-3.147a.5.5 0 0 1 .708.708L8.707 7l3.147 3.146a.5.5 0 0 1-.708.708L8 7.707l-3.146 3.147a.5.5 0 0 1-.708-.708L7.293 7 4.146 3.854a.5.5 0 0 1 0-.708z"/>
+                  </svg>
+                </div>
+                <div class="task-overall ms-4">
+                  <span class="task-text">Remaining Medical Leave</span>
+                  <span class="task-num">{{ summaryStats.medical }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -208,9 +204,9 @@ onMounted(() => {
     </div>
 
     <!-- Action Buttons and Filter -->
-    <div class="d-flex justify-content-end mt-3 buttons">
+    <div class="d-flex justify-content-end align-items-center mb-3 gap-2">
       <!-- New Application Button -->
-      <button class="btn custom-approve me-2" data-bs-toggle="modal" data-bs-target="#leaveApplicationModal">
+      <button class="btn custom-approve" data-bs-toggle="modal" data-bs-target="#leaveApplicationModal">
         New Application
       </button>
 
@@ -224,47 +220,50 @@ onMounted(() => {
       </select>
     </div>
 
+
     <!-- Applications Table -->
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th style="width: 50px"></th>
-          <th>ID</th>
-          <th>Leave Type</th>
-          <th>Status</th>
-          <th>Applied On</th>
-          <th></th>
-          <th style="width: 50px"></th> <!-- Info button column -->
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="application in filteredApplications" :key="application.id">
-          <td>
-            <input type="checkbox" v-model="application.selected" class="select-checkbox">
-          </td>
-          <td>{{ application.id }}</td>
-          <td>{{ application.leaveType }}</td>
-          <td>
-            <span :class="['badge', getStatusBadgeClass(application.status)]">
-              {{ application.status }}
-            </span>
-          </td>
-          <td>{{ application.appliedOn }}</td>
-          <td>
-            <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
-              <i class="bi bi-info-circle"></i>
-            </button>
-          </td>
-          <td>
-            <template v-if="application.status === 'Pending'">
-              <button class="btn btn-withdraw" @click="withdrawApplication(application.id)">
-                <i class="bi bi-x-circle"></i>
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th style="width: 50px"></th>
+            <th>ID</th>
+            <th>Leave Type</th>
+            <th>Status</th>
+            <th>Applied On</th>
+            <th></th>
+            <th style="width: 50px"></th> <!-- Info button column -->
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="application in filteredApplications" :key="application.id">
+            <td>
+              <input type="checkbox" v-model="application.selected" class="select-checkbox">
+            </td>
+            <td>{{ application.id }}</td>
+            <td>{{ application.leaveType }}</td>
+            <td>
+              <span :class="['badge', getStatusBadgeClass(application.status)]">
+                {{ application.status }}
+              </span>
+            </td>
+            <td>{{ application.appliedOn }}</td>
+            <td>
+              <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
+                <i class="bi bi-info-circle"></i>
               </button>
-            </template>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            </td>
+            <td>
+              <template v-if="application.status === 'Pending'">
+                <button class="btn btn-withdraw" @click="withdrawApplication(application.id)">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Withdrawal Confirmation Modal -->
     <div class="modal fade" id="withdrawModal" ref="withdrawModal" tabindex="-1" aria-hidden="true">
@@ -298,49 +297,53 @@ onMounted(() => {
   </div>
 </template>
 
-
 <style scoped>
-
-.table {
-  border-radius: 10px; /* Rounded corners */
-  overflow: hidden; /* Ensures the rounded corners are applied properly */
-  border-collapse: separate; /* Ensures border-spacing works with rounded corners */
-  border-spacing: 0; /* Removes any space between table cells */
+.main-content {
+  padding: 2rem;
 }
 
-.table th, .table td {
-  text-align: center; /* Center text horizontally */
-  vertical-align: middle; /* Center text vertically */
-  padding: 8px; /* Optional: Add some padding for better spacing */
+/* Existing styles for table, cards, buttons, etc. remain unchanged */
+.table {
+  border-radius: 10px;
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th,
+.table td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px;
 }
 
 .table th {
-  background-color: #f8f9fa; /* Slightly shaded header background */
-  text-align: center; /* Center align header content */
+  background-color: #f8f9fa;
 }
 
 .table-bordered {
-  border: 1px solid #dee2e6; /* Adds a border around the table */
+  border: 1px solid #dee2e6;
 }
 
-.table-bordered th, .table-bordered td {
-  border: 1px solid #dee2e6; /* Adds borders to cells */
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid #dee2e6;
 }
 
 .custom-approve {
-  background-color: #82AD82; /* Green */
+  background-color: #82AD82;
   border-color: #82AD82;
   color: white;
 }
 
 .custom-reject {
-  background-color: #FF6F61; /* Red */
+  background-color: #FF6F61;
   border-color: #FF6F61;
   color: white;
 }
 
 .custom-reject:hover {
-  background-color: #FF8A80; /* Lighter red */
+  background-color: #FF8A80;
   border-color: #FF8A80;
 }
 
@@ -352,8 +355,6 @@ onMounted(() => {
 .buttons {
   margin: 3%;
 }
-
-
 
 .btn-light {
   background-color: transparent !important;
@@ -367,10 +368,9 @@ onMounted(() => {
 
 .task-text,
 .task-num {
-  display: block; /* Forces each span to be on a new line */
+  display: block;
 }
 
-/* Apply styling to  icons */
 .icon-large {
   width: 32px;
   height: 32px;
@@ -382,14 +382,12 @@ onMounted(() => {
   font-weight: 700;
 }
 
-
 .modal_small .modal-content {
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
-
 
 .modal-content {
   border-radius: 20px;
@@ -458,8 +456,8 @@ onMounted(() => {
   padding: 0.5rem 2rem;
 }
 
-
-.duration-select, .leave-type-select {
+.duration-select,
+.leave-type-select {
   border-radius: 20px;
 }
 
@@ -474,7 +472,6 @@ onMounted(() => {
 .date-entry {
   margin-bottom: 10px;
 }
-
 
 .badge {
   display: flex;
@@ -501,7 +498,6 @@ onMounted(() => {
   background-color: #6c757d;
   color: white;
 }
-
 
 .filter-btn {
   background-color: white;
@@ -535,6 +531,26 @@ onMounted(() => {
   color: #789DBC;
 }
 
-
-
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+  .card {
+    margin-bottom: 15px;
+  }
+  .task-text,
+  .task-num {
+    font-size: 14px;
+  }
+  .btn {
+    font-size: 14px;
+    padding: 0.4rem 0.8rem;
+  }
+  .table th,
+  .table td {
+    font-size: 12px;
+    padding: 6px;
+  }
+}
 </style>

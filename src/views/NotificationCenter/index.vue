@@ -147,21 +147,36 @@
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteConfirmModal" ref="deleteModal">
-      <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content p-4">
-          <div class="text-center mb-4">
-            <h3 class="mb-3">Are you sure?</h3>
-            <p class="text-muted">This action cannot be undone. This will permanently delete the announcement.</p>
-          </div>
-          <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-secondary" @click="closeDeleteModal">Cancel</button>
-            <button type="button" class="btn btn-danger" @click="deleteAnnouncement">Delete</button>
-          </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" ref="deleteModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px;">
+      <div class="modal-body p-4">
+        <div class=" mb-4">
+          <h3 class="mb-3" style="font-size: 2rem; font-weight: 500;">Are you sure?</h3>
+          <p class="text-muted" style="color: #6B7280;">This action cannot be undone. This will permanently delete the announcement.</p>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            @click="closeDeleteModal"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-success" 
+            @click="deleteAnnouncement"
+           >
+            Delete
+          </button>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
     <!-- Edit Announcement Modal -->
     <div class="modal fade" id="editAnnouncementModal" ref="editModal">

@@ -266,7 +266,7 @@
   }
 
   .announcement-actions {
-    align-self: flex-end; /* or flex-start if you prefer */
+    align-self: flex-end; 
   }
 }
 </style>
