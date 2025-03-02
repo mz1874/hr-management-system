@@ -2,42 +2,56 @@
 import { computed, ref } from 'vue'
 
 interface Department {
+  id: number
+  parentId: number | null
   name: string
   sorting: number
   status: 'NORMAL' | 'ON HOLD'
   creationTime: string
+  children?: Department[]
 }
 
 const searchQuery = ref('')
-const statusFilter = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 4
 const totalItems = computed(() => departments.value.length)
 
 const departments = ref<Department[]>([
   {
+    id: 1,
+    parentId: null,
     name: 'Department 1',
     sorting: 1,
     status: 'NORMAL',
-    creationTime: '2024-06-30 11:27:07'
+    creationTime: '2024-06-30 11:27:07',
+    children: [
+      {
+        id: 2,
+        parentId: 1,
+        name: 'Sub-Department 1-1',
+        sorting: 2,
+        status: 'NORMAL',
+        creationTime: '2024-06-30 11:27:07'
+      }
+    ]
   },
   {
+    id: 3,
+    parentId: null,
     name: 'Department 2',
-    sorting: 2,
-    status: 'ON HOLD',
-    creationTime: '2024-06-30 11:27:07'
-  },
-  {
-    name: 'Department 3',
     sorting: 1,
-    status: 'NORMAL',
-    creationTime: '2024-06-30 11:27:07'
-  },
-  {
-    name: 'Department 4',
-    sorting: 2,
-    status: 'NORMAL',
-    creationTime: '2024-06-30 11:27:07'
+    status: 'ON HOLD',
+    creationTime: '2024-06-30 11:27:07',
+    children: [
+      {
+        id: 4,
+        parentId: 3,
+        name: 'Sub-Department 2-1',
+        sorting: 2,
+        status: 'ON HOLD',
+        creationTime: '2024-06-30 11:27:07'
+      }
+    ]
   }
 ])
 
@@ -48,13 +62,17 @@ const showRemoveDepartmentModal = ref(false)
 const newDepartmentName = ref('')
 const newDepartmentSorting = ref(1)
 const newDepartmentStatus = ref<'NORMAL' | 'ON HOLD'>('NORMAL')
+const newDepartmentParentId = ref<number | null>(null)
 const selectedDepartment = ref<Department | null>(null)
 
 const filteredDepartments = computed(() => {
+  const searchTerm = searchQuery.value.toLowerCase()
   return departments.value.filter(dept => {
-    const matchesSearch = dept.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesStatus = !statusFilter.value || dept.status === statusFilter.value
-    return matchesSearch && matchesStatus
+    const matchesDept = dept.name.toLowerCase().includes(searchTerm)
+    const matchesChildren = dept.children?.some(child => 
+      child.name.toLowerCase().includes(searchTerm)
+    ) || false
+    return matchesDept || matchesChildren
   })
 })
 
@@ -63,7 +81,8 @@ const totalPages = computed(() => Math.ceil(filteredDepartments.value.length / i
 const paginatedDepartments = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
-  return filteredDepartments.value.slice(start, end)
+  const flattenedDepts = flattenDepartments(filteredDepartments.value)
+  return flattenedDepts.slice(start, end)
 })
 
 const addDepartment = () => {
@@ -73,17 +92,29 @@ const addDepartment = () => {
   }
 
   const newDepartment: Department = {
+    id: Date.now(),
+    parentId: newDepartmentParentId.value,
     name: newDepartmentName.value,
     sorting: newDepartmentSorting.value,
     status: newDepartmentStatus.value,
     creationTime: new Date().toISOString()
   }
 
-  departments.value.push(newDepartment)
+  if (newDepartmentParentId.value) {
+    const parent = departments.value.find(dept => dept.id === newDepartmentParentId.value)
+    if (parent) {
+      if (!parent.children) parent.children = []
+      parent.children.push(newDepartment)
+    }
+  } else {
+    departments.value.push(newDepartment)
+  }
+
   showAddDepartmentModal.value = false
   newDepartmentName.value = ''
   newDepartmentSorting.value = 1
   newDepartmentStatus.value = 'NORMAL'
+  newDepartmentParentId.value = null
 }
 
 const openEditDepartmentModal = (department: Department) => {
@@ -93,10 +124,33 @@ const openEditDepartmentModal = (department: Department) => {
 
 const saveEditedDepartment = () => {
   if (selectedDepartment.value) {
-    const index = departments.value.findIndex(dept => dept.name === selectedDepartment.value?.name)
-    if (index !== -1) {
-      departments.value[index] = { ...selectedDepartment.value }
+    // Remove from current parent if exists
+    if (selectedDepartment.value.parentId) {
+      const oldParent = departments.value.find(dept => dept.id === selectedDepartment.value?.parentId)
+      if (oldParent && oldParent.children) {
+        oldParent.children = oldParent.children.filter(child => child.id !== selectedDepartment.value?.id)
+      }
     }
+
+    // Add to new parent if selected
+    if (selectedDepartment.value.parentId) {
+      const newParent = departments.value.find(dept => dept.id === selectedDepartment.value?.parentId)
+      if (newParent) {
+        if (!newParent.children) newParent.children = []
+        newParent.children.push({ ...selectedDepartment.value })
+        // Remove from root level if it was there
+        departments.value = departments.value.filter(dept => dept.id !== selectedDepartment.value?.id)
+      }
+    } else {
+      // Move to root level if it was a child
+      const index = departments.value.findIndex(dept => dept.id === selectedDepartment.value?.id)
+      if (index === -1) {
+        departments.value.push({ ...selectedDepartment.value })
+      } else {
+        departments.value[index] = { ...selectedDepartment.value }
+      }
+    }
+    
     showEditDepartmentModal.value = false
     selectedDepartment.value = null
   }
@@ -109,7 +163,7 @@ const openRemoveDepartmentModal = (department: Department) => {
 
 const confirmRemoveDepartment = () => {
   if (selectedDepartment.value) {
-    departments.value = departments.value.filter(dept => dept.name !== selectedDepartment.value?.name)
+    departments.value = departments.value.filter(dept => dept.id !== selectedDepartment.value?.id)
     showRemoveDepartmentModal.value = false
     selectedDepartment.value = null
   }
@@ -120,46 +174,69 @@ const changePage = (page: number) => {
     currentPage.value = page
   }
 }
+
+const expandedIds = ref<number[]>([])
+
+const toggleExpand = (id: number) => {
+  const index = expandedIds.value.indexOf(id)
+  if (index > -1) {
+    expandedIds.value.splice(index, 1)
+  } else {
+    expandedIds.value.push(id)
+  }
+}
+
+const flattenDepartments = (departments: Department[], level = 0): any[] => {
+  return departments.reduce<Department[]>((acc, dept) => {
+    const isExpanded = expandedIds.value.includes(dept.id)
+    const searchTerm = searchQuery.value.toLowerCase()
+    const children = dept.children?.filter(child => 
+      searchQuery.value === '' || child.name.toLowerCase().includes(searchTerm)
+    )
+    const childrenNodes = children && isExpanded ? flattenDepartments(children, level + 1) : []
+    return [
+      ...acc,
+      { ...dept, level, hasChildren: !!children?.length },
+      ...childrenNodes
+    ]
+  }, [])
+}
+
+const searchDepartments = () => {
+  currentPage.value = 1
+}
 </script>
 
 <template>
   <div class="p-4">
-    <h1 class="mb-4">Department Management</h1> <!-- Added margin-bottom -->
+    <h1 class="mb-4">Department Management</h1>
 
-    <!-- Search and filter section -->
+    <!-- Search section -->
     <div class="d-flex gap-3 mb-4 align-items-center">
-      <div class="input-group w-50">
-        <span class="input-group-text"><i class="fas fa-search"></i></span>
+      <form class="search-container" role="search">
+        <i class="fas fa-search search-icon"></i>
         <input 
           v-model="searchQuery"
           type="text" 
           class="form-control" 
           placeholder="Search Department"
         >
-      </div>
-      <select 
-        v-model="statusFilter"
-        class="form-select w-25"
-      >
-        <option value="">Select Status</option>
-        <option value="NORMAL">Normal</option>
-        <option value="ON HOLD">On Hold</option>
-      </select>
-      <button 
-        @click="showAddDepartmentModal = true"
-        class="btn btn-success"
-      >
-        <i class="fas fa-plus me-2"></i>Add New Department
-      </button>
+      </form>
+      <button @click="searchDepartments" class="btn btn-primary">Search</button>
     </div>
 
     <!-- Table section -->
     <div class="card">
       <div class="card-body">
+        <div class="d-flex justify-content-end mb-3">
+          <button @click="showAddDepartmentModal = true" class="btn btn-success">Add New Department</button>
+        </div>
+
         <div class="table-responsive">
           <table class="table">
             <thead>
               <tr>
+                <th style="width: 30px"></th>
                 <th>Department Name</th>
                 <th>Sorting</th>
                 <th>Status</th>
@@ -168,35 +245,47 @@ const changePage = (page: number) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="department in paginatedDepartments" :key="department.name">
-                <td>{{ department.name }}</td>
-                <td>{{ department.sorting }}</td>
-                <td>
-                  <span 
-                    :class="[
-                      'badge',
-                      department.status === 'NORMAL' ? 'bg-success' : 'bg-warning text-dark'
-                    ]"
-                  >
-                    {{ department.status }}
-                  </span>
-                </td>
-                <td>{{ department.creationTime }}</td>
-                <td>
-                  <button 
-                    @click="openEditDepartmentModal(department)"
-                    class="btn btn-warning btn-sm"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    @click="openRemoveDepartmentModal(department)"
-                    class="btn btn-danger btn-sm ms-2"
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
+              <template v-for="department in paginatedDepartments" :key="department.id">
+                <tr>
+                  <td>
+                    <i v-if="department.hasChildren"
+                       class="bi cursor-pointer"
+                       :class="expandedIds.includes(department.id) ? 'bi-caret-down-fill' : 'bi-caret-right-fill'"
+                       @click="toggleExpand(department.id)"></i>
+                  </td>
+                  <td>
+                    <span :style="{ 'margin-left': `${department.level * 20}px` }">
+                      {{ department.name }}
+                    </span>
+                  </td>
+                  <td>{{ department.sorting }}</td>
+                  <td>
+                    <span 
+                      :class="[
+                        'badge',
+                        department.status === 'NORMAL' ? 'bg-success' : 'bg-warning text-dark'
+                      ]"
+                    >
+                      {{ department.status }}
+                    </span>
+                  </td>
+                  <td>{{ department.creationTime }}</td>
+                  <td>
+                    <button 
+                      @click="openEditDepartmentModal(department)"
+                      class="btn btn-warning btn-sm"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      @click="openRemoveDepartmentModal(department)"
+                      class="btn btn-danger btn-sm ms-2"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -264,6 +353,23 @@ const changePage = (page: number) => {
               <option value="ON HOLD">On Hold</option>
             </select>
           </div>
+          <div class="mb-3">
+            <label for="departmentParent" class="form-label">Parent Department</label>
+            <select 
+              v-model="newDepartmentParentId"
+              class="form-select" 
+              id="departmentParent"
+            >
+              <option :value="null">None (Main Department)</option>
+              <option 
+                v-for="dept in departments" 
+                :key="dept.id" 
+                :value="dept.id"
+              >
+                {{ dept.name }}
+              </option>
+            </select>
+          </div>
         </div>
         <div class="modal-footer">
           <button 
@@ -327,6 +433,24 @@ const changePage = (page: number) => {
               <option value="ON HOLD">On Hold</option>
             </select>
           </div>
+          <div class="mb-3">
+            <label for="editDepartmentParent" class="form-label">Parent Department</label>
+            <select 
+              v-model="selectedDepartment.parentId"
+              class="form-select" 
+              id="editDepartmentParent"
+            >
+              <option :value="null">None (Main Department)</option>
+              <option 
+                v-for="dept in departments" 
+                :key="dept.id" 
+                :value="dept.id"
+                :disabled="dept.id === selectedDepartment.id"
+              >
+                {{ dept.name }}
+              </option>
+            </select>
+          </div>
         </div>
         <div class="modal-footer">
           <button 
@@ -360,6 +484,7 @@ const changePage = (page: number) => {
         </div>
         <div class="modal-body">
           <p>Are you sure you want to remove <strong>{{ selectedDepartment?.name }}</strong>?</p>
+          <p class="text-danger">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
           <button 
@@ -471,5 +596,53 @@ const changePage = (page: number) => {
 .card {
   border-radius: 10px;
   border: 1px solid #eee;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.table tr td:first-child {
+  position: relative;
+}
+
+/* Search container */
+.search-container {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: gray;
+}
+
+.search-container .form-control {
+  padding-left: 35px;
+}
+
+/* Pagination styles */
+.page-link {
+  border: 1px solid #cccccc;
+}
+
+.page-item .page-link {
+  color: #008080;
+}
+
+.page-item.active .page-link {
+  color: #fff;
+  background-color: #008080;
+  border-color: #008080;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 3px;
 }
 </style>
