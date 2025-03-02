@@ -8,6 +8,7 @@ interface Staff {
   role: string
   department: string
   status: 'Active' | 'Inactive'
+  employmentDate: string
 }
 
 // State
@@ -24,7 +25,8 @@ const staffList = ref<Staff[]>([
     dateOfBirth: '1990-03-15',
     role: 'Sales Manager',
     department: 'Sales Department',
-    status: 'Active'
+    status: 'Active',
+    employmentDate: '2020-01-15'
   },
   {
     id: 2,
@@ -32,7 +34,8 @@ const staffList = ref<Staff[]>([
     dateOfBirth: '1992-07-22',
     role: 'Sales Representative',
     department: 'Sales Department',
-    status: 'Active'
+    status: 'Active',
+    employmentDate: '2021-03-10'
   },
   {
     id: 3,
@@ -40,7 +43,8 @@ const staffList = ref<Staff[]>([
     dateOfBirth: '1988-11-30',
     role: 'Marketing Specialist',
     department: 'Marketing Department',
-    status: 'Active'
+    status: 'Active',
+    employmentDate: '2019-07-01'
   },
   {
     id: 4,
@@ -48,7 +52,8 @@ const staffList = ref<Staff[]>([
     dateOfBirth: '1995-04-18',
     role: 'HR Manager',
     department: 'Human Resources',
-    status: 'Active'
+    status: 'Active',
+    employmentDate: '2018-09-20'
   },
   {
     id: 5,
@@ -56,7 +61,8 @@ const staffList = ref<Staff[]>([
     dateOfBirth: '1991-09-25',
     role: 'Accountant',
     department: 'Finance Department',
-    status: 'Inactive'
+    status: 'Inactive',
+    employmentDate: '2017-11-15'
   }
 ])
 
@@ -71,15 +77,19 @@ const selectedStaff = ref<Staff>({
   dateOfBirth: '',
   role: '',
   department: '',
-  status: 'Active'
+  status: 'Active',
+  employmentDate: ''
 })
 
 // Statistics
-const statistics = computed(() => ({
-  total: staffList.value.length,
-  active: staffList.value.filter(staff => staff.status === 'Active').length,
-  inactive: staffList.value.filter(staff => staff.status === 'Inactive').length
-}))
+const statistics = computed(() => {
+  const departmentStaff = staffList.value.filter(staff => staff.department === selectedDepartment.value)
+  return {
+    total: departmentStaff.length,
+    active: departmentStaff.filter(staff => staff.status === 'Active').length,
+    inactive: departmentStaff.filter(staff => staff.status === 'Inactive').length
+  }
+})
 
 // Computed
 const filteredStaff = computed(() => {
@@ -110,7 +120,8 @@ const openAddStaffModal = () => {
     dateOfBirth: '',
     role: '',
     department: selectedDepartment.value,
-    status: 'Active'
+    status: 'Active',
+    employmentDate: ''
   }
   showAddStaffModal.value = true
 }
@@ -198,6 +209,7 @@ const changePage = (page: number) => {
                 <th>Role</th>
                 <th>Department</th>
                 <th>Status</th>
+                <th>Employment Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -223,6 +235,7 @@ const changePage = (page: number) => {
                     {{ staff.status }}
                   </span>
                 </td>
+                <td>{{ staff.employmentDate }}</td>
                 <td>
                   <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
                   <button @click="openEditStaffModal(staff)" class="btn btn-warning btn-sm">Edit</button>
@@ -370,6 +383,16 @@ const changePage = (page: number) => {
               <option value="Inactive">Inactive</option>
             </select>
           </div>
+          <div class="mb-3">
+            <label for="staffEmploymentDate" class="form-label">Employment Date</label>
+            <input 
+              v-model="selectedStaff.employmentDate"
+              type="date" 
+              class="form-control" 
+              id="staffEmploymentDate" 
+              placeholder="Enter employment date"
+            >
+          </div>
         </div>
         <div class="modal-footer">
           <button 
@@ -407,6 +430,7 @@ const changePage = (page: number) => {
           <p><strong>Role:</strong> {{ selectedStaff.role }}</p>
           <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
           <p><strong>Status:</strong> {{ selectedStaff.status }}</p>
+          <p><strong>Employment Date:</strong> {{ selectedStaff.employmentDate }}</p>
         </div>
         <div class="modal-footer">
           <button 
@@ -487,6 +511,16 @@ const changePage = (page: number) => {
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
+          </div>
+          <div class="mb-3">
+            <label for="editStaffEmploymentDate" class="form-label">Employment Date</label>
+            <input 
+              v-model="selectedStaff.employmentDate"
+              type="date" 
+              class="form-control" 
+              id="editStaffEmploymentDate" 
+              placeholder="Enter employment date"
+            >
           </div>
         </div>
         <div class="modal-footer">
