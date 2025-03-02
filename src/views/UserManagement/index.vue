@@ -9,6 +9,9 @@ interface Staff {
   department: string
   status: 'Active' | 'Inactive'
   employmentDate: string
+  numberOfLeaves: number
+  medicalLeaves: number // Add new property
+  annualLeaves: number  // Add new property
 }
 
 // State
@@ -26,7 +29,10 @@ const staffList = ref<Staff[]>([
     role: 'Sales Manager',
     department: 'Sales Department',
     status: 'Active',
-    employmentDate: '2020-01-15'
+    employmentDate: '2020-01-15',
+    numberOfLeaves: 5,
+    medicalLeaves: 2,
+    annualLeaves: 3
   },
   {
     id: 2,
@@ -35,7 +41,10 @@ const staffList = ref<Staff[]>([
     role: 'Sales Representative',
     department: 'Sales Department',
     status: 'Active',
-    employmentDate: '2021-03-10'
+    employmentDate: '2021-03-10',
+    numberOfLeaves: 3,
+    medicalLeaves: 1,
+    annualLeaves: 2
   },
   {
     id: 3,
@@ -44,7 +53,10 @@ const staffList = ref<Staff[]>([
     role: 'Marketing Specialist',
     department: 'Marketing Department',
     status: 'Active',
-    employmentDate: '2019-07-01'
+    employmentDate: '2019-07-01',
+    numberOfLeaves: 4,
+    medicalLeaves: 2,
+    annualLeaves: 2
   },
   {
     id: 4,
@@ -53,7 +65,10 @@ const staffList = ref<Staff[]>([
     role: 'HR Manager',
     department: 'Human Resources',
     status: 'Active',
-    employmentDate: '2018-09-20'
+    employmentDate: '2018-09-20',
+    numberOfLeaves: 4,
+    medicalLeaves: 1,
+    annualLeaves: 3
   },
   {
     id: 5,
@@ -62,7 +77,10 @@ const staffList = ref<Staff[]>([
     role: 'Accountant',
     department: 'Finance Department',
     status: 'Inactive',
-    employmentDate: '2017-11-15'
+    employmentDate: '2017-11-15',
+    numberOfLeaves: 0,
+    medicalLeaves: 0,
+    annualLeaves: 0
   }
 ])
 
@@ -78,7 +96,10 @@ const selectedStaff = ref<Staff>({
   role: '',
   department: '',
   status: 'Active',
-  employmentDate: ''
+  employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
+  numberOfLeaves: 0,
+  medicalLeaves: 0,
+  annualLeaves: 0
 })
 
 // Statistics
@@ -121,7 +142,10 @@ const openAddStaffModal = () => {
     role: '',
     department: selectedDepartment.value,
     status: 'Active',
-    employmentDate: ''
+    employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
+    numberOfLeaves: 0,
+    medicalLeaves: 0,
+    annualLeaves: 0
   }
   showAddStaffModal.value = true
 }
@@ -210,18 +234,14 @@ const changePage = (page: number) => {
                 <th>Department</th>
                 <th>Status</th>
                 <th>Employment Date</th>
+                <th>No of Leaves</th> <!-- Add new column header -->
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="staff in paginatedStaff" :key="staff.id">
                 <td>{{ staff.id }}</td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <i class="fas fa-user-circle me-2"></i>
-                    {{ staff.name }}
-                  </div>
-                </td>
+                <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
                 <td>{{ staff.dateOfBirth }}</td>
                 <td>{{ staff.role }}</td>
                 <td>{{ staff.department }}</td>
@@ -236,6 +256,7 @@ const changePage = (page: number) => {
                   </span>
                 </td>
                 <td>{{ staff.employmentDate }}</td>
+                <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
                 <td>
                   <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
                   <button @click="openEditStaffModal(staff)" class="btn btn-warning btn-sm">Edit</button>
@@ -431,6 +452,11 @@ const changePage = (page: number) => {
           <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
           <p><strong>Status:</strong> {{ selectedStaff.status }}</p>
           <p><strong>Employment Date:</strong> {{ selectedStaff.employmentDate }}</p>
+          <div class="leaves-info">
+            <p><strong>Total Leaves:</strong> {{ selectedStaff.numberOfLeaves }}</p>
+            <p class="ms-3"><strong>Medical Leaves:</strong> {{ selectedStaff.medicalLeaves }}</p>
+            <p class="ms-3"><strong>Annual Leaves:</strong> {{ selectedStaff.annualLeaves }}</p>
+          </div>
         </div>
         <div class="modal-footer">
           <button 
@@ -698,5 +724,9 @@ const changePage = (page: number) => {
   display: flex;
   justify-content: center;
   margin-top: 3px;
+}
+
+.leaves-info p {
+  margin-bottom: 0.5rem;
 }
 </style>
