@@ -39,7 +39,9 @@ const leaveApplications = ref<LeaveApplication[]>([
     remainingMedicalLeave: 2,
     dates: [
       { date: '21/11/2024', duration: 'whole', leaveType: 'AL' },
-      { date: '22/11/2024', duration: 'whole', leaveType: 'AL' }
+      { date: '22/11/2024', duration: 'whole', leaveType: 'AL' },
+      { date: '22/11/2024', duration: 'whole', leaveType: 'ML' }
+
     ],
     remarks: 'N/A'
   },
@@ -316,7 +318,17 @@ onMounted(() => {
           </td>
           <td>{{ application.id }}</td>
           <td>{{ application.employeeName }}</td>
-          <td>{{ application.leaveType }}</td>
+          <td>
+            <div v-if="application.dates.length">
+              <div
+                v-for="(type, index) in Array.from(new Set(application.dates.map(item => item.leaveType)))"
+                :key="index"
+              >
+                {{ type }}
+              </div>
+            </div>
+            <span v-else>-</span>
+          </td>
           <td>
             <span :class="['badge', {
               'custom-reject': application.status === 'Reject',
