@@ -49,7 +49,6 @@
             <tr>
               <th>ID</th>
               <th>Order</th>
-              <th>Current</th>
               <th>Progress</th>
             </tr>
           </thead>
@@ -57,9 +56,7 @@
             <tr v-for="item in kpiData.details" :key="item.id">
               <td>{{ item.id }}</td>
               <td>{{ item.description }}</td>
-              <td>{{ item.progress }}</td>
               <td>
-                <!-- Wrap the progress bar in a container to show a tooltip on hover -->
                 <div class="progress progress-container">
                   <div 
                     class="progress-bar" 
@@ -69,8 +66,10 @@
                     :aria-valuenow="item.progress" 
                     aria-valuemin="0" 
                     aria-valuemax="100"
-                  ></div>
-                  <span class="progress-tooltip">{{ item.progress }}%</span>
+                  >
+                    <span class="progress-text">{{ item.currentValue }}/{{ item.maxValue }}</span>
+                  </div>
+                  <span class="progress-tooltip">{{ item.currentValue }} of {{ item.maxValue }} ({{ item.progress }}%)</span>
                 </div>
               </td>
             </tr>
@@ -100,7 +99,6 @@ export default {
       let completed = 0;
       
       // Dynamically calculate statistics based on each detail's progress.
-      // You can adjust thresholds as needed.
       this.kpiData.details.forEach(item => {
         if (item.progress === 100) {
           completed++;
@@ -133,17 +131,23 @@ export default {
           {
             id: 1,
             description: 'Picking list completed/ month (pcs)',
-            progress: 20
+            progress: 20,
+            currentValue: 240,
+            maxValue: 1200
           },
           {
             id: 2,
             description: 'Return rate/ month (times)',
-            progress: 50
+            progress: 50,
+            currentValue: 15,
+            maxValue: 30
           },
           {
             id: 3,
             description: 'Packing orders/ month (pcs)',
-            progress: 80
+            progress: 80,
+            currentValue: 800,
+            maxValue: 1000
           }
         ]
       }
@@ -276,11 +280,31 @@ export default {
   border: 1px solid #dee2e6;
 }
 
+/* Progress Bar */
 .progress {
   height: 20px;
   background-color: #f8f9fa;
   position: relative;
 }
+
+.progress-text {
+  position: absolute;
+  left: 5px;
+  color: white;
+  font-size: 12px;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  line-height: 20px;
+  transition: transform 0.3s ease, font-size 0.3s ease, font-weight 0.3s ease;
+}
+
+.progress-container:hover .progress-text {
+  transform: scale(1.2);
+  font-size: 16px;
+  font-weight: 700;
+  color: black;
+}
+
 
 /* Tooltip for progress bar */
 .progress-container {
@@ -289,9 +313,9 @@ export default {
 
 .progress-tooltip {
   position: absolute;
-  top: 50%;
+  top: -30px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
   padding: 2px 6px;
@@ -301,6 +325,7 @@ export default {
   visibility: hidden;
   transition: opacity 0.3s;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .progress-container:hover .progress-tooltip {

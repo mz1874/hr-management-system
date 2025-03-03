@@ -21,16 +21,22 @@ interface ApplicationFormData {
 // Emit event for submitting data
 const emit = defineEmits(['submit']);
 
-// Reactive form data
+// Reactive form data; pre-fill name and department from the logged‐in user
 const formData = reactive<ApplicationFormData>({
-  name: '',
-  department: '',
+  name: 'Wang Chong',       // Pre-filled logged-in user name
+  department: 'A',           // Pre-filled logged-in user department
   reasons: '',
   selectedDates: []
 });
 
 // Datepicker state
 const selectedDate = ref<Date | null>(null);
+
+// Reactive variable for primary document upload
+const primaryDocument = ref<File | null>(null);
+
+// Create a ref for the primary document input element
+const primaryDocumentInput = ref<HTMLInputElement | null>(null);
 
 // Modal reference
 const modalRef = ref<HTMLElement | null>(null);
@@ -43,12 +49,19 @@ onMounted(() => {
   }
 });
 
+// Filter function to disable past dates and weekends
+const filterDate = (date: Date): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date < today) return false;
+  const day = date.getDay();
+  return day !== 0 && day !== 6; // disable Sunday (0) and Saturday (6)
+};
+
 // Handle date selection
 const handleDateSelect = () => {
   if (!selectedDate.value) return;
-
   const dateStr = selectedDate.value.toLocaleDateString('en-GB');
-
   if (!formData.selectedDates.some(d => d.date === dateStr)) {
     formData.selectedDates.push({
       date: dateStr,
@@ -59,43 +72,70 @@ const handleDateSelect = () => {
   selectedDate.value = null;
 };
 
+// Handle primary document upload
+const handlePrimaryDocumentUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    primaryDocument.value = target.files[0];
+  }
+};
+
 // Close modal function
 const closeModal = () => {
   if (modalInstance) {
     modalInstance.hide();
   }
-
-  // Ensure any leftover backdrop is removed
+  // Remove any leftover backdrop
   const backdrop = document.querySelector('.modal-backdrop');
   if (backdrop) {
     backdrop.remove();
   }
 };
 
-// Reset form data
+// Reset form data (except name and department) and clear file input
 const resetForm = () => {
-  formData.name = '';
-  formData.department = '';
   formData.reasons = '';
   formData.selectedDates = [];
+  primaryDocument.value = null;
+  // Clear the file input element's value
+  if (primaryDocumentInput.value) {
+    primaryDocumentInput.value.value = '';
+  }
 };
 
 // Handle form submission
 const handleSubmit = () => {
-  // Create a new leave application entry
+  if (!formData.reasons) {
+    alert('Please provide a reason for your leave application.');
+    return;
+  }
+  if (formData.selectedDates.length === 0) {
+    alert('Please select at least one date.');
+    return;
+  }
+  if (!primaryDocument.value) {
+    alert('Please upload a primary document.');
+    return;
+  }
+
+  // Create an object URL for the uploaded primary document
+  const primaryDocumentURL = URL.createObjectURL(primaryDocument.value);
+
+  // Create a new leave application entry including department
   const newApplication = {
-    id: Math.floor(Math.random() * 1000), // Generate a random ID
+    id: Math.floor(Math.random() * 1000),
     name: formData.name,
+    department: formData.department,
     leaveType: formData.selectedDates[0]?.leaveType || "AL",
-    status: "Pending", // Default status when submitting
+    status: "Pending",
     appliedOn: new Date().toISOString().split('T')[0] + ' ' + new Date().toLocaleTimeString(),
     selected: false,
-    dates: [...formData.selectedDates], // Copy dates array
+    dates: [...formData.selectedDates],
     reasons: formData.reasons,
-    document: "N/A" // Placeholder for file attachment
+    document: primaryDocumentURL
   };
 
-  // Emit the data to parent component (leaveManagement.vue)
+  // Emit the data to the parent component
   emit('submit', newApplication);
 
   // Close modal, reset form, and remove backdrop
@@ -119,27 +159,38 @@ const handleSubmit = () => {
         <!-- Modal Body -->
         <div class="modal-body">
           <form @submit.prevent="handleSubmit">
-            <!-- Name & Department -->
+            <!-- Employee Information (read-only) -->
             <div class="mb-3">
               <label class="form-label">Name</label>
-              <input type="text" class="form-control" v-model="formData.name" placeholder="Enter your name" required>
+              <input type="text" class="form-control" v-model="formData.name" readonly>
             </div>
-
             <div class="mb-3">
               <label class="form-label">Department</label>
-              <input type="text" class="form-control" v-model="formData.department" placeholder="Enter your department" required>
+              <input type="text" class="form-control" v-model="formData.department" readonly>
             </div>
 
-            <!-- Reasons -->
+            <!-- Reasons (required) -->
             <div class="mb-3">
-              <label class="form-label">Reasons</label>
+              <label class="form-label">Reasons <span class="text-danger">*</span></label>
               <textarea class="form-control" v-model="formData.reasons" rows="3" placeholder="Enter your reasons" required></textarea>
             </div>
 
-            <!-- Date Picker -->
+            <!-- Primary Document Upload (required) -->
+            <div class="mb-3">
+              <label class="form-label">Upload Document</label>
+              <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="image/*,application/pdf" required>
+            </div>
+
+            <!-- Date Picker with filter -->
             <div class="mb-3">
               <label class="form-label">Select Date</label>
-              <Datepicker v-model="selectedDate" @update:modelValue="handleDateSelect" :enable-time="false" placeholder="Pick a date"/>
+              <Datepicker 
+                v-model="selectedDate" 
+                :filter="filterDate" 
+                @update:modelValue="handleDateSelect" 
+                :enable-time="false" 
+                placeholder="Pick a date"
+              />
             </div>
 
             <!-- Selected Dates -->
@@ -167,8 +218,12 @@ const handleSubmit = () => {
 
         <!-- Modal Footer -->
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-success" @click="handleSubmit">Submit Application</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Close
+          </button>
+          <button type="submit" class="btn btn-success" @click="handleSubmit">
+            Submit Application
+          </button>
         </div>
       </div>
     </div>
@@ -176,60 +231,46 @@ const handleSubmit = () => {
 </template>
 
 <style scoped>
-/* Modal Styles */
 .modal-header {
   background-color: #7DA0CA;
   color: white;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }
-
 .modal-content {
   border-radius: 12px;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
 }
-
-/* Input Fields */
 .form-control, .form-select {
   border-radius: 8px;
   padding: 10px;
 }
-
-/* Selected Dates Styling */
 .date-row {
   display: flex;
   gap: 10px;
   align-items: center;
   margin-bottom: 10px;
 }
-
 .date-row .form-control {
   flex: 2;
 }
-
 .date-row .form-select {
   flex: 1;
 }
-
 .date-row .btn {
   flex-shrink: 0;
 }
-
-/* Buttons */
 .btn-success {
   background-color: #004d3b;
   border-radius: 8px;
   font-weight: bold;
 }
-
 .btn-success:hover {
   background-color: #003328;
 }
-
 .btn-danger {
   border-radius: 8px;
 }
-
 @media (max-width: 768px) {
   .date-row {
     flex-direction: column;

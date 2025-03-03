@@ -10,15 +10,27 @@
           <form>
             <div class="field">
               <label for="email">E-mail</label>
-              <input type="email" id="email" placeholder="rowy@gmail.com">
+              <input type="email" id="email" v-model="email" placeholder="rowy@gmail.com">
             </div>
             <br>
-            <div class="field">
+            <div class="field password-field">
               <label for="password">Password</label>
-              <input type="password" id="password" placeholder="**">
+              <input :type="showPassword ? 'text' : 'password'" id="password" v-model="password" placeholder="**">
+              <div class="eye-icon" @click="togglePasswordVisibility">
+                <!-- Custom SVG eye icon that doesn't require external libraries -->
+                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </div>
             </div>
             <br>
-            <button @click="submitData()">Login</button>
+            <button @click.prevent="submitData()">Login</button>
           </form>
         </div>
       </div>
@@ -36,25 +48,27 @@ export default {
 }
 </script>
 
-
 <script setup lang="ts">
 import logo from '../../assets/logo.png';
-import {reactive, ref} from "vue";
-import {useRouter} from "vue-router";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 const router = useRouter()
 
 const email = ref("")
 const password = ref("")
 const logoUrl = ref(logo)
+const showPassword = ref(false)
 
-function submitData()
-{
-  router.push({
-    name:'home'
-  })
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value
 }
 
+function submitData() {
+  router.push({
+    name: 'home'
+  })
+}
 </script>
 
 <style scoped>
@@ -85,6 +99,7 @@ html, body {
   align-items: center;
   justify-content: center;
   text-align: center;
+  position: relative;
 }
 
 .right {
@@ -93,8 +108,12 @@ html, body {
 }
 
 .logo {
-  width: 100px; /* 调整图片大小 */
-  margin-bottom: 20px; /* 图片与表单之间的间距 */
+  width: 55%; /* 增大logo尺寸到左侧区域的一半 */
+  max-width: 300px;
+  margin-bottom: 30px; /* 图片与表单之间的间距 */
+  position: relative;
+  top: auto;
+  left: auto;
 }
 
 .box {
@@ -131,6 +150,29 @@ form {
   position: relative;
 }
 
+.password-field {
+  position: relative;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: transparent;
+  border-radius: 4px;
+}
+
+.eye-icon:hover {
+  background-color: #f5f5f5;
+}
+
 .field label {
   position: absolute;
   top: -8px;
@@ -163,12 +205,4 @@ button {
 button:hover {
   background-color: #8faf39;
 }
-
-.logo {
-  position: absolute;
-  top: 40px;
-  left: 40px;
-  width: 150px;
-}
-
 </style>

@@ -2,7 +2,6 @@
 import { ref, defineProps, watch, onMounted } from 'vue';
 import { Modal } from 'bootstrap';
 
-
 // Define interface for leave details
 interface LeaveDate {
   date: string;
@@ -45,7 +44,7 @@ const closeModal = () => {
   modalInstance?.hide();
 };
 
-// Ensure modal opens when data is passed
+// Open modal automatically when new data is passed in
 watch(() => props.selectedApplication, (newData) => {
   if (newData) {
     showModal();
@@ -66,47 +65,47 @@ watch(() => props.selectedApplication, (newData) => {
         </div>
 
         <!-- Modal Body -->
-        <div class="modal-body" v-if="selectedApplication">
+        <div class="modal-body" v-if="props.selectedApplication">
           <!-- Name -->
           <div class="mb-3">
             <label class="form-label">Name</label>
-            <input type="text" class="form-control" :value="selectedApplication.name" disabled>
+            <input type="text" class="form-control" :value="props.selectedApplication.name" disabled>
           </div>
 
           <!-- Department -->
           <div class="mb-3">
             <label class="form-label">Department</label>
-            <input type="text" class="form-control" :value="selectedApplication.department" disabled>
+            <input type="text" class="form-control" :value="props.selectedApplication.department" disabled>
           </div>
 
           <!-- Applied On -->
           <div class="mb-3">
             <label class="form-label">Applied On</label>
-            <input type="text" class="form-control" :value="selectedApplication.appliedOn" disabled>
+            <input type="text" class="form-control" :value="props.selectedApplication.appliedOn" disabled>
           </div>
 
           <!-- Leave Type -->
           <div class="mb-3">
             <label class="form-label">Leave Type</label>
-            <input type="text" class="form-control" :value="selectedApplication.leaveType" disabled>
+            <input type="text" class="form-control" :value="props.selectedApplication.leaveType" disabled>
           </div>
 
           <!-- Status -->
           <div class="mb-3">
             <label class="form-label">Status</label>
-            <input type="text" class="form-control" :value="selectedApplication.status" disabled>
+            <input type="text" class="form-control" :value="props.selectedApplication.status" disabled>
           </div>
 
           <!-- Reasons -->
           <div class="mb-3">
             <label class="form-label">Reasons</label>
-            <textarea class="form-control" :value="selectedApplication.reasons" rows="3" disabled></textarea>
+            <textarea class="form-control" :value="props.selectedApplication.reasons" rows="3" disabled></textarea>
           </div>
 
           <!-- Selected Dates -->
           <div class="mb-3">
             <h6 class="mb-3">Selected Dates:</h6>
-            <div v-for="(date, index) in selectedApplication.dates" :key="index" class="date-row">
+            <div v-for="(date, index) in props.selectedApplication.dates" :key="index" class="date-row">
               <input type="text" class="form-control" :value="date.date" disabled>
               <input type="text" class="form-control" :value="date.duration" disabled>
               <input type="text" class="form-control" :value="date.leaveType" disabled>
@@ -114,11 +113,11 @@ watch(() => props.selectedApplication, (newData) => {
           </div>
 
           <!-- Document (if available) -->
-          <div v-if="selectedApplication.document !== 'N/A'" class="mb-3">
+          <div v-if="props.selectedApplication.document !== 'N/A'" class="mb-3">
             <label class="form-label">Attached Document</label>
-            <a :href="selectedApplication.document" target="_blank" class="form-control text-primary">
-              {{ selectedApplication.document }}
-            </a>
+            <div class="pdf-viewer">
+              <embed :src="props.selectedApplication.document" type="application/pdf" width="100%" height="400px" />
+            </div>
           </div>
         </div>
 
@@ -132,7 +131,6 @@ watch(() => props.selectedApplication, (newData) => {
 </template>
 
 <style scoped>
-/* Modal Styling */
 .modal-header {
   background-color: #7DA0CA;
   color: white;
@@ -145,13 +143,11 @@ watch(() => props.selectedApplication, (newData) => {
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* Input Fields */
 .form-control {
   border-radius: 8px;
   padding: 10px;
 }
 
-/* Selected Dates Styling */
 .date-row {
   display: flex;
   gap: 10px;
@@ -161,6 +157,12 @@ watch(() => props.selectedApplication, (newData) => {
 
 .date-row .form-control {
   flex: 1;
+}
+
+.pdf-viewer {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {

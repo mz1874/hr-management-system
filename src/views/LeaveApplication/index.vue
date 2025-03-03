@@ -226,28 +226,33 @@ onMounted(() => {
       <table class="table table-bordered">
         <thead>
           <tr>
-            <th style="width: 50px"></th>
             <th>ID</th>
-            <th>Leave Type</th>
             <th>Status</th>
-            <th>Applied On</th>
-            <th></th>
+            <th>Leave Types / Dates </th>
+            <th>Reasons</th>
             <th style="width: 50px"></th> <!-- Info button column -->
+            <th style="width: 50px"></th>
+
           </tr>
         </thead>
         <tbody>
           <tr v-for="application in filteredApplications" :key="application.id">
-            <td>
-              <input type="checkbox" v-model="application.selected" class="select-checkbox">
-            </td>
             <td>{{ application.id }}</td>
-            <td>{{ application.leaveType }}</td>
             <td>
               <span :class="['badge', getStatusBadgeClass(application.status)]">
                 {{ application.status }}
               </span>
             </td>
-            <td>{{ application.appliedOn }}</td>
+            <td>
+              <span v-if="application.dates.length">
+                <div v-for="(item, index) in application.dates" :key="index">
+                  {{ item.leaveType }} {{ item.date }}
+                </div>
+              </span>
+              <span v-else>-</span>
+            </td>
+
+            <td>{{ application.reasons }}</td>
             <td>
               <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
                 <i class="bi bi-info-circle"></i>
