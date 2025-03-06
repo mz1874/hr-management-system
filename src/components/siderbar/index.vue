@@ -19,6 +19,7 @@ const navItems = reactive([
 const rewardSubmenu = reactive([
   { name: "Reward Management", link: "/home/reward-management" },
   { name: "Redemption Status", link: "/home/redemption-status" },
+  { name: "Point System", link: "/home/point-system" }
 ]);
 
 const systemSubmenu = reactive([

@@ -69,31 +69,39 @@
 
   <!-- Leaderboard Section -->
   <div class="container">
-    <div class="card p-4">
+    <div class="card">
       <div class="card-body">
-        <div class="leaderboard-header">
-          <div class="empty"></div>
-          <div class="rank-title">Rank</div>
-          <div class="username-title">Username</div>
-          <div class="point-title d-flex align-items-center">
-            <div class="icon-container" style="transform: scale(0.45);">
-              <i class="fa-solid fa-circle border-circle-icon"></i>
-              <i class="fa-solid fa-circle circle-icon"></i>
-              <i class="fa-solid fa-star star-icon"></i>
-            </div>
-            Points
-          </div>
-        </div>
-        <div v-for="(user, index) in tableData.slice(3)" :key="user.rank" class="leaderboard-item">
-          <div class="empty"></div>
-          <div class="rank">{{ user.rank }}</div>
-          <div class="profile-pic" v-if="index < tableData.length - 5">
-              <img :src="user.image" :alt="user.username">
-          </div>
-          <div class="username">
-            {{ index >= tableData.length - 5 ? '********' : user.username }}
-          </div>
-          <div class="point">{{ user.points }}</div>
+        <div class="d-flex justify-content-center">
+          <table>
+            <tr class="title-row"> 
+              <th class="rank-title col-sm-2">Rank</th>
+              <th class="username-title profile-pic col-md-4">Username</th>
+              <th class="point-title col-md-2">
+                <div class="d-flex align-items-center">
+                  <div class="icon-container" style="transform: scale(0.45); margin-right: 24px;">
+                    <i class="fa-solid fa-circle border-circle-icon"></i>
+                    <i class="fa-solid fa-circle circle-icon"></i>
+                    <i class="fa-solid fa-star star-icon"></i>
+                  </div>
+                  Points
+                </div>
+              </th>
+            </tr>
+            <tr class="leaderboard-item" v-for="(user, index) in tableData.slice(3)" :key="user.rank">
+              <td class="rank">{{ user.rank }}</td>
+              <td class="username">
+                <div class="d-flex align-items-center">
+                  <div class="profile-pic" v-if="index < tableData.length - 5">
+                    <img :src="user.image" :alt="user.username">                  
+                  </div>
+                  <div class="username">
+                    {{ index >= tableData.length - 5 ? '********' : user.username }}
+                  </div> 
+                </div>
+              </td>
+              <td class="point">{{ user.points }}</td>
+            </tr>
+          </table>
         </div>
       </div>
     </div>
@@ -113,7 +121,7 @@ interface leaderboard {
 }
 
 const tableData = ref<leaderboard[]>([
- {rank: 1, image: "/dist/assets/McDonald_Gift_Card.png", username: "Amanda", points: 500},
+ {rank: 1, image: "/dist/assets/McDonald_Gift_Card.png", username: "Amandass", points: 500},
  {rank: 2, image: "/dist/assets/McDonald_Gift_Card.png", username: "David", points: 400},
  {rank: 3, image: "/dist/assets/McDonald_Gift_Card.png", username: "Ashley", points: 300},
  {rank: 4, image: "/dist/assets/McDonald_Gift_Card.png", username: "Alexander", points: 250},
@@ -123,6 +131,7 @@ const tableData = ref<leaderboard[]>([
  {rank: 8, image: "/dist/assets/McDonald_Gift_Card.png", username: "Katy", points: 200},
  {rank: 9, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jester", points: 150},
  {rank: 10, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jackson", points: 100},
+
 ])
 
 </script>
@@ -131,39 +140,39 @@ const tableData = ref<leaderboard[]>([
 <style scoped>
 /* point icon */
 .point-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-  gap: 25px;
-}
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    gap: 25px;
+  }
 
-.icon-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transform: scale(0.6);
-}
+  .icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transform: scale(0.6);
+  }
 
-.border-circle-icon {
-  font-size: 4em !important;
-  color: #FFDE59;
-  position: absolute;
-  text-shadow: 0px 2px 5px rgba(176, 176, 176, 0.5);
-}
+  .border-circle-icon {
+    font-size: 4em !important;
+    color: #FFDE59;
+    position: absolute;
+    text-shadow: 0px 2px 5px rgba(176, 176, 176, 0.5);
+  }
 
-.circle-icon {
-  font-size: 3em !important;
-  color: #FDC14B;
-  position: absolute;
-}
+  .circle-icon {
+    font-size: 3em !important;
+    color: #FDC14B;
+    position: absolute;
+  }
 
-.star-icon {
-  font-size: 1.6em !important;
-  color: white;
-  position: absolute;
-}
+  .star-icon {
+    font-size: 1.6em !important;
+    color: white;
+    position: absolute;
+  }
 
 .podium {
     display: flex;
@@ -293,58 +302,61 @@ const tableData = ref<leaderboard[]>([
   border: none;
 }
 
-/* Leaderboard Header Styling */
-.leaderboard-header {
-  display: flex;
-  margin-bottom: 12px;
-  align-items: center; 
+.container .card {
+  background: linear-gradient(to bottom, #CEE7FF, #F0F9FF);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+  border-radius: 15px;
 }
+
+.card {
+  border: none;
+}
+
+table {
+  width: 90%;
+  background-color: transparent;
+  border-collapse: separate;
+  border-spacing: 0px 15px; /* More spacing between rows */
+}
+
+th, td {
+  text-align: left;
+  padding: 10px;
+}
+
+.leaderboard-item {
+  background: white !important;
+  border-radius: 15px;
+  transition: transform 0.2s ease-in-out;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Apply hover effect to the entire row */
+.leaderboard-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+td:first-child, th:first-child {
+  border-radius: 15px 0 0 15px;
+  padding-left: 50px;
+}
+
+td:last-child {
+  border-radius: 0 15px 15px 0;
+}
+
 .rank-title, .username-title, .point-title {
   font-size: 1.3rem;
   font-weight: bold;
   color: #004177;
-  padding-right: 10px;
-}
-.rank-title {
-  flex: 0.18;
-  text-align: left;
-}
-.username-title {
-  flex: 0.5; 
-  text-align: left;
-}
-.point-title {
-  flex: 0.3; 
-  text-align: left;
-  gap: 25px;
 }
 
-/* Leaderboard Item Styling */
-.leaderboard-item {
-  display: flex;
-  align-items: center; 
-  background: white;
-  margin-bottom: 12px;
-  padding: 10px;
-  border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-  transition: transform 0.2s ease-in-out; 
-}
-.leaderboard-item:hover {
-  transform: scale(1.05); 
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); 
-}
-.empty {
-  flex: 0.1;
-}
 .rank, .username, .point {
   font-size: 1.2rem; 
-  text-align: left;
-  padding-right: 10px;
 }
 
 .rank {
-  flex: 0.2; /* Adjusted to match header */
   font-weight: bold;
 }
 
@@ -353,17 +365,6 @@ const tableData = ref<leaderboard[]>([
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  overflow: hidden;
   margin-right: 10px;
 }
-.username {
-  flex: 0.5; /* Adjusted to match header */
-  color: #333;
-}
-
-.point {
-  flex: 0.32; /* Adjusted to match header */
-  color: #333;
-}
-
 </style>

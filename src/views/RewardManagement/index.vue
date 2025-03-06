@@ -18,6 +18,7 @@
             </form>
             <select class="search-container form-select" v-model="searchStatus">
                 <option value="">All Status</option>
+                <option value="Draft">Draft</option>
                 <option value="Ongoing">Ongoing</option>
                 <option value="Expired">Expired</option>
             </select>
@@ -67,7 +68,12 @@
                     <td>{{ item.rewardName}}</td>
                     <td>{{ item.points}}</td>
                     <td>{{ item.createdOn}}</td>
-                    <td :class="item.status === 'Ongoing' ? 'text-success' : 'text-danger'">{{ item.status}}</td>
+                    <td :class="{
+                        'text-success': item.status === 'Ongoing',
+                        'text-danger': item.status === 'Expired',
+                        'text-primary': item.status === 'Draft'}">
+                        {{ item.status }}
+                    </td>
                     <td>
                         <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">View</button>
                         <button type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
@@ -174,12 +180,16 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
+                    <button type="button" class="btn btn-secondary" @click="showModal=false">Close</button>
+                    
+                    <template v-if="modalType === 'create' || (modalType === 'edit' && currentReward.status === 'Draft')">
+                        <button type="button" class="btn btn-primary" @click="saveAsDraft">Save as Draft</button>
+                        <button type="button" class="btn btn-success" @click="publishReward">Publish</button>
+                    </template>
 
-                    <!-- Create Button (when creating a new reward) -->
-                    <button v-if="modalType === 'create'" type="button" class="btn btn-success" @click="addReward">Create</button>
-                    <!-- Save Button (when editing an existing reward) -->
-                    <button v-if="modalType === 'edit'" type="button" class="btn btn-primary" @click="saveEditedReward">Save</button>
+                    <template v-if="modalType === 'edit' && (currentReward.status === 'Ongoing' || currentReward.status === 'Expired')">
+                        <button type="button" class="btn btn-primary" @click="saveEditedReward">Save</button>
+                    </template>
                 </div>
             </div>
         </div>
@@ -318,6 +328,7 @@ const openEditModal = (reward: RewardItem) => {
 
 const showRemoveModal = ref(false)
 const modalRemoveType = ref<'delete' | 'reset'>('delete')
+
 const openDeleteModal = (reward: RewardItem) => {
     currentReward.value = reward
     modalRemoveType.value = 'delete'
@@ -328,15 +339,6 @@ const openResetModal = () => {
     showRemoveModal.value = true
 }
 
-const saveEditedReward = () => {
-    const index = tableData.value.findIndex(item => item.id === currentReward.value.id)
-    if (index !== -1) {
-        tableData.value[index] = { ...(currentReward.value as RewardItem) }
-        updateRewardStatus(tableData.value[index]); 
-    }
-    showModal.value = false
-}
-
 // const currentDate = new Date().toISOString().split("T")[0];
 // const validateEndDate = () => {
 //     if (currentReward.value.endDate && currentReward.value.endDate < currentDate) {
@@ -344,22 +346,65 @@ const saveEditedReward = () => {
 //     }
 // };
 
-const addReward = () => {
-    tableData.value.push({
-        id: tableData.value.length + 1,
-        rewardName: currentReward.value.rewardName || "Untitled Reward",
-        points: currentReward.value.points || 0,
-        createdOn: new Date().toISOString().slice(0, 19).replace("T", " "),
-        image: currentReward.value.image || "",
-        quantity: currentReward.value.quantity || 0,
-        endDate: currentReward.value.endDate || "",
-        endTime: currentReward.value.endTime || "",
-        description: currentReward.value.description || "",
-        terms: currentReward.value.terms || "",
-        status: "Ongoing"
-    })
-    showModal.value = false
+const publishReward = () => {
+    if (modalType.value === 'create') {
+        const newReward: RewardItem = {
+            id: tableData.value.length + 1,
+            rewardName: currentReward.value.rewardName || "Untitled Reward",
+            points: currentReward.value.points || 0,
+            createdOn: new Date().toISOString().slice(0, 19).replace("T", " "),
+            image: currentReward.value.image || "",
+            quantity: currentReward.value.quantity || 0,
+            endDate: currentReward.value.endDate || "",
+            endTime: currentReward.value.endTime || "",
+            description: currentReward.value.description || "",
+            terms: currentReward.value.terms || "",
+            status: "Ongoing"
+        };
+        updateRewardStatus(newReward);
+        tableData.value.push(newReward);
+
+    } else {
+        //edit an existing reward -> update status
+        const index = tableData.value.findIndex(r => r.id === currentReward.value.id);
+        if (index !== -1) {
+            tableData.value[index] = { ...(currentReward.value as RewardItem) };
+            updateRewardStatus(tableData.value[index]);        }
+    }
+    showModal.value = false;
+};
+
+const saveEditedReward = () => {
+    const index = tableData.value.findIndex(item => item.id === currentReward.value.id);
+    if (index !== -1) {
+        tableData.value[index] = { ...(currentReward.value as RewardItem) };
+        updateRewardStatus(tableData.value[index]);
+    }
+    showModal.value = false;
 }
+
+const saveAsDraft = () => {
+    if (modalType.value === 'create') {
+        const newDraft: RewardItem = {
+            id: tableData.value.length + 1,
+            rewardName: currentReward.value.rewardName || "Untitled Reward",
+            points: currentReward.value.points || 0,
+            createdOn: new Date().toISOString().slice(0, 19).replace("T", " "),
+            image: currentReward.value.image || "",
+            quantity: currentReward.value.quantity || 0,
+            endDate: currentReward.value.endDate || "",
+            endTime: currentReward.value.endTime || "",
+            description: currentReward.value.description || "",
+            terms: currentReward.value.terms || "",
+            status: "Draft"
+        };
+        tableData.value.push(newDraft);
+    } else {
+        const index = tableData.value.findIndex(r => r.id === currentReward.value.id);
+        if (index !== -1) tableData.value[index].status = 'Draft';
+    }
+    showModal.value = false;
+};
 
 const deleteReward = () => {
     tableData.value = tableData.value.filter(item => item.id !== currentReward.value.id)

@@ -25,6 +25,7 @@ import PersonalKPIDetails from "@/views/PersonalKPIManagementDetails/index.vue";
 import KPIDashboard from "@/views/KPIDashboard/index.vue" ;
 import roleManagement from "@/views/RoleManagement/index.vue";
 import reportGeneration from "@/views/ReportGeneration/index.vue" ;
+import pointSystem from "@/views/PointSystem/index.vue" ;
 /**
  * Please define your page router to the below
  */
@@ -155,6 +156,11 @@ const router = createRouter({
                     path : "report-generation",
                     name: 'report-generation',
                     component: reportGeneration ,
+                },
+                {
+                    path : "point-system",
+                    name: 'point-system',
+                    component: pointSystem ,
                 }
             ]
         },
