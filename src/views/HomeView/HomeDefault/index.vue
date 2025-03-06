@@ -31,14 +31,16 @@
     </div>
 
     <br>
-    <h2>HR Department</h2>
+    <!-- Dynamic Department Title -->
+    <h2>{{ selectedDepartment }} Department</h2>
     <div class="chart-section my-4">
-      <h4 class="text-center">Number of finished jobs in HR department</h4>
+      <!-- Dynamic Chart Header -->
+      <h4 class="text-center">Number of finished jobs in {{ selectedDepartment }} department</h4>
       <div class="d-flex justify-content-center my-3">
         <select v-model="selectedDepartment" class="form-select mx-2" style="width: 150px;">
-          <option value="HR">HR</option>
-          <option value="Sales">Sales</option>
-          <option value="IT">IT</option>
+          <option v-for="dept in departments" :key="dept" :value="dept">
+            {{ dept }}
+          </option>
         </select>
         <select v-model="selectedMonth" class="form-select mx-2" style="width: 150px;">
           <option value="January">January</option>
@@ -54,24 +56,37 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, watch} from "vue";
+import { ref, onMounted, watch } from "vue";
 import Chart from "chart.js/auto";
 
-const chartCanvas = ref(null);
-let chartInstance = null;
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
+let chartInstance: Chart | null = null;
 
 const selectedDepartment = ref("HR");
 const selectedMonth = ref("January");
 
-const chartData = {
-  HR: {January: [60, 30, 10], February: [50, 40, 10], March: [70, 20, 10]},
-  Sales: {January: [80, 15, 5], February: [75, 20, 5], March: [90, 5, 5]},
-  IT: {January: [50, 40, 10], February: [60, 30, 10], March: [55, 35, 10]}
+const departments = ref([
+  "Warehouse",
+  "Logistic",
+  "Supply Chain",
+  "Account",
+  "HR",
+  "Marketing",
+  "Sales"
+]);
+
+const chartData: Record<string, Record<string, number[]>> = {
+  Warehouse: { January: [60, 30, 10], February: [50, 40, 10], March: [70, 20, 10] },
+  Logistic: { January: [80, 15, 5], February: [75, 20, 5], March: [90, 5, 5] },
+  "Supply Chain": { January: [50, 40, 10], February: [60, 30, 10], March: [55, 35, 10] },
+  Account: { January: [60, 30, 10], February: [50, 40, 10], March: [70, 20, 10] },
+  HR: { January: [60, 30, 10], February: [50, 40, 10], March: [70, 20, 10] },
+  Marketing: { January: [80, 15, 5], February: [75, 20, 5], March: [90, 5, 5] },
+  Sales: { January: [50, 40, 10], February: [60, 30, 10], March: [55, 35, 10] }
 };
 
 const updateChart = () => {
   const newData = chartData[selectedDepartment.value][selectedMonth.value];
-
   if (chartInstance) {
     chartInstance.data.datasets[0].data = newData;
     chartInstance.update();
@@ -97,13 +112,9 @@ onMounted(() => {
   }
 });
 
+watch([selectedDepartment, selectedMonth], updateChart);
 </script>
 
-<script lang="ts">
-  export default {
-    name: "HomeDefault",
-  }
-</script>
 <style scoped>
 body {
   min-height: 100vh;
@@ -116,7 +127,7 @@ body {
   background-color: #DFE9DE;
   padding: 0.5rem;
   height: 60px;
-  margin-left: 250px; /* Width of sidebar */
+  margin-left: 250px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -132,7 +143,7 @@ body {
   width: 250px;
   padding: 0;
   overflow-y: auto;
-  z-index: 1031; /* Higher than header */
+  z-index: 1031;
 }
 
 .logo-container {
@@ -155,9 +166,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-
 }
-
 
 .nav-item {
   padding: 0.8rem 1rem;
@@ -207,7 +216,7 @@ body {
 
 .bg-primary {
   background-color: #5D9FD6 !important;
-  border: 5px solid #B3CFE6; /* Default border color */
+  border: 5px solid #B3CFE6;
   border-radius: 35px;
 }
 
@@ -224,7 +233,7 @@ body {
 
 .bg-success {
   background-color: #6CC763 !important;
-  border: 5px solid #ABE3A5; /* Default border color */
+  border: 5px solid #ABE3A5;
   border-radius: 35px;
 }
 
@@ -241,7 +250,7 @@ body {
 
 .bg-warning {
   background-color: #FFC107 !important;
-  border: 5px solid #FDD853; /* Default border color */
+  border: 5px solid #FDD853;
   border-radius: 35px;
 }
 
@@ -258,7 +267,7 @@ body {
 
 .bg-danger {
   background-color: #F2A9A3 !important;
-  border: 5px solid #F3C5C1; /* Default border color */
+  border: 5px solid #F3C5C1;
   border-radius: 35px;
 }
 
@@ -297,5 +306,4 @@ body {
   display: flex;
   flex-direction: column;
 }
-
 </style>
