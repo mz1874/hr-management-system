@@ -13,7 +13,13 @@ const navItems = reactive([
   { name: "KPI Management", link: "/home/KPI-management" },
   { name: "Notification Center", link: "/home/notification-center" },
   { name: "Leave Management", link: "/home/leave-management" },
-  { name: "Evaluation Center", link: "/home/survey-management" },
+  // { name: "Evaluation Center", link: "/home/survey-management" },
+]);
+
+
+const evaluationCenter = reactive([
+  { name: "Evaluation List", link: "/home/survey-management" },
+  { name: "Department Evaluation", link: "/home/department-evaluation" }
 ]);
 
 const rewardSubmenu = reactive([
@@ -34,9 +40,14 @@ const systemSubmenu = reactive([
 // 控制子目录的展开和收起
 const showRewardSubmenu = ref(false);
 const showSystemSubmenu = ref(false);
+const showEvaluationCenter = ref(false);
 
 const toggleRewardSubmenu = () => {
   showRewardSubmenu.value = !showRewardSubmenu.value;
+};
+
+const toggleEvaluationCenter = () => {
+  showEvaluationCenter.value = !showEvaluationCenter.value;
 };
 
 const toggleSystemSubmenu = () => {
@@ -62,6 +73,18 @@ const toggleSystemSubmenu = () => {
     </a>
     <div v-if="showRewardSubmenu" class="submenu">
       <router-link v-for="sub in rewardSubmenu" :key="sub.name" :to="sub.link" class="nav-item sub-item">
+        {{ sub.name }}
+      </router-link>
+    </div>
+
+
+    <!-- Evaluation center -->
+    <a href="#" class="nav-item" @click.prevent="toggleEvaluationCenter">
+      Evaluation center
+      <span class="arrow-icon">{{ showEvaluationCenter ? '▲' : '▼' }}</span>
+    </a>
+    <div v-if="showEvaluationCenter" class="submenu">
+      <router-link v-for="sub in evaluationCenter" :key="sub.name" :to="sub.link" class="nav-item sub-item">
         {{ sub.name }}
       </router-link>
     </div>

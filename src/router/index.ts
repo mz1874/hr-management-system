@@ -27,6 +27,7 @@ import roleManagement from "@/views/RoleManagement/index.vue";
 import reportGeneration from "@/views/ReportGeneration/index.vue" ;
 import pointSystem from "@/views/PointSystem/index.vue" ;
 import employeeTaskDetailsPage from "@/views/KPIManagement/EmployeeTaskDetails/index.vue" ;
+import detailedEvaluationList from "@/views/SurveyManagement/DetailedEvaluationList/index.vue";
 /**
  * Please define your page router to the below
  */
@@ -77,6 +78,11 @@ const router = createRouter({
                     path : "survey-management",
                     name: 'survey-management',
                     component: surveyManagement,
+                },
+                {
+                    path : "department-evaluation",
+                    name: 'DetailedEvaluationList',
+                    component: detailedEvaluationList,
                 },
                 {
                     path : "leave-management",
