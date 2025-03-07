@@ -126,7 +126,7 @@
                                     <label for="input-file" id="drop-area">
                                         <input type="file" accept="image/*" id="input-file" hidden @change="handleImageChange" :disabled="modalType === 'view'">
                                         <div id="img-view" v-if="currentReward.image">
-                                            <img :src="getImagePath(currentReward.image)" alt="Reward Image" class="img-fluid">
+                                            <img :src="currentReward.image" alt="Reward Image" class="img-fluid">
                                         </div>
                                         <div id="img-view" v-else>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-card-image" viewBox="0 0 16 16">
@@ -243,7 +243,7 @@ const tableData = ref<RewardItem[]>([
         rewardName: 'Jaya Grocer Gift Card', 
         points: 50, 
         createdOn: '2024-06-30 11:27:07', 
-        image: "/dist/assets/Jaya_Grocer_Gift_Card.png",
+        image: new URL('@/assets/Jaya_Grocer_Gift_Card.png', import.meta.url).href,
         quantity: 20,  
         endDate: "2025-02-26", 
         endTime: "23:59", 
@@ -264,7 +264,7 @@ const tableData = ref<RewardItem[]>([
         rewardName: 'McDonald Coupon', 
         points: 100, 
         createdOn: '2024-06-30 11:27:07', 
-        image: "/dist/assets/McDonald_Gift_Card.png",
+        image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href,
         quantity: 20, 
         endDate: "2025-02-05", 
         endTime: "23:59",

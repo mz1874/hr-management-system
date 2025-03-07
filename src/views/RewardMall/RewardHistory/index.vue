@@ -85,7 +85,7 @@
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Image:</label>
                                 <div id="drop-area">
-                                    <img :src="getImagePath(selectedDetails.img)" alt="Reward Image" class="image" disabled>
+                                    <img :src="selectedDetails.img" alt="Reward Image" class="image" disabled>
                                 </div>
                             </div>
                             <div class="form-group mb-4">
@@ -147,7 +147,7 @@ const getImagePath = (img: any) => {
 const rewardDetails = ref([
   {
     id: 1, 
-    img: "Jaya_Grocer_Gift_Card.png",
+    img: new URL('@/assets/Jaya_Grocer_Gift_Card.png', import.meta.url).href,
     redeemed: "2024-06-30 11:27:07", 
     points: "50", 
     rewardName: "Jaya Grocer's Gift Card", 

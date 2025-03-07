@@ -9,9 +9,10 @@
       <option>Sales Department</option>
       <option>Marketing Department</option>
       <option>Account Department</option>
-      <option>Purchasing Department</option>
-      <option>Warehouse & Warehouse Office</option>
+      <option>HR Department</option>
+      <option>Warehouse Department</option>
       <option>Logistics Department</option>
+      <option>Supply Chain Department</option>
     </select>
   </div>
 
@@ -27,6 +28,7 @@
     <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">All Status</option>
+      <option>Not Yet Started</option>
       <option>Completed</option>
       <option>Ongoing</option>
       <option>Delayed</option>
@@ -48,7 +50,7 @@
               <th>Task Name</th>
               <th>Start Date</th>
               <th>Due Date</th>
-              <th>Target</th>
+              <th>Total Target</th>
               <th>Current</th>
               <th>Status</th>
               <th>Actions</th>
@@ -60,12 +62,13 @@
               <td>{{ task.taskName }}</td>
               <td>{{ task.startDate }}</td>
               <td>{{ task.completionDate }}</td>
-              <td>{{ task.target.value}} {{ task.target.unit }}</td>
+              <td>{{ getTotalTarget(task) }} {{ task.target.unit }}</td>
               <td>200</td>
               <td>
                 <span :class="['badge',
                     task.status === 'Completed' ? 'bg-success' : 
-                    task.status === 'Ongoing' ? 'bg-warning' : 'bg-danger'
+                    task.status === 'Ongoing' ? 'bg-warning' : 
+                    task.status === 'Delayed' ? 'bg-danger' : 'bg-primary'
                   ]">
                   {{ task.status }}
                 </span>
@@ -175,11 +178,11 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h3 class="modal-title">
             {{ modalType === 'edit' ? 'Edit Task':
               modalType === 'create' ? 'Create New Task' : ''}}
-          </h5>
-          <button type="button" class="btn-close" @click="showModal = false"></button>
+          </h3>
+          <button v-if="modalType === 'edit'" type="button" class="btn btn-success" @click="markAsComplete(selectedTask)">Mark as Complete</button>
         </div>
         <div class="modal-body">
           <div class="row">
@@ -212,13 +215,13 @@
 
                 <!-- Points Given -->
                 <div class="mb-3">
-                  <label for="pointsGiven" class="form-label">Points Given:</label>
+                  <label for="pointsGiven" class="form-label">Points Given For Each Individual:</label>
                   <input type="number" class="form-control" id="pointsGiven" placeholder="Enter points" v-model="selectedTask.pointsGiven">
                 </div>
 
                 <!-- Target -->
                 <div class="row mb-3">
-                  <label for="target" class="form-label">Target:</label>
+                  <label for="target" class="form-label">Target For Each Individual:</label>
                   <div class="col-md-6">
                     <input type="number" class="form-control" id="target" placeholder="Enter target" v-model="selectedTask.target.value">
                   </div>
@@ -287,7 +290,7 @@
           <button type="button" class="btn-close" @click="showDeleteTaskModal = false"></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete this task?</p>
+          <p>Are you sure you want to delete this task, <b>{{selectedTask.taskName}}</b>?</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showDeleteTaskModal = false">Cancel</button>
@@ -326,17 +329,22 @@ const tasks = ref<Task[]>([
   { 
     id: 1, 
     taskName: 'Complete Order', 
-    taskDescription: 'Task description', 
-    status: 'Completed',
-    startDate: '2023-10-01',
-    completionDate: '2023-10-10',
+    taskDescription: 'Send order to customer', 
+    status: 'Ongoing',
+    startDate: '2025-03-01',
+    completionDate: '2025-03-12',
     pointsGiven: 50,
-    target: { value: 500, unit: "pcs" },
+    target: { value: 100, unit: "pcs" },
     assignedTo: '',
-    assignedUsers: [{username: 'Alice'}, {username: 'Jester'}],
+    assignedUsers: [{username: 'Alice'}, {username: 'Jester'}, {username: 'Amanda'}],
     department: "Sales Department"
   },
 ])
+
+//get total target
+const getTotalTarget = (task: Task) => {
+  return task.target.value * task.assignedUsers.length;
+};
 
 // filter
 const searchTaskName = ref('')
@@ -402,7 +410,7 @@ const openCreateTaskModal = () => {
     taskName: '',
     taskDescription: '',
     status: 'Ongoing',
-    startDate: new Date().toISOString().slice(0, 19).replace("T", " "),
+    startDate: '',
     completionDate: '',
     pointsGiven: 0,
     target: { value: 0, unit: "" },
@@ -415,11 +423,6 @@ const openCreateTaskModal = () => {
   showModal.value = true
 }
 
-// const openViewTaskModal = (task: Task) => {
-//   selectedTask.value = { ...task }
-//   showViewTaskModal.value = true
-// }
-
 const openEditTaskModal = (task: Task) => {
   selectedTask.value = { ...task }
   modalType.value = 'edit'
@@ -431,13 +434,39 @@ const openDeleteTaskModal = (task: Task) => {
   showDeleteTaskModal.value = true
 }
 
+const updateTaskStatus = (task: Task) => {
+
+  const currentDate = new Date();
+  const startDate = new Date(task.startDate);
+  const endDate = new Date(task.completionDate); 
+
+  if (task.status !== 'Completed') { 
+    if (currentDate < startDate) {
+        task.status = 'Not Yet Started'; 
+    } else if (currentDate <= endDate) {
+        task.status = 'Ongoing';
+    } else if (endDate > currentDate) {
+        task.status = 'Delayed';
+    }
+  }
+};
+
 const saveEditedTask = () => {
   const index = tasks.value.findIndex(task => task.id === selectedTask.value.id)
   if (index !== -1) {
     tasks.value[index] = { ...selectedTask.value }
+    updateTaskStatus(tasks.value[index]);  
   }
   showModal.value = false
 }
+
+const markAsComplete = (task: Task) => {
+  const index = tasks.value.findIndex(t => t.id === task.id);
+  if (index !== -1) {
+    tasks.value[index] = { ...tasks.value[index], status: 'Completed' };
+  }
+  showModal.value = false
+};
 
 const confirmDeleteTask = () => {
   tasks.value = tasks.value.filter(task => task.id !== selectedTask.value.id)
@@ -479,7 +508,7 @@ const createTask = () => {
     assignedUsers: isUserAssignment ? selectedTask.value.assignedUsers : [],
     department: selectedDepartment.value
   }
-
+  updateTaskStatus(task);
   tasks.value.push(task)
   showModal.value = false
 }

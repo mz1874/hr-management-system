@@ -1,13 +1,14 @@
 <template>
-  <div class="d-flex mb-4">
+  <div class="title-page mb-4">
+    <svg @click="goToKPIManagement()" xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-arrow-left-short" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5"/>
+    </svg>
     <h2>{{ selectedTask.taskName }}</h2>
   </div>
 
-  <div class="line mb-4"></div>
-
   <!-- Search Section: Full-width search bar -->
   <div class="d-flex gap-3 mb-4 mt-3">
-    <div class="input-group w-100">
+    <div class="input-group w-25">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
       <input
         v-model="searchUsername"
@@ -20,6 +21,35 @@
 
   <!-- Dynamic Status Cards (click to filter) -->
   <div class="row mb-4">
+        <!-- All Employees Card -->
+        <div class="col-md-3">
+      <div
+        class="card text-center clickable-card"
+        :class="{'card-active': selectedStatus === ''}"
+        @click="filterByStatus('')"
+      >
+        <div class="card-body d-flex align-items-center justify-content-center">
+          <div class="circle circle-all">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-person-lines-fill"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5zm0 1h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"
+              />
+            </svg>
+          </div>
+          <div class="task-overall ms-3">
+            <span class="task-text">All Employees  </span>
+            <span class="task-num">{{ assignedEmployees.length }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Completed Card -->
     <div class="col-md-3">
       <div
@@ -119,36 +149,6 @@
         </div>
       </div>
     </div>
-
-    <!-- All Employees Card -->
-    <div class="col-md-3">
-      <div
-        class="card text-center clickable-card"
-        :class="{'card-active': selectedStatus === ''}"
-        @click="filterByStatus('')"
-      >
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle circle-all">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-person-lines-fill"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5zm0 1h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"
-              />
-            </svg>
-          </div>
-          <div class="task-overall ms-3">
-            <span class="task-text">All Employees  </span>
-            <span class="task-num">{{ assignedEmployees.length }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Assigned Employees Table -->
@@ -180,14 +180,15 @@
                   {{ getDynamicStatus(employee) }}
                 </span>
               </td>
-              <td>
+              <td style="display: flex; align-items: center; gap: 5px;">
                 <input
-                  type="number"
-                  v-model="employee.progress"
-                  class="form-control"
-                  min="0"
-                  max="100"
-                  @change="updateEmployeeProgress(employee)"
+                    type="number"
+                    v-model="employee.progress"
+                    class="form-control"
+                    min="0"
+                    max="100"
+                    @change="updateEmployeeProgress(employee)"
+                    style="width: 80px; text-align: center;"
                 />
                 <span>/100</span>
               </td>
@@ -204,8 +205,8 @@
   </div>
 
   <!-- Modal for Showing Progress History with Backdrop -->
-  <div v-if="showHistoryModal" class="modal fade show" style="display: block" tabindex="-1">
-    <div class="modal-dialog">
+  <div class="modal fade"v-if="showHistoryModal" :class="{ show: showHistoryModal }" style="display: block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Progress History for {{ selectedEmployee.username }}</h5>
@@ -221,11 +222,12 @@
       </div>
     </div>
   </div>
-  <div v-if="showHistoryModal" class="modal-backdrop fade show"></div>
+  <div class="modal-backdrop fade show" v-if="showHistoryModal"></div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 interface Employee {
   id: number
@@ -235,25 +237,25 @@ interface Employee {
 }
 
 const selectedTask = ref({
-  taskName: 'Review Reports'
+  taskName: 'Complete Order'
 })
 
 const assignedEmployees = ref<Employee[]>([
   {
     id: 1,
-    username: 'Employee1',
+    username: 'Alice',
     progress: 50,
     progressHistory: [{ date: '2023-03-01', progress: 50 }],
   },
   {
     id: 2,
-    username: 'Employee2',
+    username: 'Jester',
     progress: 100,
     progressHistory: [{ date: '2023-03-01', progress: 100 }],
   },
   {
     id: 3,
-    username: 'Employee3',
+    username: 'Amanda',
     progress: 30,
     progressHistory: [{ date: '2023-03-01', progress: 30 }],
   },
@@ -321,9 +323,30 @@ const showHistory = (employee: Employee) => {
   selectedEmployee.value = employee
   showHistoryModal.value = true
 }
+
+const router = useRouter()
+function goToKPIManagement()
+{
+  router.push('/home/KPI-management');
+}
+
 </script>
 
 <style scoped>
+.title-page {
+    display: flex;
+    align-items: center;
+    gap: 20px; 
+}
+
+.title-page svg:hover {
+  cursor: pointer;
+}
+
+.title-page h2 {
+    margin-bottom: 0; 
+}
+
 .card {
   margin-bottom: 20px;
 }
@@ -352,6 +375,11 @@ const showHistory = (employee: Employee) => {
   align-items: center;
 }
 
+.circle svg {
+  width: 30px; 
+  height: 30px;
+}
+
 .circle-completed {
   background-color: #abe3a5;
 }
@@ -370,10 +398,6 @@ const showHistory = (employee: Employee) => {
   color: #666;
 }
 
-.line {
-  border: 1px solid #e9e9e9;
-}
-
 .task-text {
   font-size: 1.2rem;
   font-weight: 600;
@@ -384,7 +408,12 @@ const showHistory = (employee: Employee) => {
   color: #5e5e5e;
 }
 
-.modal-backdrop {
+.task-overall {
+  display: flex;
+  flex-direction: column; 
+}
+
+/* .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -392,7 +421,7 @@ const showHistory = (employee: Employee) => {
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
-}
+} */
 
 .modal-content {
   background: white;

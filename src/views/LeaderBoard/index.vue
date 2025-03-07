@@ -73,39 +73,47 @@
       <div class="card-body">
         <div class="d-flex justify-content-center">
           <table>
-            <tr class="title-row"> 
-              <th class="rank-title col-sm-2">Rank</th>
-              <th class="username-title profile-pic col-md-4">Username</th>
-              <th class="point-title col-md-2">
-                <div class="d-flex align-items-center">
-                  <div class="icon-container" style="transform: scale(0.45); margin-right: 24px;">
-                    <i class="fa-solid fa-circle border-circle-icon"></i>
-                    <i class="fa-solid fa-circle circle-icon"></i>
-                    <i class="fa-solid fa-star star-icon"></i>
+            <!-- Table Head -->
+            <thead>
+              <tr class="title-row"> 
+                <th class="rank-title col-sm-2">Rank</th>
+                <th class="username-title profile-pic col-md-4">Username</th>
+                <th class="point-title col-md-2">
+                  <div class="d-flex align-items-center">
+                    <div class="icon-container" style="transform: scale(0.45); margin-right: 24px;">
+                      <i class="fa-solid fa-circle border-circle-icon"></i>
+                      <i class="fa-solid fa-circle circle-icon"></i>
+                      <i class="fa-solid fa-star star-icon"></i>
+                    </div>
+                    Points
                   </div>
-                  Points
-                </div>
-              </th>
-            </tr>
-            <tr class="leaderboard-item" v-for="(user, index) in tableData.slice(3)" :key="user.rank">
-              <td class="rank">{{ user.rank }}</td>
-              <td class="username">
-                <div class="d-flex align-items-center">
-                  <div class="profile-pic" v-if="index < tableData.length - 5">
-                    <img :src="user.image" :alt="user.username">                  
+                </th>
+              </tr>
+            </thead>
+            
+            <!-- Table Body -->
+            <tbody>
+              <tr class="leaderboard-item" v-for="(user, index) in tableData.slice(3)" :key="user.rank">
+                <td class="rank">{{ user.rank }}</td>
+                <td class="username">
+                  <div class="d-flex align-items-center">
+                    <div class="profile-pic" v-if="index < tableData.length - 5">
+                      <img :src="user.image" :alt="user.username">                  
+                    </div>
+                    <div class="username">
+                      {{ index >= tableData.length - 5 ? '********' : user.username }}
+                    </div> 
                   </div>
-                  <div class="username">
-                    {{ index >= tableData.length - 5 ? '********' : user.username }}
-                  </div> 
-                </div>
-              </td>
-              <td class="point">{{ user.points }}</td>
-            </tr>
+                </td>
+                <td class="point">{{ user.points }}</td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>
     </div>
   </div>
+
 
 </template>
 

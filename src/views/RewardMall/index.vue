@@ -24,7 +24,7 @@
     <div class="row row-cols-md-3 g-4" >
     <div class="col" v-for="item in tableData" :key="item.id">
       <div class="card shadow-sm mt-4" >
-        <img :src="getImagePath(item.img)" alt="Reward Image" class="image">
+        <img :src="item.img" alt="Reward Image" class="image">
         <div class="card-body">
             <h4 class="rewardTitle"><b>{{ item.name }}</b></h4>
             <p>{{ item.description }}</p>
@@ -96,18 +96,11 @@
     </div>
   </div>
   <div class="modal-backdrop fade show" v-if="showSelectedRewardModal"></div>
-
-
-
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import {useRouter} from "vue-router";
-
-const getImagePath = (img: any) => {
-  return new URL(`/dist/assets/${img}`, import.meta.url).href;
-};
 
 const points = ref(100)
 
@@ -126,7 +119,7 @@ interface RewardItem {
 const tableData = ref([
   {
     id: 1,
-    img: "Jaya_Grocer_Gift_Card.png",
+    img: new URL('@/assets/Jaya_Grocer_Gift_Card.png', import.meta.url).href,
     name: "Jaya Grocer's Gift Card", 
     description: "RM100 Jaya Grocer's Gift Card. Vouchers received will be valid for a minimum period of 6 months.", 
     valid: "30/06/2024, 23:59", 
@@ -146,7 +139,7 @@ const tableData = ref([
   },
   {
     id: 2,
-    img: "McDonald_Gift_Card.png",
+    img: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href,
     name: "McDonald Coupon", 
     description: "Exclusive Sweet Chili Fish Wrap Drive Thru Combo Promo for only RM11.50. ", 
     valid: "31/12/2024, 23:59", 
