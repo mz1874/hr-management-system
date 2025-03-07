@@ -11,6 +11,26 @@ interface Question {
   remark?: string // 备注内容
 }
 
+// 评分模态框
+const showEvaluateModal = ref(false)
+
+const openEvaluateModal = (employee: Employee) => {
+  currentEmployee.value = JSON.parse(JSON.stringify(employee)) // 深拷贝员工数据
+  showEvaluateModal.value = true
+}
+
+const closeEvaluateModal = () => {
+  showEvaluateModal.value = false
+}
+
+const saveEvaluation = () => {
+  const employeeIndex = allEmployees.value.findIndex(emp => emp.id === currentEmployee.value.id)
+  if (employeeIndex !== -1) {
+    allEmployees.value[employeeIndex] = currentEmployee.value
+  }
+  closeEvaluateModal()
+}
+
 interface Employee {
   id: number
   name: string
@@ -168,11 +188,94 @@ const viewEmployeeDetail = (employee: Employee) => {
         <td>{{ employee.evaluationName }}</td>
         <td>
           <button type="button" class="btn btn-primary btn-action" @click="viewEmployeeDetail(employee)">View</button>
+          <button type="button" class="btn btn-success btn-action" @click="openEvaluateModal(employee)">Evaluate</button>
         </td>
       </tr>
       </tbody>
     </table>
   </div>
+
+  <!-- 评分模态框 -->
+  <div class="modal fade" :class="{ show: showEvaluateModal }" style="display: block" v-if="showEvaluateModal">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Evaluate Employee</h3>
+        </div>
+        <div class="modal-body">
+          <!-- 员工基本信息 -->
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="form-label">Employee Name:</label>
+                <input type="text" class="form-control" v-model="currentEmployee.name" disabled>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="form-label">Department:</label>
+                <input type="text" class="form-control" v-model="currentEmployee.department" disabled>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="form-label">Evaluation Name:</label>
+                <input type="text" class="form-control" v-model="currentEmployee.evaluationName" disabled>
+              </div>
+            </div>
+          </div>
+
+          <!-- 问题列表 -->
+          <div class="mb-4">
+            <div class="mb-4 text-center">
+              <h3 class="form-label">Questions</h3>
+            </div>
+            <div v-for="(question, index) in currentEmployee.questions" :key="index" class="mb-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6>{{ question.type === 'grade' ? 'Grade Question' : question.type === 'option' ? 'Option Question' : 'Remark' }}</h6>
+              </div>
+              <input type="text" class="form-control mb-2" v-model="question.question" disabled>
+
+              <!-- 评分题 -->
+              <div v-if="question.type === 'grade'" class="form-group">
+                <label class="form-label">Score (1-5):</label>
+                <input type="number" class="form-control" v-model="question.score" min="1" max="5">
+              </div>
+
+              <!-- 选择题 -->
+              <div v-if="question.type === 'option'" class="option-container ms-3">
+                <div class="row">
+                  <template v-for="(option, optionIndex) in question.options" :key="optionIndex">
+                    <div class="col-6 mb-2 d-flex align-items-center">
+                      <label class="form-check-label w-100">
+                        <input type="radio"
+                               class="form-check-input me-2"
+                               :name="'option-' + question.id"
+                               :value="option"
+                               v-model="question.selectedOption">
+                        Option {{ optionIndex + 1 }}: {{ option }}
+                      </label>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- 备注 -->
+              <div v-if="question.type === 'remark'" class="form-group">
+                <label class="form-label">Remark:</label>
+                <textarea class="form-control auto-resize" v-model="question.remark"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeEvaluateModal">Close</button>
+          <button type="button" class="btn btn-primary" @click="saveEvaluation">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" v-if="showEvaluateModal"></div>
 
   <!-- 分页 -->
   <div class="d-flex align-items-center mt-3 justify-content-start">
@@ -201,22 +304,33 @@ const viewEmployeeDetail = (employee: Employee) => {
         </div>
         <div class="modal-body">
           <!-- 员工基本信息 -->
-          <div class="form-group mb-4">
-            <label class="form-label">Employee Name:</label>
-            <input type="text" class="form-control" v-model="currentEmployee.name" disabled>
-          </div>
-          <div class="form-group mb-4">
-            <label class="form-label">Department:</label>
-            <input type="text" class="form-control" v-model="currentEmployee.department" disabled>
-          </div>
-          <div class="form-group mb-4">
-            <label class="form-label">Evaluation Name:</label>
-            <input type="text" class="form-control" v-model="currentEmployee.evaluationName" disabled>
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="form-label">Employee Name:</label>
+                <input type="text" class="form-control" v-model="currentEmployee.name" disabled>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="form-label">Department:</label>
+                <input type="text" class="form-control" v-model="currentEmployee.department" disabled>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="form-label">Evaluation Name:</label>
+                <input type="text" class="form-control" v-model="currentEmployee.evaluationName" disabled>
+              </div>
+            </div>
           </div>
 
           <!-- 问题列表 -->
           <div class="mb-4">
-            <label class="form-label">Questions:</label>
+            <!-- 问题列表 -->
+            <div class="mb-4 text-center"> <!-- 添加text-center类来居中对齐 -->
+              <h3 class="form-label">Questions</h3>
+            </div>
             <div v-for="(question, index) in currentEmployee.questions" :key="index" class="mb-3">
               <div class="d-flex justify-content-between align-items-center">
                 <h6>{{ question.type === 'grade' ? 'Grade Question' : question.type === 'option' ? 'Option Question' : 'Remark' }}</h6>
@@ -230,14 +344,21 @@ const viewEmployeeDetail = (employee: Employee) => {
               </div>
 
               <!-- 选择题 -->
-              <div v-if="question.type === 'option'" class="option-container">
-                <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2">
-                  <label class="option-label">Option {{ optionIndex + 1 }}</label>
-                  <input type="text" class="form-control" v-model="question.options[optionIndex]" disabled>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Selected Option:</label>
-                  <input type="text" class="form-control" v-model="question.selectedOption" disabled>
+              <div v-if="question.type === 'option'" class="option-container ms-3"> <!-- 使用ms-3类名进行缩进 -->
+                <div class="row">
+                  <template v-for="(option, optionIndex) in question.options" :key="optionIndex">
+                    <div class="col-6 mb-2 d-flex align-items-center">
+                      <label class="form-check-label w-100">
+                        <input type="radio"
+                               class="form-check-input me-2"
+                               :name="'option-' + question.id"
+                               :value="option"
+                               :checked="option === question.selectedOption"
+                               disabled>
+                        Option {{ optionIndex + 1 }}: {{ option }}
+                      </label>
+                    </div>
+                  </template>
                 </div>
               </div>
 
@@ -259,10 +380,38 @@ const viewEmployeeDetail = (employee: Employee) => {
 </template>
 
 <style scoped>
+
+/* 自定义样式 */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.5rem;
+}
 .filter-container {
   margin-bottom: 2rem;
 }
 
+.modal {
+  display: none;
+}
+
+.modal.show {
+  display: block;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+}
 .table-card {
   border: 1px solid #707070;
   padding: 2rem;
