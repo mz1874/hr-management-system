@@ -415,9 +415,6 @@ const resetReward = () => {
     showRemoveModal.value = false
 }
 
-const getImagePath = (image?: string) => {
-    return currentReward.value.image || image;
-};
 const handleImageChange = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {

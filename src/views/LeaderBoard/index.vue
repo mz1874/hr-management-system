@@ -129,16 +129,16 @@ interface leaderboard {
 }
 
 const tableData = ref<leaderboard[]>([
- {rank: 1, image: "/dist/assets/McDonald_Gift_Card.png", username: "Amandass", points: 500},
- {rank: 2, image: "/dist/assets/McDonald_Gift_Card.png", username: "David", points: 400},
- {rank: 3, image: "/dist/assets/McDonald_Gift_Card.png", username: "Ashley", points: 300},
- {rank: 4, image: "/dist/assets/McDonald_Gift_Card.png", username: "Alexander", points: 250},
- {rank: 5, image: "/dist/assets/McDonald_Gift_Card.png", username: "Katy", points: 200},
- {rank: 6, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jester", points: 150},
- {rank: 7, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jackson", points: 100},
- {rank: 8, image: "/dist/assets/McDonald_Gift_Card.png", username: "Katy", points: 200},
- {rank: 9, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jester", points: 150},
- {rank: 10, image: "/dist/assets/McDonald_Gift_Card.png", username: "Jackson", points: 100},
+ {rank: 1, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Amandass", points: 500},
+ {rank: 2, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "David", points: 400},
+ {rank: 3, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Ashley", points: 300},
+ {rank: 4, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Alexander", points: 250},
+ {rank: 5, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Katy", points: 200},
+ {rank: 6, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Jester", points: 150},
+ {rank: 7, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Jackson", points: 100},
+ {rank: 8, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Katy", points: 200},
+ {rank: 9, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Jester", points: 150},
+ {rank: 10, image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href, username: "Jackson", points: 100},
 
 ])
 
