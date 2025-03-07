@@ -26,6 +26,7 @@ import KPIDashboard from "@/views/KPIDashboard/index.vue" ;
 import roleManagement from "@/views/RoleManagement/index.vue";
 import reportGeneration from "@/views/ReportGeneration/index.vue" ;
 import pointSystem from "@/views/PointSystem/index.vue" ;
+import employeeTaskDetailsPage from "@/views/KPIManagement/EmployeeTaskDetails/index.vue" ;
 /**
  * Please define your page router to the below
  */
@@ -161,6 +162,11 @@ const router = createRouter({
                     path : "point-system",
                     name: 'point-system',
                     component: pointSystem ,
+                },
+                {
+                    path : "KPI-Management/employee-task-details",
+                    name: 'KPI-Management/employee-task-details',
+                    component: employeeTaskDetailsPage ,
                 }
             ]
         },

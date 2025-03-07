@@ -19,11 +19,6 @@
 
   <!-- Search and filter -->
   <div class="d-flex gap-3 mb-4 mt-3">
-    <!-- search username -->
-    <div class="input-group w-25">
-      <span class="input-group-text"><i class="fas fa-search"></i></span>
-      <input v-model="searchUsername" type="text" class="form-control" placeholder="Search Username">
-    </div>
     <!-- search task name -->
     <div class="input-group w-25">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -50,18 +45,23 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Username</th>
               <th>Task Name</th>
+              <th>Start Date</th>
+              <th>Due Date</th>
+              <th>Target</th>
+              <th>Current</th>
               <th>Status</th>
-              <th>Department</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="task in paginatedTasks" :key="task.id">
               <td>{{ task.id }}</td>
-              <td>{{ task.username }}</td>
               <td>{{ task.taskName }}</td>
+              <td>{{ task.startDate }}</td>
+              <td>{{ task.completionDate }}</td>
+              <td>{{ task.target.value}} {{ task.target.unit }}</td>
+              <td>200</td>
               <td>
                 <span :class="['badge',
                     task.status === 'Completed' ? 'bg-success' : 
@@ -70,9 +70,9 @@
                   {{ task.status }}
                 </span>
               </td>
-              <td>{{ task.department }}</td>
               <td>
-                <button @click="openViewTaskModal(task)" class="btn btn-primary btn-sm">View</button>
+                <!-- <button @click="openViewTaskModal(task)" class="btn btn-primary btn-sm">View</button> -->
+                <button @click="goToEmployeeDetailsPage()" class="btn btn-primary btn-sm">Employee Details</button>
                 <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
                 <button @click="openDeleteTaskModal(task)" class="btn btn-danger btn-sm">Delete</button>
               </td>
@@ -171,12 +171,15 @@
 
   <!-- Modals -->
   <!-- Create Task Modal -->
-  <div class="modal fade" :class="{ show: showCreateTaskModal }" style="display: block" v-if="showCreateTaskModal">
+  <div class="modal fade" :class="{ show: showModal }" style="display: block" v-if="showModal">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Create New Task</h5>
-          <button type="button" class="btn-close" @click="showCreateTaskModal = false"></button>
+          <h5 class="modal-title">
+            {{ modalType === 'edit' ? 'Edit Task':
+              modalType === 'create' ? 'Create New Task' : ''}}
+          </h5>
+          <button type="button" class="btn-close" @click="showModal = false"></button>
         </div>
         <div class="modal-body">
           <div class="row">
@@ -186,31 +189,42 @@
                 <!-- Task Name -->
                 <div class="mb-3">
                   <label for="taskName" class="form-label">Task Name:</label>
-                  <input type="text" class="form-control" id="taskName" placeholder="Enter task name" v-model="newTask.taskName">
+                  <input type="text" class="form-control" id="taskName" placeholder="Enter task name" v-model="selectedTask.taskName">
                 </div>
 
                 <!-- Task Description -->
                 <div class="mb-3">
                   <label for="taskDescription" class="form-label">Task Description:</label>
-                  <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description" v-model="newTask.taskDescription"></textarea>
+                  <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description" v-model="selectedTask.taskDescription"></textarea>
                 </div>
 
                 <!-- Dates Row -->
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="startDate" class="form-label">Start Date:</label>
-                    <input type="date" class="form-control" id="startDate" v-model="newTask.startDate">
+                    <input type="date" class="form-control" id="startDate" v-model="selectedTask.startDate">
                   </div>
                   <div class="col-md-6">
                     <label for="completionDate" class="form-label">Completion Date:</label>
-                    <input type="date" class="form-control" id="completionDate" v-model="newTask.completionDate">
+                    <input type="date" class="form-control" id="completionDate" v-model="selectedTask.completionDate">
                   </div>
                 </div>
 
                 <!-- Points Given -->
                 <div class="mb-3">
                   <label for="pointsGiven" class="form-label">Points Given:</label>
-                  <input type="number" class="form-control" id="pointsGiven" placeholder="Enter points" v-model="newTask.pointsGiven">
+                  <input type="number" class="form-control" id="pointsGiven" placeholder="Enter points" v-model="selectedTask.pointsGiven">
+                </div>
+
+                <!-- Target -->
+                <div class="row mb-3">
+                  <label for="target" class="form-label">Target:</label>
+                  <div class="col-md-6">
+                    <input type="number" class="form-control" id="target" placeholder="Enter target" v-model="selectedTask.target.value">
+                  </div>
+                  <div class="col-md-6">
+                    <input type="text" class="form-control" id="unit" placeholder="Enter unit" v-model="selectedTask.target.unit">
+                  </div>
                 </div>
               </form>
             </div>
@@ -232,15 +246,15 @@
               <div v-if="assignType === 'user'" class="mb-3">
                 <label for="assignTo" class="form-label">Assign To:</label>
                 <div class="input-group">
-                  <input type="text" class="form-control" id="assignTo" placeholder="Enter username" v-model="newTask.assignedTo">
+                  <input type="text" class="form-control" id="assignTo" placeholder="Enter username" v-model="selectedTask.assignedTo">
                   <button class="btn" type="button" style="background-color: #6CBD6C; color: white;" @click="addAssignedUser">Add</button>
                 </div>
                 <!-- Assigned Users Tags -->
                 <div class="mt-3">
                   <div class="d-flex flex-wrap gap-2">
-                    <span v-for="(user, index) in newTask.assignedUsers" :key="index" class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
+                    <span v-for="(user, index) in selectedTask.assignedUsers" :key="index" class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
                       <i class="fas fa-user-circle me-2"></i>
-                      {{ user }}
+                      {{ user.username }}
                       <button type="button" class="btn-close ms-2" aria-label="Remove" @click="removeAssignedUser(index)"></button>
                     </span>
                   </div>
@@ -255,98 +269,14 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showCreateTaskModal = false">Close</button>
-          <button type="button" class="btn" style="background-color: #6CBD6C; color: white;" @click="createTask">Create</button>
+          <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
+          <button v-if="modalType === 'create'" type="button" class="btn" style="background-color: #6CBD6C; color: white;" @click="createTask">Create</button>
+          <button v-if="modalType === 'edit'" type="button" class="btn" style="background-color: #6CBD6C; color: white;" @click="saveEditedTask">Save</button>
         </div>
       </div>
     </div>
   </div>
-  <div class="modal-backdrop fade show" v-if="showCreateTaskModal"></div>
-
-  <!-- View Task Modal -->
-  <div class="modal fade" :class="{ show: showViewTaskModal }" style="display: block" v-if="showViewTaskModal">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">View Task Details</h5>
-          <button type="button" class="btn-close" @click="showViewTaskModal = false"></button>
-        </div>
-        <div class="modal-body">
-          <form>
-            <div class="mb-3">
-              <label class="form-label">Task Name:</label>
-              <input type="text" class="form-control" :value="selectedTask.taskName" readonly>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Task Description:</label>
-              <textarea class="form-control" readonly>{{ selectedTask.taskDescription }}</textarea>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Start Date:</label>
-                <input type="date" class="form-control" :value="selectedTask.startDate" readonly>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Completion Date:</label>
-                <input type="date" class="form-control" :value="selectedTask.completionDate" readonly>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Points Given:</label>
-              <input type="number" class="form-control" :value="selectedTask.pointsGiven" readonly>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showViewTaskModal = false">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="modal-backdrop fade show" v-if="showViewTaskModal"></div>
-
-  <!-- Edit Task Modal -->
-  <div class="modal fade" :class="{ show: showEditTaskModal }" style="display: block" v-if="showEditTaskModal">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Edit Task Details</h5>
-          <button type="button" class="btn-close" @click="showEditTaskModal = false"></button>
-        </div>
-        <div class="modal-body">
-          <form>
-            <div class="mb-3">
-              <label class="form-label">Task Name:</label>
-              <input type="text" class="form-control" v-model="selectedTask.taskName">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Task Description:</label>
-              <textarea class="form-control" v-model="selectedTask.taskDescription"></textarea>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Start Date:</label>
-                <input type="date" class="form-control" v-model="selectedTask.startDate">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Completion Date:</label>
-                <input type="date" class="form-control" v-model="selectedTask.completionDate">
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Points Given:</label>
-              <input type="number" class="form-control" v-model="selectedTask.pointsGiven">
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showEditTaskModal = false">Close</button>
-          <button type="button" class="btn btn-primary" @click="saveEditedTask">Save</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="modal-backdrop fade show" v-if="showEditTaskModal"></div>
+  <div class="modal-backdrop fade show" v-if="showModal"></div>
 
   <!-- Delete Task Modal -->
   <div class="modal fade" :class="{ show: showDeleteTaskModal }" style="display: block" v-if="showDeleteTaskModal">
@@ -370,70 +300,45 @@
 </template>
 
 <script setup lang="ts">
+import router from '@/router'
 import { ref, computed } from 'vue'
 
 interface Task {
   id: number
-  username: string
-  role: string
   taskName: string
   taskDescription: string
-  status: string
   startDate: string
   completionDate: string
+  status: string
   pointsGiven: number
-  assignedTo: string
-  assignedUsers: string[]
+  target: { value: number; unit: string; };
+  assignedTo: string,
+  assignedUsers: EmployeeTask[];
   department: string
+}
+
+interface EmployeeTask {
+  username: string;
 }
 
 // State
 const tasks = ref<Task[]>([
   { 
     id: 1, 
-    username: 'username1', 
-    role: 'Employee', 
     taskName: 'Complete Order', 
     taskDescription: 'Task description', 
     status: 'Completed',
     startDate: '2023-10-01',
     completionDate: '2023-10-10',
     pointsGiven: 50,
+    target: { value: 500, unit: "pcs" },
     assignedTo: '',
-    assignedUsers: [],
+    assignedUsers: [{username: 'Alice'}, {username: 'Jester'}],
     department: "Sales Department"
   },
-  { 
-    id: 2, 
-    username: 'username2', 
-    role: 'Manager', 
-    taskName: 'Review Reports', 
-    taskDescription: 'Task description', 
-    status: 'Ongoing',
-    startDate: '2023-10-05',
-    completionDate: '2023-10-15',
-    pointsGiven: 30,
-    assignedTo: '',
-    assignedUsers: [],
-    department: "Sales Department"
-  },
-  { 
-    id: 3, 
-    username: 'username3', 
-    role: 'Employee', 
-    taskName: 'Update Inventory', 
-    taskDescription: 'Task description', 
-    status: 'Delayed',
-    startDate: '2023-10-02',
-    completionDate: '2023-10-12',
-    pointsGiven: 20,
-    assignedTo: '',
-    assignedUsers: [],
-    department: "Marketing Department"
-  }
 ])
 
-const searchUsername = ref('')
+// filter
 const searchTaskName = ref('')
 const selectedStatus = ref('')
 const selectedDepartment = ref('Sales Department')
@@ -442,11 +347,10 @@ const itemsPerPage = 10
 
 const filteredTasks = computed(() => {
   return tasks.value.filter(task => {
-    const matchesUsername = task.username.toLowerCase().includes(searchUsername.value.toLowerCase())
     const matchesTaskName = task.taskName.toLowerCase().includes(searchTaskName.value.toLowerCase())
     const matchesStatus = !selectedStatus.value || task.status === selectedStatus.value
     const matchesDepartment = !selectedDepartment.value || task.department === selectedDepartment.value
-    return matchesUsername && matchesTaskName && matchesStatus && matchesDepartment
+    return matchesTaskName && matchesStatus && matchesDepartment
   })
 })
 
@@ -456,6 +360,7 @@ const paginatedTasks = computed(() => {
   return filteredTasks.value.slice(start, end)
 })
 
+// pagination
 const totalPages = computed(() => Math.ceil(filteredTasks.value.length / itemsPerPage))
 
 const changePage = (page: number) => {
@@ -471,35 +376,18 @@ const ongoingTasks = computed(() => tasks.value.filter(task => task.status === '
 const delayedTasks = computed(() => tasks.value.filter(task => task.status === 'Delayed').length)
 
 // Modals
-const showCreateTaskModal = ref(false)
-const showViewTaskModal = ref(false)
-const showEditTaskModal = ref(false)
+const showModal = ref(false)
+const modalType = ref<'create' | 'edit'>('create')
 const showDeleteTaskModal = ref(false)
 const selectedTask = ref<Task>({
   id: 0,
-  username: '',
-  role: '',
   taskName: '',
   taskDescription: '',
   status: '',
   startDate: '',
   completionDate: '',
   pointsGiven: 0,
-  assignedTo: '',
-  assignedUsers: [],
-  department: selectedDepartment.value
-})
-
-const newTask = ref<Task>({
-  id: 0,
-  username: '',
-  role: '',
-  taskName: '',
-  taskDescription: '',
-  status: 'Ongoing',
-  startDate: '',
-  completionDate: '',
-  pointsGiven: 0,
+  target: { value: 0, unit: "" },
   assignedTo: '',
   assignedUsers: [],
   department: selectedDepartment.value
@@ -509,32 +397,33 @@ const newTask = ref<Task>({
 const assignType = ref('user')  // default assignment type is 'user'
 
 const openCreateTaskModal = () => {
-  newTask.value = {
-    id: tasks.value.length + 1,
-    username: '',
-    role: '',
+  selectedTask.value = {
+    id: 0,
     taskName: '',
     taskDescription: '',
     status: 'Ongoing',
-    startDate: '',
+    startDate: new Date().toISOString().slice(0, 19).replace("T", " "),
     completionDate: '',
     pointsGiven: 0,
+    target: { value: 0, unit: "" },
     assignedTo: '',
     assignedUsers: [],
     department: selectedDepartment.value
   }
+  modalType.value = 'create'
   assignType.value = 'user' // reset assignment type to default
-  showCreateTaskModal.value = true
+  showModal.value = true
 }
 
-const openViewTaskModal = (task: Task) => {
-  selectedTask.value = { ...task }
-  showViewTaskModal.value = true
-}
+// const openViewTaskModal = (task: Task) => {
+//   selectedTask.value = { ...task }
+//   showViewTaskModal.value = true
+// }
 
 const openEditTaskModal = (task: Task) => {
   selectedTask.value = { ...task }
-  showEditTaskModal.value = true
+  modalType.value = 'edit'
+  showModal.value = true
 }
 
 const openDeleteTaskModal = (task: Task) => {
@@ -547,7 +436,7 @@ const saveEditedTask = () => {
   if (index !== -1) {
     tasks.value[index] = { ...selectedTask.value }
   }
-  showEditTaskModal.value = false
+  showModal.value = false
 }
 
 const confirmDeleteTask = () => {
@@ -556,14 +445,14 @@ const confirmDeleteTask = () => {
 }
 
 const addAssignedUser = () => {
-  if (newTask.value.assignedTo.trim() !== '') {
-    newTask.value.assignedUsers.push(newTask.value.assignedTo)
-    newTask.value.assignedTo = ''
+  if (selectedTask.value.assignedTo.trim()) {
+    selectedTask.value.assignedUsers.push({ username: selectedTask.value.assignedTo });
+    selectedTask.value.assignedTo = ''; // Clear input after adding
   }
-}
+};
 
 const removeAssignedUser = (index: number) => {
-  newTask.value.assignedUsers.splice(index, 1)
+  selectedTask.value.assignedUsers.splice(index, 1)
 }
 
 const createTask = () => {
@@ -571,29 +460,34 @@ const createTask = () => {
 
   // Determine assignment based on assignType
   const isUserAssignment = assignType.value === 'user'
-  const username = isUserAssignment && newTask.value.assignedUsers.length > 0 
-    ? newTask.value.assignedUsers[0] 
+  const username = isUserAssignment && selectedTask.value.assignedUsers.length > 0 
+    ? selectedTask.value.assignedUsers[0] 
     : selectedDepartment.value
 
   const role = isUserAssignment ? 'Employee' : 'Department'
 
   const task: Task = {
     id: newId,
-    username: username,
-    role: role,
-    taskName: newTask.value.taskName,
-    taskDescription: newTask.value.taskDescription,
+    taskName: selectedTask.value.taskName,
+    taskDescription: selectedTask.value.taskDescription,
     status: 'Ongoing',
-    startDate: newTask.value.startDate,
-    completionDate: newTask.value.completionDate,
-    pointsGiven: newTask.value.pointsGiven,
-    assignedTo: isUserAssignment ? newTask.value.assignedTo : '',
-    assignedUsers: isUserAssignment ? newTask.value.assignedUsers : [],
+    startDate: selectedTask.value.startDate,
+    completionDate: selectedTask.value.completionDate,
+    target: { value: selectedTask.value.target.value, unit: selectedTask.value.target.unit },
+    pointsGiven: selectedTask.value.pointsGiven,
+    assignedTo: isUserAssignment ? selectedTask.value.assignedTo : '',
+    assignedUsers: isUserAssignment ? selectedTask.value.assignedUsers : [],
     department: selectedDepartment.value
   }
 
   tasks.value.push(task)
-  showCreateTaskModal.value = false
+  showModal.value = false
+}
+
+//go to employee details page
+function goToEmployeeDetailsPage()
+{
+  router.push('/home/KPI-management/employee-task-details');
 }
 </script>
 
