@@ -9,9 +9,10 @@ interface Staff {
   department: string
   status: 'Active' | 'Inactive'
   employmentDate: string
+  resignationDate?: string  // Add new property
   numberOfLeaves: number
-  medicalLeaves: number // Add new property
-  annualLeaves: number  // Add new property
+  medicalLeaves: number
+  annualLeaves: number
 }
 
 // State
@@ -142,7 +143,7 @@ const openAddStaffModal = () => {
     role: '',
     department: selectedDepartment.value,
     status: 'Active',
-    employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
+    employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
     numberOfLeaves: 0,
     medicalLeaves: 0,
     annualLeaves: 0
@@ -179,7 +180,14 @@ const saveEditedStaff = () => {
 }
 
 const confirmDeleteStaff = () => {
-  staffList.value = staffList.value.filter(staff => staff.id !== selectedStaff.value.id)
+  const index = staffList.value.findIndex(staff => staff.id === selectedStaff.value.id)
+  if (index !== -1) {
+    staffList.value[index] = {
+      ...staffList.value[index],
+      status: 'Inactive',
+      resignationDate: new Date().toISOString().split('T')[0]
+    }
+  }
   showDeleteStaffModal.value = false
 }
 
@@ -405,14 +413,14 @@ const changePage = (page: number) => {
             </select>
           </div>
           <div class="mb-3">
-            <label for="staffEmploymentDate" class="form-label">Employment Date</label>
+            <label class="form-label">Employment Date</label>
             <input 
-              v-model="selectedStaff.employmentDate"
+              :value="selectedStaff.employmentDate"
               type="date" 
               class="form-control" 
-              id="staffEmploymentDate" 
-              placeholder="Enter employment date"
+              disabled
             >
+            <small class="text-muted">Set automatically to today's date</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -452,6 +460,9 @@ const changePage = (page: number) => {
           <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
           <p><strong>Status:</strong> {{ selectedStaff.status }}</p>
           <p><strong>Employment Date:</strong> {{ selectedStaff.employmentDate }}</p>
+          <p v-if="selectedStaff.resignationDate">
+            <strong>Resignation Date:</strong> {{ selectedStaff.resignationDate }}
+          </p>
           <div class="leaves-info">
             <p><strong>Total Leaves:</strong> {{ selectedStaff.numberOfLeaves }}</p>
             <p class="ms-3"><strong>Medical Leaves:</strong> {{ selectedStaff.medicalLeaves }}</p>
@@ -539,13 +550,12 @@ const changePage = (page: number) => {
             </select>
           </div>
           <div class="mb-3">
-            <label for="editStaffEmploymentDate" class="form-label">Employment Date</label>
+            <label class="form-label">Employment Date</label>
             <input 
-              v-model="selectedStaff.employmentDate"
+              :value="selectedStaff.employmentDate"
               type="date" 
               class="form-control" 
-              id="editStaffEmploymentDate" 
-              placeholder="Enter employment date"
+              disabled
             >
           </div>
         </div>
@@ -580,7 +590,8 @@ const changePage = (page: number) => {
           ></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete staff member "{{ selectedStaff.name }}"?</p>
+          <p>Are you sure you want to mark "{{ selectedStaff.name }}" as inactive?</p>
+          <p>This will set their resignation date to today.</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
