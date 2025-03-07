@@ -63,7 +63,7 @@
               <td>{{ task.startDate }}</td>
               <td>{{ task.completionDate }}</td>
               <td>{{ getTotalTarget(task) }} {{ task.target.unit }}</td>
-              <td>200</td>
+              <td>180</td>
               <td>
                 <span :class="['badge',
                     task.status === 'Completed' ? 'bg-success' : 
