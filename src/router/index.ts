@@ -28,6 +28,7 @@ import reportGeneration from "@/views/ReportGeneration/index.vue" ;
 import pointSystem from "@/views/PointSystem/index.vue" ;
 import employeeTaskDetailsPage from "@/views/KPIManagement/EmployeeTaskDetails/index.vue" ;
 import detailedEvaluationList from "@/views/SurveyManagement/DetailedEvaluationList/index.vue";
+import PersonalInformation from "@/views/PersonalInformation/index.vue";
 /**
  * Please define your page router to the below
  */
@@ -173,6 +174,11 @@ const router = createRouter({
                     path : "KPI-Management/employee-task-details",
                     name: 'KPI-Management/employee-task-details',
                     component: employeeTaskDetailsPage ,
+                },
+                {
+                    path: 'personal-information',
+                    name: 'personal-information',
+                    component: PersonalInformation
                 }
             ]
         },
