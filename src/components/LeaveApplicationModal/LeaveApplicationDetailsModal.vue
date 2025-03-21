@@ -27,6 +27,7 @@ const props = defineProps<{ selectedApplication: LeaveApplication | null }>();
 const modalRef = ref<HTMLElement | null>(null);
 let modalInstance: Modal | null = null;
 
+
 // Initialize modal when component is mounted
 onMounted(() => {
   if (modalRef.value) {

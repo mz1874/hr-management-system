@@ -21,7 +21,7 @@ interface ApplicationFormData {
 // Emit event for submitting data
 const emit = defineEmits(['submit']);
 
-// Reactive form data; pre-fill name and department from the logged‐in user
+// Reactive form data; pre-fill name and department from the logged-in user
 const formData = reactive<ApplicationFormData>({
   name: 'Wang Chong',       // Pre-filled logged-in user name
   department: 'A',           // Pre-filled logged-in user department
@@ -113,13 +113,16 @@ const handleSubmit = () => {
     alert('Please select at least one date.');
     return;
   }
-  if (!primaryDocument.value) {
-    alert('Please upload a primary document.');
+
+  // Check if Medical Leave is selected and enforce document upload requirement
+  const isMedicalLeave = formData.selectedDates.some(d => d.leaveType === 'MC');
+  if (isMedicalLeave && !primaryDocument.value) {
+    alert('Please upload a primary document for Medical Leave.');
     return;
   }
 
-  // Create an object URL for the uploaded primary document
-  const primaryDocumentURL = URL.createObjectURL(primaryDocument.value);
+  // Create an object URL for the uploaded primary document if exists
+  const primaryDocumentURL = primaryDocument.value ? URL.createObjectURL(primaryDocument.value) : null;
 
   // Create a new leave application entry including department
   const newApplication = {
@@ -175,12 +178,6 @@ const handleSubmit = () => {
               <textarea class="form-control" v-model="formData.reasons" rows="3" placeholder="Enter your reasons" required></textarea>
             </div>
 
-            <!-- Primary Document Upload (required) -->
-            <div class="mb-3">
-              <label class="form-label">Upload Document</label>
-              <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="image/*,application/pdf" required>
-            </div>
-
             <!-- Date Picker with filter -->
             <div class="mb-3">
               <label class="form-label">Select Date</label>
@@ -206,13 +203,25 @@ const handleSubmit = () => {
                 <select class="form-select" v-model="date.leaveType">
                   <option value="AL">Annual Leave</option>
                   <option value="MC">Medical Leave</option>
-                  <option value="Emergency">Emergency Leave</option>
+                  <option value="UL">Unpaid Leave</option>
+                  <option value="MR L">Marriage Leave</option>
+                  <option value="HL">Hospitalization Leave</option>
+                  <option value="ML">Maternity Leave</option>
+                  <option value="PL">Paternity Leave</option>
                 </select>
                 <button type="button" class="btn btn-danger btn-sm" @click="formData.selectedDates.splice(index, 1)">
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
             </div>
+
+            
+            <!-- Primary Document Upload (required for MC only) -->
+            <div class="mb-3" v-if="formData.selectedDates.some(date => date.leaveType === 'MC')" >
+              <label class="form-label">Upload Document</label>
+              <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="image/*,application/pdf" required>
+            </div>
+
           </form>
         </div>
 
