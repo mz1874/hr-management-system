@@ -11,45 +11,70 @@
       <div class="search-container flex-grow-1 me-md-4">
         <i class="fas fa-search search-icon"></i>
         <input
-            v-model="searchQuery"
-            type="text"
-            class="search-input"
-            placeholder="Search"
+          v-model="searchQuery"
+          type="text"
+          class="search-input"
+          placeholder="Search"
         />
       </div>
 
       <!-- New Announcement Button -->
-      <button class="btn btn-success new-announcement-btn" @click="openNewAnnouncementModal">
+      <button
+        class="btn btn-success new-announcement-btn"
+        @click="openNewAnnouncementModal"
+      >
         New Announcement
       </button>
     </div>
 
     <!-- Announcement Cards -->
     <div
-        class="announcement-card"
-        v-for="announcement in filteredAnnouncements"
-        :key="announcement.id"
+      class="announcement-card"
+      v-for="announcement in filteredAnnouncements"
+      :key="announcement.id"
     >
-      <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3">
+      <div
+        class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3"
+      >
         <!-- Status Indicator -->
-        <div :class="['status-indicator', announcement.posted ? 'posted' : 'not-posted']"></div>
+        <div
+          :class="[
+            'status-indicator',
+            announcement.posted ? 'posted' : 'not-posted'
+          ]"
+        ></div>
 
         <!-- Announcement Content -->
         <div class="flex-grow-1">
           <h5 class="announcement-title">{{ announcement.title }}</h5>
           <p class="announcement-description mb-3 mb-md-0">
-            {{ announcement.description.length > 50 
-              ? announcement.description.substring(0, 50) + '...' 
-              : announcement.description 
+            {{ announcement.description.length > 50
+              ? announcement.description.substring(0, 50) + '...'
+              : announcement.description
             }}
           </p>
         </div>
 
         <!-- Action Buttons -->
         <div class="action-buttons d-flex gap-2">
-          <button class="btn btn-primary btn-action" @click="viewAnnouncement(announcement)">View</button>
-          <button class="btn btn-warning btn-action" @click="editAnnouncement(announcement)">Edit</button>
-          <button class="btn btn-danger btn-action" @click="confirmDelete(announcement)">Delete</button>
+          <button
+            class="btn btn-primary btn-action"
+            @click="viewAnnouncement(announcement)"
+          >
+            View
+          </button>
+          <button
+            class="btn btn-warning btn-action"
+            @click="editAnnouncement(announcement)"
+          >
+            Edit
+          </button>
+          <button
+            class="btn btn-danger btn-action"
+            @click="confirmDelete(announcement)"
+          >
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -60,7 +85,11 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">New Announcement</h5>
-            <button type="button" class="btn-close" @click="closeNewAnnouncementModal"></button>
+            <button
+              type="button"
+              class="btn-close"
+              @click="closeNewAnnouncementModal"
+            ></button>
           </div>
           <div class="modal-body">
             <div class="row g-3">
@@ -68,20 +97,40 @@
                 <form @submit.prevent="submitNewAnnouncement">
                   <div class="mb-3">
                     <label for="title" class="form-label">Title:</label>
-                    <input type="text" class="form-control" id="title" v-model="newAnnouncement.title"
-                           placeholder="Enter title">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="title"
+                      v-model="newAnnouncement.title"
+                      placeholder="Enter title"
+                    />
                   </div>
 
                   <div class="mb-3">
-                    <label for="description" class="form-label">Description:</label>
-                    <textarea class="form-control" id="description" rows="3" v-model="newAnnouncement.description"
-                              placeholder="Enter description" style="height: 250px;"></textarea>
+                    <label for="description" class="form-label"
+                      >Description:</label
+                    >
+                    <textarea
+                      class="form-control"
+                      id="description"
+                      rows="3"
+                      v-model="newAnnouncement.description"
+                      placeholder="Enter description"
+                      style="height: 250px;"
+                    ></textarea>
                   </div>
 
                   <div class="mb-3">
                     <label class="form-label">Attachment:</label>
                     <div class="input-group">
-                      <input type="file" class="form-control" accept=".pdf, .jpg" @change="handleFileUpload">
+                      <!-- We add a ref to reset the file input later -->
+                      <input
+                        ref="newFileInput"
+                        type="file"
+                        class="form-control"
+                        accept=".pdf, .jpg"
+                        @change="handleFileUpload"
+                      />
                     </div>
                     <span class="form-text">Support pdf and jpg</span>
                   </div>
@@ -91,31 +140,79 @@
               <div class="col-12 col-md-5">
                 <div class="mb-3">
                   <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="schedulePost" v-model="newAnnouncement.isScheduled">
-                    <label class="form-check-label" for="schedulePost">Schedule Post</label>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="schedulePost"
+                      v-model="newAnnouncement.isScheduled"
+                    />
+                    <label class="form-check-label" for="schedulePost"
+                      >Schedule Post</label
+                    >
                   </div>
                   <div class="d-flex gap-2 mt-2">
-                    <input type="date" class="form-control" v-model="newAnnouncement.scheduleDate"
-                           :disabled="!newAnnouncement.isScheduled">
-                    <input type="time" class="form-control" v-model="newAnnouncement.scheduleTime"
-                           :disabled="!newAnnouncement.isScheduled">
+                    <input
+                      type="date"
+                      class="form-control"
+                      v-model="newAnnouncement.scheduleDate"
+                      :disabled="!newAnnouncement.isScheduled"
+                    />
+                    <input
+                      type="time"
+                      class="form-control"
+                      v-model="newAnnouncement.scheduleTime"
+                      :disabled="!newAnnouncement.isScheduled"
+                    />
                   </div>
                 </div>
 
                 <div class="mb-3">
                   <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="availableFor" v-model="newAnnouncement.hasAvailability">
-                    <label class="form-check-label" for="availableFor">Available for</label>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="availableFor"
+                      v-model="newAnnouncement.hasAvailability"
+                    />
+                    <label class="form-check-label" for="availableFor"
+                      >Available for</label
+                    >
                   </div>
-                  <input type="text" class="form-control mt-2" v-model="newAnnouncement.department" placeholder="Department"
-                         :disabled="!newAnnouncement.hasAvailability">
+                  <input
+                    type="text"
+                    class="form-control mt-2"
+                    v-model="newAnnouncement.department"
+                    placeholder="Department"
+                    :disabled="!newAnnouncement.hasAvailability"
+                  />
+
+                  <div v-if="newAnnouncement.attachment" class="mt-3">
+                    <h6>PDF Preview (Unsubmitted):</h6>
+                    <iframe
+                      :src="newAnnouncement.attachment"
+                      style="width:100%; height:300px;"
+                      frameborder="0"
+                    ></iframe>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="closeNewAnnouncementModal">Close</button>
-            <button type="button" class="btn btn-success" @click="submitNewAnnouncement">Submit</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="closeNewAnnouncementModal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-success"
+              @click="submitNewAnnouncement"
+            >
+              Submit
+            </button>
           </div>
         </div>
       </div>
@@ -130,53 +227,72 @@
             <button type="button" class="btn-close" @click="closeViewModal"></button>
           </div>
           <div class="modal-body text-center">
-            <p><strong>by {{ selectedAnnouncement.author }} {{ selectedAnnouncement.datetime }}</strong></p>
+            <p>
+              <strong>
+                by {{ selectedAnnouncement.author }} {{ selectedAnnouncement.datetime }}
+              </strong>
+            </p>
             <h6 class="fw-bold">Description</h6>
             <div class="border p-3 rounded">
               <p>{{ selectedAnnouncement.description }}</p>
-              <p class="text-end">Best Regards<br>HR Team</p>
+              <p class="text-end">Best Regards<br />HR Team</p>
             </div>
+
+            <!-- Show PDF or image if there is an attachment -->
             <div class="mt-3" v-if="selectedAnnouncement.attachment">
-              <iframe :src="selectedAnnouncement.attachment" class="attachment-preview"></iframe>
+              <!-- Option 1: IFRAME for PDF -->
+              <iframe
+                :src="selectedAnnouncement.attachment"
+                class="attachment-preview"
+                frameborder="0"
+              >
+              </iframe>
+
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="closeViewModal">Close</button>
+            <button type="button" class="btn btn-secondary" @click="closeViewModal">
+              Close
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteConfirmModal" ref="deleteModal">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius: 16px;">
-      <div class="modal-body p-4">
-        <div class=" mb-4">
-          <h3 class="mb-3" style="font-size: 2rem; font-weight: 500;">Are you sure?</h3>
-          <p class="text-muted" style="color: #6B7280;">This action cannot be undone. This will permanently delete the announcement.</p>
-        </div>
-        <div class="d-flex justify-content-end gap-2">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="closeDeleteModal"
-          >
-            Cancel
-          </button>
-          <button 
-            type="button" 
-            class="btn btn-success" 
-            @click="deleteAnnouncement"
-           >
-            Delete
-          </button>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" ref="deleteModal">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px;">
+          <div class="modal-body p-4">
+            <div class="mb-4">
+              <h3 class="mb-3" style="font-size: 2rem; font-weight: 500;">
+                Are you sure?
+              </h3>
+              <p class="text-muted" style="color: #6B7280;">
+                This action cannot be undone. This will permanently delete the
+                announcement.
+              </p>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="closeDeleteModal"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="btn btn-success"
+                @click="deleteAnnouncement"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
     <!-- Edit Announcement Modal -->
     <div class="modal fade" id="editAnnouncementModal" ref="editModal">
@@ -192,20 +308,37 @@
                 <form>
                   <div class="mb-3">
                     <label for="editTitle" class="form-label">Title:</label>
-                    <input type="text" class="form-control" id="editTitle" v-model="selectedAnnouncement.title" 
-                           placeholder="Enter title">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editTitle"
+                      v-model="selectedAnnouncement.title"
+                      placeholder="Enter title"
+                    />
                   </div>
 
                   <div class="mb-3">
-                    <label for="editDescription" class="form-label">Description:</label>
-                    <textarea class="form-control" id="editDescription" v-model="selectedAnnouncement.description"
-                              placeholder="Enter description" style="height: 250px;"></textarea>
+                    <label for="editDescription" class="form-label"
+                      >Description:</label
+                    >
+                    <textarea
+                      class="form-control"
+                      id="editDescription"
+                      v-model="selectedAnnouncement.description"
+                      placeholder="Enter description"
+                      style="height: 250px;"
+                    ></textarea>
                   </div>
 
                   <div class="mb-3">
                     <label class="form-label">Attachment:</label>
                     <div class="input-group">
-                      <input type="file" class="form-control" accept=".pdf, .jpg" @change="handleFileUpload">
+                      <input
+                        type="file"
+                        class="form-control"
+                        accept=".pdf, .jpg"
+                        @change="handleFileUpload"
+                      />
                     </div>
                     <span class="form-text">Support pdf and jpg</span>
                   </div>
@@ -215,33 +348,66 @@
               <div class="col-12 col-md-5">
                 <div class="mb-3">
                   <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="editSchedulePost" 
-                           v-model="selectedAnnouncement.isScheduled">
-                    <label class="form-check-label" for="editSchedulePost">Schedule Post</label>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="editSchedulePost"
+                      v-model="selectedAnnouncement.isScheduled"
+                    />
+                    <label class="form-check-label" for="editSchedulePost"
+                      >Schedule Post</label
+                    >
                   </div>
                   <div class="d-flex gap-2 mt-2">
-                    <input type="date" class="form-control" v-model="selectedAnnouncement.scheduleDate"
-                           :disabled="!selectedAnnouncement.isScheduled">
-                    <input type="time" class="form-control" v-model="selectedAnnouncement.scheduleTime"
-                           :disabled="!selectedAnnouncement.isScheduled">
+                    <input
+                      type="date"
+                      class="form-control"
+                      v-model="selectedAnnouncement.scheduleDate"
+                      :disabled="!selectedAnnouncement.isScheduled"
+                    />
+                    <input
+                      type="time"
+                      class="form-control"
+                      v-model="selectedAnnouncement.scheduleTime"
+                      :disabled="!selectedAnnouncement.isScheduled"
+                    />
                   </div>
                 </div>
 
                 <div class="mb-3">
                   <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="editAvailableFor" 
-                           v-model="selectedAnnouncement.hasAvailability">
-                    <label class="form-check-label" for="editAvailableFor">Available for</label>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="editAvailableFor"
+                      v-model="selectedAnnouncement.hasAvailability"
+                    />
+                    <label class="form-check-label" for="editAvailableFor"
+                      >Available for</label
+                    >
                   </div>
-                  <input type="text" class="form-control mt-2" v-model="selectedAnnouncement.department" 
-                         placeholder="Department" :disabled="!selectedAnnouncement.hasAvailability">
+                  <input
+                    type="text"
+                    class="form-control mt-2"
+                    v-model="selectedAnnouncement.department"
+                    placeholder="Department"
+                    :disabled="!selectedAnnouncement.hasAvailability"
+                  />
                 </div>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
-            <button type="button" class="btn btn-success" @click="submitAnnouncement">Submit</button>
+            <button type="button" class="btn btn-secondary" @click="closeModal">
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-success"
+              @click="submitAnnouncement"
+            >
+              Submit
+            </button>
           </div>
         </div>
       </div>
@@ -250,19 +416,23 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref} from "vue";
-import {Modal} from "bootstrap";
+import { ref, computed, onMounted } from 'vue';
+import { Modal } from 'bootstrap';
 
+// Search
 const searchQuery = ref('');
+
+// Mock announcements
 const announcements = ref([
   {
     id: 1,
     title: 'Welcome to new website',
-    description: "We're excited to launch our new announcement center. Stay tuned for important updates!",
+    description:
+      "We're excited to launch our new announcement center. Stay tuned for important updates!",
     author: 'HR Chloe',
     datetime: '18/10/2024 12 p.m.',
-    attachment: '1701exercise1.pdf',
     posted: true,
+    attachment: './someFile.pdf', // Example: could be replaced by a blob url
     isScheduled: false,
     scheduleDate: '',
     scheduleTime: '',
@@ -272,7 +442,8 @@ const announcements = ref([
   {
     id: 2,
     title: 'Upcoming Maintenance',
-    description: 'Scheduled maintenance will take place this weekend. Expect some downtime.',
+    description:
+      'Scheduled maintenance will take place this weekend. Expect some downtime.',
     author: 'Admin Team',
     datetime: '20/10/2024 5 p.m.',
     posted: false,
@@ -284,6 +455,7 @@ const announcements = ref([
   },
 ]);
 
+// New announcement form data
 const newAnnouncement = ref({
   title: '',
   description: '',
@@ -295,6 +467,29 @@ const newAnnouncement = ref({
   attachment: null,
 });
 
+// Track selected announcement for editing/viewing/deleting
+const selectedAnnouncement = ref<any>({});
+
+// Refs to the modal elements
+const newAnnouncementModal = ref(null);
+const viewModal = ref(null);
+const deleteModal = ref(null);
+const editModal = ref(null);
+
+// Ref to the new file input so we can reset it
+const newFileInput = ref<HTMLInputElement | null>(null);
+
+// Filtered announcements for search
+const filteredAnnouncements = computed(() => {
+  return announcements.value.filter((announcement) =>
+    [announcement.title, announcement.description]
+      .join(' ')
+      .toLowerCase()
+      .includes(searchQuery.value.toLowerCase())
+  );
+});
+
+// Modal instances
 interface ModalInstances {
   new: Modal;
   view: Modal;
@@ -303,27 +498,15 @@ interface ModalInstances {
 }
 const modalInstances: ModalInstances = {} as ModalInstances;
 
-
-const selectedAnnouncement = ref<any>({});
-const newAnnouncementModal = ref(null);
-const viewModal = ref(null);
-const deleteModal = ref(null);
-const editModal = ref(null);
-
-const filteredAnnouncements = computed(() => {
-  return announcements.value.filter(
-      (announcement) =>
-          announcement.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          announcement.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
+// Initialize Bootstrap modals on mount
+onMounted(() => {
+  modalInstances.new = new Modal(newAnnouncementModal.value as HTMLElement);
+  modalInstances.view = new Modal(viewModal.value as HTMLElement);
+  modalInstances.delete = new Modal(deleteModal.value as HTMLElement);
+  modalInstances.edit = new Modal(editModal.value as HTMLElement);
 });
 
-const initializeModals = () => {
-  modalInstances.new = new Modal(newAnnouncementModal.value);
-  modalInstances.view = new Modal(viewModal.value);
-  modalInstances.delete = new Modal(deleteModal.value);
-  modalInstances.edit = new Modal(editModal.value);
-};
+// --- Modal Methods ---
 
 const openNewAnnouncementModal = () => {
   modalInstances.new.show();
@@ -334,35 +517,7 @@ const closeNewAnnouncementModal = () => {
   resetNewAnnouncement();
 };
 
-const submitNewAnnouncement = () => {
-  announcements.value.push({
-    id: announcements.value.length + 1,
-    ...newAnnouncement.value,
-    author: 'Current User',
-    datetime: new Date().toLocaleString(),
-    posted: false
-  });
-  closeNewAnnouncementModal();
-};
-
-const editAnnouncement = (announcement) => {
-  selectedAnnouncement.value = { ...announcement };
-  modalInstances.edit.show();
-};
-
-const submitAnnouncement = () => {
-  const index = announcements.value.findIndex((a) => a.id === selectedAnnouncement.value.id);
-  if (index !== -1) {
-    announcements.value[index] = { ...selectedAnnouncement.value };
-  }
-  modalInstances.edit.hide();
-};
-
-const closeModal = () => {
-  modalInstances.edit.hide();
-};
-
-const viewAnnouncement = (announcement) => {
+const viewAnnouncement = (announcement: any) => {
   selectedAnnouncement.value = announcement;
   modalInstances.view.show();
 };
@@ -371,21 +526,67 @@ const closeViewModal = () => {
   modalInstances.view.hide();
 };
 
-const confirmDelete = (announcement) => {
+const confirmDelete = (announcement: any) => {
   selectedAnnouncement.value = announcement;
   modalInstances.delete.show();
-};
-
-const deleteAnnouncement = () => {
-  announcements.value = announcements.value.filter((a) => a.id !== selectedAnnouncement.value.id);
-  modalInstances.delete.hide();
 };
 
 const closeDeleteModal = () => {
   modalInstances.delete.hide();
 };
 
+const editAnnouncement = (announcement: any) => {
+  selectedAnnouncement.value = { ...announcement };
+  modalInstances.edit.show();
+};
+
+const closeModal = () => {
+  modalInstances.edit.hide();
+  selectedAnnouncement.value = {};
+
+};
+
+// --- CRUD Actions ---
+
+const submitNewAnnouncement = () => {
+  const newItem = {
+    id: announcements.value.length + 1,
+    ...newAnnouncement.value,
+    author: 'Current User',
+    datetime: new Date().toLocaleString(),
+    posted: false
+  };
+
+  console.log('[submitNewAnnouncement] new item:', newItem);
+
+  announcements.value.push(newItem);
+  closeNewAnnouncementModal();
+};
+
+
+const submitAnnouncement = () => {
+  // Save changes to an existing announcement
+  const index = announcements.value.findIndex(
+    (a) => a.id === selectedAnnouncement.value.id
+  );
+  if (index !== -1) {
+    announcements.value[index] = { ...selectedAnnouncement.value };
+  }
+  closeModal();
+};
+
+const deleteAnnouncement = () => {
+  // Delete the selected announcement
+  announcements.value = announcements.value.filter(
+    (a) => a.id !== selectedAnnouncement.value.id
+  );
+  modalInstances.delete.hide();
+};
+
+// --- Utility ---
+
 const resetNewAnnouncement = () => {
+  // Clear form data
   newAnnouncement.value = {
     title: '',
     description: '',
@@ -396,32 +597,44 @@ const resetNewAnnouncement = () => {
     department: '',
     attachment: null,
   };
+
+  // Reset the file input's value
+  if (newFileInput.value) {
+    newFileInput.value.value = '';
+  }
 };
 
 const handleFileUpload = (event) => {
-  const file = event.target.files[0];
+  const file = event.target.files?.[0];
+  console.log('[handleFileUpload] Selected file:', file);
+
   if (file) {
-    if (selectedAnnouncement.value.id) {
-      selectedAnnouncement.value.attachment = file;
+    // Generate a fresh blob URL
+    const fileUrl = URL.createObjectURL(file);
+    console.log('[handleFileUpload] Generated blob URL:', fileUrl);
+
+    // Assign the blob URL to newAnnouncement or selectedAnnouncement based on your flow
+    if (selectedAnnouncement.value && selectedAnnouncement.value.id) {
+      selectedAnnouncement.value.attachment = fileUrl;
+      console.log('[handleFileUpload] Updated selectedAnnouncement:', selectedAnnouncement.value);
     } else {
-      newAnnouncement.value.attachment = file;
+      newAnnouncement.value.attachment = fileUrl;
+      console.log('[handleFileUpload] Updated newAnnouncement:', newAnnouncement.value);
     }
   }
 };
 
-onMounted(() => {
-  initializeModals();
-});
-</script>
 
+</script>
 
 <script lang="ts">
 export default {
-  name : "NotificationCenter",
-}
+  name: 'NotificationCenter',
+};
 </script>
 
 <style scoped>
+/* Search Container */
 .search-container {
   display: flex;
   align-items: center;
@@ -446,7 +659,7 @@ export default {
   font-size: 16px;
 }
 
-
+/* New Announcement Button */
 .new-announcement-btn {
   width: 100%;
   max-width: 200px;
@@ -467,9 +680,9 @@ export default {
   .me-md-4 {
     margin-right: 0 !important;
   }
-  
 }
 
+/* Announcement Cards */
 .announcement-card {
   border: 1px solid #ddd;
   padding: 1rem;

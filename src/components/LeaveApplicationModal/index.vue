@@ -217,10 +217,12 @@ const handleSubmit = () => {
 
             
             <!-- Primary Document Upload (required for MC only) -->
-            <div class="mb-3" v-if="formData.selectedDates.some(date => date.leaveType === 'MC')" >
-              <label class="form-label">Upload Document</label>
-              <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="image/*,application/pdf" required>
+            <div class="mb-3" v-if="formData.selectedDates.some(date => date.leaveType === 'MC')">
+              <label class="form-label">Upload Document (PDF only)</label>
+              <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="application/pdf" required>
+              <small class="form-text text-muted">Please upload a PDF file only.</small>
             </div>
+
 
           </form>
         </div>

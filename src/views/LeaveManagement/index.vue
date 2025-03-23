@@ -173,9 +173,28 @@ const selectedLeave = ref<LeaveApplication | null>(null);
 
 const openDocument = () => {
   if (selectedLeave.value) {
-    window.open(`path/to/your/${selectedLeave.value.document}`, '_blank');
+    // Check if the document is a PDF or an image
+    const documentPath = `path/to/your/${selectedLeave.value.document}`;
+    const fileExtension = selectedLeave.value.document.split('.').pop().toLowerCase();
+    
+    // If it's a PDF, open it in a new tab
+    if (fileExtension === 'pdf') {
+      window.open(documentPath, '_blank');
+    } else if (['jpg', 'jpeg', 'png'].includes(fileExtension)) {
+      // For images, open in an image viewer or inline
+      const imgElement = document.createElement('img');
+      imgElement.src = documentPath;
+      imgElement.style.width = '100%';  // Make the image responsive
+      imgElement.style.height = 'auto';
+      const imgWindow = window.open('', '_blank');
+      imgWindow.document.body.appendChild(imgElement);
+    } else {
+      // Fallback case for unsupported file types
+      alert('Unsupported file type');
+    }
   }
 };
+
 
 const showLeaveDetails = (application: LeaveApplication) => {
   selectedLeave.value = application;
@@ -382,6 +401,7 @@ onMounted(() => {
                     <i class="fas fa-file-pdf me-2"></i>
                     <a href="#" class="text-decoration-none">{{ selectedLeave.document }}</a>
                   </div>
+
                 </div>
               </div>
               <div class="col-md-6">
