@@ -304,7 +304,7 @@
 
 <script setup lang="ts">
 import router from '@/router'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 interface Task {
   id: number
@@ -330,7 +330,7 @@ const tasks = ref<Task[]>([
     id: 1, 
     taskName: 'Complete Order', 
     taskDescription: 'Send order to customer', 
-    status: 'Ongoing',
+    status: '',
     startDate: '2025-03-01',
     completionDate: '2025-03-12',
     pointsGiven: 50,
@@ -383,6 +383,24 @@ const completedTasks = computed(() => tasks.value.filter(task => task.status ===
 const ongoingTasks = computed(() => tasks.value.filter(task => task.status === 'Ongoing').length)
 const delayedTasks = computed(() => tasks.value.filter(task => task.status === 'Delayed').length)
 
+onMounted(() => {
+    tasks.value.forEach(updateTaskStatus);
+});
+
+const updateTaskStatus = (task: Task) => {
+
+  const currentDate = new Date();
+  const startDate = new Date(`${task.startDate}`);
+  const endDate = new Date(`${task.completionDate}`); 
+
+  if (currentDate < startDate) {
+    task.status = 'Not Yet Started';
+  } else if (currentDate >= startDate && currentDate <= endDate) {
+    task.status = 'Ongoing';
+  } else {
+    task.status = 'Delayed';
+  }};
+
 // Modals
 const showModal = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
@@ -409,7 +427,7 @@ const openCreateTaskModal = () => {
     id: 0,
     taskName: '',
     taskDescription: '',
-    status: 'Ongoing',
+    status: '',
     startDate: '',
     completionDate: '',
     pointsGiven: 0,
@@ -433,23 +451,6 @@ const openDeleteTaskModal = (task: Task) => {
   selectedTask.value = task
   showDeleteTaskModal.value = true
 }
-
-const updateTaskStatus = (task: Task) => {
-
-  const currentDate = new Date();
-  const startDate = new Date(task.startDate);
-  const endDate = new Date(task.completionDate); 
-
-  if (task.status !== 'Completed') { 
-    if (currentDate < startDate) {
-        task.status = 'Not Yet Started'; 
-    } else if (currentDate <= endDate) {
-        task.status = 'Ongoing';
-    } else if (endDate > currentDate) {
-        task.status = 'Delayed';
-    }
-  }
-};
 
 const saveEditedTask = () => {
   const index = tasks.value.findIndex(task => task.id === selectedTask.value.id)
@@ -499,7 +500,7 @@ const createTask = () => {
     id: newId,
     taskName: selectedTask.value.taskName,
     taskDescription: selectedTask.value.taskDescription,
-    status: 'Ongoing',
+    status: '',
     startDate: selectedTask.value.startDate,
     completionDate: selectedTask.value.completionDate,
     target: { value: selectedTask.value.target.value, unit: selectedTask.value.target.unit },
