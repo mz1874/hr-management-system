@@ -12,7 +12,7 @@ import LeaveApplicationModal from '@/components/LeaveApplicationModal/index.vue'
 import dropdownMenu from '@/components/LeaveApplicationModal/Dropdown.vue'
 import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/LeaveApplicationDetailsModal.vue'
 import { Modal, Dropdown } from "bootstrap";
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 
 interface LeaveApplication {
   id: number;
@@ -134,6 +134,15 @@ const selectedApplication = ref<LeaveApplication | null>(null);
 // Open Modal for Viewing an Existing Application (Disable Fields)
 const openApplicationDetails = (application: LeaveApplication) => {
   selectedApplication.value = application;
+  
+  // Show the modal after setting the selected application
+  nextTick(() => {
+    const detailsModalElement = document.getElementById('leaveApplicationDetailsModal');
+    if (detailsModalElement) {
+      const modal = new Modal(detailsModalElement);
+      modal.show();
+    }
+  });
 };
 
 // Initialize Bootstrap Dropdown on Mounted
@@ -295,7 +304,7 @@ onMounted(() => {
 
     <!-- Leave Application Details Modal -->
     <LeaveApplicationDetailsModal 
-      v-if="selectedApplication" 
+      v-show="selectedApplication !== null"
       :selectedApplication="selectedApplication"
     />
     

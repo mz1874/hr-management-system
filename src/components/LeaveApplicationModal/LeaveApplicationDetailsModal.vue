@@ -27,7 +27,6 @@ const props = defineProps<{ selectedApplication: LeaveApplication | null }>();
 const modalRef = ref<HTMLElement | null>(null);
 let modalInstance: Modal | null = null;
 
-
 // Initialize modal when component is mounted
 onMounted(() => {
   if (modalRef.value) {
@@ -114,7 +113,7 @@ watch(() => props.selectedApplication, (newData) => {
           </div>
 
           <!-- Document (if available) -->
-          <div v-if="props.selectedApplication.document !== 'N/A'" class="mb-3">
+          <div v-if="props.selectedApplication.document && props.selectedApplication.document !== 'N/A'">
             <label class="form-label">Attached Document</label>
             <div class="pdf-viewer">
               <embed :src="props.selectedApplication.document" type="application/pdf" width="100%" height="400px" />
@@ -130,6 +129,7 @@ watch(() => props.selectedApplication, (newData) => {
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .modal-header {
