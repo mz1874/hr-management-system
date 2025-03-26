@@ -28,7 +28,6 @@
     <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">All Status</option>
-      <option>Not Yet Started</option>
       <option>Completed</option>
       <option>Ongoing</option>
       <option>Delayed</option>
@@ -74,7 +73,6 @@
                 </span>
               </td>
               <td>
-                <!-- <button @click="openViewTaskModal(task)" class="btn btn-primary btn-sm">View</button> -->
                 <button @click="goToEmployeeDetailsPage()" class="btn btn-primary btn-sm">Employee Details</button>
                 <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
                 <button @click="openDeleteTaskModal(task)" class="btn btn-danger btn-sm">Delete</button>

@@ -66,7 +66,7 @@ function togglePasswordVisibility() {
 
 function submitData() {
   router.push({
-    name: 'home'
+    name: 'home-default'
   })
 }
 </script>

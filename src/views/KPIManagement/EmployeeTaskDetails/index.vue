@@ -6,7 +6,22 @@
     <h2>{{ selectedTask.taskName }}</h2>
   </div>
 
-  <!-- Search Section: Full-width search bar -->
+  <!-- Department filter -->
+  <div class="gap-3 mb-4">
+    <select class="form-select w-25" v-model="selectedDepartment">
+      <option>Sales Department</option>
+      <option>Marketing Department</option>
+      <option>Account Department</option>
+      <option>HR Department</option>
+      <option>Warehouse Department</option>
+      <option>Logistics Department</option>
+      <option>Supply Chain Department</option>
+    </select>
+  </div>
+
+  <div class="line mb-4"></div>
+
+  <!-- Search and filter -->
   <div class="d-flex gap-3 mb-4 mt-3">
     <div class="input-group w-25">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -17,134 +32,76 @@
         placeholder="Search Username"
       />
     </div>
+    <select v-model="selectedStatus" class="form-select w-25">
+      <option value="">All Status</option>
+      <option>Completed</option>
+      <option>Ongoing</option>
+      <option>Delayed</option>
+    </select>
   </div>
 
-  <!-- Dynamic Status Cards (click to filter) -->
-  <div class="row mb-4">
-        <!-- All Employees Card -->
-        <div class="col-md-3">
-      <div
-        class="card text-center clickable-card"
-        :class="{'card-active': selectedStatus === ''}"
-        @click="filterByStatus('')"
-      >
+  <!-- Statistics Cards -->
+  <div class="row mt-4">
+    <div class="col-md-3">
+      <div class="card text-center">
         <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle circle-all">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-person-lines-fill"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5zm0 1h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"
-              />
+          <div class="circle circle-total-task">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
+              <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5" />
+              <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" />
             </svg>
           </div>
           <div class="task-overall ms-3">
-            <span class="task-text">All Employees  </span>
-            <span class="task-num">{{ assignedEmployees.length }}</span>
+            <span class="task-text">Total Tasks</span>
+            <span class="task-num">{{ totalTasks }}</span>
           </div>
         </div>
       </div>
     </div>
-    <!-- Completed Card -->
     <div class="col-md-3">
-      <div
-        class="card text-center clickable-card"
-        :class="{'card-active': selectedStatus === 'Completed'}"
-        @click="filterByStatus('Completed')"
-      >
+      <div class="card text-center">
         <div class="card-body d-flex align-items-center justify-content-center">
           <div class="circle circle-completed">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-calendar-check"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0"
-              />
-              <path
-                d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-check" viewBox="0 0 16 16">
+              <path d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0" />
+              <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
             </svg>
           </div>
           <div class="task-overall ms-3">
-            <span class="task-text">Completed  </span>
-            <span class="task-num">{{ completedCount }}</span>
+            <span class="task-text">Completed</span>
+            <span class="task-num">{{ completedTasks }}</span>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- On Track Card -->
     <div class="col-md-3">
-      <div
-        class="card text-center clickable-card"
-        :class="{'card-active': selectedStatus === 'On Track'}"
-        @click="filterByStatus('On Track')"
-      >
+      <div class="card text-center">
         <div class="card-body d-flex align-items-center justify-content-center">
           <div class="circle circle-ongoing">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-pencil-square"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"
-              />
-              <path
-                fill-rule="evenodd"
-                d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+              <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+              <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
             </svg>
           </div>
           <div class="task-overall ms-3">
-            <span class="task-text">On Track  </span>
-            <span class="task-num">{{ onTrackCount }}</span>
+            <span class="task-text">Ongoing</span>
+            <span class="task-num">{{ ongoingTasks }}</span>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Off Track Card -->
     <div class="col-md-3">
-      <div
-        class="card text-center clickable-card"
-        :class="{'card-active': selectedStatus === 'Off Track'}"
-        @click="filterByStatus('Off Track')"
-      >
+      <div class="card text-center">
         <div class="card-body d-flex align-items-center justify-content-center">
           <div class="circle circle-delayed">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-calendar-x"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M6.146 7.146a.5.5 0 0 1 .708 0L8 8.293l1.146-1.147a.5.5 0 1 1 .708.708L8.707 9l1.147 1.146a.5.5 0 0 1-.708.708L8 9.707l-1.146 1.147a.5.5 0 0 1-.708-.708L7.293 9 6.146 7.854a.5.5 0 0 1 0-.708"
-              />
-              <path
-                d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-x" viewBox="0 0 16 16">
+              <path d="M6.146 7.146a.5.5 0 0 1 .708 0L8 8.293l1.146-1.147a.5.5 0 1 1 .708.708L8.707 9l1.147 1.146a.5.5 0 0 1-.708.708L8 9.707l-1.146 1.147a.5.5 0 0 1-.708-.708L7.293 9 6.146 7.854a.5.5 0 0 1 0-.708" />
+              <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
             </svg>
           </div>
           <div class="task-overall ms-3">
-            <span class="task-text">Off Track  </span>
-            <span class="task-num">{{ offTrackCount }}</span>
+            <span class="task-text">Delayed</span>
+            <span class="task-num">{{ delayedTasks }}</span>
           </div>
         </div>
       </div>
@@ -170,14 +127,16 @@
               <td>
                 <span
                   :class="['badge',
-                    getDynamicStatus(employee) === 'Completed'
+                    employee.status === 'Completed'
                       ? 'bg-success'
-                      : getDynamicStatus(employee) === 'On Track'
+                      : employee.status === 'Ongoing'
                       ? 'bg-warning'
+                      : employee.status === 'Confirming'
+                      ? 'bg-warning' // Change confirming to yellow
                       : 'bg-danger'
                   ]"
                 >
-                  {{ getDynamicStatus(employee) }}
+                  {{ employee.status }}
                 </span>
               </td>
               <td style="display: flex; align-items: center; gap: 5px;">
@@ -193,9 +152,13 @@
                 <span>/100</span>
               </td>
               <td>
-                <button @click="showHistory(employee)" class="btn btn-info btn-sm">
-                  Show History
-                </button>
+                <div class="action-buttons">
+                  <button @click="showHistory(employee)" class="btn btn-info btn-sm">
+                    Show History
+                  </button>
+                  <!-- Add margin to separate buttons -->
+                  <button v-if="employee.progress === 100 && (employee.status === 'Ongoing' || employee.status === 'Confirming')" @click="openApproveModal(employee)" class="btn btn-success btn-sm ms-3">Mark as Completed</button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -204,9 +167,9 @@
     </div>
   </div>
 
-  <!-- Modal for Showing Progress History with Backdrop -->
-  <div class="modal fade"v-if="showHistoryModal" :class="{ show: showHistoryModal }" style="display: block" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+  <!-- Show History Modal -->
+  <div class="modal fade" v-if="showHistoryModal" :class="{ show: showHistoryModal }" style="display: block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Progress History for {{ selectedEmployee.username }}</h5>
@@ -215,7 +178,7 @@
         <div class="modal-body">
           <ul>
             <li v-for="(record, index) in selectedEmployee.progressHistory" :key="index">
-              {{ record.date }} - Progress: {{ record.progress }}%
+              {{ formatDate(record.date) }} - Progress: {{ record.progress }}%
             </li>
           </ul>
         </div>
@@ -223,6 +186,27 @@
     </div>
   </div>
   <div class="modal-backdrop fade show" v-if="showHistoryModal"></div>
+
+  <!-- Approve Modal -->
+  <div class="modal fade" v-if="showApproveModal" :class="{ show: showApproveModal }" style="display: block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Approve Completion for {{ selectedEmployee.username }}</h5>
+          <button type="button" class="btn-close" @click="showApproveModal = false"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to mark this task as completed?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="showApproveModal = false">Cancel</button>
+          <button type="button" class="btn btn-success" @click="approveTaskCompletion(selectedEmployee)">Approve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" v-if="showApproveModal"></div>
+
 </template>
 
 <script setup lang="ts">
@@ -234,6 +218,7 @@ interface Employee {
   username: string
   progress: number
   progressHistory: { date: string; progress: number }[]
+  status: string
 }
 
 const selectedTask = ref({
@@ -246,90 +231,93 @@ const assignedEmployees = ref<Employee[]>([
     username: 'Alice',
     progress: 50,
     progressHistory: [{ date: '2023-03-01', progress: 50 }],
+    status: 'Ongoing'
   },
   {
     id: 2,
     username: 'Jester',
     progress: 100,
     progressHistory: [{ date: '2023-03-01', progress: 100 }],
+    status: 'Confirming'
   },
   {
     id: 3,
     username: 'Amanda',
     progress: 30,
     progressHistory: [{ date: '2023-03-01', progress: 30 }],
+    status: 'Ongoing'
   },
 ])
 
 const searchUsername = ref('')
 const selectedStatus = ref('')
+const selectedDepartment = ref('Sales Department')
 const showHistoryModal = ref(false)
+const showApproveModal = ref(false)
 const selectedEmployee = ref<Employee>({
   id: 0,
   username: '',
   progress: 0,
   progressHistory: [],
+  status: 'Ongoing'
 })
 
-// Helper function to get dynamic status based on progress
-const getDynamicStatus = (employee: Employee): string => {
-  if (employee.progress === 100) {
-    return 'Completed'
-  } else if (employee.progress >= 75) {
-    return 'On Track'
-  } else {
-    return 'Off Track'
-  }
-}
+const totalTasks = computed(() => assignedEmployees.value.length)
+const completedTasks = computed(() => assignedEmployees.value.filter(employee => employee.status === 'Completed').length)
+const ongoingTasks = computed(() => assignedEmployees.value.filter(employee => employee.status === 'Ongoing' || employee.status === 'Confirming').length) // Confirming as Ongoing
+const delayedTasks = computed(() => assignedEmployees.value.filter(employee => employee.status === 'Delayed').length)
 
-// Computed filtered employees based on search and dynamic status
 const filteredEmployees = computed(() => {
   return assignedEmployees.value.filter((employee) => {
     const matchesUsername = employee.username
       .toLowerCase()
       .includes(searchUsername.value.toLowerCase())
-    const dynamicStatus = getDynamicStatus(employee)
-    const matchesStatus = !selectedStatus.value || dynamicStatus === selectedStatus.value
+    const matchesStatus = !selectedStatus.value || (employee.status === selectedStatus.value || (selectedStatus.value === 'Ongoing' && employee.status === 'Confirming'))
     return matchesUsername && matchesStatus
   })
 })
 
-// Computed statistics for each dynamic status
-const completedCount = computed(() =>
-  assignedEmployees.value.filter((employee) => employee.progress === 100).length
-)
-const onTrackCount = computed(() =>
-  assignedEmployees.value.filter(
-    (employee) => employee.progress >= 75 && employee.progress < 100
-  ).length
-)
-const offTrackCount = computed(() =>
-  assignedEmployees.value.filter((employee) => employee.progress < 75).length
-)
-
-// Update employee progress and add new record to history
 const updateEmployeeProgress = (employee: Employee) => {
   const today = new Date().toLocaleDateString()
   employee.progressHistory.push({ date: today, progress: employee.progress })
+
+  // Only when progress is 100, set the status to Confirming
+  if (employee.progress === 100 && employee.status !== 'Completed') {
+    employee.status = 'Confirming'
+  }
 }
 
-// Set selectedStatus for filtering when a card is clicked
-const filterByStatus = (status: string) => {
-  selectedStatus.value = status
+const openApproveModal = (employee: Employee) => {
+  selectedEmployee.value = employee
+  showApproveModal.value = true
 }
 
-// Show history modal for the selected employee
+const approveTaskCompletion = (employee: Employee) => {
+  // Admin approves and the task status is marked as Completed
+  if (employee.progress === 100 && employee.status === 'Confirming') {
+    employee.status = 'Completed'
+  }
+  showApproveModal.value = false
+}
+
 const showHistory = (employee: Employee) => {
   selectedEmployee.value = employee
   showHistoryModal.value = true
 }
 
-const router = useRouter()
-function goToKPIManagement()
-{
-  router.push('/home/KPI-management');
+const formatDate = (date: string) => {
+  const newDate = new Date(date)
+  const year = newDate.getFullYear()
+  const month = String(newDate.getMonth() + 1).padStart(2, '0')  // Month starts at 0
+  const day = String(newDate.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
 }
 
+const router = useRouter()
+function goToKPIManagement() {
+  router.push('/home/KPI-management');
+}
 </script>
 
 <style scoped>
@@ -380,17 +368,17 @@ function goToKPIManagement()
   height: 30px;
 }
 
+.circle-total-task {
+  background-color: #B3CFE6;
+}
 .circle-completed {
-  background-color: #abe3a5;
+  background-color: #ABE3A5;
 }
 .circle-ongoing {
-  background-color: #f9e394;
+  background-color: #F9E394;
 }
 .circle-delayed {
-  background-color: #f3c5c1;
-}
-.circle-all {
-  background-color: #b3cfE6;
+  background-color: #F3C5C1;
 }
 
 .table th {
@@ -412,16 +400,6 @@ function goToKPIManagement()
   display: flex;
   flex-direction: column; 
 }
-
-/* .modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1040;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-} */
 
 .modal-content {
   background: white;
@@ -448,5 +426,14 @@ function goToKPIManagement()
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.ms-3 {
+  margin-left: 10px;
 }
 </style>
