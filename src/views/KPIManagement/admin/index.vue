@@ -28,9 +28,11 @@
     <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">All Status</option>
+      <option>Not Yet Started</option>
       <option>Completed</option>
       <option>Ongoing</option>
       <option>Delayed</option>
+      <option>Terminated</option>
     </select>
   </div>
 
@@ -65,9 +67,10 @@
               <td>180</td>
               <td>
                 <span :class="['badge',
+                    task.status === 'Not Yet Started' ? 'bg-primary' :
                     task.status === 'Completed' ? 'bg-success' : 
                     task.status === 'Ongoing' ? 'bg-warning' : 
-                    task.status === 'Delayed' ? 'bg-danger' : 'bg-primary'
+                    task.status === 'Delayed' ? 'bg-danger' : 'bg-secondary'
                   ]">
                   {{ task.status }}
                 </span>
@@ -75,7 +78,7 @@
               <td>
                 <button @click="goToEmployeeDetailsPage()" class="btn btn-primary btn-sm">Employee Details</button>
                 <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
-                <button @click="openDeleteTaskModal(task)" class="btn btn-danger btn-sm">Delete</button>
+                <button @click="openTerminatedModal(task)" class="btn btn-danger btn-sm">Terminate</button>
               </td>
             </tr>
           </tbody>
@@ -280,24 +283,24 @@
   <div class="modal-backdrop fade show" v-if="showModal"></div>
 
   <!-- Delete Task Modal -->
-  <div class="modal fade" :class="{ show: showDeleteTaskModal }" style="display: block" v-if="showDeleteTaskModal">
+  <div class="modal fade" :class="{ show: showTerminatedModal }" style="display: block" v-if="showTerminatedModal">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Delete Task</h5>
-          <button type="button" class="btn-close" @click="showDeleteTaskModal = false"></button>
+          <h5 class="modal-title">Terminate Task</h5>
+          <button type="button" class="btn-close" @click="showTerminatedModal = false"></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete this task, <b>{{selectedTask.taskName}}</b>?</p>
+          <p>Are you sure you want to terminate this task, <b>{{selectedTask.taskName}}</b>?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showDeleteTaskModal = false">Cancel</button>
-          <button type="button" class="btn btn-danger" @click="confirmDeleteTask">Delete</button>
+          <button type="button" class="btn btn-secondary" @click="showTerminatedModal = false">Cancel</button>
+          <button type="button" class="btn btn-danger" @click="confirmTerminated(selectedTask)">Terminate</button>
         </div>
       </div>
     </div>
   </div>
-  <div class="modal-backdrop fade show" v-if="showDeleteTaskModal"></div>
+  <div class="modal-backdrop fade show" v-if="showTerminatedModal"></div>
 </template>
 
 <script setup lang="ts">
@@ -402,7 +405,7 @@ const updateTaskStatus = (task: Task) => {
 // Modals
 const showModal = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
-const showDeleteTaskModal = ref(false)
+const showTerminatedModal = ref(false)
 const selectedTask = ref<Task>({
   id: 0,
   taskName: '',
@@ -445,9 +448,9 @@ const openEditTaskModal = (task: Task) => {
   showModal.value = true
 }
 
-const openDeleteTaskModal = (task: Task) => {
+const openTerminatedModal = (task: Task) => {
   selectedTask.value = task
-  showDeleteTaskModal.value = true
+  showTerminatedModal.value = true
 }
 
 const saveEditedTask = () => {
@@ -467,10 +470,13 @@ const markAsComplete = (task: Task) => {
   showModal.value = false
 };
 
-const confirmDeleteTask = () => {
-  tasks.value = tasks.value.filter(task => task.id !== selectedTask.value.id)
-  showDeleteTaskModal.value = false
-}
+const confirmTerminated = (task: Task) => {
+  const index = tasks.value.findIndex(t => t.id === task.id);
+  if (index !== -1) {
+    tasks.value[index] = { ...tasks.value[index], status: 'Terminated' };
+  }
+  showTerminatedModal.value = false
+};
 
 const addAssignedUser = () => {
   if (selectedTask.value.assignedTo.trim()) {

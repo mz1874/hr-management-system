@@ -6,19 +6,6 @@
     <h2>{{ selectedTask.taskName }}</h2>
   </div>
 
-  <!-- Department filter -->
-  <div class="gap-3 mb-4">
-    <select class="form-select w-25" v-model="selectedDepartment">
-      <option>Sales Department</option>
-      <option>Marketing Department</option>
-      <option>Account Department</option>
-      <option>HR Department</option>
-      <option>Warehouse Department</option>
-      <option>Logistics Department</option>
-      <option>Supply Chain Department</option>
-    </select>
-  </div>
-
   <div class="line mb-4"></div>
 
   <!-- Search and filter -->
@@ -34,6 +21,7 @@
     </div>
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">All Status</option>
+      <option>Not Yet Started</option>
       <option>Completed</option>
       <option>Ongoing</option>
       <option>Delayed</option>
@@ -127,13 +115,11 @@
               <td>
                 <span
                   :class="['badge',
-                    employee.status === 'Completed'
-                      ? 'bg-success'
-                      : employee.status === 'Ongoing'
-                      ? 'bg-warning'
-                      : employee.status === 'Confirming'
-                      ? 'bg-warning' // Change confirming to yellow
-                      : 'bg-danger'
+                    employee.status === 'Not Yet Started' ? 'bg-secondary'
+                    : employee.status === 'Completed' ? 'bg-success'
+                    : employee.status === 'Ongoing' ? 'bg-warning'
+                    : employee.status === 'Confirming' ? 'bg-primary' 
+                    : 'bg-danger'
                   ]"
                 >
                   {{ employee.status }}
@@ -251,7 +237,6 @@ const assignedEmployees = ref<Employee[]>([
 
 const searchUsername = ref('')
 const selectedStatus = ref('')
-const selectedDepartment = ref('Sales Department')
 const showHistoryModal = ref(false)
 const showApproveModal = ref(false)
 const selectedEmployee = ref<Employee>({
@@ -269,9 +254,7 @@ const delayedTasks = computed(() => assignedEmployees.value.filter(employee => e
 
 const filteredEmployees = computed(() => {
   return assignedEmployees.value.filter((employee) => {
-    const matchesUsername = employee.username
-      .toLowerCase()
-      .includes(searchUsername.value.toLowerCase())
+    const matchesUsername = employee.username.toLowerCase().includes(searchUsername.value.toLowerCase())
     const matchesStatus = !selectedStatus.value || (employee.status === selectedStatus.value || (selectedStatus.value === 'Ongoing' && employee.status === 'Confirming'))
     return matchesUsername && matchesStatus
   })
