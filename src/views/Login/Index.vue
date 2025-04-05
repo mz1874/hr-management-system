@@ -9,8 +9,8 @@
           <p class="login">Log In</p>
           <form>
             <div class="field">
-              <label for="email">E-mail</label>
-              <input type="email" id="email" v-model="email" placeholder="rowy@gmail.com">
+              <label for="username">UserName</label>
+              <input type="text" id="email" v-model="username" placeholder="UserName">
             </div>
             <br>
             <div class="field password-field">
@@ -49,13 +49,15 @@ export default {
 </script>
 
 <script setup lang="ts">
+import Swal from 'sweetalert2'
 import logo from '../../assets/logo.png';
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import {login} from "@/api/login.ts";
 
 const router = useRouter()
 
-const email = ref("")
+const username = ref("")
 const password = ref("")
 const logoUrl = ref(logo)
 const showPassword = ref(false)
@@ -64,11 +66,42 @@ function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
 }
 
-function submitData() {
-  router.push({
-    name: 'home-default'
-  })
+async function submitData() {
+  if (!username.value.trim()) {
+    Swal.fire("Please, enter username !");
+    return
+  }
+
+  if (!password.value.trim()) {
+    Swal.fire("Please, enter password !");
+    return
+  }
+
+  try {
+    const res = await login(username.value, password.value)
+    if (res.status === 200) {
+      localStorage.setItem('access_token', res.data.access)
+      localStorage.setItem('refresh_token', res.data.refresh)
+      Swal.fire({
+        position: "top-end",
+        icon: "success",
+        title: "Login success",
+        showConfirmButton: false,
+        timer: 1500
+      });
+    }
+
+    router.push({ name: 'home-default' })
+  } catch (err) {
+    Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "UserName or password are incorrect.",
+    });
+    console.error(err)
+  }
 }
+
 </script>
 
 <style scoped>

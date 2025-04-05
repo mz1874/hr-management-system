@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import Swal from 'sweetalert2'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-
+import {logout} from "@/api/login.ts";
 const router = useRouter();
 const showDropdown = ref(false);
 
 const handleLogout = () => {
-  // Here you would typically clear session/tokens
+  Swal.fire({
+    position: "top-end",
+    icon: "success",
+    title: "You successfully logged out!",
+    showConfirmButton: false,
+    timer: 1500
+  });
+  logout();
   router.push('/login');
 };
 </script>
