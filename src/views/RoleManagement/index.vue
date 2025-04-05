@@ -9,7 +9,7 @@ interface RoleItem {
   createdOn: string // 创建日期
 }
 
-const {tableData} = useRole()
+const {tableData, handleDeleteRole} = useRole()
 
 // 所有可用的路由权限（层次结构）
 const allPermissions = ref<string[]>([
@@ -89,8 +89,8 @@ const addRole = () => {
   showModal.value = false
 }
 
-const deleteRole = () => {
-  tableData.value = tableData.value.filter(item => item.id !== currentRole.value.id)
+const roleDelete = () => {
+  handleDeleteRole(currentRole.value.id);
   showRemoveModal.value = false
 }
 
@@ -341,7 +341,7 @@ export default {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showRemoveModal = false">Close</button>
-          <button type="button" class="btn btn-danger" @click="deleteRole">Confirm</button>
+          <button type="button" class="btn btn-danger" @click="roleDelete">Confirm</button>
         </div>
       </div>
     </div>

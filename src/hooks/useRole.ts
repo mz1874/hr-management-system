@@ -1,28 +1,54 @@
-import { getAllRoles } from "@/api/role.ts";
+import { getAllRoles, deleteRoleByRoleId } from "@/api/role.ts";
 import { ref, onMounted } from "vue";
 import dayjs from "dayjs";
+import Swal from "sweetalert2";
 
 export default function () {
     interface RoleItem {
         id: number;
         roleName: string;
-        permissions: string[]; // 当前角色拥有的权限
-        createdOn: string; // 创建日期
+        permissions: string[];
+        createdOn: string;
     }
 
     const tableData = ref<RoleItem[]>([]);
 
-    onMounted(() => {
+    const fetchRoles = () => {
         getAllRoles().then((res) => {
             const rawResults = res.data.data.results;
             tableData.value = rawResults.map((item: any) => ({
                 id: item.id,
                 roleName: item.name,
                 permissions: item.permissions,
-                createdOn: dayjs(item.create_time).format('YYYY-MM-DD HH:mm:ss'),
+                createdOn: dayjs(item.create_time).format("YYYY-MM-DD HH:mm:ss"),
             }));
         });
-    });
+    };
 
-    return { tableData };
+    onMounted(fetchRoles);
+
+    const handleDeleteRole = (id: number) => {
+        return deleteRoleByRoleId(id).then((res) => {
+            if (res.status === 204) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Role deleted successfully",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+                fetchRoles();
+            }else {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "error",
+                    title: "Role deleted field",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+            }
+        });
+    };
+
+    return { tableData, handleDeleteRole };
 }
