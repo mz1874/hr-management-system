@@ -4,17 +4,12 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { logout } from "@/api/login.ts";
 
-// 使用 Vue Router
 const router = useRouter();
 
-// 控制下拉菜单显示
 const showDropdown = ref(false);
 
-// 接收传递的参数
-const props = defineProps(['username']);
+const props = defineProps(['userName']);
 
-// 打印接收到的参数
-console.log('Received username:', props.username);
 
 const handleLogout = () => {
   Swal.fire({
@@ -36,7 +31,7 @@ const handleLogout = () => {
     <div class="ms-auto d-flex align-items-center">
       <div class="dropdown">
         <div class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
-          <span class="username">{{ props.username }}</span>
+          <span class="username">{{props.userName }}</span>
           <div class="dropdown-menu" :class="{ show: showDropdown }">
             <router-link to="/home/personal-information" class="dropdown-item">
               <i class="bi bi-person me-2"></i>Personal Information

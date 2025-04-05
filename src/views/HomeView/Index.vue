@@ -15,19 +15,16 @@ import {onMounted, reactive, ref} from "vue";
 let currentUserData = reactive<any>({});
 
 const currentUser = () => {
-  getCurrentUser()
-      .then((res) => {
-        console.log(res.data.data);
-        currentUserData = res.data.data;  // 将返回的数据保存到 currentUserData 中
-        console.log(currentUserData.username);  // 直接访问 username
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    getCurrentUser().then((res) => {
+          Object.assign(currentUserData, res.data.data);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
 };
 
 onMounted(() => {
-  currentUser();  // 在组件挂载时调用函数获取数据
+  currentUser();
 });
 
 </script>
