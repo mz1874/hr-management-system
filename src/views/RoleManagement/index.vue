@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import useRole from "@/hooks/useRole.ts";
 
 interface RoleItem {
   id: number
@@ -7,6 +8,8 @@ interface RoleItem {
   permissions: string[] // 当前角色拥有的权限
   createdOn: string // 创建日期
 }
+
+const {tableData} = useRole()
 
 // 所有可用的路由权限（层次结构）
 const allPermissions = ref<string[]>([
@@ -27,28 +30,6 @@ const allPermissions = ref<string[]>([
   '/reports/performance'
 ])
 
-// 生成20条角色数据
-const tableData = ref<RoleItem[]>([
-  {
-    id: 1,
-    roleName: 'Admin',
-    permissions: ['/dashboard', '/users', '/settings'],
-    createdOn: '2024-06-30 11:27:07'
-  },
-  {
-    id: 2,
-    roleName: 'Editor',
-    permissions: ['/dashboard', '/posts'],
-    createdOn: '2024-06-30 11:27:07'
-  },
-  // 继续生成更多数据...
-  {
-    id: 20,
-    roleName: 'Viewer',
-    permissions: ['/dashboard'],
-    createdOn: '2024-06-30 11:27:07'
-  }
-])
 
 const showModal = ref(false)
 const currentRole = ref<Partial<RoleItem>>({});
