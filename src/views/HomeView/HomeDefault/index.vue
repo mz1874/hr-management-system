@@ -94,16 +94,9 @@ const updateChart = () => {
   }
 };
 
-const currentUser = () =>{
-  getCurrentUser().then((res) => {
-    console.log(res);
-  }).catch((err) => {
-    console.log(err);
-  })
-}
 
 onMounted(() => {
-  currentUser();
+
 
 
   if (chartCanvas.value) {

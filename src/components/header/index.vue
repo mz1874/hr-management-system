@@ -2,9 +2,19 @@
 import Swal from 'sweetalert2'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {logout} from "@/api/login.ts";
+import { logout } from "@/api/login.ts";
+
+// 使用 Vue Router
 const router = useRouter();
+
+// 控制下拉菜单显示
 const showDropdown = ref(false);
+
+// 接收传递的参数
+const props = defineProps(['username']);
+
+// 打印接收到的参数
+console.log('Received username:', props.username);
 
 const handleLogout = () => {
   Swal.fire({
@@ -14,17 +24,19 @@ const handleLogout = () => {
     showConfirmButton: false,
     timer: 1500
   });
+
   logout();
   router.push('/login');
 };
 </script>
+
 
 <template>
   <header class="header navbar">
     <div class="ms-auto d-flex align-items-center">
       <div class="dropdown">
         <div class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
-          <span class="username">John Doe</span>
+          <span class="username">{{ props.username }}</span>
           <div class="dropdown-menu" :class="{ show: showDropdown }">
             <router-link to="/home/personal-information" class="dropdown-item">
               <i class="bi bi-person me-2"></i>Personal Information
