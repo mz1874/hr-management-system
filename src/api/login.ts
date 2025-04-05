@@ -13,3 +13,8 @@ export function logout() {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
 }
+
+export function getCurrentUser() {
+    return axios.get('/api/staff/me/');
+}
+

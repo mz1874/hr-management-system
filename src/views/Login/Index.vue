@@ -18,11 +18,13 @@
               <input :type="showPassword ? 'text' : 'password'" id="password" v-model="password" placeholder="**">
               <div class="eye-icon" @click="togglePasswordVisibility">
                 <!-- Custom SVG eye icon that doesn't require external libraries -->
-                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                   <circle cx="12" cy="12" r="3"></circle>
                 </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                   <line x1="1" y1="1" x2="23" y2="23"></line>
@@ -51,9 +53,9 @@ export default {
 <script setup lang="ts">
 import Swal from 'sweetalert2'
 import logo from '../../assets/logo.png';
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import {login} from "@/api/login.ts";
+import {ref} from "vue";
+import {useRouter} from "vue-router";
+import {login, logout} from "@/api/login.ts";
 
 const router = useRouter()
 
@@ -80,8 +82,10 @@ async function submitData() {
   try {
     const res = await login(username.value, password.value)
     if (res.status === 200) {
-      localStorage.setItem('access_token', res.data.access)
-      localStorage.setItem('refresh_token', res.data.refresh)
+      localStorage.setItem('access_token', res.data.data.access);
+      console.log(localStorage.getItem('access_token'));
+      localStorage.setItem('refresh_token', res.data.data.access);
+
       Swal.fire({
         position: "top-end",
         icon: "success",
@@ -91,7 +95,7 @@ async function submitData() {
       });
     }
 
-    router.push({ name: 'home-default' })
+    router.push({name: 'home-default'})
   } catch (err) {
     Swal.fire({
       icon: "error",
