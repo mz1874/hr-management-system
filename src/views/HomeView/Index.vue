@@ -1,13 +1,32 @@
-<script setup lang="ts">
-import siderbar from "@/components/siderbar/index.vue";
-import pageFooter from "@/components/footer/index.vue";
-import contentHeader from "@/components/header/index.vue";
-</script>
-
 <script lang="ts">
   export default {
     name:'home-view',
   }
+</script>
+
+
+<script setup lang="ts">
+import siderbar from "@/components/siderbar/index.vue";
+import pageFooter from "@/components/footer/index.vue";
+import contentHeader from "@/components/header/index.vue";
+import { getCurrentUser } from "@/api/login.ts";
+import {onMounted, reactive, ref} from "vue";
+
+let currentUserData = reactive<any>({});
+
+const currentUser = () => {
+    getCurrentUser().then((res) => {
+          Object.assign(currentUserData, res.data.data);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+};
+
+onMounted(() => {
+  currentUser();
+});
+
 </script>
 
 <template>
@@ -15,7 +34,9 @@ import contentHeader from "@/components/header/index.vue";
     <div class="row">
       <siderbar></siderbar>
       <div class="col">
-        <contentHeader></contentHeader>
+        <div v-if="currentUserData?.username">
+          <content-header :user-name="currentUserData?.username" />
+        </div>
         <div class="main-content">
           <router-view></router-view>
         </div>

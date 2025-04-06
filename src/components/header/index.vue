@@ -1,22 +1,37 @@
 <script setup lang="ts">
+import Swal from 'sweetalert2'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { logout } from "@/api/login.ts";
 
 const router = useRouter();
+
 const showDropdown = ref(false);
 
+const props = defineProps(['userName']);
+
+
 const handleLogout = () => {
-  // Here you would typically clear session/tokens
+  Swal.fire({
+    position: "top-end",
+    icon: "success",
+    title: "You successfully logged out!",
+    showConfirmButton: false,
+    timer: 1500
+  });
+
+  logout();
   router.push('/login');
 };
 </script>
+
 
 <template>
   <header class="header navbar">
     <div class="ms-auto d-flex align-items-center">
       <div class="dropdown">
         <div class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
-          <span class="username">John Doe</span>
+          <span class="username">{{props.userName }}</span>
           <div class="dropdown-menu" :class="{ show: showDropdown }">
             <router-link to="/home/personal-information" class="dropdown-item">
               <i class="bi bi-person me-2"></i>Personal Information

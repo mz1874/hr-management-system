@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
 import Chart from "chart.js/auto";
+import {getCurrentUser} from "@/api/login.ts";
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let chartInstance: Chart | null = null;
@@ -93,7 +94,11 @@ const updateChart = () => {
   }
 };
 
+
 onMounted(() => {
+
+
+
   if (chartCanvas.value) {
     chartInstance = new Chart(chartCanvas.value, {
       type: "pie",
