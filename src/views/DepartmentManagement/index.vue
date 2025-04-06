@@ -1,59 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-
-interface Department {
-  id: number
-  parentId: number | null
-  name: string
-  sorting: number
-  status: 'NORMAL' | 'ON HOLD'
-  creationTime: string
-  children?: Department[]
-}
+import useDepartment from "@/hooks/useDepartment.ts";
+import type {Department} from "@/interface/DepartmentInterface.ts";
+const {departments} = useDepartment()
 
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 4
 const totalItems = computed(() => departments.value.length)
 
-const departments = ref<Department[]>([
-  {
-    id: 1,
-    parentId: null,
-    name: 'Department 1',
-    sorting: 1,
-    status: 'NORMAL',
-    creationTime: '2024-06-30 11:27:07',
-    children: [
-      {
-        id: 2,
-        parentId: 1,
-        name: 'Sub-Department 1-1',
-        sorting: 2,
-        status: 'NORMAL',
-        creationTime: '2024-06-30 11:27:07'
-      }
-    ]
-  },
-  {
-    id: 3,
-    parentId: null,
-    name: 'Department 2',
-    sorting: 1,
-    status: 'ON HOLD',
-    creationTime: '2024-06-30 11:27:07',
-    children: [
-      {
-        id: 4,
-        parentId: 3,
-        name: 'Sub-Department 2-1',
-        sorting: 2,
-        status: 'ON HOLD',
-        creationTime: '2024-06-30 11:27:07'
-      }
-    ]
-  }
-])
 
 // Modals
 const showAddDepartmentModal = ref(false)
@@ -69,7 +24,7 @@ const filteredDepartments = computed(() => {
   const searchTerm = searchQuery.value.toLowerCase()
   return departments.value.filter(dept => {
     const matchesDept = dept.name.toLowerCase().includes(searchTerm)
-    const matchesChildren = dept.children?.some(child => 
+    const matchesChildren = dept.children?.some(child =>
       child.name.toLowerCase().includes(searchTerm)
     ) || false
     return matchesDept || matchesChildren
@@ -100,15 +55,6 @@ const addDepartment = () => {
     creationTime: new Date().toISOString()
   }
 
-  if (newDepartmentParentId.value) {
-    const parent = departments.value.find(dept => dept.id === newDepartmentParentId.value)
-    if (parent) {
-      if (!parent.children) parent.children = []
-      parent.children.push(newDepartment)
-    }
-  } else {
-    departments.value.push(newDepartment)
-  }
 
   showAddDepartmentModal.value = false
   newDepartmentName.value = ''
@@ -117,40 +63,20 @@ const addDepartment = () => {
   newDepartmentParentId.value = null
 }
 
+/**
+ * 更新部门
+ * @param department
+ */
 const openEditDepartmentModal = (department: Department) => {
   selectedDepartment.value = department
   showEditDepartmentModal.value = true
 }
 
+/**
+ * 保存修改
+ */
 const saveEditedDepartment = () => {
   if (selectedDepartment.value) {
-    // Remove from current parent if exists
-    if (selectedDepartment.value.parentId) {
-      const oldParent = departments.value.find(dept => dept.id === selectedDepartment.value?.parentId)
-      if (oldParent && oldParent.children) {
-        oldParent.children = oldParent.children.filter(child => child.id !== selectedDepartment.value?.id)
-      }
-    }
-
-    // Add to new parent if selected
-    if (selectedDepartment.value.parentId) {
-      const newParent = departments.value.find(dept => dept.id === selectedDepartment.value?.parentId)
-      if (newParent) {
-        if (!newParent.children) newParent.children = []
-        newParent.children.push({ ...selectedDepartment.value })
-        // Remove from root level if it was there
-        departments.value = departments.value.filter(dept => dept.id !== selectedDepartment.value?.id)
-      }
-    } else {
-      // Move to root level if it was a child
-      const index = departments.value.findIndex(dept => dept.id === selectedDepartment.value?.id)
-      if (index === -1) {
-        departments.value.push({ ...selectedDepartment.value })
-      } else {
-        departments.value[index] = { ...selectedDepartment.value }
-      }
-    }
-    
     showEditDepartmentModal.value = false
     selectedDepartment.value = null
   }
