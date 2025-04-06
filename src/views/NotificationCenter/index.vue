@@ -222,16 +222,15 @@
     <div class="modal fade" id="viewAnnouncementModal" ref="viewModal">
       <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
         <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ selectedAnnouncement.title }}</h5>
+          <div class="modal-header border-0 ">
+            <h4 class="modal-title text-center w-100 fw-bold">{{ selectedAnnouncement.title }}</h4>
             <button type="button" class="btn-close" @click="closeViewModal"></button>
           </div>
           <div class="modal-body text-center">
-            <p>
-              <strong>
-                by {{ selectedAnnouncement.author }} {{ selectedAnnouncement.datetime }}
-              </strong>
+            <p class="fst-italic text-muted small">
+              by {{ selectedAnnouncement.author }} • {{ formatDate(selectedAnnouncement.post_time) }}
             </p>
+
             <h6 class="fw-bold">Description</h6>
             <div class="border p-3 rounded">
               <p>{{ selectedAnnouncement.description }}</p>
@@ -418,42 +417,45 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { Modal } from 'bootstrap';
+import axios from 'axios';
+
+const formatDate = (isoString: string) => {
+  return new Date(isoString).toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 
 // Search
 const searchQuery = ref('');
 
-// Mock announcements
-const announcements = ref([
-  {
-    id: 1,
-    title: 'Welcome to new website',
-    description:
-      "We're excited to launch our new announcement center. Stay tuned for important updates!",
-    author: 'HR Chloe',
-    datetime: '18/10/2024 12 p.m.',
-    posted: true,
-    attachment: './someFile.pdf', // Example: could be replaced by a blob url
-    isScheduled: false,
-    scheduleDate: '',
-    scheduleTime: '',
-    hasAvailability: false,
-    department: '',
-  },
-  {
-    id: 2,
-    title: 'Upcoming Maintenance',
-    description:
-      'Scheduled maintenance will take place this weekend. Expect some downtime.',
-    author: 'Admin Team',
-    datetime: '20/10/2024 5 p.m.',
-    posted: false,
-    isScheduled: false,
-    scheduleDate: '',
-    scheduleTime: '',
-    hasAvailability: false,
-    department: '',
-  },
-]);
+//announcements
+const announcements = ref<any[]>([]);
+  onMounted(async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/api/announcement/', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`
+      }
+    });
+
+    console.log('[GET] Response data:', response.data);
+
+    //  extract the announcements array
+    announcements.value = response.data.data.results;
+
+  } catch (error) {
+    console.error('[GET] Failed to load announcements:', error);
+  }
+});
+
+
+
 
 // New announcement form data
 const newAnnouncement = ref({
@@ -548,20 +550,36 @@ const closeModal = () => {
 
 // --- CRUD Actions ---
 
-const submitNewAnnouncement = () => {
-  const newItem = {
-    id: announcements.value.length + 1,
-    ...newAnnouncement.value,
-    author: 'Current User',
-    datetime: new Date().toLocaleString(),
-    posted: false
-  };
+const submitNewAnnouncement = async () => {
+  try {
+    const formData = new FormData();
+    formData.append('title', newAnnouncement.value.title);
+    formData.append('description', newAnnouncement.value.description);
 
-  console.log('[submitNewAnnouncement] new item:', newItem);
+    if (newAnnouncement.value.attachment) {
+      formData.append('media_url', newAnnouncement.value.attachment);
+    }
 
-  announcements.value.push(newItem);
-  closeNewAnnouncementModal();
+    if (newAnnouncement.value.isScheduled) {
+      const scheduleTime = `${newAnnouncement.value.scheduleDate}T${newAnnouncement.value.scheduleTime}:00Z`;
+      formData.append('schedule_post_time', scheduleTime);
+    }
+
+    const response = await axios.post('http://localhost:8000/api/announcement/', formData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+
+    console.log('[POST] Created announcement:', response.data);
+    announcements.value.push(response.data);
+    closeNewAnnouncementModal();
+  } catch (error) {
+    console.error('[POST] Failed to create announcement:', error);
+  }
 };
+
 
 
 const submitAnnouncement = () => {
@@ -575,13 +593,30 @@ const submitAnnouncement = () => {
   closeModal();
 };
 
-const deleteAnnouncement = () => {
-  // Delete the selected announcement
-  announcements.value = announcements.value.filter(
-    (a) => a.id !== selectedAnnouncement.value.id
-  );
-  modalInstances.delete.hide();
+const deleteAnnouncement = async () => {
+  const id = selectedAnnouncement.value.id;
+
+  if (!id) return;
+
+  try {
+    await axios.delete(`http://localhost:8000/api/announcement/${id}/`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+      }
+    });
+
+    // Remove from local list
+    announcements.value = announcements.value.filter(a => a.id !== id);
+
+    modalInstances.delete.hide();
+    selectedAnnouncement.value = {};
+
+    console.log(`[DELETE] Announcement ${id} deleted.`);
+  } catch (error) {
+    console.error('[DELETE] Failed to delete announcement:', error.response?.data || error);
+  }
 };
+
 
 // --- Utility ---
 
@@ -606,23 +641,14 @@ const resetNewAnnouncement = () => {
 
 const handleFileUpload = (event) => {
   const file = event.target.files?.[0];
-  console.log('[handleFileUpload] Selected file:', file);
-
   if (file) {
-    // Generate a fresh blob URL
-    const fileUrl = URL.createObjectURL(file);
-    console.log('[handleFileUpload] Generated blob URL:', fileUrl);
-
-    // Assign the blob URL to newAnnouncement or selectedAnnouncement based on your flow
-    if (selectedAnnouncement.value && selectedAnnouncement.value.id) {
-      selectedAnnouncement.value.attachment = fileUrl;
-      console.log('[handleFileUpload] Updated selectedAnnouncement:', selectedAnnouncement.value);
-    } else {
-      newAnnouncement.value.attachment = fileUrl;
-      console.log('[handleFileUpload] Updated newAnnouncement:', newAnnouncement.value);
-    }
+    newAnnouncement.value.attachment = file;
   }
+
+
+
 };
+
 
 
 </script>
