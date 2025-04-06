@@ -2,6 +2,7 @@
 import {computed, ref} from 'vue'
 import useDepartment from "@/hooks/useDepartment.ts";
 import type {Department} from "@/interface/DepartmentInterface.ts";
+
 const {departments, flatDepartmentList, departmentAdd, departmentDelete} = useDepartment()
 const searchQuery = ref('')
 const currentPage = ref(1)
@@ -179,7 +180,7 @@ const searchDepartments = () => {
                     </span>
                 </td>
                 <td>{{ department.sorting }}</td>
-                <td>{{ department.creationTime }}</td>
+                <td>{{department.creationTime }}</td>
                 <td>
                   <button
                       @click="openEditDepartmentModal(department)"

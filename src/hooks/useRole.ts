@@ -14,7 +14,7 @@ export default function () {
                 id: item.id,
                 roleName: item.name,
                 permissions: item.permissions,
-                createdOn: dayjs(item.create_time).format("YYYY-MM-DD HH:mm:ss"),
+                createdOn: dayjs(item.create_time).format("YYYY-MM-DD"),
             }));
         });
     };

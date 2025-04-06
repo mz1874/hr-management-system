@@ -3,6 +3,7 @@ import type {Department} from '@/interface/DepartmentInterface.ts'
 import {selectAllDepartments, addDepartment,deleteDepartment} from '@/api/department.ts'
 import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
 import Swal from "sweetalert2";
+import dayjs from "dayjs";
 
 
 export default function () {
@@ -16,7 +17,7 @@ export default function () {
             parentId: item.parent_department,
             department_name: item.department_name,
             sorting: item.sorting,
-            creationTime: item.department_created_date,
+            creationTime: dayjs(item.department_created_date).format("YYYY-MM-DD"),
             children: []
         }
     }
