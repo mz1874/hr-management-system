@@ -2,12 +2,11 @@
 import { computed, ref } from 'vue'
 import useDepartment from "@/hooks/useDepartment.ts";
 import type {Department} from "@/interface/DepartmentInterface.ts";
-
 /*处理之后的部门数据*/
-const {departments, flatDepartmentList} = useDepartment()
+const {departments, flatDepartmentList,departmentAdd} = useDepartment()
 const searchQuery = ref('')
 const currentPage = ref(1)
-const itemsPerPage = 4
+const itemsPerPage = 20
 const totalItems = computed(() => departments.value.length)
 
 
@@ -23,9 +22,9 @@ const selectedDepartment = ref<Department | null>(null)
 const filteredDepartments = computed(() => {
   const searchTerm = searchQuery.value.toLowerCase()
   return departments.value.filter(dept => {
-    const matchesDept = dept.name.toLowerCase().includes(searchTerm)
+    const matchesDept = dept.department_name.toLowerCase().includes(searchTerm)
     const matchesChildren = dept.children?.some(child =>
-      child.name.toLowerCase().includes(searchTerm)
+      child.department_name.toLowerCase().includes(searchTerm)
     ) || false
     return matchesDept || matchesChildren
   })
@@ -49,18 +48,20 @@ const addDepartment = () => {
   const newDepartment: Department = {
     id: Date.now(),
     parentId: newDepartmentParentId.value,
-    name: newDepartmentName.value,
+    department_name: newDepartmentName.value,
     sorting: newDepartmentSorting.value,
     creationTime: new Date().toISOString()
   }
-
 
   showAddDepartmentModal.value = false
   newDepartmentName.value = ''
   newDepartmentSorting.value = 1
   newDepartmentParentId.value = null
+  const code = departmentAdd(newDepartment);
+  if (code == 201)
+  {
 
-  console.log(newDepartment)
+  }
 }
 
 /**
@@ -117,7 +118,7 @@ const flattenDepartments = (departments: Department[], level = 0): any[] => {
     const isExpanded = expandedIds.value.includes(dept.id)
     const searchTerm = searchQuery.value.toLowerCase()
     const children = dept.children?.filter(child => 
-      searchQuery.value === '' || child.name.toLowerCase().includes(searchTerm)
+      searchQuery.value === '' || child.department_name.toLowerCase().includes(searchTerm)
     )
     const childrenNodes = children && isExpanded ? flattenDepartments(children, level + 1) : []
     return [
@@ -180,7 +181,7 @@ const searchDepartments = () => {
                   </td>
                   <td>
                     <span :style="{ 'margin-left': `${department.level * 20}px` }">
-                      {{ department.name }}
+                      {{ department.department_name }}
                     </span>
                   </td>
                   <td>{{ department.sorting }}</td>
@@ -271,7 +272,7 @@ const searchDepartments = () => {
                 :key="dept.id" 
                 :value="dept.id"
               >
-                {{ dept.name }}
+                {{ dept.department_name }}
               </option>
             </select>
           </div>
@@ -295,6 +296,7 @@ const searchDepartments = () => {
       </div>
     </div>
 
+    <!-- 编辑部门模态框 -->
     <!-- Edit Department Modal -->
     <div v-if="showEditDepartmentModal" class="modal-backdrop">
       <div class="modal-content">
@@ -310,7 +312,7 @@ const searchDepartments = () => {
           <div class="mb-3">
             <label for="editDepartmentName" class="form-label">Department Name</label>
             <input 
-              v-model="selectedDepartment.name"
+              v-model="selectedDepartment.department_name"
               type="text" 
               class="form-control" 
               id="editDepartmentName" 
@@ -341,7 +343,7 @@ const searchDepartments = () => {
                 :value="dept.id"
                 :disabled="dept.id === selectedDepartment.id"
               >
-                {{ dept.name }}
+                {{ dept.department_name }}
               </option>
             </select>
           </div>
@@ -365,6 +367,7 @@ const searchDepartments = () => {
       </div>
     </div>
 
+    <!-- 删除部门模态框 -->
     <!-- Remove Department Modal -->
     <div v-if="showRemoveDepartmentModal" class="modal-backdrop">
       <div class="modal-content">
@@ -377,7 +380,7 @@ const searchDepartments = () => {
           ></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to remove <strong>{{ selectedDepartment?.name }}</strong>?</p>
+          <p>Are you sure you want to remove <strong>{{ selectedDepartment?.department_name }}</strong>?</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">

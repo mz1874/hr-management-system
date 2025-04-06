@@ -1,6 +1,9 @@
-import { ref, onMounted } from 'vue'
-import type { Department } from '@/interface/DepartmentInterface.ts'
-import { selectAllDepartments } from '@/api/department.ts'
+import {ref, onMounted} from 'vue'
+import type {Department} from '@/interface/DepartmentInterface.ts'
+import {selectAllDepartments, addDepartment} from '@/api/department.ts'
+import dayjs from "dayjs";
+import Swal from "sweetalert2";
+
 
 export default function () {
     const departments = ref<Department[]>([])
@@ -11,9 +14,8 @@ export default function () {
         return {
             id: item.id,
             parentId: item.parent_department,
-            name: item.department_name,
+            department_name: item.department_name,
             sorting: item.sorting,
-            status: item.department_status === '1' ? 'NORMAL' : 'ON HOLD',
             creationTime: item.department_created_date,
             children: []
         }
@@ -41,8 +43,7 @@ export default function () {
         return tree
     }
 
-    // 查询所有的部门信息
-    onMounted(() => {
+    function fetchDepartments() {
         selectAllDepartments().then((data) => {
             if (data.status === 200) {
                 const rawList = data.data.data.results
@@ -51,7 +52,27 @@ export default function () {
                 departments.value = buildDepartmentTree(mappedList)
             }
         })
+    }
+
+    // 查询所有的部门信息
+    onMounted(() => {
+        fetchDepartments();
     })
 
-    return { departments, flatDepartmentList}
+    function departmentAdd(department: Department) {
+        addDepartment(department).then((res) => {
+            if (res.status === 201) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Department successfully Added",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+                fetchDepartments();
+            }
+        })
+    }
+
+    return {departments, flatDepartmentList, departmentAdd}
 }
