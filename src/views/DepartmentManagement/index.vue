@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import {computed, ref} from 'vue'
 import useDepartment from "@/hooks/useDepartment.ts";
 import type {Department} from "@/interface/DepartmentInterface.ts";
-/*处理之后的部门数据*/
-const {departments, flatDepartmentList,departmentAdd} = useDepartment()
+const {departments, flatDepartmentList, departmentAdd, departmentDelete} = useDepartment()
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 20
@@ -24,7 +23,7 @@ const filteredDepartments = computed(() => {
   return departments.value.filter(dept => {
     const matchesDept = dept.department_name.toLowerCase().includes(searchTerm)
     const matchesChildren = dept.children?.some(child =>
-      child.department_name.toLowerCase().includes(searchTerm)
+        child.department_name.toLowerCase().includes(searchTerm)
     ) || false
     return matchesDept || matchesChildren
   })
@@ -57,11 +56,7 @@ const addDepartment = () => {
   newDepartmentName.value = ''
   newDepartmentSorting.value = 1
   newDepartmentParentId.value = null
-  const code = departmentAdd(newDepartment);
-  if (code == 201)
-  {
-
-  }
+  departmentAdd(newDepartment);
 }
 
 /**
@@ -90,10 +85,9 @@ const openRemoveDepartmentModal = (department: Department) => {
 
 const confirmRemoveDepartment = () => {
   if (selectedDepartment.value) {
-    departments.value = departments.value.filter(dept => dept.id !== selectedDepartment.value?.id)
-    showRemoveDepartmentModal.value = false
-    selectedDepartment.value = null
+    departmentDelete(selectedDepartment.value.id);
   }
+  showRemoveDepartmentModal.value = false
 }
 
 const changePage = (page: number) => {
@@ -117,13 +111,13 @@ const flattenDepartments = (departments: Department[], level = 0): any[] => {
   return departments.reduce<Department[]>((acc, dept) => {
     const isExpanded = expandedIds.value.includes(dept.id)
     const searchTerm = searchQuery.value.toLowerCase()
-    const children = dept.children?.filter(child => 
-      searchQuery.value === '' || child.department_name.toLowerCase().includes(searchTerm)
+    const children = dept.children?.filter(child =>
+        searchQuery.value === '' || child.department_name.toLowerCase().includes(searchTerm)
     )
     const childrenNodes = children && isExpanded ? flattenDepartments(children, level + 1) : []
     return [
       ...acc,
-      { ...dept, level, hasChildren: !!children?.length },
+      {...dept, level, hasChildren: !!children?.length},
       ...childrenNodes
     ]
   }, [])
@@ -142,11 +136,11 @@ const searchDepartments = () => {
     <div class="d-flex gap-3 mb-4 align-items-center">
       <form class="search-container" role="search">
         <i class="fas fa-search search-icon"></i>
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          class="form-control" 
-          placeholder="Search Department"
+        <input
+            v-model="searchQuery"
+            type="text"
+            class="form-control"
+            placeholder="Search Department"
         >
       </form>
       <button @click="searchDepartments" class="btn btn-primary">Search</button>
@@ -162,46 +156,46 @@ const searchDepartments = () => {
         <div class="table-responsive">
           <table class="table">
             <thead>
-              <tr>
-                <th style="width: 30px"></th>
-                <th>Department Name</th>
-                <th>Sorting</th>
-                <th>Creation Time</th>
-                <th>Actions</th>
-              </tr>
+            <tr>
+              <th style="width: 30px"></th>
+              <th>Department Name</th>
+              <th>Sorting</th>
+              <th>Creation Time</th>
+              <th>Actions</th>
+            </tr>
             </thead>
             <tbody>
-              <template v-for="department in paginatedDepartments" :key="department.id">
-                <tr>
-                  <td>
-                    <i v-if="department.hasChildren"
-                       class="bi cursor-pointer"
-                       :class="expandedIds.includes(department.id) ? 'bi-caret-down-fill' : 'bi-caret-right-fill'"
-                       @click="toggleExpand(department.id)"></i>
-                  </td>
-                  <td>
+            <template v-for="department in paginatedDepartments" :key="department.id">
+              <tr>
+                <td>
+                  <i v-if="department.hasChildren"
+                     class="bi cursor-pointer"
+                     :class="expandedIds.includes(department.id) ? 'bi-caret-down-fill' : 'bi-caret-right-fill'"
+                     @click="toggleExpand(department.id)"></i>
+                </td>
+                <td>
                     <span :style="{ 'margin-left': `${department.level * 20}px` }">
                       {{ department.department_name }}
                     </span>
-                  </td>
-                  <td>{{ department.sorting }}</td>
-                  <td>{{ department.creationTime }}</td>
-                  <td>
-                    <button 
+                </td>
+                <td>{{ department.sorting }}</td>
+                <td>{{ department.creationTime }}</td>
+                <td>
+                  <button
                       @click="openEditDepartmentModal(department)"
                       class="btn btn-warning btn-sm"
-                    >
-                      Edit
-                    </button>
-                    <button 
+                  >
+                    Edit
+                  </button>
+                  <button
                       @click="openRemoveDepartmentModal(department)"
                       class="btn btn-danger btn-sm ms-2"
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              </template>
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            </template>
             </tbody>
           </table>
         </div>
@@ -232,45 +226,45 @@ const searchDepartments = () => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Add Department</h5>
-          <button 
-            type="button" 
-            class="btn-close" 
-            @click="showAddDepartmentModal = false"
+          <button
+              type="button"
+              class="btn-close"
+              @click="showAddDepartmentModal = false"
           ></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
             <label for="departmentName" class="form-label">Department Name</label>
-            <input 
-              v-model="newDepartmentName"
-              type="text" 
-              class="form-control" 
-              id="departmentName" 
-              placeholder="Enter department name"
+            <input
+                v-model="newDepartmentName"
+                type="text"
+                class="form-control"
+                id="departmentName"
+                placeholder="Enter department name"
             >
           </div>
           <div class="mb-3">
             <label for="departmentSorting" class="form-label">Sorting</label>
-            <input 
-              v-model.number="newDepartmentSorting"
-              type="number" 
-              class="form-control" 
-              id="departmentSorting" 
-              placeholder="Enter sorting number"
+            <input
+                v-model.number="newDepartmentSorting"
+                type="number"
+                class="form-control"
+                id="departmentSorting"
+                placeholder="Enter sorting number"
             >
           </div>
           <div class="mb-3">
             <label for="departmentParent" class="form-label">Parent Department</label>
-            <select 
-              v-model="newDepartmentParentId"
-              class="form-select" 
-              id="departmentParent"
+            <select
+                v-model="newDepartmentParentId"
+                class="form-select"
+                id="departmentParent"
             >
               <option :value="null">None (Main Department)</option>
-              <option 
-                v-for="dept in flatDepartmentList"
-                :key="dept.id" 
-                :value="dept.id"
+              <option
+                  v-for="dept in flatDepartmentList"
+                  :key="dept.id"
+                  :value="dept.id"
               >
                 {{ dept.department_name }}
               </option>
@@ -278,17 +272,17 @@ const searchDepartments = () => {
           </div>
         </div>
         <div class="modal-footer">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="showAddDepartmentModal = false"
+          <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showAddDepartmentModal = false"
           >
             Close
           </button>
-          <button 
-            type="button" 
-            class="btn btn-primary" 
-            @click="addDepartment"
+          <button
+              type="button"
+              class="btn btn-primary"
+              @click="addDepartment"
           >
             Add Department
           </button>
@@ -302,46 +296,46 @@ const searchDepartments = () => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Edit Department</h5>
-          <button 
-            type="button" 
-            class="btn-close" 
-            @click="showEditDepartmentModal = false"
+          <button
+              type="button"
+              class="btn-close"
+              @click="showEditDepartmentModal = false"
           ></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
             <label for="editDepartmentName" class="form-label">Department Name</label>
-            <input 
-              v-model="selectedDepartment.department_name"
-              type="text" 
-              class="form-control" 
-              id="editDepartmentName" 
-              placeholder="Enter department name"
+            <input
+                v-model="selectedDepartment.department_name"
+                type="text"
+                class="form-control"
+                id="editDepartmentName"
+                placeholder="Enter department name"
             >
           </div>
           <div class="mb-3">
             <label for="editDepartmentSorting" class="form-label">Sorting</label>
-            <input 
-              v-model.number="selectedDepartment.sorting"
-              type="number" 
-              class="form-control" 
-              id="editDepartmentSorting" 
-              placeholder="Enter sorting number"
+            <input
+                v-model.number="selectedDepartment.sorting"
+                type="number"
+                class="form-control"
+                id="editDepartmentSorting"
+                placeholder="Enter sorting number"
             >
           </div>
           <div class="mb-3">
             <label for="editDepartmentParent" class="form-label">Parent Department</label>
-            <select 
-              v-model="selectedDepartment.parentId"
-              class="form-select" 
-              id="editDepartmentParent"
+            <select
+                v-model="selectedDepartment.parentId"
+                class="form-select"
+                id="editDepartmentParent"
             >
               <option :value="null">None (Main Department)</option>
-              <option 
-                v-for="dept in departments" 
-                :key="dept.id" 
-                :value="dept.id"
-                :disabled="dept.id === selectedDepartment.id"
+              <option
+                  v-for="dept in departments"
+                  :key="dept.id"
+                  :value="dept.id"
+                  :disabled="dept.id === selectedDepartment.id"
               >
                 {{ dept.department_name }}
               </option>
@@ -349,17 +343,17 @@ const searchDepartments = () => {
           </div>
         </div>
         <div class="modal-footer">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="showEditDepartmentModal = false"
+          <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showEditDepartmentModal = false"
           >
             Cancel
           </button>
-          <button 
-            type="button" 
-            class="btn btn-primary" 
-            @click="saveEditedDepartment"
+          <button
+              type="button"
+              class="btn btn-primary"
+              @click="saveEditedDepartment"
           >
             Save Changes
           </button>
@@ -373,10 +367,10 @@ const searchDepartments = () => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Remove Department</h5>
-          <button 
-            type="button" 
-            class="btn-close" 
-            @click="showRemoveDepartmentModal = false"
+          <button
+              type="button"
+              class="btn-close"
+              @click="showRemoveDepartmentModal = false"
           ></button>
         </div>
         <div class="modal-body">
@@ -384,17 +378,17 @@ const searchDepartments = () => {
           <p class="text-danger">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="showRemoveDepartmentModal = false"
+          <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showRemoveDepartmentModal = false"
           >
             Cancel
           </button>
-          <button 
-            type="button" 
-            class="btn btn-danger" 
-            @click="confirmRemoveDepartment"
+          <button
+              type="button"
+              class="btn btn-danger"
+              @click="confirmRemoveDepartment"
           >
             Remove
           </button>

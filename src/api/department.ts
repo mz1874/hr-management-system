@@ -9,3 +9,6 @@ export function addDepartment(payload) {
     return axios.post('/api/department/', payload)
 }
 
+export function deleteDepartment(id) {
+    return axios.delete(`/api/department/${id}/`)
+}

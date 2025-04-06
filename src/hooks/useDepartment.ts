@@ -1,7 +1,7 @@
 import {ref, onMounted} from 'vue'
 import type {Department} from '@/interface/DepartmentInterface.ts'
-import {selectAllDepartments, addDepartment} from '@/api/department.ts'
-import dayjs from "dayjs";
+import {selectAllDepartments, addDepartment,deleteDepartment} from '@/api/department.ts'
+import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
 import Swal from "sweetalert2";
 
 
@@ -45,7 +45,7 @@ export default function () {
 
     function fetchDepartments() {
         selectAllDepartments().then((data) => {
-            if (data.status === 200) {
+            if (isSuccess(data.status)) {
                 const rawList = data.data.data.results
                 const mappedList: Department[] = rawList.map(mapToDepartment)
                 flatDepartmentList.value = mappedList
@@ -61,11 +61,11 @@ export default function () {
 
     function departmentAdd(department: Department) {
         addDepartment(department).then((res) => {
-            if (res.status === 201) {
+            if (isSuccess(res.status)) {
                 Swal.fire({
                     position: "top-end",
                     icon: "success",
-                    title: "Department successfully Added",
+                    title: "Department successfully added",
                     showConfirmButton: false,
                     timer: 1500,
                 });
@@ -74,5 +74,20 @@ export default function () {
         })
     }
 
-    return {departments, flatDepartmentList, departmentAdd}
+    function departmentDelete(id: number) {
+         deleteDepartment(id).then((res) => {
+             if (isSuccess(res.status)) {
+                 Swal.fire({
+                     position: "top-end",
+                     icon: "success",
+                     title: "Department successfully deleted",
+                     showConfirmButton: false,
+                     timer: 1500,
+                 });
+                 fetchDepartments();
+             }
+         })
+    }
+
+    return {departments, flatDepartmentList, departmentAdd, departmentDelete}
 }
