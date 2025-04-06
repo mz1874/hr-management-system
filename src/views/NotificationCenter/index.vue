@@ -6,9 +6,9 @@
     </div>
 
     <!-- Search and New Announcement Button Row -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center mb-3 gap-3">
+    <div class="announcement-toolbar d-flex flex-wrap align-items-center gap-3 mb-4">
       <!-- Search Input -->
-      <div class="search-container flex-grow-1 me-md-4">
+      <div class="search-container flex-grow-1">
         <i class="fas fa-search search-icon"></i>
         <input
           v-model="searchQuery"
@@ -18,14 +18,24 @@
         />
       </div>
 
-      <!-- New Announcement Button -->
-      <button
-        class="btn btn-success new-announcement-btn"
-        @click="openNewAnnouncementModal"
-      >
-        New Announcement
-      </button>
+      <!-- Buttons -->
+      <div class="d-flex gap-2">
+        <button
+          class="btn new-announcement-btn"
+          @click="openNewAnnouncementModal"
+        >
+          New Announcement
+        </button>
+        <button
+          class="btn bulk-delete-btn"
+          :disabled="selectedIds.length === 0"
+          @click="bulkDeleteAnnouncements"
+        >
+          Delete<br />Selected ({{ selectedIds.length }})
+        </button>
+      </div>
     </div>
+
 
     <!-- Announcement Cards -->
     <div
@@ -36,12 +46,19 @@
       <div
         class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3"
       >
+
+      <input
+        type="checkbox"
+        v-model="selectedIds"
+        :value="announcement.id"
+      />
         <!-- Status Indicator -->
         <div
           :class="[
             'status-indicator',
-            announcement.posted ? 'posted' : 'not-posted'
+            new Date(announcement.post_time) <= new Date() ? 'posted' : 'not-posted'
           ]"
+
         ></div>
 
         <!-- Announcement Content -->
@@ -78,6 +95,35 @@
         </div>
       </div>
     </div>
+
+
+
+    <div class="d-flex align-items-center gap-3 my-3">
+      <div class="text-muted fs-5">
+        Total Announcements: {{ totalCount }}
+      </div>
+
+      <nav>
+        <ul class="pagination mb-0">
+          <li :class="['page-item', { disabled: currentPage === 1 }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+          </li>
+
+          <li
+            v-for="page in totalPages"
+            :key="page"
+            :class="['page-item', { active: currentPage === page }]"
+          >
+            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+          </li>
+
+          <li :class="['page-item', { disabled: currentPage === totalPages }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
 
     <!-- New Announcement Modal -->
     <div class="modal fade" id="newAnnouncement" ref="newAnnouncementModal">
@@ -129,8 +175,10 @@
                         type="file"
                         class="form-control"
                         accept=".pdf, .jpg"
+                        multiple
                         @change="handleFileUpload"
                       />
+
                     </div>
                     <span class="form-text">Support pdf and jpg</span>
                   </div>
@@ -222,15 +270,16 @@
     <div class="modal fade" id="viewAnnouncementModal" ref="viewModal">
       <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
         <div class="modal-content">
-          <div class="modal-header border-0 ">
-            <h4 class="modal-title text-center w-100 fw-bold">{{ selectedAnnouncement.title }}</h4>
+          <div class="modal-header">
+            <h5 class="modal-title">{{ selectedAnnouncement.title }}</h5>
             <button type="button" class="btn-close" @click="closeViewModal"></button>
           </div>
           <div class="modal-body text-center">
-            <p class="fst-italic text-muted small">
-              by {{ selectedAnnouncement.author }} • {{ formatDate(selectedAnnouncement.post_time) }}
+            <p>
+              <strong>
+                by {{ selectedAnnouncement.author }}  {{ formattedDateTime }}
+              </strong>
             </p>
-
             <h6 class="fw-bold">Description</h6>
             <div class="border p-3 rounded">
               <p>{{ selectedAnnouncement.description }}</p>
@@ -414,215 +463,91 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { Modal } from 'bootstrap';
-import axios from 'axios';
+  <script setup lang="ts"> 
+  import { ref, computed, onMounted } from 'vue'
+  import { Modal } from 'bootstrap'
+  import {
+    createAnnouncement,
+    getAnnouncements,
+    updateAnnouncement,
+    deleteAnnouncement as deleteAnnouncementAPI
+  } from '@/api/announcement'
+  import { uploadFile } from '@/api/file_upload'
 
-const formatDate = (isoString: string) => {
-  return new Date(isoString).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-};
+  // ===================== State: Modal Elements =====================
+  const newAnnouncementModal = ref(null)
+  const viewModal = ref(null)
+  const deleteModal = ref(null)
+  const editModal = ref(null)
 
-
-// Search
-const searchQuery = ref('');
-
-//announcements
-const announcements = ref<any[]>([]);
-  onMounted(async () => {
-  try {
-    const response = await axios.get('http://127.0.0.1:8000/api/announcement/', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('access_token')}`
-      }
-    });
-
-    console.log('[GET] Response data:', response.data);
-
-    //  extract the announcements array
-    announcements.value = response.data.data.results;
-
-  } catch (error) {
-    console.error('[GET] Failed to load announcements:', error);
+  // Modal instances (Bootstrap)
+  const modalInstances = {} as {
+    new: Modal; view: Modal; delete: Modal; edit: Modal;
   }
-});
 
+  onMounted(() => {
+    modalInstances.new = new Modal(newAnnouncementModal.value as HTMLElement)
+    modalInstances.view = new Modal(viewModal.value as HTMLElement)
+    modalInstances.delete = new Modal(deleteModal.value as HTMLElement)
+    modalInstances.edit = new Modal(editModal.value as HTMLElement)
+  })
 
+  // ===================== State: Announcements =====================
+  const announcements = ref<any[]>([])
+  const selectedIds = ref<number[]>([])
+  const selectedAnnouncement = ref<any>({})
+  const uploadedFileId = ref<number | null>(null)
+  const searchQuery = ref('')
 
+  // ===================== State: Pagination =====================
+  const currentPage = ref(1)
+  const pageSize = 10
+  const totalCount = ref(0)
+  const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
 
-// New announcement form data
-const newAnnouncement = ref({
-  title: '',
-  description: '',
-  isScheduled: false,
-  scheduleDate: '',
-  scheduleTime: '',
-  hasAvailability: false,
-  department: '',
-  attachment: null,
-});
-
-// Track selected announcement for editing/viewing/deleting
-const selectedAnnouncement = ref<any>({});
-
-// Refs to the modal elements
-const newAnnouncementModal = ref(null);
-const viewModal = ref(null);
-const deleteModal = ref(null);
-const editModal = ref(null);
-
-// Ref to the new file input so we can reset it
-const newFileInput = ref<HTMLInputElement | null>(null);
-
-// Filtered announcements for search
-const filteredAnnouncements = computed(() => {
-  return announcements.value.filter((announcement) =>
-    [announcement.title, announcement.description]
-      .join(' ')
-      .toLowerCase()
-      .includes(searchQuery.value.toLowerCase())
-  );
-});
-
-// Modal instances
-interface ModalInstances {
-  new: Modal;
-  view: Modal;
-  delete: Modal;
-  edit: Modal;
-}
-const modalInstances: ModalInstances = {} as ModalInstances;
-
-// Initialize Bootstrap modals on mount
-onMounted(() => {
-  modalInstances.new = new Modal(newAnnouncementModal.value as HTMLElement);
-  modalInstances.view = new Modal(viewModal.value as HTMLElement);
-  modalInstances.delete = new Modal(deleteModal.value as HTMLElement);
-  modalInstances.edit = new Modal(editModal.value as HTMLElement);
-});
-
-// --- Modal Methods ---
-
-const openNewAnnouncementModal = () => {
-  modalInstances.new.show();
-};
-
-const closeNewAnnouncementModal = () => {
-  modalInstances.new.hide();
-  resetNewAnnouncement();
-};
-
-const viewAnnouncement = (announcement: any) => {
-  selectedAnnouncement.value = announcement;
-  modalInstances.view.show();
-};
-
-const closeViewModal = () => {
-  modalInstances.view.hide();
-};
-
-const confirmDelete = (announcement: any) => {
-  selectedAnnouncement.value = announcement;
-  modalInstances.delete.show();
-};
-
-const closeDeleteModal = () => {
-  modalInstances.delete.hide();
-};
-
-const editAnnouncement = (announcement: any) => {
-  selectedAnnouncement.value = { ...announcement };
-  modalInstances.edit.show();
-};
-
-const closeModal = () => {
-  modalInstances.edit.hide();
-  selectedAnnouncement.value = {};
-
-};
-
-// --- CRUD Actions ---
-
-const submitNewAnnouncement = async () => {
-  try {
-    const formData = new FormData();
-    formData.append('title', newAnnouncement.value.title);
-    formData.append('description', newAnnouncement.value.description);
-
-    if (newAnnouncement.value.attachment) {
-      formData.append('media_url', newAnnouncement.value.attachment);
-    }
-
-    if (newAnnouncement.value.isScheduled) {
-      const scheduleTime = `${newAnnouncement.value.scheduleDate}T${newAnnouncement.value.scheduleTime}:00Z`;
-      formData.append('schedule_post_time', scheduleTime);
-    }
-
-    const response = await axios.post('http://localhost:8000/api/announcement/', formData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        'Content-Type': 'multipart/form-data',
-      }
-    });
-
-    console.log('[POST] Created announcement:', response.data);
-    announcements.value.push(response.data);
-    closeNewAnnouncementModal();
-  } catch (error) {
-    console.error('[POST] Failed to create announcement:', error);
+  const changePage = (page: number) => {
+    if (page >= 1 && page <= totalPages.value) fetchAnnouncements(page)
   }
-};
 
-
-
-const submitAnnouncement = () => {
-  // Save changes to an existing announcement
-  const index = announcements.value.findIndex(
-    (a) => a.id === selectedAnnouncement.value.id
-  );
-  if (index !== -1) {
-    announcements.value[index] = { ...selectedAnnouncement.value };
+  // ===================== Fetch Announcements =====================
+  function fetchAnnouncements(page = 1) {
+    currentPage.value = page
+    getAnnouncements(page, searchQuery.value)
+      .then(res => {
+        const now = new Date()
+        announcements.value = res.data.data.results.map(a => ({
+          ...a,
+          posted: new Date(a.post_time) <= now
+        }))
+        totalCount.value = res.data.data.count
+      })
+      .catch(err => console.error('Failed to fetch announcements:', err))
   }
-  closeModal();
-};
+  onMounted(fetchAnnouncements)
 
-const deleteAnnouncement = async () => {
-  const id = selectedAnnouncement.value.id;
+  // ===================== Computed =====================
+  const filteredAnnouncements = computed(() => {
+    return announcements.value.filter(a =>
+      [a.title, a.description].join(' ').toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+  })
 
-  if (!id) return;
+  const formattedDateTime = computed(() => {
+    const postTime = selectedAnnouncement.value?.post_time
+    return postTime ? new Date(postTime).toLocaleString() : ''
+  })
 
-  try {
-    await axios.delete(`http://localhost:8000/api/announcement/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-      }
-    });
-
-    // Remove from local list
-    announcements.value = announcements.value.filter(a => a.id !== id);
-
-    modalInstances.delete.hide();
-    selectedAnnouncement.value = {};
-
-    console.log(`[DELETE] Announcement ${id} deleted.`);
-  } catch (error) {
-    console.error('[DELETE] Failed to delete announcement:', error.response?.data || error);
+  // ===================== Date Conversion =====================
+  function combineLocalDateTimeToUTC(date: string, time: string): string {
+    const [year, month, day] = date.split('-').map(Number)
+    const [hour, minute] = time.split(':').map(Number)
+    const localDate = new Date(year, month - 1, day, hour, minute)
+    return new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString()
   }
-};
 
-
-// --- Utility ---
-
-const resetNewAnnouncement = () => {
-  // Clear form data
-  newAnnouncement.value = {
+  // ===================== New Announcement =====================
+  const newFileInput = ref<HTMLInputElement | null>(null)
+  const newAnnouncement = ref({
     title: '',
     description: '',
     isScheduled: false,
@@ -631,24 +556,128 @@ const resetNewAnnouncement = () => {
     hasAvailability: false,
     department: '',
     attachment: null,
-  };
+  })
 
-  // Reset the file input's value
-  if (newFileInput.value) {
-    newFileInput.value.value = '';
-  }
-};
-
-const handleFileUpload = (event) => {
-  const file = event.target.files?.[0];
-  if (file) {
-    newAnnouncement.value.attachment = file;
+  const resetNewAnnouncement = () => {
+    newAnnouncement.value = {
+      title: '', description: '', isScheduled: false,
+      scheduleDate: '', scheduleTime: '',
+      hasAvailability: false, department: '', attachment: null
+    }
+    if (newFileInput.value) newFileInput.value.value = ''
   }
 
+  const submitNewAnnouncement = () => {
+    const isScheduled = newAnnouncement.value.isScheduled
+    const payload = {
+      title: newAnnouncement.value.title,
+      description: newAnnouncement.value.description,
+      file_ids: uploadedFileId.value ? [uploadedFileId.value] : [],
+      ...(isScheduled
+        ? {
+            schedule_post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime),
+            post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime)
+          }
+        : {
+            post_time: new Date().toISOString()
+          })
+    }
 
+    createAnnouncement(payload)
+      .then(() => {
+        fetchAnnouncements()
+        closeNewAnnouncementModal()
+      })
+      .catch(err => console.error('Failed to create announcement:', err.response?.data || err.message))
+  }
 
-};
+  // ===================== File Upload =====================
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
 
+    try {
+      const res = await uploadFile(file)
+      uploadedFileId.value = res.data.id
+      const fileUrl = URL.createObjectURL(file)
+      if (selectedAnnouncement.value?.id) {
+        selectedAnnouncement.value.attachment = fileUrl
+      } else {
+        newAnnouncement.value.attachment = fileUrl
+      }
+    } catch (err) {
+      console.error('File upload failed:', err.response?.data || err.message)
+    }
+  }
+
+  // ===================== Modal Controls =====================
+  const openNewAnnouncementModal = () => modalInstances.new.show()
+  const closeNewAnnouncementModal = () => { modalInstances.new.hide(); resetNewAnnouncement() }
+  const viewAnnouncement = (announcement: any) => { selectedAnnouncement.value = announcement; modalInstances.view.show() }
+  const closeViewModal = () => modalInstances.view.hide()
+  const confirmDelete = (announcement: any) => { selectedAnnouncement.value = announcement; modalInstances.delete.show() }
+  const closeDeleteModal = () => modalInstances.delete.hide()
+  const editAnnouncement = (announcement) => {
+    selectedAnnouncement.value = { ...announcement }
+    if (announcement.schedule_post_time) {
+      const dt = new Date(announcement.schedule_post_time)
+      selectedAnnouncement.value.isScheduled = true
+      selectedAnnouncement.value.scheduleDate = dt.toISOString().split('T')[0]
+      selectedAnnouncement.value.scheduleTime = dt.toTimeString().slice(0, 5)
+    } else {
+      selectedAnnouncement.value.isScheduled = false
+      selectedAnnouncement.value.scheduleDate = ''
+      selectedAnnouncement.value.scheduleTime = ''
+    }
+    modalInstances.edit.show()
+  }
+  const closeModal = () => { modalInstances.edit.hide(); selectedAnnouncement.value = {} }
+
+  // ===================== Edit Announcement =====================
+  const submitAnnouncement = () => {
+    const isScheduled = selectedAnnouncement.value.isScheduled
+    const payload = {
+      title: selectedAnnouncement.value.title,
+      description: selectedAnnouncement.value.description,
+      ...(isScheduled
+        ? {
+            schedule_post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime),
+            post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime)
+          }
+        : {
+            schedule_post_time: null,
+            post_time: new Date().toISOString()
+          }),
+      file_ids: [] // extend if you support edit attachments
+    }
+
+    updateAnnouncement(selectedAnnouncement.value.id, payload)
+      .then(() => {
+        fetchAnnouncements()
+        closeModal()
+      })
+      .catch(err => console.error('Failed to update announcement:', err.response?.data || err.message))
+  }
+
+  // ===================== Delete Logic =====================
+  const deleteAnnouncement = () => {
+    deleteAnnouncementAPI(selectedAnnouncement.value.id)
+      .then(() => {
+        fetchAnnouncements()
+        closeDeleteModal()
+      })
+      .catch(err => console.error('Failed to delete announcement:', err.response?.data || err.message))
+  }
+
+  function bulkDeleteAnnouncements() {
+    if (!confirm(`Delete ${selectedIds.value.length} announcements?`)) return
+    Promise.all(selectedIds.value.map(id => deleteAnnouncementAPI(id)))
+      .then(() => {
+        selectedIds.value = []
+        fetchAnnouncements()
+      })
+      .catch(err => console.error('Failed to delete some announcements:', err))
+  }
 
 
 </script>
@@ -661,18 +690,25 @@ export default {
 
 <style scoped>
 /* Search Container */
+.announcement-toolbar {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+}
+
 .search-container {
   display: flex;
   align-items: center;
   border: 1px solid #ccc;
-  border-radius: 5px;
+  border-radius: 8px;
   padding: 8px 12px;
-  width: 100%;
-  position: relative;
+  min-width: 250px;
+  height: 52px;
+  flex-grow: 1;
 }
 
 .search-icon {
-  font-size: 16px;
+  font-size: 18px;
   color: #555;
   margin-right: 10px;
   flex-shrink: 0;
@@ -685,18 +721,37 @@ export default {
   font-size: 16px;
 }
 
-/* New Announcement Button */
-.new-announcement-btn {
-  width: 100%;
-  max-width: 200px;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 5px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: 0.3s;
+/* Make button height match search bar */
+.new-announcement-btn,
+.bulk-delete-btn {
+  height: 52px;         /* Match height */
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-weight: 500;
 }
+
+.new-announcement-btn {
+  background-color: #68b866;
+  color: white;
+}
+
+.bulk-delete-btn {
+  background-color: #d66b6b;
+  color: white;
+}
+
+.bulk-delete-btn:disabled {
+  background-color: #ccc;
+  color: white;
+  cursor: not-allowed;
+}
+
+
 
 @media (max-width: 768px) {
   .new-announcement-btn {
@@ -863,4 +918,76 @@ export default {
     font-size: 16px; /* Prevent zoom on iOS */
   }
 }
+
+/* Search and New Announcement Button Row */
+.d-flex.flex-column.flex-md-row.justify-content-between.align-items-stretch.align-items-md-center.mb-3.gap-3 {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.new-announcement-btn {
+  background-color: #4CAF50;
+  font-weight: 500;
+}
+
+.bulk-delete-btn {
+  background-color: #D66B6B;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Match height & padding for buttons */
+.new-announcement-btn,
+.bulk-delete-btn {
+  padding: 10px 20px;
+  font-size: 15px;
+  border-radius: 8px;
+  min-width: 160px;
+}
+
+@media (max-width: 768px) {
+  .new-announcement-btn,
+  .bulk-delete-btn {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.pagination {
+  display: flex;
+  padding-left: 0;
+  list-style: none;
+  border-radius: 0.25rem;
+}
+
+.page-item {
+  margin: 0 0.15rem;
+}
+
+.page-item .page-link {
+  position: relative;
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: #0d6efd;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  text-decoration: none;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #fff;
+  border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+  z-index: 1;
+  color: #fff;
+  background-color: #198754;
+  border-color: #198754;
+}
+
+
 </style>

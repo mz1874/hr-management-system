@@ -1,28 +1,44 @@
 <script setup lang="ts">
 import {ref, computed, onMounted} from 'vue';
 import {Modal} from 'bootstrap';
+import { getAnnouncements, bulkMarkAsRead } from '@/api/announcement'
 
 const searchQuery = ref('');
-const announcements = ref([
-  {
-    id: 1,
-    title: 'Welcome to new website',
-    description: "We're excited to launch our new announcement center.",
-    author: 'HR Chloe',
-    datetime: '2024-01-19T12:00',
-    attachment: '',
-    read: false
-  },
-  {
-    id: 2,
-    title: "Upcoming Maintenance",
-    description: "Scheduled maintenance will take place this weekend.",
-    author: 'Admin Team',
-    datetime: '2024-10-30T08:00',
-    attachment: '',
-    read: false
-  },
-]);
+const announcements = ref([]);
+
+//pagination
+const currentPage = ref(1)
+const totalCount = ref(0)
+const pageSize = 10
+
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
+
+function changePage(page: number) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    fetchAnnouncements(page)
+  }
+}
+
+
+
+onMounted(() => {
+  fetchAnnouncements()
+})
+
+function fetchAnnouncements(page = 1) {
+  currentPage.value = page
+
+  getAnnouncements(page, searchQuery.value)
+    .then(res => {
+      announcements.value = res.data.data.results.map(a => ({
+        ...a,
+        read: a.read  
+      }))
+      totalCount.value = res.data.data.count
+    })
+    .catch(err => console.error('Fetch failed:', err))
+}
 
 const selectedAnnouncement = ref<any>({});
 const viewModal = ref(null);
@@ -35,33 +51,47 @@ const filteredAnnouncements = computed(() => {
   );
 });
 
-const viewAnnouncement = (announcement: any) => {
-  // Mark as read when clicked
-  announcement.read = true;
-  announcements.value = [...announcements.value];
+function viewAnnouncement(announcement) {
+  selectedAnnouncement.value = announcement
+  markAsRead(announcement)
+  modalInstance.show()
+}
 
-  selectedAnnouncement.value = announcement;
-  modalInstance.show();
-};
+function markAsRead(announcement) {
+  if (!announcement.read) {
+    bulkMarkAsRead([announcement.id])
+      .then(() => {
+        fetchAnnouncements(currentPage.value)  // refresh to get accurate `read` status
+      })
+      .catch(err => console.error('Mark as read failed:', err))
+  }
+}
 
-const markAsRead = (announcement : any) => {
-  announcement.read = true;
-  announcements.value = [...announcements.value];
-};
+
+function markAllAsRead() {
+  const unreadIds = announcements.value
+    .filter(a => !a.read)
+    .map(a => a.id)
+
+  bulkMarkAsRead(unreadIds)
+    .then(() => {
+      announcements.value.forEach(a => (a.read = true))
+    })
+    .catch(err => console.error('Mark all as read failed:', err))
+}
 
 const closeViewModal = () => {
   modalInstance.hide();
 };
 
-const markAllAsRead = () => {
-  announcements.value.forEach(a => a.read = true);
-  announcements.value = [...announcements.value];
-};
 
-const formatDate = (datetime : any) => {
+
+function formatDate(datetime: string | null | undefined): string {
+  if (!datetime) return 'N/A';
   const date = new Date(datetime);
-  return date.toLocaleDateString();
-};
+  return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
+}
+
 
 onMounted(() => {
   if (viewModal.value) modalInstance = new Modal(viewModal.value);
@@ -119,10 +149,37 @@ onMounted(() => {
 
         <!-- Date-Time & Mark as Read Button -->
         <div class="announcement-actions">
-          <span class="announcement-date">{{ formatDate(announcement.datetime) }}</span>
+          <span class="announcement-date">{{ formatDate(selectedAnnouncement.post_time) }}</span>
         </div>
       </div>
     </div>
+
+    <div class="d-flex align-items-center gap-3 my-3">
+      <div class="text-muted fs-5">
+        Total Announcements: {{ totalCount }}
+      </div>
+
+      <nav>
+        <ul class="pagination mb-0">
+          <li :class="['page-item', { disabled: currentPage === 1 }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+          </li>
+
+          <li
+            v-for="page in totalPages"
+            :key="page"
+            :class="['page-item', { active: currentPage === page }]"
+          >
+            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+          </li>
+
+          <li :class="['page-item', { disabled: currentPage === totalPages }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
 
     <!-- View Announcement Modal -->
     <div class="modal fade" id="viewAnnouncementModal" ref="viewModal">
@@ -133,7 +190,7 @@ onMounted(() => {
             <button type="button" class="btn-close" @click="closeViewModal"></button>
           </div>
           <div class="modal-body text-center">
-            <p><strong>by {{ selectedAnnouncement.author }} {{ formatDate(selectedAnnouncement.datetime) }}</strong></p>
+            <p><strong>by {{ selectedAnnouncement.author }} {{ formatDate(selectedAnnouncement.post_time) }}</strong></p>
             <h6 class="fw-bold">Description</h6>
             <div class="border p-3 rounded">
               <p>{{ selectedAnnouncement.description }}</p>
