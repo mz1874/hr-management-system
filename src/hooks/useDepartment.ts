@@ -4,6 +4,7 @@ import { selectAllDepartments } from '@/api/department.ts'
 
 export default function () {
     const departments = ref<Department[]>([])
+    const flatDepartmentList = ref<Department[]>([])       // 扁平化结构
 
     // Map data to Department list
     const mapToDepartment = (item: any): Department => {
@@ -40,16 +41,17 @@ export default function () {
         return tree
     }
 
-    /* 查询所有的部门信息 */
+    // 查询所有的部门信息
     onMounted(() => {
         selectAllDepartments().then((data) => {
             if (data.status === 200) {
                 const rawList = data.data.data.results
                 const mappedList: Department[] = rawList.map(mapToDepartment)
+                flatDepartmentList.value = mappedList
                 departments.value = buildDepartmentTree(mappedList)
             }
         })
     })
 
-    return { departments }
+    return { departments, flatDepartmentList}
 }

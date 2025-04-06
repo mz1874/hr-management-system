@@ -2,8 +2,9 @@
 import { computed, ref } from 'vue'
 import useDepartment from "@/hooks/useDepartment.ts";
 import type {Department} from "@/interface/DepartmentInterface.ts";
-const {departments} = useDepartment()
 
+/*处理之后的部门数据*/
+const {departments, flatDepartmentList} = useDepartment()
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 4
@@ -16,7 +17,6 @@ const showEditDepartmentModal = ref(false)
 const showRemoveDepartmentModal = ref(false)
 const newDepartmentName = ref('')
 const newDepartmentSorting = ref(1)
-const newDepartmentStatus = ref<'NORMAL' | 'ON HOLD'>('NORMAL')
 const newDepartmentParentId = ref<number | null>(null)
 const selectedDepartment = ref<Department | null>(null)
 
@@ -51,7 +51,6 @@ const addDepartment = () => {
     parentId: newDepartmentParentId.value,
     name: newDepartmentName.value,
     sorting: newDepartmentSorting.value,
-    status: newDepartmentStatus.value,
     creationTime: new Date().toISOString()
   }
 
@@ -59,8 +58,9 @@ const addDepartment = () => {
   showAddDepartmentModal.value = false
   newDepartmentName.value = ''
   newDepartmentSorting.value = 1
-  newDepartmentStatus.value = 'NORMAL'
   newDepartmentParentId.value = null
+
+  console.log(newDepartment)
 }
 
 /**
@@ -155,7 +155,7 @@ const searchDepartments = () => {
     <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-end mb-3">
-          <button @click="showAddDepartmentModal = true" class="btn btn-success">Add New Department</button>
+          <button @click="showAddDepartmentModal = true" class="btn btn-success">Add Department</button>
         </div>
 
         <div class="table-responsive">
@@ -165,7 +165,6 @@ const searchDepartments = () => {
                 <th style="width: 30px"></th>
                 <th>Department Name</th>
                 <th>Sorting</th>
-                <th>Status</th>
                 <th>Creation Time</th>
                 <th>Actions</th>
               </tr>
@@ -185,16 +184,6 @@ const searchDepartments = () => {
                     </span>
                   </td>
                   <td>{{ department.sorting }}</td>
-                  <td>
-                    <span 
-                      :class="[
-                        'badge',
-                        department.status === 'NORMAL' ? 'bg-success' : 'bg-warning text-dark'
-                      ]"
-                    >
-                      {{ department.status }}
-                    </span>
-                  </td>
                   <td>{{ department.creationTime }}</td>
                   <td>
                     <button 
@@ -236,11 +225,12 @@ const searchDepartments = () => {
       </div>
     </div>
 
+    <!-- 新增部门模态框 -->
     <!-- Add Department Modal -->
     <div v-if="showAddDepartmentModal" class="modal-backdrop">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Add New Department</h5>
+          <h5 class="modal-title">Add Department</h5>
           <button 
             type="button" 
             class="btn-close" 
@@ -269,17 +259,6 @@ const searchDepartments = () => {
             >
           </div>
           <div class="mb-3">
-            <label for="departmentStatus" class="form-label">Status</label>
-            <select 
-              v-model="newDepartmentStatus"
-              class="form-select" 
-              id="departmentStatus"
-            >
-              <option value="NORMAL">Normal</option>
-              <option value="ON HOLD">On Hold</option>
-            </select>
-          </div>
-          <div class="mb-3">
             <label for="departmentParent" class="form-label">Parent Department</label>
             <select 
               v-model="newDepartmentParentId"
@@ -288,7 +267,7 @@ const searchDepartments = () => {
             >
               <option :value="null">None (Main Department)</option>
               <option 
-                v-for="dept in departments" 
+                v-for="dept in flatDepartmentList"
                 :key="dept.id" 
                 :value="dept.id"
               >
@@ -347,17 +326,6 @@ const searchDepartments = () => {
               id="editDepartmentSorting" 
               placeholder="Enter sorting number"
             >
-          </div>
-          <div class="mb-3">
-            <label for="editDepartmentStatus" class="form-label">Status</label>
-            <select 
-              v-model="selectedDepartment.status"
-              class="form-select" 
-              id="editDepartmentStatus"
-            >
-              <option value="NORMAL">Normal</option>
-              <option value="ON HOLD">On Hold</option>
-            </select>
           </div>
           <div class="mb-3">
             <label for="editDepartmentParent" class="form-label">Parent Department</label>
