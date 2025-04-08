@@ -1,89 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-interface Staff {
-  id: number
-  name: string
-  dateOfBirth: string
-  role: string
-  department: string
-  status: 'Active' | 'Inactive'
-  employmentDate: string
-  resignationDate?: string  // Add new property
-  numberOfLeaves: number
-  medicalLeaves: number
-  annualLeaves: number
-}
+import type {Staff} from "@/interface/UserInterface.ts";
+import useStaff from "@/hooks/useStaff.ts";
+import useDepartment from "@/hooks/useDepartment.ts";
 
+const {fetchAllStaffs, staffData} = useStaff()
 // State
 const selectedDepartment = ref('Sales Department')
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
-const totalItems = computed(() => staffList.value.length)
+const totalItems = computed(() => staffData.count)
 
-const staffList = ref<Staff[]>([
-  {
-    id: 1,
-    name: 'John Smith',
-    dateOfBirth: '1990-03-15',
-    role: 'Sales Manager',
-    department: 'Sales Department',
-    status: 'Active',
-    employmentDate: '2020-01-15',
-    numberOfLeaves: 5,
-    medicalLeaves: 2,
-    annualLeaves: 3
-  },
-  {
-    id: 2,
-    name: 'Sarah Johnson',
-    dateOfBirth: '1992-07-22',
-    role: 'Sales Representative',
-    department: 'Sales Department',
-    status: 'Active',
-    employmentDate: '2021-03-10',
-    numberOfLeaves: 3,
-    medicalLeaves: 1,
-    annualLeaves: 2
-  },
-  {
-    id: 3,
-    name: 'Michael Chen',
-    dateOfBirth: '1988-11-30',
-    role: 'Marketing Specialist',
-    department: 'Marketing Department',
-    status: 'Active',
-    employmentDate: '2019-07-01',
-    numberOfLeaves: 4,
-    medicalLeaves: 2,
-    annualLeaves: 2
-  },
-  {
-    id: 4,
-    name: 'Emily Davis',
-    dateOfBirth: '1995-04-18',
-    role: 'HR Manager',
-    department: 'Human Resources',
-    status: 'Active',
-    employmentDate: '2018-09-20',
-    numberOfLeaves: 4,
-    medicalLeaves: 1,
-    annualLeaves: 3
-  },
-  {
-    id: 5,
-    name: 'David Wilson',
-    dateOfBirth: '1991-09-25',
-    role: 'Accountant',
-    department: 'Finance Department',
-    status: 'Inactive',
-    employmentDate: '2017-11-15',
-    numberOfLeaves: 0,
-    medicalLeaves: 0,
-    annualLeaves: 0
-  }
-])
+
 
 // Modals
 const showAddStaffModal = ref(false)
@@ -105,7 +35,7 @@ const selectedStaff = ref<Staff>({
 
 // Statistics
 const statistics = computed(() => {
-  const departmentStaff = staffList.value.filter(staff => staff.department === selectedDepartment.value)
+  const departmentStaff = staffData.results.filter(staff => staff.department === selectedDepartment.value)
   return {
     total: departmentStaff.length,
     active: departmentStaff.filter(staff => staff.status === 'Active').length,
@@ -113,22 +43,8 @@ const statistics = computed(() => {
   }
 })
 
-// Computed
-const filteredStaff = computed(() => {
-  return staffList.value.filter(staff => {
-    const matchesDepartment = !selectedDepartment.value || staff.department === selectedDepartment.value
-    const matchesSearch = staff.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    return matchesDepartment && matchesSearch
-  })
-})
 
-const paginatedStaff = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filteredStaff.value.slice(start, end)
-})
-
-const totalPages = computed(() => Math.ceil(filteredStaff.value.length / itemsPerPage))
+const totalPages = 1
 
 // Methods
 const searchStaff = () => {
@@ -137,7 +53,7 @@ const searchStaff = () => {
 
 const openAddStaffModal = () => {
   selectedStaff.value = {
-    id: staffList.value.length + 1,
+    id: 1,
     name: '',
     dateOfBirth: '',
     role: '',
@@ -167,23 +83,23 @@ const openDeleteStaffModal = (staff: Staff) => {
 }
 
 const addStaff = () => {
-  staffList.value.push({ ...selectedStaff.value })
+  staffData.results.push({ ...selectedStaff.value })
   showAddStaffModal.value = false
 }
 
 const saveEditedStaff = () => {
-  const index = staffList.value.findIndex(staff => staff.id === selectedStaff.value.id)
+  const index = staffData.results.findIndex(staff => staff.id === selectedStaff.value.id)
   if (index !== -1) {
-    staffList.value[index] = { ...selectedStaff.value }
+    staffData.results[index] = { ...selectedStaff.value }
   }
   showEditStaffModal.value = false
 }
 
 const confirmDeleteStaff = () => {
-  const index = staffList.value.findIndex(staff => staff.id === selectedStaff.value.id)
+  const index = staffData.results.findIndex(staff => staff.id === selectedStaff.value.id)
   if (index !== -1) {
-    staffList.value[index] = {
-      ...staffList.value[index],
+    staffData.results[index] = {
+      ...staffData.results[index],
       status: 'Inactive',
       resignationDate: new Date().toISOString().split('T')[0]
     }
@@ -247,7 +163,7 @@ const changePage = (page: number) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="staff in paginatedStaff" :key="staff.id">
+              <tr v-for="staff in staffData.results" :key="staff.id">
                 <td>{{ staff.id }}</td>
                 <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
                 <td>{{ staff.dateOfBirth }}</td>
@@ -277,7 +193,7 @@ const changePage = (page: number) => {
 
         <!-- Pagination -->
         <div class="d-flex align-items-center mt-3 justify-content-start">
-          <span class="me-3">Total: {{ filteredStaff.length }}</span>
+          <span class="me-3">Total: {{ staffData.results.length }}</span>
           <nav aria-label="Page navigation">
             <ul class="pagination">
               <li class="page-item" :class="{ disabled: currentPage === 1 }">
