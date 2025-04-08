@@ -3,6 +3,44 @@ import { ref, reactive, defineEmits, onMounted } from 'vue';
 import { Modal } from 'bootstrap';
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
+import { submitLeaveRequest } from '@/api/leave'
+
+const handleSubmit = async () => {
+  if (!formData.reasons) {
+    alert('Please provide a reason for your leave application.');
+    return;
+  }
+
+  if (formData.selectedDates.length === 0) {
+    alert('Please select at least one date.');
+    return;
+  }
+
+  const isMedicalLeave = formData.selectedDates.some(d => d.leaveType === 'MC');
+  if (isMedicalLeave && !primaryDocument.value) {
+    alert('Please upload a primary document for Medical Leave.');
+    return;
+  }
+
+  try {
+    const payload = new FormData();
+    payload.append('reason', formData.reasons);
+    payload.append('leave_dates', JSON.stringify(formData.selectedDates));
+    if (primaryDocument.value) {
+      payload.append('attachment', primaryDocument.value);
+    }
+
+    const response = await submitLeaveRequest(payload);
+    console.log('Leave submitted successfully:', response.data);
+    alert('Leave application submitted!');
+
+    closeModal();
+    resetForm();
+  } catch (error) {
+    console.error('Error submitting leave:', error);
+    alert('Failed to submit leave application.');
+  }
+};
 
 // Define interfaces
 interface LeaveDate {
@@ -103,48 +141,7 @@ const resetForm = () => {
   }
 };
 
-// Handle form submission
-const handleSubmit = () => {
-  if (!formData.reasons) {
-    alert('Please provide a reason for your leave application.');
-    return;
-  }
-  if (formData.selectedDates.length === 0) {
-    alert('Please select at least one date.');
-    return;
-  }
 
-  // Check if Medical Leave is selected and enforce document upload requirement
-  const isMedicalLeave = formData.selectedDates.some(d => d.leaveType === 'MC');
-  if (isMedicalLeave && !primaryDocument.value) {
-    alert('Please upload a primary document for Medical Leave.');
-    return;
-  }
-
-  // Create an object URL for the uploaded primary document if exists
-  const primaryDocumentURL = primaryDocument.value ? URL.createObjectURL(primaryDocument.value) : null;
-
-  // Create a new leave application entry including department
-  const newApplication = {
-    id: Math.floor(Math.random() * 1000),
-    name: formData.name,
-    department: formData.department,
-    leaveType: formData.selectedDates[0]?.leaveType || "AL",
-    status: "Pending",
-    appliedOn: new Date().toISOString().split('T')[0] + ' ' + new Date().toLocaleTimeString(),
-    selected: false,
-    dates: [...formData.selectedDates],
-    reasons: formData.reasons,
-    document: primaryDocumentURL
-  };
-
-  // Emit the data to the parent component
-  emit('submit', newApplication);
-
-  // Close modal, reset form, and remove backdrop
-  closeModal();
-  resetForm();
-};
 </script>
 
 <template>
