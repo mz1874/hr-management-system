@@ -2,15 +2,9 @@ import { getAllRoles, deleteRoleByRoleId } from "@/api/role.ts";
 import { ref, onMounted } from "vue";
 import dayjs from "dayjs";
 import Swal from "sweetalert2";
+import type {RoleItem} from  "@/interface/RoleInterface.ts";
 
 export default function () {
-    interface RoleItem {
-        id: number;
-        roleName: string;
-        permissions: string[];
-        createdOn: string;
-    }
-
     const tableData = ref<RoleItem[]>([]);
 
     const fetchRoles = () => {
@@ -20,7 +14,7 @@ export default function () {
                 id: item.id,
                 roleName: item.name,
                 permissions: item.permissions,
-                createdOn: dayjs(item.create_time).format("YYYY-MM-DD HH:mm:ss"),
+                createdOn: dayjs(item.create_time).format("YYYY-MM-DD"),
             }));
         });
     };

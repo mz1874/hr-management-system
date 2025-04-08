@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import useRole from "@/hooks/useRole.ts";
-
-interface RoleItem {
-  id: number
-  roleName: string
-  permissions: string[] // 当前角色拥有的权限
-  createdOn: string // 创建日期
-}
+import type {RoleItem} from  "@/interface/RoleInterface.ts";
 
 const {tableData, handleDeleteRole} = useRole()
 
