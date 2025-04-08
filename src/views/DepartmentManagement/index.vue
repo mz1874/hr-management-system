@@ -125,28 +125,11 @@ const flattenDepartments = (departments: Department[], level = 0): any[] => {
   }, [])
 }
 
-const searchDepartments = () => {
-  currentPage.value = 1
-}
 </script>
 
 <template>
   <div class="p-4">
     <h1 class="mb-4">Department Management</h1>
-
-    <!-- Search section -->
-    <div class="d-flex gap-3 mb-4 align-items-center">
-      <form class="search-container" role="search">
-        <i class="fas fa-search search-icon"></i>
-        <input
-            v-model="searchQuery"
-            type="text"
-            class="form-control"
-            placeholder="Search Department"
-        >
-      </form>
-      <button @click="searchDepartments" class="btn btn-primary">Search</button>
-    </div>
 
     <!-- Table section -->
     <div class="card">
