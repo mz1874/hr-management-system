@@ -7,6 +7,12 @@ export default {
 <script setup lang="ts">
 import { Modal } from "bootstrap";
 import { ref, computed, onMounted } from 'vue';
+import {
+  getLeaveRequests,
+  reviewLeaveRequest,
+  cancelLeaveRequest,
+  deleteLeaveRequest, 
+} from '@/api/leave'
 
 interface LeaveApplication {
   id: number;
@@ -24,109 +30,51 @@ interface LeaveApplication {
   remarks: string;
 }
 
-const leaveApplications = ref<LeaveApplication[]>([
-  {
-    id: 1,
-    employeeName: 'Jack',
-    leaveType: 'AL',
-    status: 'Reject',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    department: 'Department X',
-    reasons: 'Medical emergency',
-    document: 'doc1.pdf',
-    remainingAnnualLeave: 10,
-    remainingMedicalLeave: 2,
-    dates: [
-      { date: '21/11/2024', duration: 'whole', leaveType: 'AL' },
-      { date: '22/11/2024', duration: 'whole', leaveType: 'AL' },
-      { date: '22/11/2024', duration: 'whole', leaveType: 'ML' }
+const leaveApplications = ref<LeaveApplication[]>([]);
 
-    ],
-    remarks: 'N/A'
-  },
-  {
-    id: 2,
-    employeeName: 'Wang Chong',
-    leaveType: 'AL',
-    status: 'Pending',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    department: 'Department A',
-    reasons: 'Travel',
-    document: 'doc2.pdf',
-    remainingAnnualLeave: 5,
-    remainingMedicalLeave: 5,
-    dates: [
-      { date: '21/11/2024', duration: 'whole', leaveType: 'AL' },
-      { date: '22/11/2024', duration: 'whole', leaveType: 'AL' }
-    ],
-    remarks: ''
-  },
-  {
-    id: 3,
-    employeeName: 'Alice',
-    leaveType: 'AL',
-    status: 'Approved',
-    appliedOn: '2024-07-01 09:15:00',
-    selected: false,
-    department: 'Department B',
-    reasons: 'Family event',
-    document: 'doc3.pdf',
-    remainingAnnualLeave: 8,
-    remainingMedicalLeave: 4,
-    dates: [{ date: '25/11/2024', duration: 'am', leaveType: 'AL' }],
-    remarks: 'Approved by Manager'
-  },
-  {
-    id: 4,
-    employeeName: 'Bob',
-    leaveType: 'MC',
-    status: 'Pending',
-    appliedOn: '2024-07-02 10:00:00',
-    selected: false,
-    department: 'Department C',
-    reasons: 'Health Checkup',
-    document: 'doc4.pdf',
-    remainingAnnualLeave: 7,
-    remainingMedicalLeave: 6,
-    dates: [{ date: '26/11/2024', duration: 'whole', leaveType: 'MC' }],
-    remarks: ''
-  },
-  {
-    id: 5,
-    employeeName: 'Carol',
-    leaveType: 'AL',
-    status: 'Reject',
-    appliedOn: '2024-07-03 14:30:00',
-    selected: false,
-    department: 'Department D',
-    reasons: 'Personal reasons',
-    document: 'doc5.pdf',
-    remainingAnnualLeave: 9,
-    remainingMedicalLeave: 3,
-    dates: [{ date: '27/11/2024', duration: 'pm', leaveType: 'AL' }],
-    remarks: 'Insufficient leave balance'
-  },
-  {
-    id: 6,
-    employeeName: 'Dave',
-    leaveType: 'MC',
-    status: 'Approved',
-    appliedOn: '2024-07-04 08:45:00',
-    selected: false,
-    department: 'Department E',
-    reasons: 'Surgery',
-    document: 'doc6.pdf',
-    remainingAnnualLeave: 6,
-    remainingMedicalLeave: 2,
-    dates: [
-      { date: '28/11/2024', duration: 'whole', leaveType: 'MC' },
-      { date: '29/11/2024', duration: 'whole', leaveType: 'MC' }
-    ],
-    remarks: 'Approved with conditions'
+const fetchLeaveApplications = async () => {
+  try {
+    const res = await getLeaveRequests()
+    console.log('API raw response:', res.data)
+
+    leaveApplications.value = res.data.results.map(item => ({
+      id: item.id,
+      employeeName: item.user_name, // ← make sure your backend serializer returns this
+      department: item.department_name,
+      leaveType: item.leave_dates.map(d => d.leave_type).join(', '),
+      status: mapStatus(item.status),
+      appliedOn: item.created_date,
+      reasons: item.reason,
+      document: item.attachment_url,
+      remainingAnnualLeave: 0,
+      remainingMedicalLeave: 0,
+      remarks: item.review_comment,
+      dates: item.leave_dates.map(d => ({
+        date: new Date(d.leave_date).toLocaleDateString(),
+        duration: d.duration,
+        leaveType: d.leave_type
+      })),
+      selected: false
+    }))
+  } catch (err) {
+    console.error('Failed to fetch leave applications', err)
   }
-]);
+}
+
+function mapStatus(code: string): string {
+  const map = {
+    P: 'Pending',
+    A: 'Approved',
+    R: 'Reject',
+    W: 'Withdraw'
+  }
+  return map[code] || code
+}
+
+onMounted(() => {
+  fetchLeaveApplications()
+})
+
 
 // Filter variable for summary card filtering
 const filterStatus = ref('All');
@@ -228,6 +176,8 @@ const rejectSingle = () => {
   }
 };
 
+
+
 onMounted(() => {
   import('bootstrap');
 });
@@ -315,6 +265,8 @@ onMounted(() => {
     <div class="d-flex justify-content-end mt-3 buttons">
       <button class="btn custom-approve me-2" @click="bulkApprove">Approve</button>
       <button class="btn custom-reject" @click="bulkReject">Reject</button>
+      <button class="btn btn-danger" >Delete</button>
+
     </div>
 
     <!-- Applications Table -->
@@ -327,7 +279,8 @@ onMounted(() => {
           <th>Leave Type</th>
           <th>Status</th>
           <th>Applied On</th>
-          <th style="width: 50px"></th>
+          <th style="width: 50px">Info</th>
+          <th style="width: 50px">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -365,6 +318,12 @@ onMounted(() => {
               <i class="bi bi-info-circle"></i>
             </button>
           </td>
+          <td>
+            <button class="btn btn-sm btn-danger" >
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+
         </tr>
       </tbody>
     </table>

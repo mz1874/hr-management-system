@@ -568,7 +568,18 @@
   }
 
   const submitNewAnnouncement = () => {
-    const isScheduled = newAnnouncement.value.isScheduled
+    const isScheduled = newAnnouncement.value.isScheduled;
+
+    if (isScheduled) {
+      const scheduleDateTime = new Date(`${newAnnouncement.value.scheduleDate}T${newAnnouncement.value.scheduleTime}`);
+      const now = new Date();
+
+      if (scheduleDateTime < now) {
+        alert('⚠️ Scheduled post time cannot be in the past.');
+        return;
+      }
+    }
+
     const payload = {
       title: newAnnouncement.value.title,
       description: newAnnouncement.value.description,
@@ -581,15 +592,17 @@
         : {
             post_time: new Date().toISOString()
           })
-    }
+    };
 
     createAnnouncement(payload)
       .then(() => {
-        fetchAnnouncements()
-        closeNewAnnouncementModal()
+        fetchAnnouncements();
+        closeNewAnnouncementModal();
       })
-      .catch(err => console.error('Failed to create announcement:', err.response?.data || err.message))
-  }
+      .catch(err => {
+        console.error('Failed to create announcement:', err.response?.data || err.message);
+      });
+  };
 
   // ===================== File Upload =====================
   const handleFileUpload = async (event) => {
@@ -635,7 +648,18 @@
 
   // ===================== Edit Announcement =====================
   const submitAnnouncement = () => {
-    const isScheduled = selectedAnnouncement.value.isScheduled
+    const isScheduled = selectedAnnouncement.value.isScheduled;
+
+    if (isScheduled) {
+      const scheduleDateTime = new Date(`${selectedAnnouncement.value.scheduleDate}T${selectedAnnouncement.value.scheduleTime}`);
+      const now = new Date();
+
+      if (scheduleDateTime < now) {
+        alert('⚠️ Scheduled post time cannot be in the past.');
+        return;
+      }
+    }
+
     const payload = {
       title: selectedAnnouncement.value.title,
       description: selectedAnnouncement.value.description,
@@ -648,16 +672,19 @@
             schedule_post_time: null,
             post_time: new Date().toISOString()
           }),
-      file_ids: [] // extend if you support edit attachments
-    }
+      file_ids: [] // extend if needed
+    };
 
     updateAnnouncement(selectedAnnouncement.value.id, payload)
       .then(() => {
-        fetchAnnouncements()
-        closeModal()
+        fetchAnnouncements();
+        closeModal();
       })
-      .catch(err => console.error('Failed to update announcement:', err.response?.data || err.message))
-  }
+      .catch(err => {
+        console.error('Failed to update announcement:', err.response?.data || err.message);
+      });
+  };
+
 
   // ===================== Delete Logic =====================
   const deleteAnnouncement = () => {
