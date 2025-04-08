@@ -213,7 +213,7 @@ const changePage = (page: number) => {
 
         <!-- Pagination -->
         <div class="d-flex align-items-center mt-3 justify-content-start">
-          <span class="me-3">Total: {{ staffData.results.length }}</span>
+          <span class="me-3">Total: {{ staffData.count }}</span>
           <nav aria-label="Page navigation">
             <ul class="pagination">
               <li class="page-item" :class="{ disabled: currentPage === 1 }">
