@@ -3,7 +3,7 @@ import {computed, ref} from 'vue'
 import useDepartment from "@/hooks/useDepartment.ts";
 import type {Department} from "@/interface/DepartmentInterface.ts";
 
-const {departments, flatDepartmentList, departmentAdd, departmentDelete} = useDepartment()
+const {departments, flatDepartmentList, departmentAdd, departmentDelete, patchDepartment} = useDepartment()
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 20
@@ -75,6 +75,7 @@ const openEditDepartmentModal = (department: Department) => {
 const saveEditedDepartment = () => {
   if (selectedDepartment.value) {
     showEditDepartmentModal.value = false
+    patchDepartment(selectedDepartment.value.id, selectedDepartment.value)
     selectedDepartment.value = null
   }
 }

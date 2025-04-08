@@ -1,6 +1,6 @@
 import {ref, onMounted} from 'vue'
 import type {Department} from '@/interface/DepartmentInterface.ts'
-import {selectAllDepartments, addDepartment,deleteDepartment} from '@/api/department.ts'
+import {selectAllDepartments, addDepartment,deleteDepartment, updateDepartment} from '@/api/department.ts'
 import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
@@ -55,6 +55,21 @@ export default function () {
         })
     }
 
+    function patchDepartment(id:number, department) {
+        updateDepartment(id, department).then(res=>{
+            if (isSuccess(res.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Department successfully updated",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+                fetchDepartments();
+            }
+        })
+    }
+
     // 查询所有的部门信息
     onMounted(() => {
         fetchDepartments();
@@ -90,5 +105,5 @@ export default function () {
          })
     }
 
-    return {departments, flatDepartmentList, departmentAdd, departmentDelete}
+    return {departments, flatDepartmentList, departmentAdd, departmentDelete, patchDepartment}
 }
