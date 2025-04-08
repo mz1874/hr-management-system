@@ -7,11 +7,13 @@ import useDepartment from "@/hooks/useDepartment.ts";
 
 const {fetchAllStaffs, staffData} = useStaff()
 // State
-const selectedDepartment = ref('Sales Department')
+const selectedDepartment = ref('')
+
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
 const totalItems = computed(() => staffData.count)
+const departments = ref<string[]>([]) // 后续从接口获取填充
 
 
 
@@ -43,8 +45,23 @@ const statistics = computed(() => {
   }
 })
 
+const filteredStaffs = computed(() => {
+  return staffData.results.filter(staff => {
+    const matchesDepartment = selectedDepartment.value === '' || staff.department === selectedDepartment.value
+    const matchesQuery = searchQuery.value === '' || staff.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    return matchesDepartment && matchesQuery
+  })
+})
 
-const totalPages = 1
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredStaffs.value.length / itemsPerPage)
+})
+
+const paginatedStaffs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredStaffs.value.slice(start, start + itemsPerPage)
+})
 
 // Methods
 const searchStaff = () => {
@@ -120,14 +137,17 @@ const changePage = (page: number) => {
 
     <!-- Department filter and search section -->
     <div class="d-flex gap-3 mb-4 align-items-center">
-      <select v-model="selectedDepartment" class="form-select w-25">
-        <option>Sales Department</option>
-        <option>Marketing Department</option>
-        <option>Human Resources</option>
-        <option>Finance Department</option>
-        <option>IT Department</option>
-        <option>Operations</option>
+      <select v-model="selectedDepartment" class="form-select">
+        <option value="">All departments</option>
+        <option
+            v-for="dept in departments"
+            :key="dept"
+            :value="dept"
+        >
+          {{ dept }}
+        </option>
       </select>
+
       <form class="search-container" role="search">
         <i class="fas fa-search search-icon"></i>
         <input 
@@ -163,8 +183,8 @@ const changePage = (page: number) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="staff in staffData.results" :key="staff.id">
-                <td>{{ staff.id }}</td>
+            <tr v-for="staff in paginatedStaffs" :key="staff.id">
+            <td>{{ staff.id }}</td>
                 <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
                 <td>{{ staff.dateOfBirth }}</td>
                 <td>{{ staff.role }}</td>
@@ -199,7 +219,12 @@ const changePage = (page: number) => {
               <li class="page-item" :class="{ disabled: currentPage === 1 }">
                 <button class="page-link" @click="changePage(currentPage - 1)">Previous</button>
               </li>
-              <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+              <li
+                  class="page-item"
+                  v-for="page in totalPages"
+                  :key="page"
+                  :class="{ active: page === currentPage }"
+              >
                 <button class="page-link" @click="changePage(page)">{{ page }}</button>
               </li>
               <li class="page-item" :class="{ disabled: currentPage === totalPages }">

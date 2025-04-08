@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
 import useDepartment from "@/hooks/useDepartment.ts";
+
 import type {Department} from "@/interface/DepartmentInterface.ts";
 
 const {departments, flatDepartmentList, departmentAdd, departmentDelete, patchDepartment} = useDepartment()
