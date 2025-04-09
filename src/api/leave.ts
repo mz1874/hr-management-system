@@ -3,24 +3,24 @@ import axios from './axios'
 // leave request
 
 // Submit a new leave request (User)
-export function submitLeaveRequest(payload) {
-  return axios.post('/api/leave-requests/', payload)
+export function submitLeaveRequest(data: any) {
+  return axios.post('/api/leave-request/', data)
 }
 
 // Get leave requests (User sees own, HR sees all)
 export function getLeaveRequests(page = 1, search = '') {
   const params = new URLSearchParams({ page: String(page), search })
-  return axios.get(`/api/leave-requests/?${params}`)
+  return axios.get(`/api/leave-request/?${params}`)
 }
 
 // Cancel a leave request (User only if status is 'Pending')
 export function cancelLeaveRequest(id) {
-  return axios.post(`/api/leave-requests/${id}/cancel/`)
+  return axios.post(`/api/leave-request/${id}/cancel/`)
 }
 
 // Approve or reject a leave request (HR)
 export function reviewLeaveRequest(id, payload) {
-  return axios.patch(`/api/leave-requests/${id}/`, payload)
+  return axios.patch(`/api/leave-request/${id}/`, payload)
 }
 
 // Bulk approve or reject requests (HR utility)
@@ -29,6 +29,12 @@ export function bulkReviewLeaveRequests(ids = [], status, comment = '') {
     reviewLeaveRequest(id, { status, review_comment: comment })
   ))
 }
+
+//delete leave request from hr
+export function deleteLeaveRequest(id: number) {
+    return axios.delete(`/api/leave-request/${id}/`)
+  }
+  
 
 //leave type
 

@@ -1,155 +1,157 @@
 <script setup lang="ts">
-import { ref, reactive, defineEmits, onMounted } from 'vue';
+import { ref, reactive, defineEmits, onMounted, computed } from 'vue';
 import { Modal } from 'bootstrap';
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
-import { submitLeaveRequest } from '@/api/leave'
+import { getLeaveTypes, submitLeaveRequest } from '@/api/leave';
+import { getCurrentUser } from '@/api/login';
+import { uploadFile } from '@/api/file_upload';
 
-const handleSubmit = async () => {
-  if (!formData.reasons) {
-    alert('Please provide a reason for your leave application.');
-    return;
-  }
-
-  if (formData.selectedDates.length === 0) {
-    alert('Please select at least one date.');
-    return;
-  }
-
-  const isMedicalLeave = formData.selectedDates.some(d => d.leaveType === 'MC');
-  if (isMedicalLeave && !primaryDocument.value) {
-    alert('Please upload a primary document for Medical Leave.');
-    return;
-  }
-
-  try {
-    const payload = new FormData();
-    payload.append('reason', formData.reasons);
-    payload.append('leave_dates', JSON.stringify(formData.selectedDates));
-    if (primaryDocument.value) {
-      payload.append('attachment', primaryDocument.value);
-    }
-
-    const response = await submitLeaveRequest(payload);
-    console.log('Leave submitted successfully:', response.data);
-    alert('Leave application submitted!');
-
-    closeModal();
-    resetForm();
-  } catch (error) {
-    console.error('Error submitting leave:', error);
-    alert('Failed to submit leave application.');
-  }
-};
-
-//TODO 抽取
-// Define interfaces
 interface LeaveDate {
-  date: string;
-  duration: string;
-  leaveType: string;
+  leave_date: string;
+  duration: 'F' | 'AM' | 'PM';
+  leave_type: number;
 }
 
 interface ApplicationFormData {
-  name: string;
-  department: string;
   reasons: string;
   selectedDates: LeaveDate[];
+  department: number | null;
 }
 
-// Emit event for submitting data
+interface LeaveType {
+  id: number;
+  name: string;
+  description: string;
+}
+
 const emit = defineEmits(['submit']);
 
-// Reactive form data; pre-fill name and department from the logged-in user
 const formData = reactive<ApplicationFormData>({
-  name: 'Wang Chong',       // Pre-filled logged-in user name
-  department: 'A',           // Pre-filled logged-in user department
   reasons: '',
-  selectedDates: []
+  selectedDates: [],
+  department: null
 });
 
-// Datepicker state
+const leaveTypes = ref<LeaveType[]>([]);
 const selectedDate = ref<Date | null>(null);
-
-// Reactive variable for primary document upload
 const primaryDocument = ref<File | null>(null);
-
-// Create a ref for the primary document input element
 const primaryDocumentInput = ref<HTMLInputElement | null>(null);
-
-// Modal reference
 const modalRef = ref<HTMLElement | null>(null);
 let modalInstance: Modal | null = null;
 
-// Initialize modal when component is mounted
-onMounted(() => {
-  if (modalRef.value) {
-    modalInstance = new Modal(modalRef.value);
+const userName = ref('');
+const userDeptName = ref('');
+
+const medicalLeaveId = computed(() => {
+  return leaveTypes.value.find(t => t.name.toLowerCase() === 'mc')?.id;
+});
+
+onMounted(async () => {
+  if (modalRef.value) modalInstance = new Modal(modalRef.value);
+
+  try {
+    const res = await getCurrentUser();
+    userName.value = res.data.data.first_name || res.data.data.username || 'User';
+    formData.department = res.data.data.department?.id || null;
+    userDeptName.value = res.data.data.department?.department_name || '-';
+  } catch (e) {
+    console.error('Failed to fetch current user:', e);
+  }
+
+  try {
+    const typeRes = await getLeaveTypes();
+    leaveTypes.value = typeRes.data.data.results || [];
+  } catch (e) {
+    console.error('Failed to fetch leave types');
   }
 });
 
-// Filter function to disable past dates and weekends
 const filterDate = (date: Date): boolean => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (date < today) return false;
   const day = date.getDay();
-  return day !== 0 && day !== 6; // disable Sunday (0) and Saturday (6)
+  return date >= today && day !== 0 && day !== 6;
 };
 
-// Handle date selection
 const handleDateSelect = () => {
   if (!selectedDate.value) return;
-  const dateStr = selectedDate.value.toLocaleDateString('en-GB');
-  if (!formData.selectedDates.some(d => d.date === dateStr)) {
+  const isoDate = selectedDate.value.toISOString().split('T')[0];
+  if (!formData.selectedDates.some(d => d.leave_date === isoDate)) {
+    const defaultLeaveType = leaveTypes.value[0]?.id || 1;
     formData.selectedDates.push({
-      date: dateStr,
-      duration: 'whole',
-      leaveType: 'AL'
+      leave_date: isoDate,
+      duration: 'F',
+      leave_type: defaultLeaveType
     });
   }
   selectedDate.value = null;
 };
 
-// Handle primary document upload
 const handlePrimaryDocumentUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  if (target.files && target.files[0]) {
-    primaryDocument.value = target.files[0];
-  }
+  if (target.files && target.files[0]) primaryDocument.value = target.files[0];
 };
 
-// Close modal function
 const closeModal = () => {
-  if (modalInstance) {
-    modalInstance.hide();
-  }
-  // Remove any leftover backdrop
+  if (modalInstance) modalInstance.hide();
   const backdrop = document.querySelector('.modal-backdrop');
-  if (backdrop) {
-    backdrop.remove();
-  }
+  if (backdrop) backdrop.remove();
 };
 
-// Reset form data (except name and department) and clear file input
 const resetForm = () => {
   formData.reasons = '';
   formData.selectedDates = [];
+  formData.department = null;
   primaryDocument.value = null;
-  // Clear the file input element's value
-  if (primaryDocumentInput.value) {
-    primaryDocumentInput.value.value = '';
-  }
+  if (primaryDocumentInput.value) primaryDocumentInput.value.value = '';
 };
 
+const handleSubmit = async () => {
+  if (!formData.reasons) return alert('Please provide a reason.');
+  if (formData.selectedDates.length === 0) return alert('Please select at least one date.');
 
+  const isMedicalLeave = formData.selectedDates.some(d => d.leave_type === medicalLeaveId.value);
+  if (isMedicalLeave && !primaryDocument.value) return alert('Upload document for Medical Leave.');
+
+  let uploadedFileId: number | null = null;
+
+  if (primaryDocument.value) {
+    try {
+      const uploadRes = await uploadFile(primaryDocument.value);
+      uploadedFileId = uploadRes.data?.data?.id;
+      if (!uploadedFileId) throw new Error('Missing file ID after upload');
+    } catch (error: any) {
+      console.error('File upload error:', error);
+      alert(JSON.stringify(error.response?.data || 'Failed to upload file.'));
+      return;
+    }
+  }
+
+  const payload = {
+    reason: formData.reasons,
+    department: formData.department,
+    leave_dates: formData.selectedDates,
+    ...(uploadedFileId ? { attachment: uploadedFileId } : {})
+  };
+
+  try {
+    await submitLeaveRequest(payload);
+    emit('submit');
+    closeModal();
+    resetForm();
+  } catch (e: any) {
+    console.error('Submit error:', e);
+    const msg = e.response?.data || 'Unknown error';
+    alert(JSON.stringify(msg));
+  }
+};
 </script>
 
 <template>
   <div class="modal fade" id="leaveApplicationModal" ref="modalRef" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <!-- Modal Header -->
         <div class="modal-header">
           <h5 class="modal-title">
             <i class="bi bi-file-text me-2"></i> Leave Application Form
@@ -157,55 +159,47 @@ const resetForm = () => {
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
-        <!-- Modal Body -->
         <div class="modal-body">
           <form @submit.prevent="handleSubmit">
-            <!-- Employee Information (read-only) -->
             <div class="mb-3">
               <label class="form-label">Name</label>
-              <input type="text" class="form-control" v-model="formData.name" readonly>
+              <input type="text" class="form-control" :value="userName" readonly>
             </div>
+
             <div class="mb-3">
               <label class="form-label">Department</label>
-              <input type="text" class="form-control" v-model="formData.department" readonly>
+              <input type="text" class="form-control" :value="userDeptName" readonly>
             </div>
 
-            <!-- Reasons (required) -->
             <div class="mb-3">
-              <label class="form-label">Reasons <span class="text-danger">*</span></label>
-              <textarea class="form-control" v-model="formData.reasons" rows="3" placeholder="Enter your reasons" required></textarea>
+              <label class="form-label">Reason <span class="text-danger">*</span></label>
+              <textarea class="form-control" v-model="formData.reasons" rows="3" required></textarea>
             </div>
 
-            <!-- Date Picker with filter -->
             <div class="mb-3">
               <label class="form-label">Select Date</label>
-              <Datepicker 
-                v-model="selectedDate" 
-                :filter="filterDate" 
-                @update:modelValue="handleDateSelect" 
-                :enable-time="false" 
+              <Datepicker
+                v-model="selectedDate"
+                :filter="filterDate"
+                @update:modelValue="handleDateSelect"
+                :enable-time="false"
                 placeholder="Pick a date"
               />
             </div>
 
-            <!-- Selected Dates -->
             <div class="mb-3">
-              <h6 class="mb-3">Selected Dates:</h6>
-              <div v-for="(date, index) in formData.selectedDates" :key="index" class="date-row">
-                <input type="text" class="form-control" :value="date.date" readonly>
+              <h6 class="mb-2">Selected Dates:</h6>
+              <div v-for="(date, index) in formData.selectedDates" :key="index" class="d-flex gap-2 align-items-center mb-2">
+                <input type="text" class="form-control" :value="date.leave_date" readonly>
                 <select class="form-select" v-model="date.duration">
-                  <option value="whole">Full Day</option>
+                  <option value="F">Full Day</option>
                   <option value="AM">Half Day (AM)</option>
                   <option value="PM">Half Day (PM)</option>
                 </select>
-                <select class="form-select" v-model="date.leaveType">
-                  <option value="AL">Annual Leave</option>
-                  <option value="MC">Medical Leave</option>
-                  <option value="UL">Unpaid Leave</option>
-                  <option value="MR L">Marriage Leave</option>
-                  <option value="HL">Hospitalization Leave</option>
-                  <option value="ML">Maternity Leave</option>
-                  <option value="PL">Paternity Leave</option>
+                <select class="form-select" v-model="date.leave_type">
+                  <option v-for="type in leaveTypes" :key="type.id" :value="type.id">
+                    {{ type.description }}
+                  </option>
                 </select>
                 <button type="button" class="btn btn-danger btn-sm" @click="formData.selectedDates.splice(index, 1)">
                   <i class="bi bi-trash"></i>
@@ -213,31 +207,23 @@ const resetForm = () => {
               </div>
             </div>
 
-            
-            <!-- Primary Document Upload (required for MC only) -->
-            <div class="mb-3" v-if="formData.selectedDates.some(date => date.leaveType === 'MC')">
-              <label class="form-label">Upload Document (PDF only)</label>
-              <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="application/pdf" required>
-              <small class="form-text text-muted">Please upload a PDF file only.</small>
+            <div class="mb-3" v-if="formData.selectedDates.some(d => d.leave_type === medicalLeaveId)">
+              <label class="form-label">Upload Medical Document (PDF)</label>
+              <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="application/pdf">
+              <small class="text-muted">Required for Medical Leave</small>
             </div>
-
-
           </form>
         </div>
 
-        <!-- Modal Footer -->
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Close
-          </button>
-          <button type="submit" class="btn btn-success" @click="handleSubmit">
-            Submit Application
-          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-success" @click="handleSubmit">Submit Application</button>
         </div>
       </div>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .modal-header {
