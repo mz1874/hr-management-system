@@ -15,7 +15,7 @@ import {
 } from '@/api/leave'
 import { getCurrentUser } from '@/api/login'; 
 import { selectAllStaffs } from '@/api/staff';
-
+import { getLeaveTypes } from '@/api/leave';
 
 interface LeaveApplication {
   id: number;
@@ -29,21 +29,36 @@ interface LeaveApplication {
   document: string;
   remainingAnnualLeave: number;
   remainingMedicalLeave: number;
-  dates: { date: string; duration: string; leaveType: string }[];
   remarks: string;
+  dates: {
+    id: number;
+    date: string;
+    duration: string;
+    leaveType: string;
+    originalLeaveType: string;
+    originalDuration: string;
+  }[];
 }
 
-const leaveApplications = ref<LeaveApplication[]>([]);
+const leaveTypeOptions = ref<{ id: number; name: string; description: string }[]>([]);
 
+const fetchLeaveTypes = async () => {
+  try {
+    const res = await getLeaveTypes();
+    leaveTypeOptions.value = res.data.data.results;
+  } catch (e) {
+    console.error('Failed to fetch leave types:', e);
+  }
+};
+
+const leaveApplications = ref<LeaveApplication[]>([]);
 const userMap = ref<Record<number, { username: string; department: string | null }>>({});
 
 const fetchLeaveApplications = async () => {
   try {
-    // Step 1: Get staff list
     const staffRes = await selectAllStaffs();
     const staffList = staffRes.data.data.results;
 
-    // Step 2: Create a mapping from user ID → username & department
     userMap.value = Object.fromEntries(
       staffList.map((s: any) => [
         s.id,
@@ -54,9 +69,9 @@ const fetchLeaveApplications = async () => {
       ])
     );
 
-    // Step 3: Fetch leave requests
     const res = await getLeaveRequests(1, '', { hrPage: true });
     const rawResults = res.data?.data?.results || [];
+    await fetchLeaveTypes();
 
     leaveApplications.value = rawResults.map(item => {
       const userInfo = userMap.value[item.user] || { username: '-', department: '-' };
@@ -74,9 +89,12 @@ const fetchLeaveApplications = async () => {
         remainingMedicalLeave: 0,
         remarks: item.review_comment || '',
         dates: item.leave_dates?.map(d => ({
+          id: d.id,
           date: new Date(d.leave_date).toLocaleDateString(),
           duration: d.duration,
-          leaveType: d.leave_type_display?.name || '-'
+          originalDuration: d.duration,
+          leaveType: d.leave_type_display?.name || '-',
+          originalLeaveType: d.leave_type_display?.name || '-'
         })) || [],
         selected: false
       };
@@ -85,7 +103,6 @@ const fetchLeaveApplications = async () => {
     console.error('Error during fetch:', err);
   }
 };
-
 
 function mapStatus(code: string): string {
   const map = {
@@ -101,33 +118,110 @@ onMounted(() => {
   fetchLeaveApplications()
 })
 
-
-// Filter variable for summary card filtering
 const filterStatus = ref('All');
 const filteredApplications = computed(() => {
+  const nonWithdrawnApps = leaveApplications.value.filter(app => app.status !== 'Withdraw');
   if (filterStatus.value === 'All') {
-    return leaveApplications.value;
+    return nonWithdrawnApps;
   } else {
-    return leaveApplications.value.filter(app => app.status === filterStatus.value);
+    return nonWithdrawnApps.filter(app => app.status === filterStatus.value);
   }
 });
 
-// Dynamic summary stats computed from the data
 const summaryStats = computed(() => ({
-  all: leaveApplications.value.length,
+  all: leaveApplications.value.filter(app => app.status !== 'Withdraw').length,
   pending: leaveApplications.value.filter(app => app.status === 'Pending').length,
   approved: leaveApplications.value.filter(app => app.status === 'Approved').length,
   rejected: leaveApplications.value.filter(app => app.status === 'Reject').length
 }));
 
-// Bulk operations for HR: approve or reject all selected pending applications
+const saveChanges = async () => {
+  console.log('Current status:', selectedLeave.value.status);
+
+  if (!selectedLeave.value) return;
+
+
+  const reverseStatusMap = {
+    'Pending': 'P',
+    'Approved': 'A',
+    'Reject': 'R',
+    'Withdraw': 'W'
+  };
+
+  // Create a mapping of leave type names to their ids
+  const leaveTypeIdMap = leaveTypeOptions.value.reduce((map, type) => {
+    map[type.name] = type.id;
+    return map;
+  }, {} as Record<string, number>);
+
+  // Prepare the payload for updating the leave request
+  const updated = {
+    id: selectedLeave.value.id,
+    review_comment: selectedLeave.value.remarks,
+    status: reverseStatusMap[selectedLeave.value.status], // Status before change
+    leave_dates: selectedLeave.value.dates.map(d => ({
+      id: d.id,
+      leave_date: new Date(d.date).toISOString(),  // Convert to ISO 8601 format
+      duration: d.duration,
+      leave_type: leaveTypeIdMap[d.leaveType] || null // Map the name to ID
+    }))
+  };
+
+  console.log('Sending review request payload:', updated);
+
+  try {
+    // Send the request to the backend
+    const response = await reviewLeaveRequest(selectedLeave.value.id, updated);
+    console.log('Backend response:', response);
+
+    // Only after backend success, update the status in the frontend
+    selectedLeave.value.status = 'Approved';  // Update status locally after backend confirmation
+    await fetchLeaveApplications();  // Re-fetch leave applications to reflect the changes
+  } catch (e: any) {
+    console.error('Failed to update leave request:', e.response?.data || e);
+  }
+};
+
+
+
+
+
+const approveSingle = async () => {
+  if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
+    // Update remarks
+    selectedLeave.value.remarks = "Approved by HR";
+
+    // Set the status to 'Approved' before sending to the backend
+    selectedLeave.value.status = 'Approved'; 
+
+    // Call saveChanges to send the updated data to the backend
+    await saveChanges();
+  }
+};
+
+const rejectSingle = async () => {
+  if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
+    // Update remarks
+    selectedLeave.value.remarks = "Rejected by HR";
+
+    // Set the status to 'Rejected' before sending to the backend
+    selectedLeave.value.status = 'Reject'; 
+
+    // Call saveChanges to send the updated data to the backend
+    await saveChanges();
+  }
+};
+
+
 const bulkApprove = () => {
   leaveApplications.value.forEach(app => {
     if (app.selected && app.status === 'Pending') {
       app.status = 'Approved';
       app.remarks = "Approved by HR";
+      selectedLeave.value = app;
+      saveChanges();
     }
-    app.selected = false; // Clear selection after processing
+    app.selected = false;
   });
 };
 
@@ -136,39 +230,43 @@ const bulkReject = () => {
     if (app.selected && app.status === 'Pending') {
       app.status = 'Reject';
       app.remarks = "Rejected by HR";
+      selectedLeave.value = app;
+      saveChanges();
     }
     app.selected = false;
   });
 };
 
-// For individual application details in the modal
+const formatDuration = (code: string) => {
+  switch (code) {
+    case 'F': return 'Full Day';
+    case 'AM': return 'Morning';
+    case 'PM': return 'Afternoon';
+    default: return code;
+  }
+};
+
 const leaveDetailsModal = ref<HTMLElement | null>(null);
 const selectedLeave = ref<LeaveApplication | null>(null);
 
 const openDocument = () => {
   if (selectedLeave.value) {
-    // Check if the document is a PDF or an image
     const documentPath = `path/to/your/${selectedLeave.value.document}`;
     const fileExtension = selectedLeave.value.document.split('.').pop().toLowerCase();
-    
-    // If it's a PDF, open it in a new tab
     if (fileExtension === 'pdf') {
       window.open(documentPath, '_blank');
     } else if (['jpg', 'jpeg', 'png'].includes(fileExtension)) {
-      // For images, open in an image viewer or inline
       const imgElement = document.createElement('img');
       imgElement.src = documentPath;
-      imgElement.style.width = '100%';  // Make the image responsive
+      imgElement.style.width = '100%';
       imgElement.style.height = 'auto';
       const imgWindow = window.open('', '_blank');
       imgWindow.document.body.appendChild(imgElement);
     } else {
-      // Fallback case for unsupported file types
       alert('Unsupported file type');
     }
   }
 };
-
 
 const showLeaveDetails = (application: LeaveApplication) => {
   selectedLeave.value = application;
@@ -177,32 +275,6 @@ const showLeaveDetails = (application: LeaveApplication) => {
     modal.show();
   }
 };
-
-const approveSingle = () => {
-  if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    selectedLeave.value.status = 'Approved';
-    selectedLeave.value.remarks = "Approved by HR";
-    const idx = leaveApplications.value.findIndex(app => app.id === selectedLeave.value!.id);
-    if (idx !== -1) {
-      leaveApplications.value[idx].status = 'Approved';
-      leaveApplications.value[idx].remarks = "Approved by HR";
-    }
-  }
-};
-
-const rejectSingle = () => {
-  if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    selectedLeave.value.status = 'Reject';
-    selectedLeave.value.remarks = "Rejected by HR";
-    const idx = leaveApplications.value.findIndex(app => app.id === selectedLeave.value!.id);
-    if (idx !== -1) {
-      leaveApplications.value[idx].status = 'Reject';
-      leaveApplications.value[idx].remarks = "Rejected by HR";
-    }
-  }
-};
-
-
 
 onMounted(() => {
   import('bootstrap');
@@ -213,86 +285,84 @@ onMounted(() => {
   <div class="main-content">
     <!-- Summary Cards with Equal Height & Filter Behavior -->
     <div class="d-flex justify-content-between mb-3">
-  <div class="row row-cols-1 row-cols-md-4 g-4 w-100 align-items-stretch">
-    <!-- All Applications Card -->
-    <div class="col" @click="filterStatus = 'All'">
-      <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'All' }">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-card-checklist icon-large" viewBox="0 0 16 16">
-              <path d="M10.854 6.146a.5.5 0 1 0-.708.708L11.293 8l-1.147 1.146a.5.5 0 0 0 .708.708l1.5-1.5a.5.5 0 0 0 0-.708l-1.5-1.5z"/>
-              <path d="M5.5 4.5a.5.5 0 0 1 .5-.5H9a.5.5 0 0 1 0 1H6v1h3a.5.5 0 0 1 0 1H6v1h3a.5.5 0 0 1 0 1H6v1h3a.5.5 0 0 1 0 1H6v.5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-8A.5.5 0 0 1 4.5 4h1z"/>
-            </svg>
+      <div class="row row-cols-1 row-cols-md-4 g-4 w-100 align-items-stretch">
+        <!-- All Applications Card -->
+        <div class="col" @click="filterStatus = 'All'">
+          <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'All' }">
+            <div class="card-body d-flex align-items-center justify-content-center">
+              <div class="circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-card-checklist icon-large" viewBox="0 0 16 16">
+                  <path d="M10.854 6.146a.5.5 0 1 0-.708.708L11.293 8l-1.147 1.146a.5.5 0 0 0 .708.708l1.5-1.5a.5.5 0 0 0 0-.708l-1.5-1.5z"/>
+                  <path d="M5.5 4.5a.5.5 0 0 1 .5-.5H9a.5.5 0 0 1 0 1H6v1h3a.5.5 0 0 1 0 1H6v1h3a.5.5 0 0 1 0 1H6v1h3a.5.5 0 0 1 0 1H6v.5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-8A.5.5 0 0 1 4.5 4h1z"/>
+                </svg>
+              </div>
+              <div class="task-overall ms-4">
+                <span class="task-text">All Applications</span>
+                <span class="task-num">{{ summaryStats.all }}</span>
+              </div>
+            </div>
           </div>
-          <div class="task-overall ms-4">
-            <span class="task-text">All Applications</span>
-            <span class="task-num">{{ summaryStats.all }}</span>
+        </div>
+
+        <!-- Pending Applications Card -->
+        <div class="col" @click="filterStatus = 'Pending'">
+          <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Pending' }">
+            <div class="card-body d-flex align-items-center justify-content-center">
+              <div class="circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-file-earmark-text icon-large" viewBox="0 0 16 16">
+                  <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
+                  <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                </svg>
+              </div>
+              <div class="task-overall ms-4">
+                <span class="task-text">Pending Application</span>
+                <span class="task-num">{{ summaryStats.pending }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Approved Applications Card -->
+        <div class="col" @click="filterStatus = 'Approved'">
+          <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Approved' }">
+            <div class="card-body d-flex align-items-center justify-content-center">
+              <div class="circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-check-circle icon-large" viewBox="0 0 16 16">
+                  <path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16zM3.5 7.5a.5.5 0 0 0-.5.5V9a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5V8a.5.5 0 0 0-.5-.5H3.5zM8 11a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H8z"/>
+                </svg>
+              </div>
+              <div class="task-overall ms-4">
+                <span class="task-text">Approved Application</span>
+                <span class="task-num">{{ summaryStats.approved }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rejected Applications Card -->
+        <div class="col" @click="filterStatus = 'Reject'">
+          <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Reject' }">
+            <div class="card-body d-flex align-items-center justify-content-center">
+              <div class="circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-x-circle icon-large" viewBox="0 0 16 16">
+                  <path d="M16 8a8 8 0 1 0-8 8 8 8 0 0 0 8-8zM4.146 4.146a.5.5 0 0 1 .708 0L8          6.293l3.146-3.147a.5.5 0 0 1 .708.708L8.707 7l3.147 3.146a.5.5 0 0 1-.708.708L8 7.707l-3.146 3.147a.5.5 0 0 1-.708-.708L7.293 7 4.146 3.854a.5.5 0 0 1 0-.708z"/>
+                </svg>
+              </div>
+              <div class="task-overall ms-4">
+                <span class="task-text">Rejected Application</span>
+                <span class="task-num">{{ summaryStats.rejected }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Pending Applications Card -->
-    <div class="col" @click="filterStatus = 'Pending'">
-      <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Pending' }">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-file-earmark-text icon-large" viewBox="0 0 16 16">
-              <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-              <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-            </svg>
-          </div>
-          <div class="task-overall ms-4">
-            <span class="task-text">Pending Application</span>
-            <span class="task-num">{{ summaryStats.pending }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Approved Applications Card -->
-    <div class="col" @click="filterStatus = 'Approved'">
-      <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Approved' }">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-check-circle icon-large" viewBox="0 0 16 16">
-              <path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16zM3.5 7.5a.5.5 0 0 0-.5.5V9a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5V8a.5.5 0 0 0-.5-.5H3.5zM8 11a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H8z"/>
-            </svg>
-          </div>
-          <div class="task-overall ms-4">
-            <span class="task-text">Approved Application</span>
-            <span class="task-num">{{ summaryStats.approved }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Rejected Applications Card -->
-    <div class="col" @click="filterStatus = 'Reject'">
-      <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Reject' }">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-x-circle icon-large" viewBox="0 0 16 16">
-              <path d="M16 8a8 8 0 1 0-8 8 8 8 0 0 0 8-8zM4.146 4.146a.5.5 0 0 1 .708 0L8 6.293l3.146-3.147a.5.5 0 0 1 .708.708L8.707 7l3.147 3.146a.5.5 0 0 1-.708.708L8 7.707l-3.146 3.147a.5.5 0 0 1-.708-.708L7.293 7 4.146 3.854a.5.5 0 0 1 0-.708z"/>
-            </svg>
-          </div>
-          <div class="task-overall ms-4">
-            <span class="task-text">Rejected Application</span>
-            <span class="task-num">{{ summaryStats.rejected }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 
     <!-- Bulk Action Buttons -->
     <div class="d-flex justify-content-end mt-3 buttons">
       <button class="btn custom-approve me-2" @click="bulkApprove">Approve</button>
       <button class="btn custom-reject" @click="bulkReject">Reject</button>
-      <button class="btn btn-danger" >Delete</button>
-
+      <button class="btn btn-danger">Delete</button>
     </div>
 
     <!-- Applications Table -->
@@ -300,7 +370,6 @@ onMounted(() => {
       <thead>
         <tr>
           <th style="width: 50px"></th>
-          <th>ID</th>
           <th>Employee Name</th>
           <th>Leave Type</th>
           <th>Status</th>
@@ -314,15 +383,16 @@ onMounted(() => {
           <td>
             <input type="checkbox" v-model="application.selected" class="select-checkbox">
           </td>
-          <td>{{ application.id }}</td>
           <td>{{ application.employeeName }}</td>
           <td>
             <div v-if="application.dates.length">
               <div
-                v-for="(type, index) in Array.from(new Set(application.dates.map(item => item.leaveType)))"
+                v-for="(item, index) in application.dates"
                 :key="index"
+                class="mb-1"
               >
-                {{ type }}
+                <strong>{{ item.leaveType }}</strong> – {{ item.date }}
+                <em>({{ formatDuration(item.duration) }})</em>
               </div>
             </div>
             <span v-else>-</span>
@@ -332,9 +402,7 @@ onMounted(() => {
               'custom-reject': application.status === 'Reject',
               'bg-warning': application.status === 'Pending',
               'badge-approved': application.status === 'Approved',
-              'bg-secondary': application.status === 'Withdraw' 
-
-
+              'bg-secondary': application.status === 'Withdraw'
             }]">
               {{ application.status }}
             </span>
@@ -346,11 +414,10 @@ onMounted(() => {
             </button>
           </td>
           <td>
-            <button class="btn btn-sm btn-danger" >
+            <button class="btn btn-sm btn-danger">
               <i class="bi bi-trash"></i>
             </button>
           </td>
-
         </tr>
       </tbody>
     </table>
@@ -381,13 +448,12 @@ onMounted(() => {
                   <label class="info-label">Reasons:</label>
                   <div class="info-badge">{{ selectedLeave.reasons }}</div>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" v-if="selectedLeave.document">
                   <label class="info-label">Attach Document:</label>
                   <div class="info-badge document-link" @click="openDocument">
                     <i class="fas fa-file-pdf me-2"></i>
                     <a href="#" class="text-decoration-none">{{ selectedLeave.document }}</a>
                   </div>
-
                 </div>
               </div>
               <div class="col-md-6">
@@ -411,27 +477,34 @@ onMounted(() => {
               <h6 class="mb-3">Dates Selected:</h6>
               <div v-for="(date, index) in selectedLeave.dates" :key="index" class="date-entry mb-2">
                 <div class="info-badge d-flex align-items-center justify-content-between">
-                  <span>{{ date.date }}</span>
-                  <select v-model="date.duration" class="form-select form-select-sm ms-2 duration-select" 
-                          :disabled="selectedLeave.status !== 'Pending'">
-                    <option value="whole">Whole Day Leave</option>
-                    <option value="am">Half Day (AM)</option>
-                    <option value="pm">Half Day (PM)</option>
-                  </select>
-                  <select v-model="date.leaveType" class="form-select form-select-sm ms-2 leave-type-select"
-                          :disabled="selectedLeave.status !== 'Pending'">
-                    <option value="AL">Annual Leave</option>
-                    <option value="MC">MC Leave</option>
-                    <option value="ML">Marriage Leave</option>
-                    <option value="CL">Compassionate Leave</option>
-                  </select>
+                  <template v-if="selectedLeave.status === 'Pending'">
+                    <span>{{ date.date }}</span>
+                    <select v-model="date.duration" class="form-select form-select-sm ms-2 duration-select">
+                      <option value="F">Full Day</option>
+                      <option value="AM">Morning</option>
+                      <option value="PM">Afternoon</option>
+                    </select>
+                    <select v-model="date.leaveType" class="form-select form-select-sm ms-2 leave-type-select">
+                      <option v-for="type in leaveTypeOptions" :key="type.id" :value="type.name">
+                        {{ type.name }}
+                      </option>
+                    </select>
+                  </template>
+                  <template v-else>
+                    <strong>{{ date.leaveType }}</strong> – {{ date.date }} 
+                    <em>({{ formatDuration(date.duration) }})</em>
+                  </template>
                 </div>
               </div>
             </div>
             <div class="mb-4">
               <h6 class="mb-3">Remarks</h6>
-              <textarea v-model="selectedLeave.remarks" class="form-control" rows="4" 
-                        :readonly="selectedLeave.status !== 'Pending'"></textarea>
+              <textarea 
+                v-model="selectedLeave.remarks" 
+                class="form-control" 
+                rows="4" 
+                :readonly="selectedLeave.status !== 'Pending'"
+              ></textarea>
             </div>
             <!-- Only show Approve/Reject buttons if status is Pending -->
             <div v-if="selectedLeave.status === 'Pending'" class="d-flex justify-content-end gap-2">
@@ -444,8 +517,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-
 
 
 
