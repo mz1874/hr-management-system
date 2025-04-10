@@ -7,16 +7,34 @@ export function submitLeaveRequest(data: any) {
   return axios.post('/api/leave-request/', data)
 }
 
-// Get leave requests (User sees own, HR sees all)
-export function getLeaveRequests(page = 1, search = '') {
-  const params = new URLSearchParams({ page: String(page), search })
-  return axios.get(`/api/leave-request/?${params}`)
-}
-
 // Cancel a leave request (User only if status is 'Pending')
 export function cancelLeaveRequest(id) {
   return axios.post(`/api/leave-request/${id}/cancel/`)
 }
+
+// Get leave requests (User sees own, HR sees all)
+export function getLeaveRequests(
+  page = 1,
+  search = '',
+  options: { hrPage?: boolean; status?: string; departmentId?: number } = {}
+) {
+  const params = new URLSearchParams({
+    page: String(page),
+    search,
+    ...(options.hrPage ? { hr_page: 'true' } : {}),
+    ...(options.status ? { status: options.status } : {}),
+    ...(options.departmentId ? { department_id: String(options.departmentId) } : {}),
+  });
+
+  return axios.get(`/api/leave-request/?${params}`);
+}
+
+
+// Get a single leave request by ID (for modal reload)
+export function getLeaveRequestById(id: number) {
+  return axios.get(`/api/leave-request/${id}/`);
+}
+
 
 // Approve or reject a leave request (HR)
 export function reviewLeaveRequest(id, payload) {
@@ -29,6 +47,7 @@ export function bulkReviewLeaveRequests(ids = [], status, comment = '') {
     reviewLeaveRequest(id, { status, review_comment: comment })
   ))
 }
+
 
 //delete leave request from hr
 export function deleteLeaveRequest(id: number) {

@@ -9,10 +9,16 @@ export default {
 
 <script setup lang="ts">
 import LeaveApplicationModal from '@/components/LeaveApplicationModal/index.vue'
-import dropdownMenu from '@/components/LeaveApplicationModal/Dropdown.vue'
 import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/LeaveApplicationDetailsModal.vue'
-import { Modal, Dropdown } from "bootstrap";
+import { Modal } from "bootstrap";
 import { ref, onMounted, computed, nextTick } from 'vue'
+import { getLeaveRequests, cancelLeaveRequest } from '@/api/leave'
+import { selectAllStaffs } from '@/api/staff'
+import { getCurrentUser } from '@/api/login';
+
+
+const usersById = ref<Record<number, { username: string, department: string | null }>>({});
+
 
 interface LeaveApplication {
   id: number;
@@ -31,38 +37,9 @@ interface LeaveApplication {
   document: string;
 }
 
-const leaveApplications = ref<LeaveApplication[]>([
-  {
-    id: 1,
-    name: 'Wang Chong',
-    department: 'A', 
-    leaveType: 'AL',
-    status: 'Reject',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    dates: [{ date: '21/11/2024', duration: 'whole', leaveType: 'AL' }],
-    reasons: 'Personal matters',
-    document: 'doc1.pdf'
-  },
-  {
-    id: 2,
-    name: 'Wang Chong',
-    department: 'A', 
-    leaveType: 'AL',
-    status: 'Pending',
-    appliedOn: '2024-06-30 11:27:07',
-    selected: false,
-    dates: [{ date: '25/11/2024', duration: 'whole', leaveType: 'AL' }],
-    reasons: 'Family event',
-    document: 'doc2.pdf'
-  }
-]);
+const leaveApplications = ref<LeaveApplication[]>([]);
 
-const summaryStats = ref({
-  pending: leaveApplications.value.filter(app => app.status === 'Pending').length,
-  medical: 2,
-  annual: 2
-});
+
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
@@ -108,11 +85,17 @@ const withdrawApplication = (id: number) => {
       modal.show();
 
       // Confirm withdrawal function
-      const confirmWithdrawal = () => {
-        leaveApplications.value[applicationIndex].status = 'Cancelled'; // Change status
-        summaryStats.value.pending--; // Reduce pending count
-        modal.hide();
-      };
+      const confirmWithdrawal = async () => {
+        try {
+          await cancelLeaveRequest(leaveApplications.value[applicationIndex].id); // backend call
+          leaveApplications.value[applicationIndex].status = 'Cancelled'; // frontend update
+          summaryStats.value.pending--;
+          modal.hide();
+        } catch (error) {
+          console.error('Error cancelling leave request:', error);
+          alert('Failed to cancel the request. Please try again.');
+        }
+};
 
       // Ensure button exists before adding event listener
       const confirmButton = withdrawModal.value.querySelector(".btn-success");
@@ -122,6 +105,16 @@ const withdrawApplication = (id: number) => {
     }
   }
 };
+
+const formatDuration = (code: string) => {
+  switch (code) {
+    case 'F': return 'Full Day';
+    case 'AM': return 'Morning';
+    case 'PM': return 'Afternoon';
+    default: return code;
+  }
+};
+
 
 const addNewApplication = (newApplication: LeaveApplication) => {
   leaveApplications.value.push(newApplication);
@@ -145,10 +138,84 @@ const openApplicationDetails = (application: LeaveApplication) => {
   });
 };
 
-// Initialize Bootstrap Dropdown on Mounted
-onMounted(() => {
-  import("bootstrap");
+const currentUserId = ref<number | null>(null);
+const userLeaveInfo = ref({
+  annual: 0,
+  medical: 0
 });
+
+
+onMounted(async () => {
+  try {
+    // 🔹 Step 1: Get logged-in user info
+    const meRes = await getCurrentUser();
+    const currentUser = meRes.data.data; // assuming structure { data: { id, annual_leave, medical_leave, ... } }
+
+    currentUserId.value = currentUser.id;
+    userLeaveInfo.value.annual = currentUser.annual_leave || 0;
+    userLeaveInfo.value.medical = currentUser.medical_leave || 0;
+
+    // 🔹 Step 2: Get all leave requests
+    const res = await getLeaveRequests();
+    const applications = res.data.data.results;
+
+    // 🔹 Step 3: Get all staff profiles for name + department mapping
+    const staffRes = await selectAllStaffs();
+    const staffList = staffRes.data.data.results;
+
+    usersById.value = Object.fromEntries(
+      staffList.map((u: any) => [
+        u.id,
+        {
+          username: u.username,
+          department: u.department || '-'
+        }
+      ])
+    );
+
+    const statusMap = {
+      P: 'Pending',
+      A: 'Approved',
+      R: 'Rejected',
+      W: 'Cancelled'
+    };
+
+    leaveApplications.value = applications.map(item => {
+      const userInfo = usersById.value[item.user] || { username: '-', department: '-' };
+
+      return {
+        id: item.id,
+        name: userInfo.username,
+        department: userInfo.department,
+        leaveType: item.leave_dates?.[0]?.leave_type_display?.name || '-',
+        status: statusMap[item.status] || item.status_display || item.status,
+        appliedOn: item.created_date,
+        selected: false,
+        dates: item.leave_dates?.map(d => ({
+          date: d.leave_date.split('T')[0],
+          duration: d.duration,
+          leaveType: d.leave_type_display?.name || 'N/A'
+        })) || [],
+        reasons: item.reason,
+        document: item.attachment_url || ''
+      };
+    });
+
+  } catch (error) {
+    console.error('Error during initialization:', error);
+  }
+});
+
+const summaryStats = computed(() => ({
+  pending: leaveApplications.value.filter(app => app.status === 'Pending').length,
+  annual: userLeaveInfo.value.annual,
+  medical: userLeaveInfo.value.medical
+}));
+
+
+
+
+
 </script>
 
 <template>
@@ -255,11 +322,13 @@ onMounted(() => {
             <td>
               <span v-if="application.dates.length">
                 <div v-for="(item, index) in application.dates" :key="index">
-                  {{ item.leaveType }} {{ item.date }}
+                  <strong>{{ item.leaveType }}</strong> – {{ item.date }} <em>({{ formatDuration(item.duration) }})</em>
                 </div>
               </span>
               <span v-else>-</span>
             </td>
+
+
 
             <td>{{ application.reasons }}</td>
             <td>

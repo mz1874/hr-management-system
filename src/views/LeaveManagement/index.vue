@@ -13,6 +13,9 @@ import {
   cancelLeaveRequest,
   deleteLeaveRequest, 
 } from '@/api/leave'
+import { getCurrentUser } from '@/api/login'; 
+import { selectAllStaffs } from '@/api/staff';
+
 
 interface LeaveApplication {
   id: number;
@@ -32,34 +35,57 @@ interface LeaveApplication {
 
 const leaveApplications = ref<LeaveApplication[]>([]);
 
+const userMap = ref<Record<number, { username: string; department: string | null }>>({});
+
 const fetchLeaveApplications = async () => {
   try {
-    const res = await getLeaveRequests()
-    console.log('API raw response:', res.data)
+    // Step 1: Get staff list
+    const staffRes = await selectAllStaffs();
+    const staffList = staffRes.data.data.results;
 
-    leaveApplications.value = res.data.results.map(item => ({
-      id: item.id,
-      employeeName: item.user_name, // ← make sure your backend serializer returns this
-      department: item.department_name,
-      leaveType: item.leave_dates.map(d => d.leave_type).join(', '),
-      status: mapStatus(item.status),
-      appliedOn: item.created_date,
-      reasons: item.reason,
-      document: item.attachment_url,
-      remainingAnnualLeave: 0,
-      remainingMedicalLeave: 0,
-      remarks: item.review_comment,
-      dates: item.leave_dates.map(d => ({
-        date: new Date(d.leave_date).toLocaleDateString(),
-        duration: d.duration,
-        leaveType: d.leave_type
-      })),
-      selected: false
-    }))
+    // Step 2: Create a mapping from user ID → username & department
+    userMap.value = Object.fromEntries(
+      staffList.map((s: any) => [
+        s.id,
+        {
+          username: s.username,
+          department: s.department || '-'
+        }
+      ])
+    );
+
+    // Step 3: Fetch leave requests
+    const res = await getLeaveRequests(1, '', { hrPage: true });
+    const rawResults = res.data?.data?.results || [];
+
+    leaveApplications.value = rawResults.map(item => {
+      const userInfo = userMap.value[item.user] || { username: '-', department: '-' };
+
+      return {
+        id: item.id,
+        employeeName: userInfo.username,
+        department: userInfo.department,
+        leaveType: Array.from(new Set(item.leave_dates?.map(d => d.leave_type_display?.name))).join(', '),
+        status: mapStatus(item.status),
+        appliedOn: new Date(item.created_date).toLocaleDateString(),
+        reasons: item.reason || '-',
+        document: item.attachment_url || '',
+        remainingAnnualLeave: 0,
+        remainingMedicalLeave: 0,
+        remarks: item.review_comment || '',
+        dates: item.leave_dates?.map(d => ({
+          date: new Date(d.leave_date).toLocaleDateString(),
+          duration: d.duration,
+          leaveType: d.leave_type_display?.name || '-'
+        })) || [],
+        selected: false
+      };
+    });
   } catch (err) {
-    console.error('Failed to fetch leave applications', err)
+    console.error('Error during fetch:', err);
   }
-}
+};
+
 
 function mapStatus(code: string): string {
   const map = {
@@ -305,7 +331,8 @@ onMounted(() => {
             <span :class="['badge', {
               'custom-reject': application.status === 'Reject',
               'bg-warning': application.status === 'Pending',
-              'badge-approved': application.status === 'Approved'
+              'badge-approved': application.status === 'Approved',
+              'bg-secondary': application.status === 'Withdraw' 
 
 
             }]">

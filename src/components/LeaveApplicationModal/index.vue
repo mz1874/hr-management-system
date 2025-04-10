@@ -48,13 +48,20 @@ const medicalLeaveId = computed(() => {
 });
 
 onMounted(async () => {
-  if (modalRef.value) modalInstance = new Modal(modalRef.value);
+  if (modalRef.value) {
+    modalInstance = new Modal(modalRef.value);
+
+    modalRef.value.addEventListener('hidden.bs.modal', () => {
+      resetForm();
+    });
+  }
 
   try {
     const res = await getCurrentUser();
+    console.log('Fetched user data:', res);
     userName.value = res.data.data.first_name || res.data.data.username || 'User';
     formData.department = res.data.data.department?.id || null;
-    userDeptName.value = res.data.data.department?.department_name || '-';
+    userDeptName.value = res.data.data.department || '-';
   } catch (e) {
     console.error('Failed to fetch current user:', e);
   }
@@ -140,6 +147,9 @@ const handleSubmit = async () => {
     emit('submit');
     closeModal();
     resetForm();
+    if (modalRef.value) {
+      modalInstance = new Modal(modalRef.value);
+    }
   } catch (e: any) {
     console.error('Submit error:', e);
     const msg = e.response?.data || 'Unknown error';
