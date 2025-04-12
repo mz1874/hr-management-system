@@ -34,6 +34,7 @@ export default function () {
                     dateOfBirth: dayjs(item.date_of_birt).format("YYYY-MM-DD"),
                     role: item.roles?.[0] ? String(item.roles[0]) : '', // 或用后续role映射表
                     department: item.department ? String(item.department) : '',
+                    department_name: item.department_name,
                     status: item.status ? 'Active' : 'Inactive',
                     employmentDate: dayjs(item.employment_time).format("YYYY-MM-DD"),
                     resignationDate: undefined, // 后端未提供，预设为 undefined

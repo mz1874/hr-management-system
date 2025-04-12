@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-
 import type {Staff} from "@/interface/UserInterface.ts";
 import useStaff from "@/hooks/useStaff.ts";
-import useDepartment from "@/hooks/useDepartment.ts";
+import {useDepartmentStore} from "@/stores/department.ts";
+
+const departmentStore = useDepartmentStore();
+
 
 const {fetchAllStaffs, staffData} = useStaff()
 // State
@@ -25,6 +27,7 @@ const selectedStaff = ref<Staff>({
   id: 0,
   name: '',
   dateOfBirth: '',
+  department_name:'',
   role: '',
   department: '',
   status: 'Active',
@@ -72,6 +75,7 @@ const openAddStaffModal = () => {
     id: 1,
     name: '',
     dateOfBirth: '',
+    department_name:'',
     role: '',
     department: selectedDepartment.value,
     status: 'Active',
@@ -90,6 +94,7 @@ const openViewStaffModal = (staff: Staff) => {
 
 const openEditStaffModal = (staff: Staff) => {
   selectedStaff.value = { ...staff }
+  departmentStore.fetchDepartments();
   showEditStaffModal.value = true
 }
 
@@ -187,7 +192,7 @@ const changePage = (page: number) => {
                 <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
                 <td>{{ staff.dateOfBirth }}</td>
                 <td>{{ staff.role }}</td>
-                <td>{{ staff.department }}</td>
+                <td>{{ staff.department_name }}</td>
                 <td>
                   <span 
                     :class="[

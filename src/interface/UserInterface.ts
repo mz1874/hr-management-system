@@ -4,6 +4,7 @@ export interface Staff {
     dateOfBirth: string
     role: string
     department: string
+    department_name: string
     status: 'Active' | 'Inactive'
     employmentDate: string
     resignationDate?: string  // Add new property

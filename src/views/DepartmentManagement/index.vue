@@ -2,7 +2,6 @@
 import {computed, onMounted, ref} from 'vue'
 import {useDepartmentStore} from '@/stores/department.ts'
 import type {Department} from "@/interface/DepartmentInterface.ts";
-import {Modal} from "bootstrap";
 
 
 const departmentStore = useDepartmentStore()
