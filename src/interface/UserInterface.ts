@@ -5,7 +5,7 @@ export interface Staff {
     role: string
     department: number
     department_name: string
-    status: 'Active' | 'Inactive'
+    status: boolean
     employmentDate: string
     resignationDate?: string  // Add new property
     numberOfLeaves: number

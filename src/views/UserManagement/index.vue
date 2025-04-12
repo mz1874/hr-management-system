@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import {ref, computed, onMounted} from 'vue'
 import type {Staff} from "@/interface/UserInterface.ts";
 import useStaff from "@/hooks/useStaff.ts";
 import {useDepartmentStore} from "@/stores/department.ts";
 
 const departmentStore = useDepartmentStore();
 
+onMounted(() => {
+  departmentStore.fetchDepartments();
+})
 
-const {fetchAllStaffs, staffData} = useStaff()
+
+const {staffData, search} = useStaff()
 // State
 const selectedDepartment = ref(0)
 
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
-const totalItems = computed(() => staffData.count)
-const departments = ref<string[]>([]) // 后续从接口获取填充
 
 
 // Modals
@@ -23,35 +25,39 @@ const showAddStaffModal = ref(false)
 const showViewStaffModal = ref(false)
 const showEditStaffModal = ref(false)
 const showDeleteStaffModal = ref(false)
+
 const selectedStaff = ref<Staff>({
   id: 0,
   name: '',
   dateOfBirth: '',
-  department_name:'',
+  department_name: '',
   role: '',
   department: 0,
-  status: 'Active',
+  status: false,
   employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
   numberOfLeaves: 0,
   medicalLeaves: 0,
   annualLeaves: 0
 })
 
-// Statistics
+/*状态卡*/
 const statistics = computed(() => {
-  const departmentStaff = staffData.results.filter(staff => staff.department === selectedDepartment.value)
+  /*先过滤当前的部门*/
+  const departmentStaff = staffData.results.filter(staff=>{
+    return selectedDepartment.value === 0 ? staff : staff.department == selectedDepartment.value
+  })
   return {
     total: departmentStaff.length,
-    active: departmentStaff.filter(staff => staff.status === 'Active').length,
-    inactive: departmentStaff.filter(staff => staff.status === 'Inactive').length
+    active: departmentStaff.filter(staff => staff.status == true).length,
+    inactive: departmentStaff.filter(staff => staff.status == false).length
   }
 })
 
+
 const filteredStaffs = computed(() => {
+  console.log(selectedDepartment.value)
   return staffData.results.filter(staff => {
-    const matchesDepartment = selectedDepartment.value === 0 || staff.department === selectedDepartment.value
-    const matchesQuery = searchQuery.value === '' || staff.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    return matchesDepartment && matchesQuery
+    return selectedDepartment.value === 0 ? staff : staff.department == selectedDepartment.value
   })
 })
 
@@ -60,14 +66,16 @@ const totalPages = computed(() => {
   return Math.ceil(filteredStaffs.value.length / itemsPerPage)
 })
 
+/*分页过滤 staff 信息*/
 const paginatedStaffs = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   return filteredStaffs.value.slice(start, start + itemsPerPage)
 })
 
-// Methods
-const searchStaff = () => {
-  currentPage.value = 1
+
+
+const searchStaff = (searchData: string) => {
+  search(searchData);
 }
 
 const openAddStaffModal = () => {
@@ -75,10 +83,10 @@ const openAddStaffModal = () => {
     id: 1,
     name: '',
     dateOfBirth: '',
-    department_name:'',
+    department_name: '',
     role: '',
     department: selectedDepartment.value,
-    status: 'Active',
+    status: false,
     employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
     numberOfLeaves: 0,
     medicalLeaves: 0,
@@ -88,13 +96,12 @@ const openAddStaffModal = () => {
 }
 
 const openViewStaffModal = (staff: Staff) => {
-  selectedStaff.value = { ...staff }
+  selectedStaff.value = {...staff}
   showViewStaffModal.value = true
 }
 
 const openEditStaffModal = (staff: Staff) => {
-  selectedStaff.value = { ...staff }
-  departmentStore.fetchDepartments();
+  selectedStaff.value = {...staff}
   showEditStaffModal.value = true
 }
 
@@ -104,14 +111,14 @@ const openDeleteStaffModal = (staff: Staff) => {
 }
 
 const addStaff = () => {
-  staffData.results.push({ ...selectedStaff.value })
+  staffData.results.push({...selectedStaff.value})
   showAddStaffModal.value = false
 }
 
 const saveEditedStaff = () => {
   const index = staffData.results.findIndex(staff => staff.id === selectedStaff.value.id)
   if (index !== -1) {
-    staffData.results[index] = { ...selectedStaff.value }
+    staffData.results[index] = {...selectedStaff.value}
   }
   showEditStaffModal.value = false
 }
@@ -121,7 +128,7 @@ const confirmDeleteStaff = () => {
   if (index !== -1) {
     staffData.results[index] = {
       ...staffData.results[index],
-      status: 'Inactive',
+      status: false,
       resignationDate: new Date().toISOString().split('T')[0]
     }
   }
@@ -139,29 +146,28 @@ const changePage = (page: number) => {
   <div class="p-4">
     <h1 class="mb-4">Staff Management</h1> <!-- Added margin-bottom -->
 
-    <!-- Department filter and search section -->
     <div class="d-flex gap-3 mb-4 align-items-center">
-      <select v-model="selectedDepartment" class="form-select">
-        <option value="">All departments</option>
+      <select v-model.number="selectedDepartment" class="form-select">
+        <option value="0" selected>All departments</option>
         <option
-            v-for="dept in departments"
-            :key="dept"
-            :value="dept"
+            v-for="dept in departmentStore.flatDepartmentList"
+            :key="dept.id"
+            :value="dept.id"
         >
-          {{ dept }}
+          {{ dept.department_name }}
         </option>
       </select>
 
       <form class="search-container" role="search">
         <i class="fas fa-search search-icon"></i>
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          class="form-control" 
-          placeholder="Search Full Name"
+        <input
+            v-model="searchQuery"
+            type="text"
+            class="form-control"
+            placeholder="Search Name"
         >
       </form>
-      <button @click="searchStaff" class="btn btn-primary">Search</button>
+      <button @click="searchStaff(searchQuery)" class="btn btn-primary">Search</button>
     </div>
 
     <!-- Table section -->
@@ -174,50 +180,47 @@ const changePage = (page: number) => {
         <div class="table-responsive">
           <table class="table">
             <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Date of birth</th>
-                <th>Role</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Employment Date</th>
-                <th>No of Leaves</th> <!-- Add new column header -->
-                <th>Actions</th>
-              </tr>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Date of birth</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Employment Date</th>
+              <th>No of Leaves</th> <!-- Add new column header -->
+              <th>Actions</th>
+            </tr>
             </thead>
             <tbody>
             <tr v-for="staff in paginatedStaffs" :key="staff.id">
-            <td>{{ staff.id }}</td>
-                <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
-                <td>{{ staff.dateOfBirth }}</td>
-                <td>{{ staff.role }}</td>
-                <td>{{ staff.department_name }}</td>
-                <td>
-                  <span 
-                    :class="[
+              <td>{{ staff.id }}</td>
+              <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
+              <td>{{ staff.dateOfBirth }}</td>
+              <td>{{ staff.department_name }}</td>
+              <td>
+                  <span
+                      :class="[
                       'badge',
-                      staff.status === 'Active' ? 'bg-success' : 'bg-warning'
+                      staff.status ? 'bg-success' : 'bg-warning'
                     ]"
                   >
-                    {{ staff.status }}
+                    {{ staff.status ? "Active" : "Inactive" }}
                   </span>
-                </td>
-                <td>{{ staff.employmentDate }}</td>
-                <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
-                <td>
-                  <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
-                  <button @click="openEditStaffModal(staff)" class="btn btn-warning btn-sm">Edit</button>
-                  <button @click="openDeleteStaffModal(staff)" class="btn btn-danger btn-sm">Delete</button>
-                </td>
-              </tr>
+              </td>
+              <td>{{ staff.employmentDate }}</td>
+              <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
+              <td>
+                <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
+                <button @click="openEditStaffModal(staff)" class="btn btn-warning btn-sm">Edit</button>
+                <button @click="openDeleteStaffModal(staff)" class="btn btn-danger btn-sm">Delete</button>
+              </td>
+            </tr>
             </tbody>
           </table>
         </div>
 
         <!-- Pagination -->
         <div class="d-flex align-items-center mt-3 justify-content-start">
-          <span class="me-3">Total: {{ staffData.count }}</span>
           <nav aria-label="Page navigation">
             <ul class="pagination">
               <li class="page-item" :class="{ disabled: currentPage === 1 }">
@@ -294,49 +297,49 @@ const changePage = (page: number) => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Add New Staff</h5>
-          <button 
-            type="button" 
-            class="btn-close" 
-            @click="showAddStaffModal = false"
+          <button
+              type="button"
+              class="btn-close"
+              @click="showAddStaffModal = false"
           ></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
             <label for="staffName" class="form-label">Name</label>
-            <input 
-              v-model="selectedStaff.name"
-              type="text" 
-              class="form-control" 
-              id="staffName" 
-              placeholder="Enter name"
+            <input
+                v-model="selectedStaff.name"
+                type="text"
+                class="form-control"
+                id="staffName"
+                placeholder="Enter name"
             >
           </div>
           <div class="mb-3">
             <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
-            <input 
-              v-model="selectedStaff.dateOfBirth"
-              type="date" 
-              class="form-control" 
-              id="staffDateOfBirth" 
-              placeholder="Enter date of birth"
+            <input
+                v-model="selectedStaff.dateOfBirth"
+                type="date"
+                class="form-control"
+                id="staffDateOfBirth"
+                placeholder="Enter date of birth"
             >
           </div>
           <div class="mb-3">
             <label for="staffRole" class="form-label">Role</label>
-            <input 
-              v-model="selectedStaff.role"
-              type="text" 
-              class="form-control" 
-              id="staffRole" 
-              placeholder="Enter role"
+            <input
+                v-model="selectedStaff.role"
+                type="text"
+                class="form-control"
+                id="staffRole"
+                placeholder="Enter role"
             >
           </div>
           <div class="mb-3">
             <label for="staffDepartment" class="form-label">Department</label>
-            <select 
-              v-model="selectedStaff.department"
-              class="form-select" 
-              id="staffDepartment"
+            <select
+                v-model="selectedStaff.department"
+                class="form-select"
+                id="staffDepartment"
             >
               <option>Sales Department</option>
               <option>Marketing Department</option>
@@ -348,10 +351,10 @@ const changePage = (page: number) => {
           </div>
           <div class="mb-3">
             <label for="staffStatus" class="form-label">Status</label>
-            <select 
-              v-model="selectedStaff.status"
-              class="form-select" 
-              id="staffStatus"
+            <select
+                v-model="selectedStaff.status"
+                class="form-select"
+                id="staffStatus"
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -359,27 +362,27 @@ const changePage = (page: number) => {
           </div>
           <div class="mb-3">
             <label class="form-label">Employment Date</label>
-            <input 
-              :value="selectedStaff.employmentDate"
-              type="date" 
-              class="form-control" 
-              disabled
+            <input
+                :value="selectedStaff.employmentDate"
+                type="date"
+                class="form-control"
+                disabled
             >
             <small class="text-muted">Set automatically to today's date</small>
           </div>
         </div>
         <div class="modal-footer">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="showAddStaffModal = false"
+          <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showAddStaffModal = false"
           >
             Close
           </button>
-          <button 
-            type="button" 
-            class="btn btn-primary" 
-            @click="addStaff"
+          <button
+              type="button"
+              class="btn btn-primary"
+              @click="addStaff"
           >
             Add Staff
           </button>
@@ -392,10 +395,10 @@ const changePage = (page: number) => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">View Staff</h5>
-          <button 
-            type="button" 
-            class="btn-close" 
-            @click="showViewStaffModal = false"
+          <button
+              type="button"
+              class="btn-close"
+              @click="showViewStaffModal = false"
           ></button>
         </div>
         <div class="modal-body">
@@ -415,10 +418,10 @@ const changePage = (page: number) => {
           </div>
         </div>
         <div class="modal-footer">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="showViewStaffModal = false"
+          <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showViewStaffModal = false"
           >
             Close
           </button>
@@ -431,49 +434,49 @@ const changePage = (page: number) => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Edit Staff</h5>
-          <button 
-            type="button" 
-            class="btn-close" 
-            @click="showEditStaffModal = false"
+          <button
+              type="button"
+              class="btn-close"
+              @click="showEditStaffModal = false"
           ></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
             <label for="editStaffName" class="form-label">Name</label>
-            <input 
-              v-model="selectedStaff.name"
-              type="text" 
-              class="form-control" 
-              id="editStaffName" 
-              placeholder="Enter name"
+            <input
+                v-model="selectedStaff.name"
+                type="text"
+                class="form-control"
+                id="editStaffName"
+                placeholder="Enter name"
             >
           </div>
           <div class="mb-3">
             <label for="editStaffDateOfBirth" class="form-label">Date of Birth</label>
-            <input 
-              v-model="selectedStaff.dateOfBirth"
-              type="date" 
-              class="form-control" 
-              id="editStaffDateOfBirth" 
-              placeholder="Enter date of birth"
+            <input
+                v-model="selectedStaff.dateOfBirth"
+                type="date"
+                class="form-control"
+                id="editStaffDateOfBirth"
+                placeholder="Enter date of birth"
             >
           </div>
           <div class="mb-3">
             <label for="editStaffRole" class="form-label">Role</label>
-            <input 
-              v-model="selectedStaff.role"
-              type="text" 
-              class="form-control" 
-              id="editStaffRole" 
-              placeholder="Enter role"
+            <input
+                v-model="selectedStaff.role"
+                type="text"
+                class="form-control"
+                id="editStaffRole"
+                placeholder="Enter role"
             >
           </div>
           <div class="mb-3">
             <label for="editStaffDepartment" class="form-label">Department</label>
             <select v-model="selectedStaff.department" class="form-select" id="editStaffDepartment">
-              <option :value="selectedStaff.department">{{selectedStaff.department_name}}</option>
+              <option :value="selectedStaff.department">{{ selectedStaff.department_name }}</option>
               <option
-                  v-for="item in departmentStore.flatDepartmentList.filter(dept => dept.id !== selectedStaff.department)"
+                  v-for="item in departmentStore.flatDepartmentList.filter(dept => dept.department_name !== selectedStaff.department_name)"
                   :key="item.id"
                   :value="item.id"
               >
@@ -484,10 +487,10 @@ const changePage = (page: number) => {
 
           <div class="mb-3">
             <label for="editStaffStatus" class="form-label">Status</label>
-            <select 
-              v-model="selectedStaff.status"
-              class="form-select" 
-              id="editStaffStatus"
+            <select
+                v-model="selectedStaff.status"
+                class="form-select"
+                id="editStaffStatus"
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -495,26 +498,26 @@ const changePage = (page: number) => {
           </div>
           <div class="mb-3">
             <label class="form-label">Employment Date</label>
-            <input 
-              :value="selectedStaff.employmentDate"
-              type="date" 
-              class="form-control" 
-              disabled
+            <input
+                :value="selectedStaff.employmentDate"
+                type="date"
+                class="form-control"
+                disabled
             >
           </div>
         </div>
         <div class="modal-footer">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="showEditStaffModal = false"
+          <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showEditStaffModal = false"
           >
             Cancel
           </button>
-          <button 
-            type="button" 
-            class="btn btn-primary" 
-            @click="saveEditedStaff"
+          <button
+              type="button"
+              class="btn btn-primary"
+              @click="saveEditedStaff"
           >
             Save Changes
           </button>
@@ -527,10 +530,10 @@ const changePage = (page: number) => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Delete Staff</h5>
-          <button 
-            type="button" 
-            class="btn-close" 
-            @click="showDeleteStaffModal = false"
+          <button
+              type="button"
+              class="btn-close"
+              @click="showDeleteStaffModal = false"
           ></button>
         </div>
         <div class="modal-body">
@@ -539,17 +542,17 @@ const changePage = (page: number) => {
           <p class="text-danger">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
-          <button 
-            type="button" 
-            class="btn btn-secondary" 
-            @click="showDeleteStaffModal = false"
+          <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showDeleteStaffModal = false"
           >
             Cancel
           </button>
-          <button 
-            type="button" 
-            class="btn btn-danger" 
-            @click="confirmDeleteStaff"
+          <button
+              type="button"
+              class="btn btn-danger"
+              @click="confirmDeleteStaff"
           >
             Delete
           </button>
