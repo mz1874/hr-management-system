@@ -3,6 +3,7 @@ import {ref, computed, onMounted} from 'vue'
 import type {Staff} from "@/interface/UserInterface.ts";
 import useStaff from "@/hooks/useStaff.ts";
 import {useDepartmentStore} from "@/stores/department.ts";
+import Swal from "sweetalert2";
 
 const departmentStore = useDepartmentStore();
 
@@ -134,6 +135,26 @@ const changePage = (page: number) => {
     currentPage.value = page
   }
 }
+
+function resetPassword(staff:Staff) {
+  Swal.fire({
+    title: "Confirmation of reset password?",
+    text: "The current password will be reset!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, reset it!"
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: "Reset password successfully!",
+        text: "The password was reset successfully!.",
+        icon: "success"
+      });
+    }
+  });
+}
 </script>
 
 <template>
@@ -205,6 +226,7 @@ const changePage = (page: number) => {
               <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
+                <button @click="resetPassword(staff)" class="btn btn-secondary btn-sm">reset</button>
                 <button @click="openEditStaffModal(staff)" class="btn btn-warning btn-sm">Edit</button>
                 <button @click="openDeleteStaffModal(staff)" class="btn btn-danger btn-sm">Delete</button>
               </td>
