@@ -58,15 +58,16 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="task in paginatedTasks" :key="task.id">
+            <tr v-for="task in kpiData" :key="task.id">
               <td>{{ task.id }}</td>
-              <td>{{ task.taskName }}</td>
+              <td>{{ task.taskTitle }}</td>
               <td>{{ task.startDate }}</td>
-              <td>{{ task.completionDate }}</td>
-              <td>{{ getTotalTarget(task) }} {{ task.target.unit }}</td>
+              <td>{{ task.endDate }}</td>
+              <td>{{ task.totalTarget }} {{ task.individualUnit }}</td>
               <td>180</td>
               <td>
-                <span :class="['badge',
+                <span 
+                :class="['badge',
                     task.status === 'Not Yet Started' ? 'bg-primary' :
                     task.status === 'Completed' ? 'bg-success' : 
                     task.status === 'Ongoing' ? 'bg-warning' : 
@@ -78,7 +79,7 @@
               <td>
                 <button @click="goToEmployeeDetailsPage()" class="btn btn-primary btn-sm">Employee Details</button>
                 <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
-                <button @click="openTerminatedModal(task)" class="btn btn-danger btn-sm">Terminate</button>
+                <button @click="openDeleteModal(task)" class="btn btn-danger btn-sm">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -183,7 +184,8 @@
             {{ modalType === 'edit' ? 'Edit Task':
               modalType === 'create' ? 'Create New Task' : ''}}
           </h3>
-          <button v-if="modalType === 'edit'" type="button" class="btn btn-success" @click="markAsComplete(selectedTask)">Mark as Complete</button>
+          <!--<button v-if="modalType === 'edit'" type="button" class="btn btn-success" @click="markAsComplete(selectedTask)">Mark as Complete</button>-->
+          <button @click="openTerminatedModal(currentTask)" class="btn btn-danger btn-sm">Terminate</button>
         </div>
         <div class="modal-body">
           <div class="row">
@@ -193,41 +195,41 @@
                 <!-- Task Name -->
                 <div class="mb-3">
                   <label for="taskName" class="form-label">Task Name:</label>
-                  <input type="text" class="form-control" id="taskName" placeholder="Enter task name" v-model="selectedTask.taskName">
+                  <input type="text" class="form-control" id="taskName" placeholder="Enter task name" v-model="currentTask.taskTitle">
                 </div>
 
                 <!-- Task Description -->
                 <div class="mb-3">
                   <label for="taskDescription" class="form-label">Task Description:</label>
-                  <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description" v-model="selectedTask.taskDescription"></textarea>
+                  <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description" v-model="currentTask.taskDescription"></textarea>
                 </div>
 
                 <!-- Dates Row -->
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="startDate" class="form-label">Start Date:</label>
-                    <input type="date" class="form-control" id="startDate" v-model="selectedTask.startDate">
+                    <input type="date" class="form-control" id="startDate" v-model="currentTask.startDate">
                   </div>
                   <div class="col-md-6">
                     <label for="completionDate" class="form-label">Completion Date:</label>
-                    <input type="date" class="form-control" id="completionDate" v-model="selectedTask.completionDate">
+                    <input type="date" class="form-control" id="completionDate" v-model="currentTask.completionDate">
                   </div>
                 </div>
 
                 <!-- Points Given -->
                 <div class="mb-3">
                   <label for="pointsGiven" class="form-label">Points Given For Each Individual:</label>
-                  <input type="number" class="form-control" id="pointsGiven" placeholder="Enter points" v-model="selectedTask.pointsGiven">
+                  <input type="number" class="form-control" id="pointsGiven" placeholder="Enter points" v-model="currentTask.pointsGiven">
                 </div>
 
                 <!-- Target -->
                 <div class="row mb-3">
                   <label for="target" class="form-label">Target For Each Individual:</label>
                   <div class="col-md-6">
-                    <input type="number" class="form-control" id="target" placeholder="Enter target" v-model="selectedTask.target.value">
+                    <input type="number" class="form-control" id="target" placeholder="Enter target" v-model="currentTask.totalTarget">
                   </div>
                   <div class="col-md-6">
-                    <input type="text" class="form-control" id="unit" placeholder="Enter unit" v-model="selectedTask.target.unit">
+                    <input type="text" class="form-control" id="unit" placeholder="Enter unit" v-model="currentTask.individualUnit">
                   </div>
                 </div>
               </form>
@@ -250,13 +252,13 @@
               <div v-if="assignType === 'user'" class="mb-3">
                 <label for="assignTo" class="form-label">Assign To:</label>
                 <div class="input-group">
-                  <input type="text" class="form-control" id="assignTo" placeholder="Enter username" v-model="selectedTask.assignedTo">
+                  <input type="text" class="form-control" id="assignTo" placeholder="Enter username" v-model="currentTask.assignedTo">
                   <button class="btn" type="button" style="background-color: #6CBD6C; color: white;" @click="addAssignedUser">Add</button>
                 </div>
                 <!-- Assigned Users Tags -->
                 <div class="mt-3">
                   <div class="d-flex flex-wrap gap-2">
-                    <span v-for="(user, index) in selectedTask.assignedUsers" :key="index" class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
+                  <span v-for="(user, index) in currentTask.assignedUsers" :key="index" class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
                       <i class="fas fa-user-circle me-2"></i>
                       {{ user.username }}
                       <button type="button" class="btn-close ms-2" aria-label="Remove" @click="removeAssignedUser(index)"></button>
@@ -282,7 +284,7 @@
   </div>
   <div class="modal-backdrop fade show" v-if="showModal"></div>
 
-  <!-- Delete Task Modal -->
+  <!-- Terminate Task Modal -->
   <div class="modal fade" :class="{ show: showTerminatedModal }" style="display: block" v-if="showTerminatedModal">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -291,61 +293,251 @@
           <button type="button" class="btn-close" @click="showTerminatedModal = false"></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to terminate this task, <b>{{selectedTask.taskName}}</b>?</p>
+          <p>Are you sure you want to terminate this task, <b>{{currentTask.taskName}}</b>?</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showTerminatedModal = false">Cancel</button>
-          <button type="button" class="btn btn-danger" @click="confirmTerminated(selectedTask)">Terminate</button>
+          <button type="button" class="btn btn-danger" @click="confirmTerminated(currentTask)">Terminate</button>
         </div>
       </div>
     </div>
   </div>
   <div class="modal-backdrop fade show" v-if="showTerminatedModal"></div>
+
+  <!-- Delete Task Modal -->
+<div class="modal fade" :class="{ show: showDeleteModal }" style="display: block" v-if="showDeleteModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Task</h5>
+        <button type="button" class="btn-close" @click="showDeleteModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this task, <b>{{ currentTask.taskTitle }}</b>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
+        <button type="button" class="btn btn-danger" @click="confirmDeleteTask(currentTask)">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" v-if="showDeleteModal"></div>
+
 </template>
 
 <script setup lang="ts">
 import router from '@/router'
 import { ref, computed, onMounted } from 'vue'
+import type {Task} from  "@/interface/KpiInterface.ts";
+import {selectAllKpis, updateKpi, createKpi, deleteKpi} from "@/api/kpiAdmin.ts";
+import dayjs from 'dayjs';
+import { isSuccess } from '@/utils/httpStatus';
+import Swal from 'sweetalert2';
 
-interface Task {
-  id: number
-  taskName: string
-  taskDescription: string
-  startDate: string
-  completionDate: string
-  status: string
-  pointsGiven: number
-  target: { value: number; unit: string; };
-  assignedTo: string,
-  assignedUsers: EmployeeTask[];
-  department: string
+//fetch function
+const kpiData = ref<any[]>([]);  // 用于存储KPI数据
+const currentTask = ref<any>({});
+
+const fetchKpis = () => {
+    selectAllKpis().then((res) => {
+      console.log(res.data)
+      const rawResults = res.data.data.results;  // 假设响应中是 data.data.results
+      kpiData.value = rawResults.map((item: any) => ({
+        id: item.id,
+        taskTitle: item.task_title,
+        taskDescription: item.task_description,
+        startDate: dayjs(item.task_start_date).format("YYYY-MM-DD"),
+        endDate: dayjs(item.task_completion_date).format("YYYY-MM-DD"),
+        pointsGiven: item.points_earned,
+        status: item.kpi_status,  // KPI状态
+        totalTarget: item.target_unit,
+        individualUnit: item.individual_unit,
+        createdOn: dayjs(item.create_time).format("YYYY-MM-DD"),
+        assignedUsers: item.assignedUsers || [],
+      }));
+    }).catch((error) => {
+        console.error("Error fetching KPIs:", error);
+    });
+  };
+
+onMounted(() =>
+{
+  fetchKpis();
+});  // 组件挂载时自动调用 fetchKpis 获取数据
+
+
+//Create function
+const createTask = () => {
+  const currentDate = dayjs().format("YYYY-MM-DD");
+
+  let taskStatus = 'Not Yet Started';  // 默认状态
+
+  if (dayjs(currentDate).isBefore(dayjs(currentTask.value.startDate))) {
+    taskStatus = 'Not Yet Started';  // 当前日期早于任务开始日期
+  } else if (dayjs(currentDate).isBetween(dayjs(currentTask.value.startDate), dayjs(currentTask.value.endDate), null, '[]')) {
+    taskStatus = 'Ongoing';  // 当前日期在开始日期和结束日期之间
+  } else if (dayjs(currentDate).isAfter(dayjs(currentTask.value.endDate))) {
+    taskStatus = 'Delayed';  // 当前日期晚于任务结束日期
+  }
+   // Ensure task data is properly set up
+   const payload = {
+      task_title: currentTask.value.taskTitle,
+      task_description: currentTask.value.taskDescription,
+      task_start_date: dayjs(currentTask.value.startDate).format("YYYY-MM-DD"),
+      task_completion_date: dayjs(currentTask.value.endDate).format("YYYY-MM-DD"),
+      kpi_status: taskStatus,// Default status when creating a new task
+      target_unit: currentTask.value.totalTarget,
+      individual_unit: currentTask.value.individualUnit,
+      points_earned: currentTask.value.pointsGiven || 0,
+      update_by: 'admin',  // Default to admin or current logged-in user
+      assigned_users: currentTask.value.assignedUsers || [],  // Correctly assigned user(s)
+   };
+
+   // Close the modal
+   showModal.value = false;
+
+   // API call to create the task
+   createKpi(payload).then((res) => {
+      if (isSuccess(res.status)) {
+         Swal.fire({
+            position: "top-end",
+            icon: "success",
+            title: "Task created successfully",
+            showConfirmButton: false,
+            timer: 1500,
+         });
+
+         fetchKpis(); // Fetch updated KPIs after creation
+      }
+   }).catch((error) => {
+      Swal.fire({
+         icon: "error",
+         title: "Error",
+         text: "There was an error creating the task.",
+      });
+   });
+};
+
+
+
+//Edit function
+const showModal = ref(false)
+const modalType = ref<'create' | 'edit'>('create')
+
+const openEditTaskModal = (task: Task) => {
+  currentTask.value = task
+  modalType.value = 'edit'
+  showModal.value = true
 }
 
-interface EmployeeTask {
-  username: string;
-}
+const saveEditedTask = () => {
+  const currentDate = dayjs().format("YYYY-MM-DD");
+
+  let taskStatus = currentTask.value.status;  // 保留当前的状态
+
+  // 如果你想在编辑时重新计算状态
+  if (dayjs(currentDate).isBefore(dayjs(currentTask.value.startDate))) {
+    taskStatus = 'Not Yet Started';
+  } else if (dayjs(currentDate).isBetween(dayjs(currentTask.value.startDate), dayjs(currentTask.value.endDate), null, '[]')) {
+    taskStatus = 'Ongoing';
+  } else if (dayjs(currentDate).isAfter(dayjs(currentTask.value.endDate))) {
+    taskStatus = 'Delayed';
+  }
+
+  const payload = {
+    task_title: currentTask.value.taskTitle,
+    task_description: currentTask.value.taskDescription,
+    task_start_date: dayjs(currentTask.value.startDate).format("YYYY-MM-DD"),
+    task_completion_date: dayjs(currentTask.value.endDate).format("YYYY-MM-DD"),
+    kpi_status: taskStatus,  // 使用新的状态
+    target_unit: currentTask.value.totalTarget,
+    individual_unit: currentTask.value.individualUnit,
+    points_earned: currentTask.value.pointsGiven || 0,  // 添加 points_earned 字段
+    create_time: dayjs(currentTask.value.createdOn).format("YYYY-MM-DD"),
+    assignedUsers: currentTask.value.assignedUsers || [],
+  };
+
+  showModal.value = false;
+
+  updateKpi(currentTask.value.id, payload).then((res) => {
+    if (isSuccess(res.status)) {
+      Swal.fire({
+        position: "top-end",
+        icon: "success",
+        title: "Task edited successfully",
+        showConfirmButton: false,
+        timer: 1500
+      });
+      fetchKpis();
+    }
+  }).catch((error) => {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "There was an error updating the task."
+    });
+  });
+};
+
+
+//Delete function
+const showDeleteModal = ref(false);
+
+// Open the delete task modal
+const openDeleteModal = (task: any) => {
+  currentTask.value = task; // Set the task to be deleted
+  showDeleteModal.value = true; // Show the delete confirmation modal
+};
+
+// Confirm delete and send request to delete the task
+const confirmDeleteTask = (task: any) => {
+  deleteKpi(task.id).then(() => {
+    Swal.fire({
+      position: 'top-end',
+      icon: 'success',
+      title: 'Task deleted successfully',
+      showConfirmButton: false,
+      timer: 1500,
+    });
+    fetchKpis(); // Refresh the task list after deletion
+    showDeleteModal.value = false; // Close the modal
+  }).catch((error) => {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'There was an error deleting the task.',
+    });
+  });
+};
+
+
+
+
+
+
 
 // State
 const tasks = ref<Task[]>([
-  { 
-    id: 1, 
-    taskName: 'Complete Order', 
-    taskDescription: 'Send order to customer', 
-    status: '',
-    startDate: '2025-03-01',
-    completionDate: '2025-03-12',
-    pointsGiven: 50,
-    target: { value: 100, unit: "pcs" },
-    assignedTo: '',
-    assignedUsers: [{username: 'Alice'}, {username: 'Jester'}, {username: 'Amanda'}],
-    department: "Sales Department"
-  },
+  // { 
+  //   id: 1, 
+  //   taskName: 'Complete Order', 
+  //   taskDescription: 'Send order to customer', 
+  //   status: '',
+  //   startDate: '2025-03-01',
+  //   completionDate: '2025-03-12',
+  //   pointsGiven: 50,
+  //   target: { value: 100, unit: "pcs" },
+  //   assignedTo: '',
+  //   assignedUsers: [{username: 'Alice'}, {username: 'Jester'}, {username: 'Amanda'}],
+  //   department: "Sales Department"
+  // },
 ])
 
-//get total target
-const getTotalTarget = (task: Task) => {
-  return task.target.value * task.assignedUsers.length;
-};
+// get total target
+// const getTotalTarget = (task: Task) => {
+//   return task.target.value * task.assignedUsers.length;
+// };
 
 // filter
 const searchTaskName = ref('')
@@ -403,8 +595,8 @@ const updateTaskStatus = (task: Task) => {
   }};
 
 // Modals
-const showModal = ref(false)
-const modalType = ref<'create' | 'edit'>('create')
+// const showModal = ref(false)
+// const modalType = ref<'create' | 'edit'>('create')
 const showTerminatedModal = ref(false)
 const selectedTask = ref<Task>({
   id: 0,
@@ -442,25 +634,25 @@ const openCreateTaskModal = () => {
   showModal.value = true
 }
 
-const openEditTaskModal = (task: Task) => {
-  selectedTask.value = { ...task }
-  modalType.value = 'edit'
-  showModal.value = true
-}
+// const openEditTaskModal = (task: Task) => {
+//   currentTask.value = task
+//   modalType.value = 'edit'
+//   showModal.value = true
+// }
 
 const openTerminatedModal = (task: Task) => {
   selectedTask.value = task
   showTerminatedModal.value = true
 }
 
-const saveEditedTask = () => {
-  const index = tasks.value.findIndex(task => task.id === selectedTask.value.id)
-  if (index !== -1) {
-    tasks.value[index] = { ...selectedTask.value }
-    updateTaskStatus(tasks.value[index]);  
-  }
-  showModal.value = false
-}
+// const saveEditedTask = () => {
+//   const index = tasks.value.findIndex(task => task.id === selectedTask.value.id)
+//   if (index !== -1) {
+//     tasks.value[index] = { ...selectedTask.value }
+//     updateTaskStatus(tasks.value[index]);  
+//   }
+//   showModal.value = false
+// }
 
 const markAsComplete = (task: Task) => {
   const index = tasks.value.findIndex(t => t.id === task.id);
@@ -478,7 +670,7 @@ const confirmTerminated = (task: Task) => {
   showTerminatedModal.value = false
 };
 
-const addAssignedUser = () => {
+/*const addAssignedUser = () => {
   if (selectedTask.value.assignedTo.trim()) {
     selectedTask.value.assignedUsers.push({ username: selectedTask.value.assignedTo });
     selectedTask.value.assignedTo = ''; // Clear input after adding
@@ -517,7 +709,7 @@ const createTask = () => {
   tasks.value.push(task)
   showModal.value = false
 }
-
+*/
 //go to employee details page
 function goToEmployeeDetailsPage()
 {

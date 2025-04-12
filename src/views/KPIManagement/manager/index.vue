@@ -363,20 +363,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-
-interface Task {
-id: number
-username: string
-role: string
-taskName: string
-taskDescription: string
-status: string
-startDate: string
-completionDate: string
-pointsGiven: number
-assignedTo: string
-assignedUsers: string[]
-}
+import axios from 'axios';
+import type {Task} from  "@/interface/KpiManagerInterface.ts";
 
 // State
 const tasks = ref<Task[]>([
