@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
-import useDepartment from "@/hooks/useDepartment.ts";
-
+import {computed, onMounted, ref} from 'vue'
+import {useDepartmentStore} from '@/stores/department.ts'
 import type {Department} from "@/interface/DepartmentInterface.ts";
+import {Modal} from "bootstrap";
 
-const {departments, flatDepartmentList, departmentAdd, departmentDelete, patchDepartment} = useDepartment()
+
+const departmentStore = useDepartmentStore()
+
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 20
-const totalItems = computed(() => departments.value.length)
+const totalItems = computed(() => departmentStore.departments.length)
 
 
 // Modals
@@ -22,7 +24,7 @@ const selectedDepartment = ref<Department | null>(null)
 
 const filteredDepartments = computed(() => {
   const searchTerm = searchQuery.value.toLowerCase()
-  return departments.value.filter(dept => {
+  return departmentStore.departments.filter(dept => {
     const matchesDept = dept.department_name.toLowerCase().includes(searchTerm)
     const matchesChildren = dept.children?.some(child =>
         child.department_name.toLowerCase().includes(searchTerm)
@@ -58,7 +60,7 @@ const addDepartment = () => {
   newDepartmentName.value = ''
   newDepartmentSorting.value = 1
   newDepartmentParentId.value = null
-  departmentAdd(newDepartment);
+  departmentStore.departmentAdd(newDepartment);
 }
 
 /**
@@ -76,7 +78,7 @@ const openEditDepartmentModal = (department: Department) => {
 const saveEditedDepartment = () => {
   if (selectedDepartment.value) {
     showEditDepartmentModal.value = false
-    patchDepartment(selectedDepartment.value.id, selectedDepartment.value)
+    departmentStore.patchDepartment(selectedDepartment.value.id, selectedDepartment.value)
     selectedDepartment.value = null
   }
 }
@@ -88,7 +90,7 @@ const openRemoveDepartmentModal = (department: Department) => {
 
 const confirmRemoveDepartment = () => {
   if (selectedDepartment.value) {
-    departmentDelete(selectedDepartment.value.id);
+    departmentStore.departmentDelete(selectedDepartment.value.id);
   }
   showRemoveDepartmentModal.value = false
 }
@@ -126,6 +128,9 @@ const flattenDepartments = (departments: Department[], level = 0): any[] => {
   }, [])
 }
 
+onMounted(() => {
+  departmentStore.fetchDepartments();
+});
 </script>
 
 <template>
@@ -248,7 +253,7 @@ const flattenDepartments = (departments: Department[], level = 0): any[] => {
             >
               <option :value="null">None (Main Department)</option>
               <option
-                  v-for="dept in flatDepartmentList"
+                  v-for="dept in departmentStore.flatDepartmentList"
                   :key="dept.id"
                   :value="dept.id"
               >
@@ -318,7 +323,7 @@ const flattenDepartments = (departments: Department[], level = 0): any[] => {
             >
               <option :value="null">None (Main Department)</option>
               <option
-                  v-for="dept in departments"
+                  v-for="dept in departmentStore.departments"
                   :key="dept.id"
                   :value="dept.id"
                   :disabled="dept.id === selectedDepartment.id"

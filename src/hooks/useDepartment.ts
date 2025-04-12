@@ -1,14 +1,14 @@
 import {ref, onMounted} from 'vue'
 import type {Department} from '@/interface/DepartmentInterface.ts'
 import {selectAllDepartments, addDepartment,deleteDepartment, updateDepartment} from '@/api/department.ts'
-import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
+import { isSuccess } from "@/utils/httpStatus.ts"
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
 
 
 export default function () {
     const departments = ref<Department[]>([])
-    const flatDepartmentList = ref<Department[]>([])       // 扁平化结构
+    const flatDepartmentList = ref<Department[]>([])
 
     // Map data to Department list
     const mapToDepartment = (item: any): Department => {
