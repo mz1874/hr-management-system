@@ -198,41 +198,48 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+import type {Employee} from  "@/interface/KpiEmployeeInterface.ts";
+import type {EmployeeTask} from  "@/interface/KpiEmployeeInterface.ts";
 
-interface Employee {
-  id: number
-  username: string
-  progress: number
-  progressHistory: { date: string; progress: number }[]
-  status: string
+const token = localStorage.getItem('access_token') 
+
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
 }
+
+const updateEmployeeProgress = async (employee: Employee) => {
+  try {
+    const response = await axios.post(`http://localhost:8000/api/kpi-personal/${employee.id}/update-progress/`, {
+      completed_unit: employee.progress
+    });
+    console.log('✅ Progress updated:', response.data);
+    alert('Progress updated successfully!')
+
+    // ✅ 添加进度历史记录
+    const today = new Date().toISOString().split('T')[0];
+    employee.progressHistory.push({
+      date: today,
+      progress: employee.progress
+    });
+
+    // 更新状态
+    if (employee.progress >= 100 && employee.status !== 'Completed') {
+      employee.status = 'Confirming';
+    }
+  } catch (error) {
+    console.error('❌ Failed to update progress:', error);
+  }
+};
 
 const selectedTask = ref({
   taskName: 'Complete Order'
 })
 
 const assignedEmployees = ref<Employee[]>([
-  {
-    id: 1,
-    username: 'Alice',
-    progress: 50,
-    progressHistory: [{ date: '2023-03-01', progress: 50 }],
-    status: 'Ongoing'
-  },
-  {
-    id: 2,
-    username: 'Jester',
-    progress: 100,
-    progressHistory: [{ date: '2023-03-01', progress: 100 }],
-    status: 'Confirming'
-  },
-  {
-    id: 3,
-    username: 'Amanda',
-    progress: 30,
-    progressHistory: [{ date: '2023-03-01', progress: 30 }],
-    status: 'Ongoing'
-  },
+  { id: 1, username: 'Alice', progress: 50, progressHistory: [], status: 'Ongoing' },
+  { id: 2, username: 'Jester', progress: 100, progressHistory: [], status: 'Confirming' },
+  { id: 3, username: 'Amanda', progress: 30, progressHistory: [], status: 'Ongoing' },
 ])
 
 const searchUsername = ref('')
@@ -240,35 +247,22 @@ const selectedStatus = ref('')
 const showHistoryModal = ref(false)
 const showApproveModal = ref(false)
 const selectedEmployee = ref<Employee>({
-  id: 0,
-  username: '',
-  progress: 0,
-  progressHistory: [],
-  status: 'Ongoing'
+  id: 0, username: '', progress: 0, progressHistory: [], status: 'Ongoing'
 })
 
 const totalTasks = computed(() => assignedEmployees.value.length)
-const completedTasks = computed(() => assignedEmployees.value.filter(employee => employee.status === 'Completed').length)
-const ongoingTasks = computed(() => assignedEmployees.value.filter(employee => employee.status === 'Ongoing' || employee.status === 'Confirming').length) // Confirming as Ongoing
-const delayedTasks = computed(() => assignedEmployees.value.filter(employee => employee.status === 'Delayed').length)
+const completedTasks = computed(() => assignedEmployees.value.filter(e => e.status === 'Completed').length)
+const ongoingTasks = computed(() => assignedEmployees.value.filter(e => e.status === 'Ongoing' || e.status === 'Confirming').length)
+const delayedTasks = computed(() => assignedEmployees.value.filter(e => e.status === 'Delayed').length)
 
 const filteredEmployees = computed(() => {
-  return assignedEmployees.value.filter((employee) => {
-    const matchesUsername = employee.username.toLowerCase().includes(searchUsername.value.toLowerCase())
-    const matchesStatus = !selectedStatus.value || (employee.status === selectedStatus.value || (selectedStatus.value === 'Ongoing' && employee.status === 'Confirming'))
-    return matchesUsername && matchesStatus
+  return assignedEmployees.value.filter(e => {
+    const matchUser = e.username.toLowerCase().includes(searchUsername.value.toLowerCase())
+    const matchStatus = !selectedStatus.value || e.status === selectedStatus.value || 
+                        (selectedStatus.value === 'Ongoing' && e.status === 'Confirming')
+    return matchUser && matchStatus
   })
 })
-
-const updateEmployeeProgress = (employee: Employee) => {
-  const today = new Date().toLocaleDateString()
-  employee.progressHistory.push({ date: today, progress: employee.progress })
-
-  // Only when progress is 100, set the status to Confirming
-  if (employee.progress === 100 && employee.status !== 'Completed') {
-    employee.status = 'Confirming'
-  }
-}
 
 const openApproveModal = (employee: Employee) => {
   selectedEmployee.value = employee
@@ -276,7 +270,6 @@ const openApproveModal = (employee: Employee) => {
 }
 
 const approveTaskCompletion = (employee: Employee) => {
-  // Admin approves and the task status is marked as Completed
   if (employee.progress === 100 && employee.status === 'Confirming') {
     employee.status = 'Completed'
   }
@@ -291,9 +284,8 @@ const showHistory = (employee: Employee) => {
 const formatDate = (date: string) => {
   const newDate = new Date(date)
   const year = newDate.getFullYear()
-  const month = String(newDate.getMonth() + 1).padStart(2, '0')  // Month starts at 0
+  const month = String(newDate.getMonth() + 1).padStart(2, '0')
   const day = String(newDate.getDate()).padStart(2, '0')
-
   return `${year}-${month}-${day}`
 }
 
@@ -302,6 +294,7 @@ function goToKPIManagement() {
   router.push('/home/KPI-management');
 }
 </script>
+
 
 <style scoped>
 .title-page {
