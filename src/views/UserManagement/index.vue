@@ -9,7 +9,7 @@ const departmentStore = useDepartmentStore();
 
 const {fetchAllStaffs, staffData} = useStaff()
 // State
-const selectedDepartment = ref('')
+const selectedDepartment = ref(0)
 
 const searchQuery = ref('')
 const currentPage = ref(1)
@@ -29,7 +29,7 @@ const selectedStaff = ref<Staff>({
   dateOfBirth: '',
   department_name:'',
   role: '',
-  department: '',
+  department: 0,
   status: 'Active',
   employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
   numberOfLeaves: 0,
@@ -49,7 +49,7 @@ const statistics = computed(() => {
 
 const filteredStaffs = computed(() => {
   return staffData.results.filter(staff => {
-    const matchesDepartment = selectedDepartment.value === '' || staff.department === selectedDepartment.value
+    const matchesDepartment = selectedDepartment.value === 0 || staff.department === selectedDepartment.value
     const matchesQuery = searchQuery.value === '' || staff.name.toLowerCase().includes(searchQuery.value.toLowerCase())
     return matchesDepartment && matchesQuery
   })
@@ -470,19 +470,18 @@ const changePage = (page: number) => {
           </div>
           <div class="mb-3">
             <label for="editStaffDepartment" class="form-label">Department</label>
-            <select 
-              v-model="selectedStaff.department"
-              class="form-select" 
-              id="editStaffDepartment"
-            >
-              <option>Sales Department</option>
-              <option>Marketing Department</option>
-              <option>Human Resources</option>
-              <option>Finance Department</option>
-              <option>IT Department</option>
-              <option>Operations</option>
+            <select v-model="selectedStaff.department" class="form-select" id="editStaffDepartment">
+              <option :value="selectedStaff.department">{{selectedStaff.department_name}}</option>
+              <option
+                  v-for="item in departmentStore.flatDepartmentList.filter(dept => dept.id !== selectedStaff.department)"
+                  :key="item.id"
+                  :value="item.id"
+              >
+                {{ item.department_name }}
+              </option>
             </select>
           </div>
+
           <div class="mb-3">
             <label for="editStaffStatus" class="form-label">Status</label>
             <select 

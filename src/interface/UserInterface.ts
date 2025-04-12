@@ -3,7 +3,7 @@ export interface Staff {
     name: string
     dateOfBirth: string
     role: string
-    department: string
+    department: number
     department_name: string
     status: 'Active' | 'Inactive'
     employmentDate: string
