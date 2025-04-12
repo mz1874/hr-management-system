@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+//TODO 抽取
 interface EvaluationItem {
   id: number
   name: string

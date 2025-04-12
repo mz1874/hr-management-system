@@ -12,3 +12,12 @@ export function addDepartment(payload) {
 export function deleteDepartment(id) {
     return axios.delete(`/api/department/${id}/`)
 }
+
+/**
+ * update department
+ * @param id
+ * @param payload
+ */
+export function updateDepartment(id, payload) {
+    return axios.patch(`/api/department/${id}/`, payload)
+}

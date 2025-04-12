@@ -149,8 +149,7 @@ onMounted(() => {
 
         <!-- Date-Time & Mark as Read Button -->
         <div class="announcement-actions">
-          <span class="announcement-date">{{ formatDate(selectedAnnouncement.post_time) }}</span>
-        </div>
+          <span class="announcement-date">{{ formatDate(announcement.post_time) }}</span>        </div>
       </div>
     </div>
 

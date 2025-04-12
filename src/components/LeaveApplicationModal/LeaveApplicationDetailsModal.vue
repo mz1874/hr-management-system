@@ -2,6 +2,7 @@
 import { ref, defineProps, watch, onMounted } from 'vue';
 import { Modal } from 'bootstrap';
 
+// TODO 抽取Task 接口到Interface下
 // Define interface for leave details
 interface LeaveDate {
   date: string;
@@ -9,6 +10,7 @@ interface LeaveDate {
   leaveType: string;
 }
 
+// TODO 抽取Task 接口到Interface下
 interface LeaveApplication {
   id: number;
   name: string;
@@ -47,9 +49,17 @@ const closeModal = () => {
 // Open modal automatically when new data is passed in
 watch(() => props.selectedApplication, (newData) => {
   if (newData) {
+    console.log('Selected Application:', newData);
     showModal();
   }
 });
+
+
+const formatDateOnly = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return date.toISOString().slice(0, 10); // returns 'YYYY-MM-DD'
+};
+
 </script>
 
 <template>
@@ -81,7 +91,7 @@ watch(() => props.selectedApplication, (newData) => {
           <!-- Applied On -->
           <div class="mb-3">
             <label class="form-label">Applied On</label>
-            <input type="text" class="form-control" :value="props.selectedApplication.appliedOn" disabled>
+            <input type="text" class="form-control" :value="formatDateOnly(props.selectedApplication.appliedOn)" disabled>
           </div>
 
           <!-- Leave Type -->
