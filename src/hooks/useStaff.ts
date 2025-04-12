@@ -1,8 +1,9 @@
-import { onMounted, reactive } from "vue";
-import { selectAllStaffs, searchStaff } from '@/api/staff.ts';
-import { isSuccess } from "@/utils/httpStatus.ts";
-import type { Staff } from "@/interface/UserInterface.ts";
+import {onMounted, reactive} from "vue";
+import {selectAllStaffs, searchStaff, deleteStaff as del} from '@/api/staff.ts';
+import {isSuccess} from "@/utils/httpStatus.ts";
+import type {Staff} from "@/interface/UserInterface.ts";
 import dayjs from "dayjs";
+import Swal from "sweetalert2";
 
 interface StaffPagination {
     count: number;
@@ -46,9 +47,33 @@ export default function () {
     }
 
 
+    function deleteStaff(id: number): void {
+        del(id).then((response) => {
+            if (isSuccess(response.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Department successfully added",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+                fetchAllStaffs();
+            } else {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "error",
+                    title: "Operation failed : " + response.data,
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+            }
+        })
+    }
+
+
     function search(staffName: string): any {
         searchStaff(staffName).then((response) => {
-            if(isSuccess(response.status)) {
+            if (isSuccess(response.status)) {
                 console.log(response);
             }
         })
@@ -59,5 +84,5 @@ export default function () {
         console.log(JSON.stringify(staffData));
     });
 
-    return { fetchAllStaffs, staffData, search};
+    return {fetchAllStaffs, staffData, search, deleteStaff};
 }

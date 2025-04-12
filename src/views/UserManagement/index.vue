@@ -11,7 +11,7 @@ onMounted(() => {
 })
 
 
-const {staffData, search} = useStaff()
+const {staffData, search, deleteStaff} = useStaff()
 // State
 const selectedDepartment = ref(0)
 
@@ -107,6 +107,7 @@ const openEditStaffModal = (staff: Staff) => {
 
 const openDeleteStaffModal = (staff: Staff) => {
   selectedStaff.value = staff
+
   showDeleteStaffModal.value = true
 }
 
@@ -124,14 +125,7 @@ const saveEditedStaff = () => {
 }
 
 const confirmDeleteStaff = () => {
-  const index = staffData.results.findIndex(staff => staff.id === selectedStaff.value.id)
-  if (index !== -1) {
-    staffData.results[index] = {
-      ...staffData.results[index],
-      status: false,
-      resignationDate: new Date().toISOString().split('T')[0]
-    }
-  }
+  deleteStaff( selectedStaff.value.id)
   showDeleteStaffModal.value = false
 }
 
@@ -537,7 +531,7 @@ const changePage = (page: number) => {
           ></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to mark "{{ selectedStaff.name }}" as inactive?</p>
+          <p>Are you sure you want to delete the staff :"{{ selectedStaff.name }}"?</p>
           <p>This will set their resignation date to today.</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>
