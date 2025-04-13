@@ -6,24 +6,7 @@ import '@vuepic/vue-datepicker/dist/main.css';
 import { getLeaveTypes, submitLeaveRequest } from '@/api/leave';
 import { getCurrentUser } from '@/api/login';
 import { uploadFile } from '@/api/file_upload';
-
-interface LeaveDate {
-  leave_date: string;
-  duration: 'F' | 'AM' | 'PM';
-  leave_type: number;
-}
-
-interface ApplicationFormData {
-  reasons: string;
-  selectedDates: LeaveDate[];
-  department: number | null;
-}
-
-interface LeaveType {
-  id: number;
-  name: string;
-  description: string;
-}
+import type { LeaveDate, ApplicationFormData, LeaveType } from '@/interface/leaveApplicationModal';
 
 const emit = defineEmits(['submit']);
 
@@ -39,6 +22,7 @@ const primaryDocument = ref<File | null>(null);
 const primaryDocumentInput = ref<HTMLInputElement | null>(null);
 const modalRef = ref<HTMLElement | null>(null);
 let modalInstance: Modal | null = null;
+const isSubmitting = ref(false);
 
 const userName = ref('');
 const userDeptName = ref('');
@@ -50,15 +34,24 @@ const medicalLeaveId = computed(() => {
 onMounted(async () => {
   if (modalRef.value) {
     modalInstance = new Modal(modalRef.value);
-
+    
+    // Handle proper modal cleanup when hidden
     modalRef.value.addEventListener('hidden.bs.modal', () => {
+      // Clean up any leftover backdrops
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      
+      // Restore body scrolling properly
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      
+      // Reset form data
       resetForm();
     });
   }
 
   try {
     const res = await getCurrentUser();
-    console.log('Fetched user data:', res);
     userName.value = res.data.data.first_name || res.data.data.username || 'User';
     formData.department = res.data.data.department?.id || null;
     userDeptName.value = res.data.data.department || '-';
@@ -97,13 +90,14 @@ const handleDateSelect = () => {
 
 const handlePrimaryDocumentUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  if (target.files && target.files[0]) primaryDocument.value = target.files[0];
+  if (target.files && target.files[0]) {
+    primaryDocument.value = target.files[0];
+  }
 };
 
-const closeModal = () => {
-  if (modalInstance) modalInstance.hide();
-  const backdrop = document.querySelector('.modal-backdrop');
-  if (backdrop) backdrop.remove();
+const scrollModalTop = () => {
+  const modalBody = modalRef.value?.querySelector('.modal-body');
+  modalBody?.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 const resetForm = () => {
@@ -112,48 +106,89 @@ const resetForm = () => {
   formData.department = null;
   primaryDocument.value = null;
   if (primaryDocumentInput.value) primaryDocumentInput.value.value = '';
+
+  scrollModalTop(); // scroll to top
 };
 
-const handleSubmit = async () => {
-  if (!formData.reasons) return alert('Please provide a reason.');
-  if (formData.selectedDates.length === 0) return alert('Please select at least one date.');
-
-  const isMedicalLeave = formData.selectedDates.some(d => d.leave_type === medicalLeaveId.value);
-  if (isMedicalLeave && !primaryDocument.value) return alert('Upload document for Medical Leave.');
-
-  let uploadedFileId: number | null = null;
-
-  if (primaryDocument.value) {
-    try {
-      const uploadRes = await uploadFile(primaryDocument.value);
-      uploadedFileId = uploadRes.data?.data?.id;
-      if (!uploadedFileId) throw new Error('Missing file ID after upload');
-    } catch (error: any) {
-      console.error('File upload error:', error);
-      alert(JSON.stringify(error.response?.data || 'Failed to upload file.'));
-      return;
-    }
+// Fixed closeModal function that properly handles Bootstrap modals
+const closeModal = () => {
+  if (modalInstance) {
+    // Only hide the modal and let the hidden.bs.modal event handle cleanup
+    modalInstance.hide();
   }
+};
 
-  const payload = {
-    reason: formData.reasons,
-    department: formData.department,
-    leave_dates: formData.selectedDates,
-    ...(uploadedFileId ? { attachment: uploadedFileId } : {})
-  };
+const handleSubmit = async (event?: Event) => {
+  if (event) event.preventDefault();
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
 
   try {
-    await submitLeaveRequest(payload);
-    emit('submit');
-    closeModal();
-    resetForm();
-    if (modalRef.value) {
-      modalInstance = new Modal(modalRef.value);
+    if (!formData.reasons) throw new Error('Please provide a reason.');
+    if (formData.selectedDates.length === 0) throw new Error('Please select at least one date.');
+
+    const isMedicalLeave = formData.selectedDates.some(
+      d => d.leave_type === medicalLeaveId.value
+    );
+
+    if (isMedicalLeave && !primaryDocument.value) {
+      throw new Error('Upload document for Medical Leave.');
     }
+
+    let uploadedFileId: number | null = null;
+
+    if (primaryDocument.value) {
+      const uploadRes = await uploadFile(primaryDocument.value);
+      uploadedFileId = uploadRes?.data?.data?.id ?? null;
+      if (!uploadedFileId) throw new Error('Upload succeeded but no file ID returned.');
+    }
+
+    const payload = {
+      reason: formData.reasons,
+      department: formData.department,
+      leave_dates: formData.selectedDates,
+      ...(uploadedFileId ? { attachment: uploadedFileId } : {})
+    };
+
+    const res = await submitLeaveRequest(payload);
+    const leave = res?.data?.data;
+    const httpStatus = res?.status;
+    const message = res?.data?.message;
+
+    if (!leave?.id) throw new Error('Missing leave ID in response.');
+    if (httpStatus !== 201 || message !== 'success') {
+      throw new Error(`Unexpected response:\n${JSON.stringify(res?.data, null, 2)}`);
+    }
+
+    const mapped = {
+      id: leave.id,
+      name: userName.value,
+      department: userDeptName.value,
+      leaveType: leave.leave_dates?.[0]?.leave_type_display?.name || '-',
+      status: 'Pending',
+      appliedOn: leave.created_date,
+      selected: false,
+      reasons: formData.reasons,
+      document: leave.attachment_url || '',
+      dates: leave.leave_dates.map((d: any) => ({
+        date: d.leave_date.split('T')[0],
+        duration: d.duration,
+        leaveType: d.leave_type_display?.name || 'N/A'
+      }))
+    };
+
+    console.log('Emitting submit with mapped:', mapped);
+    emit('submit', mapped);
+    
+    // Just close the modal - don't reset the form here
+    // The form will be reset by the hidden.bs.modal event
+    closeModal();
   } catch (e: any) {
     console.error('Submit error:', e);
-    const msg = e.response?.data || 'Unknown error';
-    alert(JSON.stringify(msg));
+    alert(e?.message || 'Submission failed.');
+  } finally {
+    isSubmitting.value = false;
+    console.log('Finished submit logic');
   }
 };
 </script>
@@ -162,13 +197,15 @@ const handleSubmit = async () => {
   <div class="modal fade" id="leaveApplicationModal" ref="modalRef" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
+        <!-- Header -->
         <div class="modal-header">
           <h5 class="modal-title">
             <i class="bi bi-file-text me-2"></i> Leave Application Form
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" @click="closeModal"></button>
         </div>
 
+        <!-- Body -->
         <div class="modal-body">
           <form @submit.prevent="handleSubmit">
             <div class="mb-3">
@@ -222,17 +259,24 @@ const handleSubmit = async () => {
               <input type="file" class="form-control" ref="primaryDocumentInput" @change="handlePrimaryDocumentUpload" accept="application/pdf">
               <small class="text-muted">Required for Medical Leave</small>
             </div>
-          </form>
-        </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-success" @click="handleSubmit">Submit Application</button>
+            <div class="d-flex justify-content-end">
+              <button
+                type="submit"
+                class="btn btn-success"
+                :disabled="isSubmitting"
+              >
+                <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Submit Application
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
 </template>
+
 
 
 <style scoped>

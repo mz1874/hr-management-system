@@ -98,6 +98,8 @@ const fetchLeaveApplications = async () => {
         })) || [],
         selected: false
       };
+
+      console.log (leaveApplications);
     });
   } catch (err) {
     console.error('Error during fetch:', err);

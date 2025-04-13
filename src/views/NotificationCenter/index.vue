@@ -1,3 +1,351 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { Modal } from 'bootstrap'
+import {
+  createAnnouncement,
+  getAnnouncements,
+  updateAnnouncement,
+  deleteAnnouncement as deleteAnnouncementAPI
+} from '@/api/announcement'
+import { uploadFile } from '@/api/file_upload'
+
+// ========== Modal State ==========
+const newAnnouncementModal = ref(null)
+const viewModal = ref(null)
+const deleteModal = ref(null)
+const editModal = ref(null)
+
+const modalInstances = {} as {
+  new: Modal; view: Modal; delete: Modal; edit: Modal;
+}
+
+onMounted(() => {
+  modalInstances.new = new Modal(newAnnouncementModal.value as HTMLElement)
+  modalInstances.view = new Modal(viewModal.value as HTMLElement)
+  modalInstances.delete = new Modal(deleteModal.value as HTMLElement)
+  modalInstances.edit = new Modal(editModal.value as HTMLElement)
+})
+
+// ========== Reactive Modal Flags ==========
+const isNewModalOpen = ref(false)
+const isEditModalOpen = ref(false)
+
+// ========== State ==========
+const announcements = ref<any[]>([])
+const selectedIds = ref<number[]>([])
+const selectedAnnouncement = ref<any>({})
+const uploadedFileIds = ref<number[]>([])
+const editedUploadedFileIds = ref<number[]>([])
+const searchQuery = ref('')
+const currentPage = ref(1)
+const pageSize = 10
+const totalCount = ref(0)
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) fetchAnnouncements(page)
+}
+
+// ========== Fetch ==========
+function fetchAnnouncements(page = 1) {
+  currentPage.value = page
+  getAnnouncements(page, searchQuery.value)
+    .then(res => {
+      const now = new Date()
+      announcements.value = res.data.data.results.map(a => ({
+        ...a,
+        posted: new Date(a.post_time) <= now
+      }))
+      totalCount.value = res.data.data.count
+    })
+    .catch(err => console.error('Failed to fetch announcements:', err))
+}
+onMounted(fetchAnnouncements)
+
+const filteredAnnouncements = computed(() => {
+  return announcements.value.filter(a =>
+    [a.title, a.description].join(' ').toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
+
+const formattedDateTime = computed(() => {
+  const postTime = selectedAnnouncement.value?.post_time
+  return postTime ? new Date(postTime).toLocaleString() : ''
+})
+
+// ========== Date Utils ==========
+function combineLocalDateTimeToUTC(date: string, time: string): string {
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  const localDate = new Date(year, month - 1, day, hour, minute)
+  return new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString()
+}
+
+// ========== New Announcement ==========
+const newFileInput = ref<HTMLInputElement | null>(null)
+const newAnnouncement = ref({
+  title: '',
+  description: '',
+  isScheduled: false,
+  scheduleDate: '',
+  scheduleTime: '',
+  hasAvailability: false,
+  department: '',
+  attachments: [] as { id: number; url: string; name: string }[],
+})
+
+const resetNewAnnouncement = () => {
+  newAnnouncement.value = {
+    title: '', description: '', isScheduled: false,
+    scheduleDate: '', scheduleTime: '',
+    hasAvailability: false, department: '', attachments: []
+  }
+  uploadedFileIds.value = []
+  if (newFileInput.value) newFileInput.value.value = ''
+}
+
+const triggerFileInput = () => {
+  newFileInput.value?.click()
+}
+
+// ========== Edit Modal ==========
+const editFileInput = ref<HTMLInputElement | null>(null)
+const triggerEditFileInput = () => {
+  editFileInput.value?.click()
+}
+
+// ========== File Upload (shared) ==========
+const handleFileUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  try {
+    const res = await uploadFile(file);
+    const fileId = res.data.id ?? res.data.data?.id;
+    const fileUrl = res.data.url ?? res.data.data?.file_url;
+
+    const fileEntry = {
+      id: fileId,
+      url: fileUrl,
+      name: file.name
+    };
+
+    if (isEditModalOpen.value) {
+      selectedAnnouncement.value.attachments.push(fileEntry);
+      editedUploadedFileIds.value.push(fileId);
+    } else {
+      newAnnouncement.value.attachments.push(fileEntry);
+      uploadedFileIds.value.push(fileId);
+    }
+  } catch (err) {
+    console.error('File upload failed:', err.response?.data || err.message);
+    alert('Upload failed: ' + (err.response?.data?.detail || err.message));
+  } finally {
+    if (newFileInput.value) newFileInput.value.value = ''
+    if (editFileInput.value) editFileInput.value.value = ''
+  }
+}
+
+const removeAttachment = (index: number) => {
+  newAnnouncement.value.attachments.splice(index, 1)
+  uploadedFileIds.value.splice(index, 1)
+}
+
+const removeEditedAttachment = (index: number) => {
+  selectedAnnouncement.value.attachments.splice(index, 1)
+  editedUploadedFileIds.value.splice(index, 1)
+}
+
+// ========== Modal Controls ==========
+const openNewAnnouncementModal = () => {
+  modalInstances.new.show()
+  isNewModalOpen.value = true
+  isEditModalOpen.value = false
+}
+
+const closeNewAnnouncementModal = () => {
+  modalInstances.new.hide()
+  isNewModalOpen.value = false
+  resetNewAnnouncement()
+}
+
+const viewAnnouncement = (announcement: any) => {
+  console.log('🟢 Opening View Modal');
+  console.log('📝 Raw announcement:', announcement);
+
+  selectedAnnouncement.value = { ...announcement };
+
+  if (announcement.linked_files && Array.isArray(announcement.linked_files)) {
+    selectedAnnouncement.value.attachments = announcement.linked_files.map(link => ({
+      id: link.file,
+      url: link.url,
+      name: link.filename || 'Unnamed File'
+    }));
+  } else {
+    selectedAnnouncement.value.attachments = [];
+    console.warn('No linked_files found or not in expected format.');
+  }
+
+  console.log('Processed Attachments:', selectedAnnouncement.value.attachments);
+
+  modalInstances.view.show();
+};
+
+
+const closeViewModal = () => modalInstances.view.hide()
+
+const confirmDelete = (announcement: any) => {
+  selectedAnnouncement.value = announcement
+  modalInstances.delete.show()
+}
+
+const closeDeleteModal = () => modalInstances.delete.hide()
+
+const editAnnouncement = (announcement) => {
+  selectedAnnouncement.value = { ...announcement }
+
+  if (announcement.linked_files) {
+    selectedAnnouncement.value.attachments = announcement.linked_files.map(link => ({
+      id: link.file,
+      url: link.url,
+      name: link.filename || 'Attached File'
+    }));
+    editedUploadedFileIds.value = selectedAnnouncement.value.attachments.map(f => f.id);
+  } else {
+    selectedAnnouncement.value.attachments = [];
+    editedUploadedFileIds.value = [];
+  }
+
+  if (announcement.schedule_post_time) {
+    const dt = new Date(announcement.schedule_post_time)
+    selectedAnnouncement.value.isScheduled = true
+    selectedAnnouncement.value.scheduleDate = dt.toISOString().split('T')[0]
+    selectedAnnouncement.value.scheduleTime = dt.toTimeString().slice(0, 5)
+  } else {
+    selectedAnnouncement.value.isScheduled = false
+    selectedAnnouncement.value.scheduleDate = ''
+    selectedAnnouncement.value.scheduleTime = ''
+  }
+
+  modalInstances.edit.show()
+  isNewModalOpen.value = false
+  isEditModalOpen.value = true
+}
+
+const closeModal = () => {
+  modalInstances.edit.hide()
+  isEditModalOpen.value = false
+  selectedAnnouncement.value = {}
+}
+
+// ========== Submit ==========
+const isSubmitting = ref(false)
+const isEditing = ref(false)
+
+
+const submitNewAnnouncement = async () => {
+  isSubmitting.value = true
+  try {
+    const isScheduled = newAnnouncement.value.isScheduled;
+
+    if (isScheduled) {
+      const scheduleDateTime = new Date(`${newAnnouncement.value.scheduleDate}T${newAnnouncement.value.scheduleTime}`);
+      if (scheduleDateTime < new Date()) {
+        alert('⚠️ Scheduled post time cannot be in the past.');
+        isSubmitting.value = false
+        return;
+      }
+    }
+
+    const payload = {
+      title: newAnnouncement.value.title,
+      description: newAnnouncement.value.description,
+      file_ids: uploadedFileIds.value,
+      ...(isScheduled
+        ? {
+            schedule_post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime),
+            post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime)
+          }
+        : {
+            post_time: new Date().toISOString()
+          })
+    }
+
+    await createAnnouncement(payload)
+    fetchAnnouncements()
+    closeNewAnnouncementModal()
+  } catch (err) {
+    console.error('Failed to create announcement:', err.response?.data || err.message)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+
+const submitAnnouncement = async () => {
+  isEditing.value = true
+  try {
+    const isScheduled = selectedAnnouncement.value.isScheduled;
+    if (isScheduled) {
+      const scheduleDateTime = new Date(`${selectedAnnouncement.value.scheduleDate}T${selectedAnnouncement.value.scheduleTime}`);
+      if (scheduleDateTime < new Date()) {
+        alert('⚠️ Scheduled post time cannot be in the past.');
+        isEditing.value = false
+        return;
+      }
+    }
+
+    const payload = {
+      title: selectedAnnouncement.value.title,
+      description: selectedAnnouncement.value.description,
+      ...(isScheduled
+        ? {
+            schedule_post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime),
+            post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime)
+          }
+        : {
+            schedule_post_time: null,
+            post_time: new Date().toISOString()
+          }),
+      file_ids: editedUploadedFileIds.value
+    }
+
+    console.log('📤 Submitting updated announcement with:', payload)
+
+    await updateAnnouncement(selectedAnnouncement.value.id, payload)
+    fetchAnnouncements()
+    closeModal()
+  } catch (err) {
+    console.error('Failed to update announcement:', err.response?.data || err.message)
+  } finally {
+    isEditing.value = false
+  }
+}
+
+
+// ========== Delete ==========
+const deleteAnnouncement = () => {
+  deleteAnnouncementAPI(selectedAnnouncement.value.id)
+    .then(() => {
+      fetchAnnouncements()
+      closeDeleteModal()
+    })
+    .catch(err => console.error('Failed to delete announcement:', err.response?.data || err.message))
+}
+
+const bulkDeleteAnnouncements = () => {
+  if (!confirm(`Delete ${selectedIds.value.length} announcements?`)) return
+  Promise.all(selectedIds.value.map(id => deleteAnnouncementAPI(id)))
+    .then(() => {
+      selectedIds.value = []
+      fetchAnnouncements()
+    })
+    .catch(err => console.error('Failed to delete some announcements:', err))
+}
+</script>
+
+
 <template>
   <div class="main-content container-fluid px-3 px-md-4">
     <!-- Main Content Header -->
@@ -167,21 +515,46 @@
                   </div>
 
                   <div class="mb-3">
-                    <label class="form-label">Attachment:</label>
-                    <div class="input-group">
-                      <!-- We add a ref to reset the file input later -->
-                      <input
-                        ref="newFileInput"
-                        type="file"
-                        class="form-control"
-                        accept=".pdf, .jpg"
-                        multiple
-                        @change="handleFileUpload"
-                      />
+                    <!-- Label and Button Inline -->
+                    <div class="d-flex align-items-center mb-2">
+                      <label class="form-label mb-0 me-3">Attachments:</label>
 
+                      <button type="button" class="btn btn-outline-success btn-sm" @click="triggerFileInput">
+                        Add File
+                      </button>
                     </div>
-                    <span class="form-text">Support pdf and jpg</span>
+
+                    <!-- Hidden File Input -->
+                    <input
+                      ref="newFileInput"
+                      type="file"
+                      class="d-none"
+                      accept=".pdf,.jpg"
+                      @change="handleFileUpload"
+                    />
+
+                    <span class="form-text d-block ms-1 mb-2">Supported: PDF and JPG</span>
+
+                    <!-- Animated File List -->
+                    <transition-group name="fade" tag="ul" class="list-unstyled mt-2">
+                      <li
+                        v-for="(file, index) in newAnnouncement.attachments"
+                        :key="file.id"
+                        class="d-flex justify-content-between align-items-center mb-1 border rounded px-3 py-2 bg-light"
+                      >
+                        <span>📎 {{ file.name }}</span>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger ms-2"
+                          @click="removeAttachment(index)"
+                        >
+                          🗑️
+                        </button>
+                      </li>
+                    </transition-group>
                   </div>
+
+
                 </form>
               </div>
 
@@ -234,14 +607,34 @@
                     :disabled="!newAnnouncement.hasAvailability"
                   />
 
-                  <div v-if="newAnnouncement.attachment" class="mt-3">
+                  <div v-if="newAnnouncement.attachments.length" class="mt-3">
                     <h6>PDF Preview (Unsubmitted):</h6>
-                    <iframe
-                      :src="newAnnouncement.attachment"
-                      style="width:100%; height:300px;"
-                      frameborder="0"
-                    ></iframe>
+
+                    <div
+                      v-for="file in newAnnouncement.attachments"
+                      :key="file.id"
+                      class="mb-3 border rounded p-2"
+                    >
+                      <strong>{{ file.name }}</strong>
+                      
+                      <div v-if="file.url.endsWith('.pdf')">
+                        <iframe
+                          :src="file.url"
+                          style="width:100%; height:300px;"
+                          frameborder="0"
+                        ></iframe>
+                      </div>
+
+                      <div v-else>
+                        <img
+                          :src="file.url"
+                          style="max-width: 100%; max-height: 300px;"
+                          alt="Uploaded image"
+                        />
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -256,11 +649,19 @@
             </button>
             <button
               type="button"
-              class="btn btn-success"
+              class="btn btn-success d-flex align-items-center"
+              :disabled="isSubmitting"
               @click="submitNewAnnouncement"
             >
-              Submit
+              <span
+                v-if="isSubmitting"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              {{ isSubmitting ? 'Submitting...' : 'Submit' }}
             </button>
+
           </div>
         </div>
       </div>
@@ -285,27 +686,38 @@
               <p>{{ selectedAnnouncement.description }}</p>
               <p class="text-end">Best Regards<br />HR Team</p>
             </div>
+          </div>
 
-            <!-- Show PDF or image if there is an attachment -->
-            <div class="mt-3" v-if="selectedAnnouncement.attachment">
-              <!-- Option 1: IFRAME for PDF -->
+          <!-- Attachments Preview -->
+          <div class="mt-4 px-3">
+            <h5 class="fw-bold mb-3">📎 Attachments</h5>
+            <div
+              v-for="file in selectedAnnouncement.attachments"
+              :key="file.id"
+              class="mb-4"
+            >
+              <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-paperclip me-2"></i>
+                <span>{{ file.name }}</span>
+              </div>
               <iframe
-                :src="selectedAnnouncement.attachment"
-                class="attachment-preview"
-                frameborder="0"
-              >
-              </iframe>
-
+                :src="file.url"
+                style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 6px;"
+              ></iframe>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="closeViewModal">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+
+
+
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="closeViewModal">
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
     <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteConfirmModal" ref="deleteModal">
@@ -378,18 +790,50 @@
                     ></textarea>
                   </div>
 
+
                   <div class="mb-3">
-                    <label class="form-label">Attachment:</label>
-                    <div class="input-group">
-                      <input
-                        type="file"
-                        class="form-control"
-                        accept=".pdf, .jpg"
-                        @change="handleFileUpload"
-                      />
+                    <label class="form-label">Attachments:</label>
+
+                    <!-- Hidden file input triggered by button -->
+                    <input
+                      ref="editFileInput"
+                      type="file"
+                      class="d-none"
+                      accept=".pdf, .jpg"
+                      @change="handleFileUpload"
+                    />
+
+                    <!-- Trigger Button: styled green and spaced -->
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                      <button
+                        type="button"
+                        class="btn btn-success d-flex align-items-center"
+                        @click="triggerEditFileInput"
+                      >
+                        <i class="fas fa-plus me-2"></i> Add File
+                      </button>
+                      <span class="form-text">Supported: PDF and JPG</span>
                     </div>
-                    <span class="form-text">Support pdf and jpg</span>
+
+                    <!-- Animated File List -->
+                    <transition-group name="fade" tag="ul" class="list-unstyled mt-2">
+                      <li
+                        v-for="(file, index) in selectedAnnouncement.attachments"
+                        :key="file.id"
+                        class="d-flex justify-content-between align-items-center mb-1 border rounded px-3 py-2 bg-light"
+                      >
+                        <span>📎 {{ file.name }}</span>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger ms-2"
+                          @click="removeEditedAttachment(index)"
+                        >
+                          🗑️
+                        </button>
+                      </li>
+                    </transition-group>
                   </div>
+
                 </form>
               </div>
 
@@ -442,6 +886,14 @@
                     :disabled="!selectedAnnouncement.hasAvailability"
                   />
                 </div>
+
+                <div v-for="(file, index) in selectedAnnouncement.attachments" :key="file.id" class="mt-3">
+                      <p class="mb-1">📎 {{ file.name }}</p>
+                      <iframe v-if="file.url.endsWith('.pdf')" :src="file.url" style="width:100%; height:300px;" />
+                      <img v-else-if="/\.(jpg|jpeg|png)$/i.test(file.url)" :src="file.url" class="img-fluid rounded border" />
+                    </div>
+
+
               </div>
             </div>
           </div>
@@ -451,11 +903,19 @@
             </button>
             <button
               type="button"
-              class="btn btn-success"
+              class="btn btn-success d-flex align-items-center"
+              :disabled="isEditing"
               @click="submitAnnouncement"
             >
-              Submit
+              <span
+                v-if="isEditing"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              {{ isEditing ? 'Submitting...' : 'Submit' }}
             </button>
+
           </div>
         </div>
       </div>
@@ -463,257 +923,7 @@
   </div>
 </template>
 
-  <script setup lang="ts"> 
-  import { ref, computed, onMounted } from 'vue'
-  import { Modal } from 'bootstrap'
-  import {
-    createAnnouncement,
-    getAnnouncements,
-    updateAnnouncement,
-    deleteAnnouncement as deleteAnnouncementAPI
-  } from '@/api/announcement'
-  import { uploadFile } from '@/api/file_upload'
 
-  // ===================== State: Modal Elements =====================
-  const newAnnouncementModal = ref(null)
-  const viewModal = ref(null)
-  const deleteModal = ref(null)
-  const editModal = ref(null)
-
-  // Modal instances (Bootstrap)
-  const modalInstances = {} as {
-    new: Modal; view: Modal; delete: Modal; edit: Modal;
-  }
-
-  onMounted(() => {
-    modalInstances.new = new Modal(newAnnouncementModal.value as HTMLElement)
-    modalInstances.view = new Modal(viewModal.value as HTMLElement)
-    modalInstances.delete = new Modal(deleteModal.value as HTMLElement)
-    modalInstances.edit = new Modal(editModal.value as HTMLElement)
-  })
-
-  // ===================== State: Announcements =====================
-  const announcements = ref<any[]>([])
-  const selectedIds = ref<number[]>([])
-  const selectedAnnouncement = ref<any>({})
-  const uploadedFileId = ref<number | null>(null)
-  const searchQuery = ref('')
-
-  // ===================== State: Pagination =====================
-  const currentPage = ref(1)
-  const pageSize = 10
-  const totalCount = ref(0)
-  const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
-
-  const changePage = (page: number) => {
-    if (page >= 1 && page <= totalPages.value) fetchAnnouncements(page)
-  }
-
-  // ===================== Fetch Announcements =====================
-  function fetchAnnouncements(page = 1) {
-    currentPage.value = page
-    getAnnouncements(page, searchQuery.value)
-      .then(res => {
-        const now = new Date()
-        announcements.value = res.data.data.results.map(a => ({
-          ...a,
-          posted: new Date(a.post_time) <= now
-        }))
-        totalCount.value = res.data.data.count
-      })
-      .catch(err => console.error('Failed to fetch announcements:', err))
-  }
-  onMounted(fetchAnnouncements)
-
-  // ===================== Computed =====================
-  const filteredAnnouncements = computed(() => {
-    return announcements.value.filter(a =>
-      [a.title, a.description].join(' ').toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  })
-
-  const formattedDateTime = computed(() => {
-    const postTime = selectedAnnouncement.value?.post_time
-    return postTime ? new Date(postTime).toLocaleString() : ''
-  })
-
-  // ===================== Date Conversion =====================
-  function combineLocalDateTimeToUTC(date: string, time: string): string {
-    const [year, month, day] = date.split('-').map(Number)
-    const [hour, minute] = time.split(':').map(Number)
-    const localDate = new Date(year, month - 1, day, hour, minute)
-    return new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString()
-  }
-
-  // ===================== New Announcement =====================
-  const newFileInput = ref<HTMLInputElement | null>(null)
-  const newAnnouncement = ref({
-    title: '',
-    description: '',
-    isScheduled: false,
-    scheduleDate: '',
-    scheduleTime: '',
-    hasAvailability: false,
-    department: '',
-    attachment: null,
-  })
-
-  const resetNewAnnouncement = () => {
-    newAnnouncement.value = {
-      title: '', description: '', isScheduled: false,
-      scheduleDate: '', scheduleTime: '',
-      hasAvailability: false, department: '', attachment: null
-    }
-    if (newFileInput.value) newFileInput.value.value = ''
-  }
-
-  const submitNewAnnouncement = () => {
-    const isScheduled = newAnnouncement.value.isScheduled;
-
-    if (isScheduled) {
-      const scheduleDateTime = new Date(`${newAnnouncement.value.scheduleDate}T${newAnnouncement.value.scheduleTime}`);
-      const now = new Date();
-
-      if (scheduleDateTime < now) {
-        alert('⚠️ Scheduled post time cannot be in the past.');
-        return;
-      }
-    }
-
-    const payload = {
-      title: newAnnouncement.value.title,
-      description: newAnnouncement.value.description,
-      file_ids: uploadedFileId.value ? [uploadedFileId.value] : [],
-      ...(isScheduled
-        ? {
-            schedule_post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime),
-            post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime)
-          }
-        : {
-            post_time: new Date().toISOString()
-          })
-    };
-
-    createAnnouncement(payload)
-      .then(() => {
-        fetchAnnouncements();
-        closeNewAnnouncementModal();
-      })
-      .catch(err => {
-        console.error('Failed to create announcement:', err.response?.data || err.message);
-      });
-  };
-
-  // ===================== File Upload =====================
-  const handleFileUpload = async (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    try {
-      const res = await uploadFile(file)
-      uploadedFileId.value = res.data.id
-      const fileUrl = URL.createObjectURL(file)
-      if (selectedAnnouncement.value?.id) {
-        selectedAnnouncement.value.attachment = fileUrl
-      } else {
-        newAnnouncement.value.attachment = fileUrl
-      }
-    } catch (err) {
-      console.error('File upload failed:', err.response?.data || err.message)
-    }
-  }
-
-  // ===================== Modal Controls =====================
-  const openNewAnnouncementModal = () => modalInstances.new.show()
-  const closeNewAnnouncementModal = () => { modalInstances.new.hide(); resetNewAnnouncement() }
-  const viewAnnouncement = (announcement: any) => { selectedAnnouncement.value = announcement; modalInstances.view.show() }
-  const closeViewModal = () => modalInstances.view.hide()
-  const confirmDelete = (announcement: any) => { selectedAnnouncement.value = announcement; modalInstances.delete.show() }
-  const closeDeleteModal = () => modalInstances.delete.hide()
-  const editAnnouncement = (announcement) => {
-    selectedAnnouncement.value = { ...announcement }
-    if (announcement.schedule_post_time) {
-      const dt = new Date(announcement.schedule_post_time)
-      selectedAnnouncement.value.isScheduled = true
-      selectedAnnouncement.value.scheduleDate = dt.toISOString().split('T')[0]
-      selectedAnnouncement.value.scheduleTime = dt.toTimeString().slice(0, 5)
-    } else {
-      selectedAnnouncement.value.isScheduled = false
-      selectedAnnouncement.value.scheduleDate = ''
-      selectedAnnouncement.value.scheduleTime = ''
-    }
-    modalInstances.edit.show()
-  }
-  const closeModal = () => { modalInstances.edit.hide(); selectedAnnouncement.value = {} }
-
-  // ===================== Edit Announcement =====================
-  const submitAnnouncement = () => {
-    const isScheduled = selectedAnnouncement.value.isScheduled;
-
-    if (isScheduled) {
-      const scheduleDateTime = new Date(`${selectedAnnouncement.value.scheduleDate}T${selectedAnnouncement.value.scheduleTime}`);
-      const now = new Date();
-
-      if (scheduleDateTime < now) {
-        alert('⚠️ Scheduled post time cannot be in the past.');
-        return;
-      }
-    }
-
-    const payload = {
-      title: selectedAnnouncement.value.title,
-      description: selectedAnnouncement.value.description,
-      ...(isScheduled
-        ? {
-            schedule_post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime),
-            post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime)
-          }
-        : {
-            schedule_post_time: null,
-            post_time: new Date().toISOString()
-          }),
-      file_ids: [] // extend if needed
-    };
-
-    updateAnnouncement(selectedAnnouncement.value.id, payload)
-      .then(() => {
-        fetchAnnouncements();
-        closeModal();
-      })
-      .catch(err => {
-        console.error('Failed to update announcement:', err.response?.data || err.message);
-      });
-  };
-
-
-  // ===================== Delete Logic =====================
-  const deleteAnnouncement = () => {
-    deleteAnnouncementAPI(selectedAnnouncement.value.id)
-      .then(() => {
-        fetchAnnouncements()
-        closeDeleteModal()
-      })
-      .catch(err => console.error('Failed to delete announcement:', err.response?.data || err.message))
-  }
-
-  function bulkDeleteAnnouncements() {
-    if (!confirm(`Delete ${selectedIds.value.length} announcements?`)) return
-    Promise.all(selectedIds.value.map(id => deleteAnnouncementAPI(id)))
-      .then(() => {
-        selectedIds.value = []
-        fetchAnnouncements()
-      })
-      .catch(err => console.error('Failed to delete some announcements:', err))
-  }
-
-
-</script>
-
-<script lang="ts">
-export default {
-  name: 'NotificationCenter',
-};
-</script>
 
 <style scoped>
 /* Search Container */
@@ -1016,5 +1226,12 @@ export default {
   border-color: #198754;
 }
 
+.fade-enter-active, .fade-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 
 </style>

@@ -10,6 +10,8 @@ const instance = axios.create({
     }
 })
 
+
+
 instance.interceptors.request.use(config => {
     const token = localStorage.getItem('access_token')
     if (token) {
@@ -41,3 +43,5 @@ instance.interceptors.response.use(
 )
 
 export default instance
+
+export const BASE_URL = 'http://localhost:8000'

@@ -1,27 +1,9 @@
 <script setup lang="ts">
 import { ref, defineProps, watch, onMounted } from 'vue';
 import { Modal } from 'bootstrap';
+import { BASE_URL } from '@/api/axios'
+import type { LeaveDate, LeaveApplication } from '@/interface/leaveApplicationInterface';
 
-// TODO 抽取Task 接口到Interface下
-// Define interface for leave details
-interface LeaveDate {
-  date: string;
-  duration: string;
-  leaveType: string;
-}
-
-// TODO 抽取Task 接口到Interface下
-interface LeaveApplication {
-  id: number;
-  name: string;
-  department: string;
-  leaveType: string;
-  status: string;
-  appliedOn: string;
-  dates: LeaveDate[];
-  reasons: string;
-  document: string;
-}
 
 // Props to receive selected leave application data
 const props = defineProps<{ selectedApplication: LeaveApplication | null }>();
@@ -126,7 +108,12 @@ const formatDateOnly = (dateStr: string): string => {
           <div v-if="props.selectedApplication.document && props.selectedApplication.document !== 'N/A'">
             <label class="form-label">Attached Document</label>
             <div class="pdf-viewer">
-              <embed :src="props.selectedApplication.document" type="application/pdf" width="100%" height="400px" />
+              <embed
+                :src="BASE_URL + props.selectedApplication.document"
+                type="application/pdf"
+                width="100%"
+                height="400px"
+              />
             </div>
           </div>
         </div>

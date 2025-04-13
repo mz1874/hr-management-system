@@ -11,14 +11,12 @@ export default {
 import LeaveApplicationModal from '@/components/LeaveApplicationModal/index.vue'
 import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/LeaveApplicationDetailsModal.vue'
 import { Modal } from "bootstrap";
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { getLeaveRequests, cancelLeaveRequest } from '@/api/leave'
 import { selectAllStaffs } from '@/api/staff'
 import { getCurrentUser } from '@/api/login';
 
-
 const usersById = ref<Record<number, { username: string, department: string | null }>>({});
-
 
 interface LeaveApplication {
   id: number;
@@ -37,67 +35,45 @@ interface LeaveApplication {
   document: string;
 }
 
+const currentPage = ref(1);
+const totalPages = ref(1);
+const totalCount = ref(0);
 const leaveApplications = ref<LeaveApplication[]>([]);
-
-
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
-    case 'Reject':
-      return 'badge-reject';
-    case 'Pending':
-      return 'badge-pending';
-    case 'Approved':
-      return 'badge-approved';
-    case 'Cancelled':
-      return 'badge-cancelled';
-    default:
-      return '';
+    case 'Reject': return 'badge-reject';
+    case 'Pending': return 'badge-pending';
+    case 'Approved': return 'badge-approved';
+    case 'Cancelled': return 'badge-cancelled';
+    default: return '';
   }
-}
+};
 
-// **Filter Functionality**
 const filterStatus = ref('All');
 
-const filteredApplications = computed(() => {
-  if (filterStatus.value === 'All') {
-    return leaveApplications.value;
-  } else if (filterStatus.value === 'Pending') {
-    return leaveApplications.value.filter(app => app.status === 'Pending');
-  } else if (filterStatus.value === 'Cancelled') {
-    return leaveApplications.value.filter(app => app.status === 'Cancelled');
-  } else if (filterStatus.value === 'Rejected') {
-    return leaveApplications.value.filter(app => app.status === 'Reject');
-  } else if (filterStatus.value === 'Approved') {
-    return leaveApplications.value.filter(app => app.status === 'Approved');
-  }
-  return leaveApplications.value;
-});
+// Always return the current leaveApplications, filtered by backend
+const filteredApplications = computed(() => leaveApplications.value);
 
 const withdrawModal = ref<HTMLElement | null>(null);
 
 const withdrawApplication = (id: number) => {
   const applicationIndex = leaveApplications.value.findIndex(app => app.id === id);
-  
   if (applicationIndex !== -1 && leaveApplications.value[applicationIndex].status === 'Pending') {
     if (withdrawModal.value) {
       const modal = new Modal(withdrawModal.value);
       modal.show();
-
-      // Confirm withdrawal function
       const confirmWithdrawal = async () => {
         try {
-          await cancelLeaveRequest(leaveApplications.value[applicationIndex].id); // backend call
-          leaveApplications.value[applicationIndex].status = 'Cancelled'; // frontend update
+          await cancelLeaveRequest(leaveApplications.value[applicationIndex].id);
+          leaveApplications.value[applicationIndex].status = 'Cancelled';
           summaryStats.value.pending--;
           modal.hide();
         } catch (error) {
           console.error('Error cancelling leave request:', error);
           alert('Failed to cancel the request. Please try again.');
         }
-};
-
-      // Ensure button exists before adding event listener
+      };
       const confirmButton = withdrawModal.value.querySelector(".btn-success");
       if (confirmButton) {
         confirmButton.addEventListener("click", confirmWithdrawal, { once: true });
@@ -115,20 +91,15 @@ const formatDuration = (code: string) => {
   }
 };
 
-
 const addNewApplication = (newApplication: LeaveApplication) => {
   leaveApplications.value.push(newApplication);
-  summaryStats.value.pending++; // Increase pending count
+  summaryStats.value.pending++;
 };
 
-// **State for Selected Application**
 const selectedApplication = ref<LeaveApplication | null>(null);
 
-// Open Modal for Viewing an Existing Application (Disable Fields)
 const openApplicationDetails = (application: LeaveApplication) => {
   selectedApplication.value = application;
-  
-  // Show the modal after setting the selected application
   nextTick(() => {
     const detailsModalElement = document.getElementById('leaveApplicationDetailsModal');
     if (detailsModalElement) {
@@ -139,71 +110,99 @@ const openApplicationDetails = (application: LeaveApplication) => {
 };
 
 const currentUserId = ref<number | null>(null);
-const userLeaveInfo = ref({
-  annual: 0,
-  medical: 0
-});
+const userLeaveInfo = ref({ annual: 0, medical: 0 });
 
+function fetchLeaveApplications(page = 1) {
+  currentPage.value = page;
+
+  let statusParam = null;
+  if (filterStatus.value !== 'All') {
+    const statusMap = {
+      'Pending': 'P',
+      'Approved': 'A',
+      'Rejected': 'R',
+      'Cancelled': 'W'
+    };
+    statusParam = statusMap[filterStatus.value];
+  }
+
+  getLeaveRequests(page, '', { status: statusParam })
+    .then(async res => {
+      const data = res.data?.data;
+
+      if (!Array.isArray(data?.results)) {
+        throw new Error('Invalid API response: data.results is not an array');
+      }
+
+      if (data.count && data.results.length === 0 && page > 1) {
+        const lastPage = Math.ceil(data.count / 5);
+        if (page > lastPage) return fetchLeaveApplications(lastPage);
+      }
+
+      totalCount.value = data.count;
+      totalPages.value = Math.ceil(data.count / 5);
+
+      const staffRes = await selectAllStaffs();
+      const staffList = Array.isArray(staffRes.data?.data?.results)
+        ? staffRes.data.data.results
+        : [];
+
+      usersById.value = Object.fromEntries(
+        staffList.map((u: any) => [
+          u.id,
+          { username: u.username, department: u.department || '-' }
+        ])
+      );
+
+      const statusMap = { P: 'Pending', A: 'Approved', R: 'Rejected', W: 'Cancelled' };
+
+      leaveApplications.value = data.results.map(item => {
+        const userInfo = usersById.value[item.user] || { username: '-', department: '-' };
+        return {
+          id: item.id,
+          name: userInfo.username,
+          department: userInfo.department,
+          leaveType: item.leave_dates?.[0]?.leave_type_display?.name || '-',
+          status: statusMap[item.status] || item.status_display || item.status,
+          appliedOn: item.created_date,
+          selected: false,
+          dates: Array.isArray(item.leave_dates)
+            ? item.leave_dates.map(d => ({
+                date: d.leave_date.split('T')[0],
+                duration: d.duration,
+                leaveType: d.leave_type_display?.name || 'N/A'
+              }))
+            : [],
+          reasons: item.reason,
+          document: item.attachment_url || ''
+        };
+      });
+    })
+    .catch(err => console.error('Error fetching leave applications:', err));
+}
 
 onMounted(async () => {
   try {
-    // 🔹 Step 1: Get logged-in user info
     const meRes = await getCurrentUser();
-    const currentUser = meRes.data.data; // assuming structure { data: { id, annual_leave, medical_leave, ... } }
-
+    const currentUser = meRes.data.data;
     currentUserId.value = currentUser.id;
     userLeaveInfo.value.annual = currentUser.annual_leave || 0;
     userLeaveInfo.value.medical = currentUser.medical_leave || 0;
-
-    // 🔹 Step 2: Get all leave requests
-    const res = await getLeaveRequests();
-    const applications = res.data.data.results;
-
-    // 🔹 Step 3: Get all staff profiles for name + department mapping
-    const staffRes = await selectAllStaffs();
-    const staffList = staffRes.data.data.results;
-
-    usersById.value = Object.fromEntries(
-      staffList.map((u: any) => [
-        u.id,
-        {
-          username: u.username,
-          department: u.department || '-'
-        }
-      ])
-    );
-
-    const statusMap = {
-      P: 'Pending',
-      A: 'Approved',
-      R: 'Rejected',
-      W: 'Cancelled'
-    };
-
-    leaveApplications.value = applications.map(item => {
-      const userInfo = usersById.value[item.user] || { username: '-', department: '-' };
-
-      return {
-        id: item.id,
-        name: userInfo.username,
-        department: userInfo.department,
-        leaveType: item.leave_dates?.[0]?.leave_type_display?.name || '-',
-        status: statusMap[item.status] || item.status_display || item.status,
-        appliedOn: item.created_date,
-        selected: false,
-        dates: item.leave_dates?.map(d => ({
-          date: d.leave_date.split('T')[0],
-          duration: d.duration,
-          leaveType: d.leave_type_display?.name || 'N/A'
-        })) || [],
-        reasons: item.reason,
-        document: item.attachment_url || ''
-      };
-    });
-
-  } catch (error) {
-    console.error('Error during initialization:', error);
+    fetchLeaveApplications();
+  } catch (err) {
+    console.error('Initialization failed:', err);
   }
+});
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    fetchLeaveApplications(page);
+  }
+};
+
+watch(filterStatus, () => {
+  currentPage.value = 1;
+  fetchLeaveApplications(1);
 });
 
 const summaryStats = computed(() => ({
@@ -212,10 +211,25 @@ const summaryStats = computed(() => ({
   medical: userLeaveInfo.value.medical
 }));
 
+const pageNumbers = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+  const maxVisible = 5;
+  const range: number[] = [];
 
+  let start = Math.max(1, current - Math.floor(maxVisible / 2));
+  let end = Math.min(total, start + maxVisible - 1);
 
+  if (end - start < maxVisible - 1) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
 
+  for (let i = start; i <= end; i++) {
+    range.push(i);
+  }
 
+  return range;
+});
 </script>
 
 <template>
@@ -302,7 +316,6 @@ const summaryStats = computed(() => ({
       <table class="table table-bordered">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Status</th>
             <th>Leave Types / Dates </th>
             <th>Reasons</th>
@@ -313,14 +326,13 @@ const summaryStats = computed(() => ({
         </thead>
         <tbody>
           <tr v-for="application in filteredApplications" :key="application.id">
-            <td>{{ application.id }}</td>
             <td>
               <span :class="['badge', getStatusBadgeClass(application.status)]">
                 {{ application.status }}
               </span>
             </td>
             <td>
-              <span v-if="application.dates.length">
+              <span v-if="Array.isArray(application.dates) && application.dates.length > 0">
                 <div v-for="(item, index) in application.dates" :key="index">
                   <strong>{{ item.leaveType }}</strong> – {{ item.date }} <em>({{ formatDuration(item.duration) }})</em>
                 </div>
@@ -366,6 +378,34 @@ const summaryStats = computed(() => ({
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-3 my-3">
+      <div class="text-muted fs-5">
+        Total Application: {{ totalCount }}
+      </div>
+
+      <nav>
+        <ul class="pagination mb-0">
+          <li :class="['page-item', { disabled: currentPage === 1 }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+          </li>
+
+          <li
+            v-for="page in pageNumbers"
+            :key="page"
+            :class="['page-item', { active: currentPage === page }]"
+          >
+            <a class="page-link" href="#" @click.prevent="changePage(page)">
+              {{ page }}
+            </a>
+          </li>
+
+          <li :class="['page-item', { disabled: currentPage === totalPages }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
     </div>
 
     <!-- Leave Application Modal -->
@@ -636,4 +676,12 @@ const summaryStats = computed(() => ({
     padding: 6px;
   }
 }
+
+.pagination {
+  display: flex;
+  padding-left: 0;
+  list-style: none;
+  border-radius: 0.25rem;
+}
+
 </style>

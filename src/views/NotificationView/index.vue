@@ -52,10 +52,22 @@ const filteredAnnouncements = computed(() => {
 });
 
 function viewAnnouncement(announcement) {
-  selectedAnnouncement.value = announcement
-  markAsRead(announcement)
-  modalInstance.show()
+  selectedAnnouncement.value = { ...announcement };
+
+  if (announcement.linked_files) {
+    selectedAnnouncement.value.attachments = announcement.linked_files.map(link => ({
+      id: link.id,
+      name: link.filename || 'Unnamed File',
+      url: link.url
+    }));
+  } else {
+    selectedAnnouncement.value.attachments = [];
+  }
+
+  markAsRead(announcement);
+  modalInstance.show();
 }
+
 
 function markAsRead(announcement) {
   if (!announcement.read) {
@@ -195,9 +207,36 @@ onMounted(() => {
               <p>{{ selectedAnnouncement.description }}</p>
               <p class="text-end">Best Regards<br>HR Team</p>
             </div>
-            <div class="mt-3" v-if="selectedAnnouncement?.attachment">
-              <iframe :src="selectedAnnouncement?.attachment" width="100%" height="400px" style="border: none;"></iframe>
+            <div v-if="selectedAnnouncement.attachments?.length" class="mt-4 px-3">
+              <h5 class="fw-bold mb-3">📎 Attachments</h5>
+
+              <div
+                v-for="(file, index) in selectedAnnouncement.attachments"
+                :key="file.id"
+                class="mb-4"
+              >
+                <p class="mb-2">📄 {{ file.name }}</p>
+
+                <!-- PDF viewer -->
+                <iframe
+                  v-if="file.url?.endsWith('.pdf')"
+                  :src="file.url"
+                  style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 6px;"
+                ></iframe>
+
+                <!-- Image viewer -->
+                <img
+                  v-else-if="/\.(jpg|jpeg|png)$/i.test(file.url)"
+                  :src="file.url"
+                  class="img-fluid border rounded"
+                  style="max-height: 300px;"
+                />
+
+                <!-- Fallback for unsupported files -->
+                <p v-else class="text-muted">Unsupported file type</p>
+              </div>
             </div>
+
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="closeViewModal">Close</button>
