@@ -6,6 +6,7 @@ export interface Staff {
     department: number
     department_name: string
     status: boolean
+    imgUrl:string
     employmentDate: string
     resignationDate?: string  // Add new property
     numberOfLeaves: number

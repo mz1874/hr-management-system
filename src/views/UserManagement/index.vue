@@ -36,6 +36,7 @@ const selectedStaff = ref<Staff>({
   department_name: '',
   role: '',
   department: 0,
+  imgUrl:'',
   status: false,
   employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
   numberOfLeaves: 0,
@@ -89,6 +90,7 @@ const openAddStaffModal = () => {
     role: '',
     department: selectedDepartment.value,
     status: false,
+    imgUrl:'',
     employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
     numberOfLeaves: 0,
     medicalLeaves: 0,
@@ -136,6 +138,15 @@ const changePage = (page: number) => {
     currentPage.value = page
   }
 }
+
+function onImageSelected(event) {
+  const file = event.target.files[0];
+  if (file) {
+    // selectedStaff.imgFile = file;
+    selectedStaff.value.imgUrl = URL.createObjectURL(file);
+  }
+}
+
 
 function resetPassword(staff: Staff) {
   Swal.fire({
@@ -335,6 +346,28 @@ function resetPassword(staff: Staff) {
                 placeholder="Enter name"
             >
           </div>
+
+          <div class="mb-3">
+            <label for="staffImage" class="form-label">Profile Image</label>
+            <input
+                type="file"
+                class="form-control"
+                id="staffImage"
+                accept="image/*"
+                @change="onImageSelected"
+            >
+          </div>
+
+          <div v-if="selectedStaff.imgUrl" class="mb-3">
+            <img
+                :src="selectedStaff.imgUrl"
+                alt="Profile Preview"
+                class="img-thumbnail"
+                style="max-width: 150px;"
+            >
+          </div>
+
+
           <div class="mb-3">
             <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
             <input
@@ -387,9 +420,7 @@ function resetPassword(staff: Staff) {
                 :value="selectedStaff.employmentDate"
                 type="date"
                 class="form-control"
-                disabled
             >
-            <small class="text-muted">Set automatically to today's date</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -424,6 +455,16 @@ function resetPassword(staff: Staff) {
         </div>
         <div class="modal-body">
           <p><strong>Name:</strong> {{ selectedStaff.name }}</p>
+          <div class="mb-3">
+            <label class="form-label">Profile Picture</label>
+            <img
+                v-if="selectedStaff.imgUrl"
+                :src="selectedStaff.imgUrl"
+                alt="Profile"
+                class="img-thumbnail"
+                style="max-height: 150px;"
+            >
+          </div>
           <p><strong>Date of Birth:</strong> {{ selectedStaff.dateOfBirth }}</p>
           <p><strong>Role:</strong> {{ selectedStaff.role }}</p>
           <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
@@ -470,6 +511,22 @@ function resetPassword(staff: Staff) {
                 class="form-control"
                 id="editStaffName"
                 placeholder="Enter name"
+            >
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Profile Picture</label>
+            <input
+                type="file"
+                accept="image/*"
+                @change="onImageSelected"
+                class="form-control"
+            >
+            <img
+                v-if="selectedStaff.imgUrl"
+                :src="selectedStaff.imgUrl"
+                alt="Profile"
+                class="img-thumbnail mt-2"
+                style="max-height: 150px;"
             >
           </div>
           <div class="mb-3">
