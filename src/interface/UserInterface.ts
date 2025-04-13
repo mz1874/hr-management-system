@@ -3,8 +3,10 @@ export interface Staff {
     name: string
     dateOfBirth: string
     role: string
-    department: string
-    status: 'Active' | 'Inactive'
+    department: number
+    department_name: string
+    status: boolean
+    imgUrl:string
     employmentDate: string
     resignationDate?: string  // Add new property
     numberOfLeaves: number

@@ -1,8 +1,9 @@
-import { onMounted, reactive } from "vue";
-import { selectAllStaffs } from '@/api/staff.ts';
-import { isSuccess } from "@/utils/httpStatus.ts";
-import type { Staff } from "@/interface/UserInterface.ts";
+import {onMounted, reactive} from "vue";
+import {selectAllStaffs, searchStaff, deleteStaff as del} from '@/api/staff.ts';
+import {isSuccess} from "@/utils/httpStatus.ts";
+import type {Staff} from "@/interface/UserInterface.ts";
 import dayjs from "dayjs";
+import Swal from "sweetalert2";
 
 interface StaffPagination {
     count: number;
@@ -27,14 +28,14 @@ export default function () {
                 staffData.count = res.count;
                 staffData.next = res.next;
                 staffData.previous = res.previous;
-
                 staffData.results = res.results.map((item: any) => ({
                     id: item.id,
                     name: item.username,
                     dateOfBirth: dayjs(item.date_of_birt).format("YYYY-MM-DD"),
                     role: item.roles?.[0] ? String(item.roles[0]) : '', // 或用后续role映射表
                     department: item.department ? String(item.department) : '',
-                    status: item.status ? 'Active' : 'Inactive',
+                    department_name: item.department_name,
+                    status: item.status,
                     employmentDate: dayjs(item.employment_time).format("YYYY-MM-DD"),
                     resignationDate: undefined, // 后端未提供，预设为 undefined
                     numberOfLeaves: item.number_of_leave,
@@ -45,10 +46,43 @@ export default function () {
         });
     }
 
+
+    function deleteStaff(id: number): void {
+        del(id).then((response) => {
+            if (isSuccess(response.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Department successfully added",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+                fetchAllStaffs();
+            } else {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "error",
+                    title: "Operation failed : " + response.data,
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+            }
+        })
+    }
+
+
+    function search(staffName: string): any {
+        searchStaff(staffName).then((response) => {
+            if (isSuccess(response.status)) {
+                console.log(response);
+            }
+        })
+    }
+
     onMounted(() => {
         fetchAllStaffs();
         console.log(JSON.stringify(staffData));
     });
 
-    return { fetchAllStaffs, staffData };
+    return {fetchAllStaffs, staffData, search, deleteStaff};
 }

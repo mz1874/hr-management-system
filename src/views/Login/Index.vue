@@ -56,6 +56,7 @@ import logo from '../../assets/logo.png';
 import {ref} from "vue";
 import {useRouter} from "vue-router";
 import {login, logout} from "@/api/login.ts";
+import {isSuccess} from "@/utils/httpStatus.ts";
 
 const router = useRouter()
 
@@ -80,30 +81,41 @@ async function submitData() {
   }
 
   try {
-    const res = await login(username.value, password.value)
-    if (res.status === 200) {
-      localStorage.setItem('access_token', res.data.data.access);
-      console.log(localStorage.getItem('access_token'));
-      localStorage.setItem('refresh_token', res.data.data.access);
-
+    const res = await login(username.value, password.value);
+    const tokens = res.data?.data;
+    if (tokens?.access && tokens?.refresh) {
+      localStorage.setItem('access_token', tokens.access);
+      localStorage.setItem('refresh_token', tokens.refresh);
       Swal.fire({
         position: "top-end",
         icon: "success",
         title: "Login success",
         showConfirmButton: false,
         timer: 1500
+      }).then(() => {
+        router.push({ name: 'home-default' });
+      });
+    } else {
+      throw new Error("Invalid token structure");
+    }
+  } catch (err) {
+    if (err.response?.status === 401) {
+      Swal.fire({
+        title: "Login failed!",
+        text: err.message,
+        icon: "error"
+      });
+    } else {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "The network connection failed.",
       });
     }
-
-    router.push({name: 'home-default'})
-  } catch (err) {
-    Swal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: "UserName or password are incorrect.",
-    });
-    console.error(err)
   }
+
+
 }
 
 </script>
