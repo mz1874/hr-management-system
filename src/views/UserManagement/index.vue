@@ -4,6 +4,8 @@ import type {Staff} from "@/interface/UserInterface.ts";
 import useStaff from "@/hooks/useStaff.ts";
 import {useDepartmentStore} from "@/stores/department.ts";
 import Swal from "sweetalert2";
+import {resetPassword as resPwd} from "@/api/staff.ts";
+import {isSuccess} from "@/utils/httpStatus.ts";
 
 const departmentStore = useDepartmentStore();
 
@@ -44,7 +46,7 @@ const selectedStaff = ref<Staff>({
 /*状态卡*/
 const statistics = computed(() => {
   /*先过滤当前的部门*/
-  const departmentStaff = staffData.results.filter(staff=>{
+  const departmentStaff = staffData.results.filter(staff => {
     return selectedDepartment.value === 0 ? staff : staff.department == selectedDepartment.value
   })
   return {
@@ -72,7 +74,6 @@ const paginatedStaffs = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   return filteredStaffs.value.slice(start, start + itemsPerPage)
 })
-
 
 
 const searchStaff = (searchData: string) => {
@@ -126,7 +127,7 @@ const saveEditedStaff = () => {
 }
 
 const confirmDeleteStaff = () => {
-  deleteStaff( selectedStaff.value.id)
+  deleteStaff(selectedStaff.value.id)
   showDeleteStaffModal.value = false
 }
 
@@ -136,7 +137,7 @@ const changePage = (page: number) => {
   }
 }
 
-function resetPassword(staff:Staff) {
+function resetPassword(staff: Staff) {
   Swal.fire({
     title: "Confirmation of reset password?",
     text: "The current password will be reset!",
@@ -147,11 +148,15 @@ function resetPassword(staff:Staff) {
     confirmButtonText: "Yes, reset it!"
   }).then((result) => {
     if (result.isConfirmed) {
-      Swal.fire({
-        title: "Reset password successfully!",
-        text: "The password was reset successfully!.",
-        icon: "success"
-      });
+      resPwd(staff.id).then((res) => {
+        if (isSuccess(res.status)) {
+          Swal.fire({
+            title: "Reset password successfully!",
+            text: "The password was reset successfully!.",
+            icon: "success"
+          });
+        }
+      })
     }
   });
 }

@@ -98,12 +98,11 @@ async function submitData() {
     } else {
       throw new Error("Invalid token structure");
     }
-
   } catch (err) {
     if (err.response?.status === 401) {
       Swal.fire({
-        title: "Account has been blocked!",
-        text: "Please contact the Administrator!",
+        title: "Login failed!",
+        text: err.message,
         icon: "error"
       });
     } else {
@@ -111,7 +110,7 @@ async function submitData() {
       Swal.fire({
         icon: "error",
         title: "Oops...",
-        text: "Username or password is incorrect.",
+        text: "The network connection failed.",
       });
     }
   }
