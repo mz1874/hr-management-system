@@ -2,7 +2,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import '@fortawesome/fontawesome-free/css/all.css'
-
+import 'vue-multiselect/dist/vue-multiselect.min.css'
+import 'vue3-treeselect/dist/vue3-treeselect.css';
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

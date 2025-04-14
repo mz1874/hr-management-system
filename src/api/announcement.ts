@@ -5,10 +5,11 @@ export function createAnnouncement(payload) {
     return axios.post('/api/announcements/', payload)
 }
 
-export function getAnnouncements(page = 1, search = '') {
+export function getAnnouncements(page = 1, search = '', extraParams = {}) {
     const params = new URLSearchParams({
       page: String(page),
-      search: search
+      search: search,
+      ...extraParams
     })
     return axios.get(`/api/announcements/?${params.toString()}`)
   }

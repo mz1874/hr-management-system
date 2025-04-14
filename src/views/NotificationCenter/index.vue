@@ -8,6 +8,11 @@ import {
   deleteAnnouncement as deleteAnnouncementAPI
 } from '@/api/announcement'
 import { uploadFile } from '@/api/file_upload'
+import { selectAllDepartments } from '@/api/department';
+import Swal from 'sweetalert2'
+import Treeselect from 'vue3-treeselect'
+
+
 
 // ========== Modal State ==========
 const newAnnouncementModal = ref(null)
@@ -19,7 +24,57 @@ const modalInstances = {} as {
   new: Modal; view: Modal; delete: Modal; edit: Modal;
 }
 
+const departments = ref<{ id: number; name: string }[]>([]);
+
+// Tree data structure for department dropdown
+const departmentTree = ref<any[]>([])
+const selectedDepartments = ref<any[]>([])
+
+const buildDepartmentTree = (flatList: any[]) => {
+  const map = new Map<number, any>();
+  const roots: any[] = []
+
+  flatList.forEach(dept => {
+    map.set(dept.id, { ...dept, label: dept.department_name, children: [] })
+  })
+
+  flatList.forEach(dept => {
+    if (dept.parent_department) {
+      const parent = map.get(dept.parent_department);
+      if (parent) {
+        parent.children.push(map.get(dept.id));
+      }
+    } else {
+      roots.push(map.get(dept.id));
+    }
+  })
+
+  return roots
+}
+
+const fetchDepartments = async () => {
+  try {
+    const res = await selectAllDepartments()
+    const flatDepartments = res.data.data.results
+    departmentTree.value = buildDepartmentTree(flatDepartments)
+  } catch (err) {
+    console.error('Failed to fetch departments:', err.response?.data || err.message)
+  }
+}
+
+const onDepartmentChange = (selected: any[]) => {
+  const selectedIds = new Set(selected.map(i => i.id))
+  const filtered = selected.filter(opt => {
+    // if a parent is selected, remove child
+    return !selectedIds.has(opt.parent_department)
+  })
+  newAnnouncement.value.department = filtered.map(i => i.id)
+  selectedDepartments.value = filtered
+}
+
 onMounted(() => {
+  fetchDepartments();
+
   modalInstances.new = new Modal(newAnnouncementModal.value as HTMLElement)
   modalInstances.view = new Modal(viewModal.value as HTMLElement)
   modalInstances.delete = new Modal(deleteModal.value as HTMLElement)
@@ -49,8 +104,8 @@ const changePage = (page: number) => {
 // ========== Fetch ==========
 function fetchAnnouncements(page = 1) {
   currentPage.value = page
-  getAnnouncements(page, searchQuery.value)
-    .then(res => {
+  getAnnouncements(page, searchQuery.value, { show_all: 1 })
+  .then(res => {
       const now = new Date()
       announcements.value = res.data.data.results.map(a => ({
         ...a,
@@ -62,11 +117,35 @@ function fetchAnnouncements(page = 1) {
 }
 onMounted(fetchAnnouncements)
 
+const sortKey = ref<'date' | 'title'>('date'); // default sort
+const sortOrder = ref<'asc' | 'desc'>('desc'); // latest first
+
 const filteredAnnouncements = computed(() => {
-  return announcements.value.filter(a =>
-    [a.title, a.description].join(' ').toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-})
+  const keyword = searchQuery.value.toLowerCase();
+
+  const sorted = [...announcements.value].sort((a, b) => {
+    let aVal, bVal;
+
+    if (sortKey.value === 'date') {
+      aVal = new Date(a.post_time);
+      bVal = new Date(b.post_time);
+    } else if (sortKey.value === 'title') {
+      aVal = a.title.toLowerCase();
+      bVal = b.title.toLowerCase();
+    }
+
+    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  return sorted.filter(a =>
+    [a.title, a.description].join(' ').toLowerCase().includes(keyword)
+  );
+});
+
+
+
 
 const formattedDateTime = computed(() => {
   const postTime = selectedAnnouncement.value?.post_time
@@ -81,6 +160,26 @@ function combineLocalDateTimeToUTC(date: string, time: string): string {
   return new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString()
 }
 
+const today = computed(() => {
+  const now = new Date();
+  return now.toISOString().split('T')[0]; // YYYY-MM-DD
+});
+
+const minTime = computed(() => {
+  const isToday = selectedAnnouncement.value.scheduleDate === today.value;
+
+  if (isToday) {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`; // returns "14:45" for example
+  }
+
+  // Otherwise allow full time range
+  return "00:00";
+});
+
+
 // ========== New Announcement ==========
 const newFileInput = ref<HTMLInputElement | null>(null)
 const newAnnouncement = ref({
@@ -90,7 +189,7 @@ const newAnnouncement = ref({
   scheduleDate: '',
   scheduleTime: '',
   hasAvailability: false,
-  department: '',
+  department: [] as number[],
   attachments: [] as { id: number; url: string; name: string }[],
 })
 
@@ -98,7 +197,7 @@ const resetNewAnnouncement = () => {
   newAnnouncement.value = {
     title: '', description: '', isScheduled: false,
     scheduleDate: '', scheduleTime: '',
-    hasAvailability: false, department: '', attachments: []
+    hasAvailability: false, department: [], attachments: []
   }
   uploadedFileIds.value = []
   if (newFileInput.value) newFileInput.value.value = ''
@@ -139,8 +238,12 @@ const handleFileUpload = async (event: Event) => {
       uploadedFileIds.value.push(fileId);
     }
   } catch (err) {
-    console.error('File upload failed:', err.response?.data || err.message);
-    alert('Upload failed: ' + (err.response?.data?.detail || err.message));
+    Swal.fire({
+      icon: "error",
+      title: "File Upload Failed",
+      showConfirmButton: false,
+      timer: 1500
+    });
   } finally {
     if (newFileInput.value) newFileInput.value.value = ''
     if (editFileInput.value) editFileInput.value.value = ''
@@ -171,8 +274,6 @@ const closeNewAnnouncementModal = () => {
 }
 
 const viewAnnouncement = (announcement: any) => {
-  console.log('🟢 Opening View Modal');
-  console.log('📝 Raw announcement:', announcement);
 
   selectedAnnouncement.value = { ...announcement };
 
@@ -196,42 +297,68 @@ const viewAnnouncement = (announcement: any) => {
 const closeViewModal = () => modalInstances.view.hide()
 
 const confirmDelete = (announcement: any) => {
-  selectedAnnouncement.value = announcement
-  modalInstances.delete.show()
-}
+  isBulkDelete.value = false;
+  selectedAnnouncement.value = announcement;
+  modalInstances.delete.show();
+  isDeleteModalOpen.value = true;
+};
 
-const closeDeleteModal = () => modalInstances.delete.hide()
 
-const editAnnouncement = (announcement) => {
-  selectedAnnouncement.value = { ...announcement }
+const closeDeleteModal = () => {
+  modalInstances.delete.hide();
+  isDeleteModalOpen.value = false;
+  isBulkDelete.value = false;
+};
 
-  if (announcement.linked_files) {
-    selectedAnnouncement.value.attachments = announcement.linked_files.map(link => ({
+const editAnnouncement = async (announcement) => {
+  console.log("🟡 Raw incoming announcement:", announcement);
+
+  // Ensure departments are loaded
+  if (!departmentTree.value.length) {
+    await fetchDepartments();
+  }
+
+  // Flatten department tree to match against
+  const flatDepartments = departmentTree.value.flatMap(d => [d, ...(d.children || [])]);
+
+  // Extract the department IDs from the incoming data
+  const deptIds = (announcement.departments || []).map(dep =>
+    typeof dep === 'object' ? dep.id : dep
+  );
+
+  // 🔧 Find exact matching objects from departmentTree by ID (to match Treeselect references)
+  const mappedDepartments = deptIds
+    .map(id => flatDepartments.find(d => d.id === id))
+    .filter(Boolean); // removes any nulls just in case
+
+  console.log("✅ Mapped departments (Treeselect-compatible):", mappedDepartments);
+
+  // Final structured assignment
+  selectedAnnouncement.value = {
+    ...announcement,
+    departments: mappedDepartments,
+    hasAvailability: mappedDepartments.length > 0,
+    isScheduled: !!announcement.schedule_post_time,
+    scheduleDate: '',
+    scheduleTime: '',
+    attachments: (announcement.linked_files || []).map(link => ({
       id: link.file,
       url: link.url,
-      name: link.filename || 'Attached File'
-    }));
-    editedUploadedFileIds.value = selectedAnnouncement.value.attachments.map(f => f.id);
-  } else {
-    selectedAnnouncement.value.attachments = [];
-    editedUploadedFileIds.value = [];
-  }
+      name: link.filename || 'Attached File',
+    })),
+  };
 
   if (announcement.schedule_post_time) {
-    const dt = new Date(announcement.schedule_post_time)
-    selectedAnnouncement.value.isScheduled = true
-    selectedAnnouncement.value.scheduleDate = dt.toISOString().split('T')[0]
-    selectedAnnouncement.value.scheduleTime = dt.toTimeString().slice(0, 5)
-  } else {
-    selectedAnnouncement.value.isScheduled = false
-    selectedAnnouncement.value.scheduleDate = ''
-    selectedAnnouncement.value.scheduleTime = ''
+    const dt = new Date(announcement.schedule_post_time);
+    selectedAnnouncement.value.scheduleDate = dt.toISOString().split("T")[0];
+    selectedAnnouncement.value.scheduleTime = dt.toTimeString().slice(0, 5);
   }
 
-  modalInstances.edit.show()
-  isNewModalOpen.value = false
-  isEditModalOpen.value = true
-}
+  editedUploadedFileIds.value = selectedAnnouncement.value.attachments.map(f => f.id);
+
+  modalInstances.edit.show();
+  isEditModalOpen.value = true;
+};
 
 const closeModal = () => {
   modalInstances.edit.hide()
@@ -249,10 +376,39 @@ const submitNewAnnouncement = async () => {
   try {
     const isScheduled = newAnnouncement.value.isScheduled;
 
+    if (!newAnnouncement.value.title.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Title cannot be empty!',
+        showConfirmButton: false,
+        position: "top-end",
+      });
+      isSubmitting.value = false;
+      return;
+    }
+
+    if (!newAnnouncement.value.description.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Description cannot be empty!',
+        showConfirmButton: false,
+      });
+      isSubmitting.value = false;
+      return;
+    }
     if (isScheduled) {
       const scheduleDateTime = new Date(`${newAnnouncement.value.scheduleDate}T${newAnnouncement.value.scheduleTime}`);
       if (scheduleDateTime < new Date()) {
-        alert('⚠️ Scheduled post time cannot be in the past.');
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Something went wrong!",
+          footer: '⚠️ Scheduled post time cannot be in the past."',
+          showConfirmButton: false,
+
+        });
         isSubmitting.value = false
         return;
       }
@@ -262,6 +418,7 @@ const submitNewAnnouncement = async () => {
       title: newAnnouncement.value.title,
       description: newAnnouncement.value.description,
       file_ids: uploadedFileIds.value,
+      departments: newAnnouncement.value.department, 
       ...(isScheduled
         ? {
             schedule_post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime),
@@ -275,8 +432,25 @@ const submitNewAnnouncement = async () => {
     await createAnnouncement(payload)
     fetchAnnouncements()
     closeNewAnnouncementModal()
+    Swal.fire({
+      icon: 'success',
+      title: 'Success!',
+      text: 'Announcement created successfully.',
+      timer: 2000,
+      showConfirmButton: false,
+      position: "top-end",
+    });
   } catch (err) {
     console.error('Failed to create announcement:', err.response?.data || err.message)
+    Swal.fire({
+      icon: 'error', 
+      title: 'Oops...',
+      text: err.response?.data?.detail || 'Failed to create announcement.',
+      footer: JSON.stringify(err.response?.data),
+
+      showConfirmButton: false,
+      position: "top-end",
+      });
   } finally {
     isSubmitting.value = false
   }
@@ -287,18 +461,49 @@ const submitAnnouncement = async () => {
   isEditing.value = true
   try {
     const isScheduled = selectedAnnouncement.value.isScheduled;
+    if (!selectedAnnouncement.value.title.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Title cannot be empty!',
+        showConfirmButton: false,
+      });
+      isEditing.value = false;
+      return;
+    }
+
+    if (!selectedAnnouncement.value.description.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Description cannot be empty!',
+        showConfirmButton: false,
+      });
+      isEditing.value = false;
+      return;
+    }
+
     if (isScheduled) {
       const scheduleDateTime = new Date(`${selectedAnnouncement.value.scheduleDate}T${selectedAnnouncement.value.scheduleTime}`);
       if (scheduleDateTime < new Date()) {
-        alert('⚠️ Scheduled post time cannot be in the past.');
-        isEditing.value = false
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: 'Scheduled time cannot be in the past!',
+          showConfirmButton: false,
+        });
+        isEditing.value = false;
         return;
       }
     }
 
+
     const payload = {
       title: selectedAnnouncement.value.title,
       description: selectedAnnouncement.value.description,
+      departments: selectedAnnouncement.value.departments
+        .map(dep => dep?.id)
+        .filter(id => id !== null && id !== undefined),
       ...(isScheduled
         ? {
             schedule_post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime),
@@ -311,13 +516,26 @@ const submitAnnouncement = async () => {
       file_ids: editedUploadedFileIds.value
     }
 
-    console.log('📤 Submitting updated announcement with:', payload)
-
     await updateAnnouncement(selectedAnnouncement.value.id, payload)
     fetchAnnouncements()
     closeModal()
+    Swal.fire({
+      icon: 'success',
+      title: 'Updated!',
+      text: 'Announcement updated successfully.',
+      timer: 2000,
+      showConfirmButton: false,
+      position: "top-end",
+        });
   } catch (err) {
     console.error('Failed to update announcement:', err.response?.data || err.message)
+    Swal.fire({
+      icon: 'error',
+      title: 'Oops...',
+      text: err.response?.data?.detail || 'Failed to create announcement!',
+      showConfirmButton: false,
+      position: "top-end",
+    });
   } finally {
     isEditing.value = false
   }
@@ -330,19 +548,68 @@ const deleteAnnouncement = () => {
     .then(() => {
       fetchAnnouncements()
       closeDeleteModal()
+      Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'The announcement has been deleted successfully.',
+        showConfirmButton: false,
+        position: "top-end",
+
+      });
+
     })
-    .catch(err => console.error('Failed to delete announcement:', err.response?.data || err.message))
+    .catch((err) => {
+      console.error('Failed to delete announcement:', err.response?.data || err.message);
+      Swal.fire({
+        showConfirmButton: false,
+        icon: 'error',
+        title: 'Oops...',
+        text: err.response?.data?.detail || 'Failed to delete announcement!',
+        position: "top-end",
+      });
+    });
 }
 
-const bulkDeleteAnnouncements = () => {
-  if (!confirm(`Delete ${selectedIds.value.length} announcements?`)) return
+const isBulkDelete = ref(false);
+const isDeleteModalOpen = ref(false); //for logic clarity
+
+const confirmBulkDelete = () => {
+  isBulkDelete.value = true;
+  modalInstances.delete.show();
+  isDeleteModalOpen.value = true;
+};
+
+
+const handleBulkDelete = () => {
   Promise.all(selectedIds.value.map(id => deleteAnnouncementAPI(id)))
     .then(() => {
-      selectedIds.value = []
-      fetchAnnouncements()
+      fetchAnnouncements();
+      selectedIds.value = [];
+      modalInstances.delete.hide();
+      isDeleteModalOpen.value = false;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'Selected announcements have been deleted.',
+        timer: 2000,
+        showConfirmButton: false
+      });
     })
-    .catch(err => console.error('Failed to delete some announcements:', err))
-}
+    .catch(err => {
+      console.error('Bulk delete failed:', err.response?.data || err.message);
+      modalInstances.delete.hide();
+      isDeleteModalOpen.value = false;
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: err.response?.data?.detail || 'Failed to delete announcements.'
+      });
+    });
+};
+
+
 </script>
 
 
@@ -377,12 +644,40 @@ const bulkDeleteAnnouncements = () => {
         <button
           class="btn bulk-delete-btn"
           :disabled="selectedIds.length === 0"
-          @click="bulkDeleteAnnouncements"
+          @click="confirmBulkDelete"
         >
           Delete<br />Selected ({{ selectedIds.length }})
         </button>
+
       </div>
     </div>
+
+    <!-- Sorting Controls (Floated to Right) -->
+    <div class="d-flex justify-content-end align-items-center px-3 mb-3" style="width: 100%;">
+      <label class="form-label mb-0 me-2 fw-semibold text-muted">Sort by:</label>
+
+      <select
+        v-model="sortKey"
+        class="form-select form-select-sm w-auto me-2"
+      >
+        <option value="date">Date</option>
+        <option value="title">Title</option>
+      </select>
+
+      <button
+        class="btn btn-sm text-white border-0"
+        :style="{
+          backgroundColor: sortOrder === 'asc' ? '#819171' : '#CBD5C0'
+        }"
+        @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
+      >
+        <i :class="sortOrder === 'asc' ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i>
+        {{ sortOrder === 'asc' ? 'Asc' : 'Desc' }}
+      </button>
+
+
+    </div>
+
 
 
     <!-- Announcement Cards -->
@@ -577,12 +872,15 @@ const bulkDeleteAnnouncements = () => {
                       class="form-control"
                       v-model="newAnnouncement.scheduleDate"
                       :disabled="!newAnnouncement.isScheduled"
+                      :min="today"
                     />
                     <input
                       type="time"
                       class="form-control"
                       v-model="newAnnouncement.scheduleTime"
                       :disabled="!newAnnouncement.isScheduled"
+                      :min="minTime"
+
                     />
                   </div>
                 </div>
@@ -599,13 +897,22 @@ const bulkDeleteAnnouncements = () => {
                       >Available for</label
                     >
                   </div>
-                  <input
-                    type="text"
-                    class="form-control mt-2"
+                  <Treeselect
+                    v-if="newAnnouncement.hasAvailability"
                     v-model="newAnnouncement.department"
-                    placeholder="Department"
-                    :disabled="!newAnnouncement.hasAvailability"
+                    :multiple="true"
+                    :options="departmentTree"
+                    :normalizer="node => ({
+                      id: node.id,
+                      label: node.label,
+                      children: node.children
+                    })"
+                    placeholder="Select departments..."
+                    class="mt-2"
                   />
+
+
+
 
                   <div v-if="newAnnouncement.attachments.length" class="mt-3">
                     <h6>PDF Preview (Unsubmitted):</h6>
@@ -729,22 +1036,19 @@ const bulkDeleteAnnouncements = () => {
                 Are you sure?
               </h3>
               <p class="text-muted" style="color: #6B7280;">
-                This action cannot be undone. This will permanently delete the
-                announcement.
+                {{ isBulkDelete
+                  ? `This will permanently delete ${selectedIds.length} announcement(s).`
+                  : 'This will permanently delete the announcement.' }}
               </p>
             </div>
             <div class="d-flex justify-content-end gap-2">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                @click="closeDeleteModal"
-              >
+              <button type="button" class="btn btn-secondary" @click="closeDeleteModal">
                 Cancel
               </button>
               <button
                 type="button"
                 class="btn btn-success"
-                @click="deleteAnnouncement"
+                @click="isBulkDelete ? handleBulkDelete() : deleteAnnouncement()"
               >
                 Delete
               </button>
@@ -753,6 +1057,7 @@ const bulkDeleteAnnouncements = () => {
         </div>
       </div>
     </div>
+
 
     <!-- Edit Announcement Modal -->
     <div class="modal fade" id="editAnnouncementModal" ref="editModal">
@@ -856,14 +1161,18 @@ const bulkDeleteAnnouncements = () => {
                       class="form-control"
                       v-model="selectedAnnouncement.scheduleDate"
                       :disabled="!selectedAnnouncement.isScheduled"
+                      :min="today"
                     />
+
                     <input
-                      type="time"
-                      class="form-control"
-                      v-model="selectedAnnouncement.scheduleTime"
-                      :disabled="!selectedAnnouncement.isScheduled"
-                    />
+                    type="time"
+                    class="form-control"
+                    v-model="selectedAnnouncement.scheduleTime"
+                    :disabled="!selectedAnnouncement.isScheduled"
+                    :min="minTime"
+                  />
                   </div>
+
                 </div>
 
                 <div class="mb-3">
@@ -878,14 +1187,22 @@ const bulkDeleteAnnouncements = () => {
                       >Available for</label
                     >
                   </div>
-                  <input
-                    type="text"
-                    class="form-control mt-2"
-                    v-model="selectedAnnouncement.department"
-                    placeholder="Department"
+                  <treeselect
+                    v-model="selectedAnnouncement.departments"
+                    :multiple="true"
+                    :options="departmentTree"
+                    :normalizer="node => ({
+                      id: node.id,
+                      label: node.label,
+                      children: node.children || []
+                    })"
+                    placeholder="Select departments"
+                    class="mt-2"
                     :disabled="!selectedAnnouncement.hasAvailability"
                   />
+
                 </div>
+
 
                 <div v-for="(file, index) in selectedAnnouncement.attachments" :key="file.id" class="mt-3">
                       <p class="mb-1">📎 {{ file.name }}</p>

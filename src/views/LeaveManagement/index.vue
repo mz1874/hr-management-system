@@ -10,12 +10,9 @@ import { ref, computed, onMounted } from 'vue';
 import {
   getLeaveRequests,
   reviewLeaveRequest,
-  cancelLeaveRequest,
-  deleteLeaveRequest, 
+  getLeaveTypes
 } from '@/api/leave'
-import { getCurrentUser } from '@/api/login'; 
 import { selectAllStaffs } from '@/api/staff';
-import { getLeaveTypes } from '@/api/leave';
 
 interface LeaveApplication {
   id: number;
@@ -364,14 +361,14 @@ onMounted(() => {
     <div class="d-flex justify-content-end mt-3 buttons">
       <button class="btn custom-approve me-2" @click="bulkApprove">Approve</button>
       <button class="btn custom-reject" @click="bulkReject">Reject</button>
-      <button class="btn btn-danger">Delete</button>
+      <!-- <button class="btn btn-danger">Delete</button> -->
     </div>
 
     <!-- Applications Table -->
     <table class="table table-bordered">
       <thead>
         <tr>
-          <th style="width: 50px"></th>
+          <!-- <th style="width: 50px"></th> -->
           <th>Employee Name</th>
           <th>Leave Type</th>
           <th>Status</th>
@@ -382,9 +379,9 @@ onMounted(() => {
       </thead>
       <tbody>
         <tr v-for="application in filteredApplications" :key="application.id">
-          <td>
+          <!-- <td>
             <input type="checkbox" v-model="application.selected" class="select-checkbox">
-          </td>
+          </td> -->
           <td>{{ application.employeeName }}</td>
           <td>
             <div v-if="application.dates.length">
