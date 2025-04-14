@@ -12,4 +12,5 @@ export interface Staff {
     numberOfLeaves: number
     medicalLeaves: number
     annualLeaves: number
+    totalPoints: number
 }

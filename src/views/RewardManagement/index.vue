@@ -1,7 +1,6 @@
 <template>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex mb-4">
         <h2>Reward Management</h2>
-        <button type="button" class="btn btn-danger" @click="openResetModal">Reset All User Point</button>
     </div>
 
     <div class="filter-container">
@@ -19,7 +18,7 @@
             <select class="search-container form-select" v-model="searchStatus">
                 <option value="">All Status</option>
                 <option value="Draft">Draft</option>
-                <option value="Ongoing">Ongoing</option>
+                <option value="Active">Active</option>
                 <option value="Expired">Expired</option>
             </select>
         </div>
@@ -49,7 +48,7 @@
     <div class="table-card">
         <div class="d-flex justify-content-between align-items-center mb-1">
             <div></div>
-            <button type="button" class="btn btn-success" @click="openRewardModal">Create A New Reward</button>
+            <button type="button" class="btn btn-success" @click="openCreateModal">Create A New Reward</button>
         </div>
         <table class="table">   
             <thead>
@@ -58,18 +57,20 @@
                     <th scope="col">Reward Name</th>
                     <th scope="col">Points</th>
                     <th scope="col">Created On</th>
+                    <th scope="col">End Date</th>
                     <th scope="col">Status</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="item in paginatedLogs" index="item.id">
+                <tr v-for="item in paginatedLogs" :key="item.id">
                     <td>{{ item.id}}</td>
                     <td>{{ item.rewardName}}</td>
-                    <td>{{ item.points}}</td>
+                    <td>{{ item.rewardPoints}}</td>
                     <td>{{ item.createdOn}}</td>
+                    <td>{{ item.endDateTime}}</td>
                     <td :class="{
-                        'text-success': item.status === 'Ongoing',
+                        'text-success': item.status === 'Active',
                         'text-danger': item.status === 'Expired',
                         'text-primary': item.status === 'Draft'}">
                         {{ item.status }}
@@ -103,8 +104,8 @@
         </nav>
     </div>
 
-    <!-- Create Reward Modal -->
-    <div class="modal fade" id="createReward" :class="{ show: showModal }" style="display: block" v-if="showModal">
+    <!-- Reward Modal -->
+    <div class="modal fade" id="showModal" :class="{ show: showModal }" style="display: block" v-if="showModal">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
@@ -123,7 +124,7 @@
                             <form>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Image:</label>
-                                    <label for="input-file" id="drop-area">
+                                    <!-- <label for="input-file" id="drop-area">
                                         <input type="file" accept="image/*" id="input-file" hidden @change="handleImageChange" :disabled="modalType === 'view'">
                                         <div id="img-view" v-if="currentReward.image">
                                             <img :src="currentReward.image" alt="Reward Image" class="img-fluid">
@@ -135,7 +136,7 @@
                                             </svg>
                                             <span id="img-name">Click to select image</span>                                                    
                                         </div>
-                                    </label>
+                                    </label> -->
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Name:</label>
@@ -143,7 +144,7 @@
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Points:</label>
-                                    <input type="number" class="form-control" placeholder="Enter points" v-model="currentReward.points" :disabled="modalType === 'view'">
+                                    <input type="number" class="form-control" placeholder="Enter points" v-model="currentReward.rewardPoints" :disabled="modalType === 'view'">
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Quantity Available:</label>
@@ -151,15 +152,15 @@
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">End Date & Time:</label>
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <!-- @change="validateEndDate" -->
-                                            <input type="date" class="form-control" placeholder="Select end date" v-model="currentReward.endDate" :disabled="modalType === 'view'">
-                                        </div>
+                                    <!-- <div class="row g-2">
+                                        <div class="col-md-6"> -->
+                                            <!-- <input type="date" class="form-control" placeholder="Select end date" v-model="currentReward.endDate" :disabled="modalType === 'view'"> -->
+                                    <Datepicker v-model="currentReward.endDateTime" :is-24="false" :min-date="new Date()" :disabled="modalType === 'view'" style="border: 1px solid #000000; border-radius: 0.375rem;"></Datepicker>
+                                        <!-- </div> 
                                         <div class="col-md-6">
                                             <input type="time" class="form-control" placeholder="Select end time" v-model="currentReward.endTime" :disabled="modalType === 'view'">
                                         </div>
-                                    </div>
+                                    </div> -->
                                 </div>
                             </form>
                         </div>
@@ -180,14 +181,14 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @click="showModal=false">Close</button>
+                    <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
                     
                     <template v-if="modalType === 'create' || (modalType === 'edit' && currentReward.status === 'Draft')">
                         <button type="button" class="btn btn-primary" @click="saveAsDraft">Save as Draft</button>
                         <button type="button" class="btn btn-success" @click="publishReward">Publish</button>
                     </template>
 
-                    <template v-if="modalType === 'edit' && (currentReward.status === 'Ongoing' || currentReward.status === 'Expired')">
+                    <template v-if="modalType === 'edit' && (currentReward.status === 'Active' || currentReward.status === 'Expired')">
                         <button type="button" class="btn btn-primary" @click="saveEditedReward">Save</button>
                     </template>
                 </div>
@@ -196,7 +197,7 @@
     </div>
     <div class="modal-backdrop fade show" v-if="showModal"></div>
 
-    <!-- Modal for delete and reset point confirmation -->
+    <!-- Modal for delete confirmation -->
     <div class="modal fade" id="deleteReward" :class="{ show: showRemoveModal }" style="display: block" v-if="showRemoveModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -209,7 +210,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="showRemoveModal = false">Close</button>
-                    <button v-if="modalRemoveType === 'delete'" type="button" class="btn btn-danger" @click="deleteReward">Confirm</button>
+                    <button v-if="modalRemoveType === 'delete'" type="button" class="btn btn-danger" @click="confirmDelete">Confirm</button>
                     <button v-if="modalRemoveType === 'reset'" type="button" class="btn btn-danger" @click="resetReward">Reset</button>
                 </div>
             </div>
@@ -222,194 +223,321 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { getAllRewards, updateReward, createReward, deleteReward } from "@/api/reward.ts";
+import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
+import Swal from "sweetalert2";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
+import type {RewardItem} from '@/interface/RewardInterface.ts';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';  
 
-interface RewardItem {
-    id: number
-    rewardName: string
-    points: number
-    createdOn: string
-    image: string
-    quantity: number
-    endDate: string
-    endTime: string
-    description: string
-    terms: string
-    status: string
+const showModal = ref(false)
+const showRemoveModal = ref(false)
+const modalType = ref<'create' | 'edit' | 'view'>('create')
+const modalRemoveType = ref<'delete' | 'reset'>('delete')
+
+const tableData = ref<RewardItem[]>([])
+
+const currentReward = ref<any>({})
+
+const openCreateModal = () => { 
+    currentReward.value = {
+        rewardName: '',
+        rewardPoints: 0, // Set default points
+        image: "",
+        quantity: 0,
+        endDateTime: "",
+        description: "",
+        terms: "",
+        status: 'Draft',
+    }
+
+    modalType.value = 'create';
+    showModal.value = true;
+}
+const openViewModal = (reward: any) => { 
+    currentReward.value = reward; 
+    modalType.value = 'view';
+    showModal.value = true;
+}
+const openEditModal = (reward: RewardItem) => { 
+    currentReward.value = { ...reward };
+    modalType.value = 'edit';
+    showModal.value = true
+}
+const openDeleteModal = (reward: RewardItem) => { 
+    currentReward.value = reward;
+    modalRemoveType.value = 'delete';
+    showRemoveModal.value = true
 }
 
-const tableData = ref<RewardItem[]>([
-    {
-        id: 1, 
-        rewardName: 'Jaya Grocer Gift Card', 
-        points: 50, 
-        createdOn: '2024-06-30 11:27:07', 
-        image: new URL('@/assets/Jaya_Grocer_Gift_Card.png', import.meta.url).href,
-        quantity: 20,  
-        endDate: "2025-02-26", 
-        endTime: "23:59", 
-        status: "",
-        description: "RM100 Jaya Grocer's Gift Card. Vouchers received will be valid for a minimum period of 6 months.",
-        terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
+// ===================== Fetch Rewards =====================
+const fetchRewards = () => {
+    getAllRewards().then((res) => {
+        console.log(res.data); 
+        tableData.value = res.data.data.results.map((item: any) => ({
+            id: item.id,
+            rewardName: item.reward_title,
+            rewardPoints: item.reward_points_required,
+            createdOn: dayjs(item.reward_created_date).format("YYYY-MM-DD, HH:mm"),
+            quantity: item.reward_quantity, 
+            endDateTime: dayjs(item.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
+            description: item.reward_description,
+            terms: item.reward_terms_and_conditions,
+            status: item.reward_status,
+            image: item.file
+        }));
+    });
+};
+onMounted(fetchRewards);
 
-2. This gift card is valid at all Jaya Grocer outlets.
+// ===================== Publish Reward =====================
+const publishReward = () => {
+    if (modalType.value === 'create') {
+        const data = {
+            reward_title: currentReward.value.rewardName || "",
+            reward_points_required: currentReward.value.rewardPoints || 0,
+            reward_created_date: new Date().toISOString().slice(0, 19).replace("T", " "),
+            // image: currentReward.value.image || "",
+            reward_quantity: currentReward.value.quantity || 0,
+            reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss") || "",
+            reward_description: currentReward.value.description || "",
+            reward_terms_and_conditions: currentReward.value.terms || "",
+            reward_status: "Active"
+        }
 
-3. This gift card is valid for 6 months only from the date of card activation.
+        // console.log("Original date:", currentReward.value.reward_end_date_time);
+        // console.log("Formatted date:", dayjs(currentReward.value.reward_end_date_time).format("YYYY-MM-DD HH:mm:ss"));
+        // console.log("Raw dayjs object:", dayjs(currentReward.value.reward_end_date_time));
 
-4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.
+        showModal.value = false;
 
-5. If the value of goods is more than the amount on the gift card, then the difference should be paid by the bearer. `
-    },
-    {
-        id: 2, 
-        rewardName: 'McDonald Coupon', 
-        points: 100, 
-        createdOn: '2024-06-30 11:27:07', 
-        image: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href,
-        quantity: 20, 
-        endDate: "2025-02-05", 
-        endTime: "23:59",
-        status: "",
-        description: "Exclusive Sweet Chili Fish Wrap Drive Thru Combo Promo for only RM11.50. ", 
-        terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
+        createReward(data).then((res) => {
+            if (isSuccess(res.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Reward published successfully",
+                    showConfirmButton: false,
+                    timer: 1500
+                })
+            }
+            fetchRewards()
+        }) 
+    } else if (modalType.value === 'edit') {
+        const data = {
+            reward_title: currentReward.value.rewardName,
+            reward_points_required: currentReward.value.rewardPoints,
+            reward_quantity: currentReward.value.quantity,
+            reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss"),
+            reward_description: currentReward.value.description,
+            reward_terms_and_conditions: currentReward.value.terms,
+            reward_status: "Active",
+            // image: currentReward.value.file
+        }
 
-2. This gift card is valid at all Starbuck outlets.
+        showModal.value = false;
 
-3. This gift card is valid for 6 months only from the date of card activation.
+        updateReward(currentReward.value.id, data).then((res) => {
+            if (isSuccess(res.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Reward published successfully",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                fetchRewards()
+            }
+        })
+    }
+}
 
-4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance. `
-    }, 
-])
+// ===================== Save as Draft =====================
+const saveAsDraft = () => {
+    if (modalType.value === 'create') {
+        const data = {
+            reward_title: currentReward.value.rewardName || "",
+            reward_points_required: currentReward.value.rewardPoints || 0,
+            reward_created_date: new Date().toISOString().slice(0, 19).replace("T", " "),
+            // image: currentReward.value.image || "",
+            reward_quantity: currentReward.value.quantity || 0,
+            reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss") || "",
+            reward_description: currentReward.value.description || "",
+            reward_terms_and_conditions: currentReward.value.terms || "",
+            reward_status: "Draft"
+        }
+
+        showModal.value = false;
+
+        createReward(data).then((res) => {
+            if (isSuccess(res.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Reward saved as draft",
+                    showConfirmButton: false,
+                    timer: 1500
+                })
+            }
+            fetchRewards()
+        })
+    } else if (modalType.value === 'edit') {
+        const data = {
+            reward_title: currentReward.value.rewardName,
+            reward_points_required: currentReward.value.rewardPoints,
+            reward_quantity: currentReward.value.quantity,
+            reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss"),
+            reward_description: currentReward.value.description,
+            reward_terms_and_conditions: currentReward.value.terms,
+            reward_status: 'Draft',
+            // image: currentReward.value.file
+        }
+
+        showModal.value = false;
+
+        updateReward(currentReward.value.id, data).then((res) => {
+            if (isSuccess(res.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Reward saved as draft",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                fetchRewards()
+            }
+        })
+    }
+}
+
+// ===================== Save Reward =====================
+const saveEditedReward = () => {
+    const data = {
+        reward_title: currentReward.value.rewardName,
+        reward_points_required: currentReward.value.rewardPoints,
+        reward_quantity: currentReward.value.quantity,
+        reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss"),
+        reward_description: currentReward.value.description,
+        reward_terms_and_conditions: currentReward.value.terms,
+        reward_status: currentReward.value.status,
+        // image: currentReward.value.file
+    }
+
+    // console.log("Original date:", currentReward.value.endDate);
+    // console.log("Formatted date:", dayjs(currentReward.value.endDate).format("YYYY-MM-DD"));
+    // console.log("Raw dayjs object:", dayjs(currentReward.value.endDate));
+
+    showModal.value = false;
+
+    updateReward(currentReward.value.id, data).then((res) => {
+        if (isSuccess(res.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "Reward updated successfully",
+                showConfirmButton: false,
+                timer: 1500
+            });
+            fetchRewards()
+        }
+    })
+}
+
+const confirmDelete = () => {
+    showRemoveModal.value = false;
+
+    deleteReward(currentReward.value.id).then((res) => {
+        if (isSuccess(res.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "Reward deleted successfully",
+                showConfirmButton: false,
+                timer: 1500
+            })
+            fetchRewards()
+        }
+    })
+}
+
+// Filter
+const searchReward = ref('')
+const searchPoint = ref('')
+const searchStatus = ref('')
+const startDate = ref('')
+const endDate = ref('')
+
+const filteredLogs = computed(() => {
+  return tableData.value.filter(detail => {
+    //search bar for reward name
+    const matchRewardSearch = detail.rewardName.toLowerCase().includes(searchReward.value.toLowerCase());
+
+    //search bar for points
+    const matchPointSearch = searchPoint.value === '' || detail.rewardPoints.toString().includes(searchPoint.value);
+
+     //search for specific status
+     const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value
+    
+    //custom date range for received date
+    const taskDate = new Date(detail.createdOn); // Convert string date to Date object
+    const start = startDate.value ? new Date(startDate.value) : null;
+    const end = endDate.value ? new Date(endDate.value) : null;
+
+    const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
+
+    return matchRewardSearch && matchesDateRange && matchPointSearch && matchStatusSearch;
+  });
+});
+
+// pagination
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+const totalLogs = computed(() => filteredLogs.value.length);
+const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
+
+const paginatedLogs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage
+  return filteredLogs.value.slice(start, end);});
+
+// 翻页功能
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
+const goToPage = (page: number) => {
+  currentPage.value = page;
+};
+
+
+
+
 
 const updateRewardStatus = (reward: RewardItem) => {
     const currentDate = new Date();
-    const endDateTime = new Date(`${reward.endDate} ${reward.endTime}`);
-
-    reward.status = currentDate < endDateTime ? 'Ongoing' : 'Expired';
+    const endDateTime = new Date(reward.endDateTime);
+    if (reward.endDateTime) {
+        reward.status = endDateTime > currentDate ? 'Active' : 'Expired';
+    }
 };
 
-// Update statuses on mount
+// Update status on mount
 onMounted(() => {
     tableData.value.forEach(updateRewardStatus);
 });
 
-const showModal = ref(false)
-const currentReward = ref<Partial<RewardItem>>({});
-
-const modalType = ref<'create' | 'edit' | 'view'>('create')
-
-const openRewardModal = () => {
-    currentReward.value = {
-        id: tableData.value.length + 1, // Generate unique ID
-        rewardName: '',
-        points: 0, // Set default points
-        createdOn: new Date().toISOString().slice(0, 19).replace("T", " "), // Current timestamp
-        image: "",
-        quantity: 0,
-        endDate: "",
-        endTime: "",
-        description: "",
-        terms: "",
+const currentDate = new Date().toISOString().split("T")[0];
+const validateEndDate = () => {
+    if (currentReward.value.endDate && currentReward.value.endDate < currentDate) {
+        alert("End date cannot be earlier than today.");
     }
-    modalType.value = 'create'  
-    showModal.value = true
-}
-
-const openViewModal = (reward: RewardItem) => {
-    currentReward.value = { ...reward }
-    modalType.value = 'view'
-    showModal.value = true
-}
-
-const openEditModal = (reward: RewardItem) => {
-    currentReward.value = { ...reward }
-    modalType.value = 'edit'
-    showModal.value = true
-}
-
-const showRemoveModal = ref(false)
-const modalRemoveType = ref<'delete' | 'reset'>('delete')
-
-const openDeleteModal = (reward: RewardItem) => {
-    currentReward.value = reward
-    modalRemoveType.value = 'delete'
-    showRemoveModal.value = true
-}
-const openResetModal = () => {
-    modalRemoveType.value = 'reset'
-    showRemoveModal.value = true
-}
-
-// const currentDate = new Date().toISOString().split("T")[0];
-// const validateEndDate = () => {
-//     if (currentReward.value.endDate && currentReward.value.endDate < currentDate) {
-//         alert("End date cannot be earlier than today.");
-//     }
-// };
-
-const publishReward = () => {
-    if (modalType.value === 'create') {
-        const newReward: RewardItem = {
-            id: tableData.value.length + 1,
-            rewardName: currentReward.value.rewardName || "Untitled Reward",
-            points: currentReward.value.points || 0,
-            createdOn: new Date().toISOString().slice(0, 19).replace("T", " "),
-            image: currentReward.value.image || "",
-            quantity: currentReward.value.quantity || 0,
-            endDate: currentReward.value.endDate || "",
-            endTime: currentReward.value.endTime || "",
-            description: currentReward.value.description || "",
-            terms: currentReward.value.terms || "",
-            status: "Ongoing"
-        };
-        updateRewardStatus(newReward);
-        tableData.value.push(newReward);
-
-    } else {
-        //edit an existing reward -> update status
-        const index = tableData.value.findIndex(r => r.id === currentReward.value.id);
-        if (index !== -1) {
-            tableData.value[index] = { ...(currentReward.value as RewardItem) };
-            updateRewardStatus(tableData.value[index]);        }
-    }
-    showModal.value = false;
 };
-
-const saveEditedReward = () => {
-    const index = tableData.value.findIndex(item => item.id === currentReward.value.id);
-    if (index !== -1) {
-        tableData.value[index] = { ...(currentReward.value as RewardItem) };
-        updateRewardStatus(tableData.value[index]);
-    }
-    showModal.value = false;
-}
-
-const saveAsDraft = () => {
-    if (modalType.value === 'create') {
-        const newDraft: RewardItem = {
-            id: tableData.value.length + 1,
-            rewardName: currentReward.value.rewardName || "Untitled Reward",
-            points: currentReward.value.points || 0,
-            createdOn: new Date().toISOString().slice(0, 19).replace("T", " "),
-            image: currentReward.value.image || "",
-            quantity: currentReward.value.quantity || 0,
-            endDate: currentReward.value.endDate || "",
-            endTime: currentReward.value.endTime || "",
-            description: currentReward.value.description || "",
-            terms: currentReward.value.terms || "",
-            status: "Draft"
-        };
-        tableData.value.push(newDraft);
-    } else {
-        const index = tableData.value.findIndex(r => r.id === currentReward.value.id);
-        if (index !== -1) tableData.value[index].status = 'Draft';
-    }
-    showModal.value = false;
-};
-
-const deleteReward = () => {
-    tableData.value = tableData.value.filter(item => item.id !== currentReward.value.id)
-    showRemoveModal.value = false
-}
 
 const resetReward = () => {
     showRemoveModal.value = false
@@ -428,57 +556,6 @@ const handleImageChange = (event: Event) => {
     }
 };
 
-// filter
-const searchReward = ref('')
-const searchPoint = ref('')
-const searchStatus = ref('')
-const startDate = ref('')
-const endDate = ref('')
-
-const filteredLogs = computed(() => {
-  return tableData.value.filter(detail => {
-    //search bar for reward name
-    const matchRewardSearch = detail.rewardName.toLowerCase().includes(searchReward.value.toLowerCase());
-
-    //search bar for points
-    const matchPointSearch = searchPoint.value === '' || detail.points.toString().includes(searchPoint.value);
-
-     //search for specific status
-     const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value
-    
-    //custom date range for received date
-    const taskDate = new Date(detail.createdOn); // Convert string date to Date object
-    const start = startDate.value ? new Date(startDate.value) : null;
-    const end = endDate.value ? new Date(endDate.value) : null;
-
-    const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
-
-    return matchRewardSearch && matchesDateRange && matchPointSearch && matchStatusSearch;
-  });
-});
-
-// pagination
-const currentPage = ref(1);
-const itemsPerPage = 5;
-
-const totalLogs = computed(() => filteredLogs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
-
-const paginatedLogs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredLogs.value.slice(start, start + itemsPerPage);
-});
-
-// 翻页功能
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
-};
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-};
-const goToPage = (page: number) => {
-  currentPage.value = page;
-};
 </script>
 
 

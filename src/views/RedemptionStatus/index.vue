@@ -18,7 +18,7 @@
             <select class="search-container form-select" v-model="searchStatus">
                 <option value="">All Status</option>
                 <option value="Received">Received</option>
-                <option value="Not Received">Not Received</option>
+                <option value="Not Yet Received">Not Yet Received</option>
             </select>
         </div>
         
@@ -59,12 +59,12 @@
             <tbody>
                 <tr v-for="item in paginatedLogs" :key="item.id">
                     <th>{{ item.id }}</th>
-                    <td>{{ item.username }}</td>
+                    <td>{{ item.user.name }}</td>
                     <td>{{ item.redeemedOn }}</td>
-                    <td>{{ item.rewardName }}</td>
-                    <td :class="item.status === 'Not Received' ? 'text-danger' : 'text-success'">{{ item.status }}</td>
+                    <td>{{ item.reward.rewardName }}</td>
+                    <td :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">{{ item.status }}</td>
                     <td>
-                        <button type="button" class="btn-edit" @click="handleChange(item)">Change Status</button>
+                        <button type="button" class="btn-edit" @click="openChangeStatusModel(item)">Change Status</button>
                     </td>
                 </tr>
             </tbody>
@@ -103,20 +103,18 @@
                 <div class="modal-body">
                     <div class="radio-group">
                         <div class="radio-box form-check">
-                            <input class="form-check-input" type="radio" name="status" id="received" value="Received"
-                                v-model="selectedStatus">
+                            <input class="form-check-input" type="radio" name="status" id="received" value="Received" v-model="changedStatus">
                             <label class="form-check-label" for="received">Received</label>
                         </div>
                         <div class="radio-box form-check">
-                            <input class="form-check-input" type="radio" name="status" id="not-received" value="Not Received"
-                                v-model="selectedStatus">
-                            <label class="form-check-label" for="not-received">Not Received</label>
+                            <input class="form-check-input" type="radio" name="status" id="not-received" value="Not Yet Received" v-model="changedStatus">
+                            <label class="form-check-label" for="not-received">Not Yet Received</label>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
-                    <button type="button" class="btn btn-success" @click="saveStatus">Save</button>
+                    <button type="button" class="btn btn-success" :disabled="isSaveDisabled" @click="saveChangedStatus">Save</button>
                 </div>
             </div>
         </div>
@@ -127,48 +125,83 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Modal } from "bootstrap";
+import type { RewardRedemptionItem } from '@/interface/RewardInterface'
+import { getRewardRedemption, patchRewardRedemption } from '@/api/reward';
+import dayjs from 'dayjs';
+import { isSuccess } from '@/utils/httpStatus';
+import Swal from 'sweetalert2';
 
-interface RewardItem {
-    id: number
-    username: string
-    redeemedOn: string
-    rewardName: string
-    status: 'Received'| 'Not Received'
-}
 
-const tableData = ref<RewardItem[]>([
-    {id: 1, username: 'Alex', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Jaya Grocer Gift Card', status: 'Not Received'}, 
-    {id: 2, username: 'Amanda', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Jaya Grocer Gift Card', status: 'Not Received'}, 
-    {id: 3, username: 'Jester', redeemedOn: '2024-06-30 11:27:07', rewardName: 'McDonald Coupon', status: 'Received'}, 
-    {id: 4, username: 'Jester', redeemedOn: '2024-06-30 11:27:07', rewardName: 'Jaya Grocer Gift Card', status: 'Received'}, 
-    {id: 5, username: 'Siti', redeemedOn: '2024-06-30 11:27:07', rewardName: 'McDonald Coupon', status: 'Received'},
-    {id: 6, username: 'Alex', redeemedOn: '2024-06-30 11:27:07', rewardName: 'McDonald Coupon', status: 'Not Received'}
-])
+const tableData = ref<RewardRedemptionItem[]>([])
+const currentRewardRedemption = ref<any>({});
 
-const currentReward = ref<Partial<RewardItem>>({});
-const selectedStatus = ref<'Received' | 'Not Received'>('Not Received'); // Holds the selected status value
-
+// model
 const showModal = ref(false)
+const originalStatus = ref<'Received' | 'Not Yet Received'>('Not Yet Received'); // Holds the selected status value
+const changedStatus = ref<'Received' | 'Not Yet Received'>('Not Yet Received');
 
-// Open modal and set current status
-const handleChange = (reward: RewardItem) => {
-    currentReward.value = { ...reward };
-    selectedStatus.value = reward.status; // Set initial status
-    showModal.value = true
+// Click on "Change Status" button
+const openChangeStatusModel = (item: any) => {
+    currentRewardRedemption.value = item;
+    const status = item.status === 'Received' ? 'Received' : 'Not Yet Received';
+    originalStatus.value = status; // store original status
+    changedStatus.value = status; // store changed status
+    showModal.value = true;
 };
 
-// Save updated status back to the table
-const saveStatus = () => {
-    if (currentReward.value.id !== undefined) {
-        // Find the index of the item and update its status
-        const index = tableData.value.findIndex(item => item.id === currentReward.value.id);
-        if (index !== -1) {
-            tableData.value[index].status = selectedStatus.value; // Update status
-        }
+// Disabled "Save" button unless the admin selects a different status
+const isSaveDisabled = computed(() => {
+    return changedStatus.value === originalStatus.value;
+});
+
+//fetch reward redemption information
+const fetchRewardRedemption = () => {
+    getRewardRedemption().then((res) => {
+        tableData.value = res.data.data.results.map((item: any) => ({
+            id: item.id,
+            redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
+            pointsDeducted: item.points_deducted,
+            status: item.reward_redemption_status,
+            reward: {
+                rewardName: item.reward.reward_title,
+                description: item.reward.reward_description,
+                terms: item.reward.reward_terms_and_conditions,
+                points: item.reward.reward_points_required,
+                image: item.reward?.file?.file_url ?? '',                
+                endDateTime: dayjs(item.reward.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
+                quantity: item.reward.reward_quantity,
+                status: item.reward.reward_status,
+                createdOn: item.reward?.reward_created_date
+            },
+            user: {
+                name: item.user.username
+            }
+        }))
+    })
+}
+onMounted(fetchRewardRedemption)
+
+// Saved changed redemption status of the reward
+const saveChangedStatus = () => {
+    const data = {
+        reward_redemption_status: changedStatus.value
     }
-    showModal.value = false
-};
+
+    showModal.value = false;
+
+    patchRewardRedemption(currentRewardRedemption.value.id, data).then((res) => {
+        if (isSuccess(res.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "Reward status updated successfully",
+                showConfirmButton: false,
+                timer: 1500
+            });
+            fetchRewardRedemption()
+        }
+    })
+}
 
 // filter
 const searchReward = ref('')
@@ -180,10 +213,10 @@ const endDate = ref('')
 const filteredLogs = computed(() => {
   return tableData.value.filter(detail => {
     //search bar for reward name
-    const matchRewardSearch = detail.rewardName.toLowerCase().includes(searchReward.value.toLowerCase());
+    const matchRewardSearch = detail.reward.rewardName.toLowerCase().includes(searchReward.value.toLowerCase());
 
     //search bar for username
-    const matchNameSearch = detail.username.toLowerCase().includes(searchName.value.toLowerCase());
+    const matchNameSearch = detail.user.name.toLowerCase().includes(searchName.value.toLowerCase());
 
     //search for specific status
     const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value
@@ -201,7 +234,7 @@ const filteredLogs = computed(() => {
 
 // pagination
 const currentPage = ref(1);
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 
 const totalLogs = computed(() => filteredLogs.value.length);
 const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));

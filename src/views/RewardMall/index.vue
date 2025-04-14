@@ -12,9 +12,9 @@
       <i class="fa-solid fa-star star-icon"></i>
     </div>
     <button type="button" class="iconButton"  @click="goToPointDetails()"> 
-      <span class="buttonText">{{ points }}</span>
+      <span class="buttonText">{{ currentUserData.total_point }}</span>
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
-          <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671"/>
+        <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671"/>
       </svg>
     </button>
   </div>
@@ -24,11 +24,11 @@
     <div class="row row-cols-md-3 g-4" >
     <div class="col" v-for="item in tableData" :key="item.id">
       <div class="card shadow-sm mt-4" >
-        <img :src="item.img" alt="Reward Image" class="image">
+        <img :src="item.image" alt="Reward Image" class="image">
         <div class="card-body">
-            <h4 class="rewardTitle"><b>{{ item.name }}</b></h4>
+            <h4 class="rewardTitle"><b>{{ item.rewardName }}</b></h4>
             <p>{{ item.description }}</p>
-            <p><b>Valid Until: </b>{{ item.valid }}</p>
+            <p><b>Valid Until: </b>{{ item.endDateTime }}</p>
             <p><b>Quantity: </b>{{ item.quantity }}</p>
             <p><b>Terms & Conditions: </b>  
               <button class="TNCButton" @click="openTermsModal(item)">
@@ -38,14 +38,14 @@
                 </svg>
               </button>
             </p>
-            <button class="rewardButton mx-auto" @click="openSelectedRewardModal(item)" :disabled="item.redeemed">
-              <div class="icon-container" v-if="!item.redeemed">
+            <button class="rewardButton mx-auto" @click="openSelectedRewardModal(item)" :disabled="hasUserRedeemed(item.id)">
+              <div class="icon-container">
                 <i class="fa-solid fa-circle border-circle-icon"></i>
                 <i class="fa-solid fa-circle circle-icon"></i>
                 <i class="fa-solid fa-star star-icon"></i>
               </div>
-              <span class="rewardText">{{ item.redeemed ? "Redeemed" : item.rewardPrice }}</span>
-            </button>        
+              <span class="rewardText">{{ hasUserRedeemed(item.id) ? 'Redeemed' : item.rewardPoints }}</span>
+            </button>
           </div>
       </div>
     </div>
@@ -67,7 +67,7 @@
         </div>
         <div class="modal-body">
           <div class="modal-body">
-            <div class="terms-text">{{ selectedReward.terms }}</div>
+            <div class="terms-text">{{ currentReward.terms }}</div>
           </div>
         </div>
         <div class="modal-footer">
@@ -86,7 +86,7 @@
           <h3 class="modal-title" id="selectRewardModalLabel">Are you sure?</h3>
         </div>
         <div class="modal-body">
-          <span class="text-muted">Are you sure you want to redeem <b>{{ selectedReward.name }}</b>? This action cannot be undone.</span>
+          <span class="text-muted">Are you sure you want to redeem <b>{{ currentReward.rewardName }}</b>? This action cannot be undone.</span>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary"  @click="showSelectedRewardModal = false">Close</button>
@@ -99,115 +99,182 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import {useRouter} from "vue-router";
+import { onMounted, reactive, ref } from 'vue';
+import { useRouter } from "vue-router";
+import { createRedemption, getAllRewards, getRewardRedemption, getCurrentUser, patchReward, updateReward } from "@/api/reward.ts";
+import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
+import Swal from "sweetalert2";
+import dayjs from 'dayjs';
+import type { RewardItem} from '@/interface/RewardInterface.ts'
 
-const points = ref(100)
+const tableData = ref<RewardItem[]>([]);
+const currentReward = ref<any>({});
 
-interface RewardItem {
-    id: number
-    img: string
-    name: string
-    description: string
-    valid: string
-    quantity: number
-    rewardPrice: number
-    terms: string
-    redeemed: boolean
-}
-
-const tableData = ref([
-  {
-    id: 1,
-    img: new URL('@/assets/Jaya_Grocer_Gift_Card.png', import.meta.url).href,
-    name: "Jaya Grocer's Gift Card", 
-    description: "RM100 Jaya Grocer's Gift Card. Vouchers received will be valid for a minimum period of 6 months.", 
-    valid: "30/06/2024, 23:59", 
-    quantity: 20,
-    rewardPrice: 50,
-    redeemed: false,
-    terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
-
-    2. This gift card is valid at all Jaya Grocer outlets.
-
-    3. This gift card is valid for 6 months only from the date of card activation.
-
-    4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.
-
-    5. If the value of goods is more than the amount on the gift card, then the difference should be paid by the bearer.
-    `,
-  },
-  {
-    id: 2,
-    img: new URL('@/assets/McDonald_Gift_Card.png', import.meta.url).href,
-    name: "McDonald Coupon", 
-    description: "Exclusive Sweet Chili Fish Wrap Drive Thru Combo Promo for only RM11.50. ", 
-    valid: "31/12/2024, 23:59", 
-    quantity: 10,
-    rewardPrice: 25,
-    redeemed: false,
-    terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
-
-    2. This gift card is valid at all Starbuck outlets.
-
-    3. This gift card is valid for 6 months only from the date of card activation.
-
-    4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.
-    `
-  },
-]);
-
-//View T&C Modal
+// ===================== Open T&C modal =====================
 const showTermsModal = ref(false);
-const selectedReward = ref<RewardItem>({
-  id: 0,
-  name: '',
-  quantity: 0,
-  redeemed: false
-} as RewardItem);
 
 const openTermsModal = (reward: RewardItem) => {
-  selectedReward.value = reward;
+  currentReward.value = reward;
   showTermsModal.value = true;
 };
 
+// ===================== Open Confirmation Reward Button modal =====================
 const showSelectedRewardModal = ref(false);
 
 const openSelectedRewardModal = (reward: RewardItem) => {
-  selectedReward.value = reward;
+  currentReward.value = reward;
   showSelectedRewardModal.value = true;
 };
 
-const confirmedReward = () => {
-  if (selectedReward.value) {
-    const reward = tableData.value.find(r => r.id === selectedReward.value.id);
-    if (reward) {
-      reward.redeemed = true;
-    }
+// ===================== Fetch Reward =====================
+const fetchRewards = () => {
+  getAllRewards().then((res) => {   
+    tableData.value = res.data.data.results.filter((item: any) => item.reward_status === 'Active').map((item:any) => ({
+      id: item.id,
+      rewardName: item.reward_title,
+      rewardPoints: item.reward_points_required,
+      quantity: item.reward_quantity,
+      endDateTime: dayjs(item.reward_end_date_time).format("YYYY-DD-MM, HH:mm"),
+      description: item.reward_description,
+      terms: item.reward_terms_and_conditions,
+      status: item.reward_status,
+      image: item.file
+    }));    
+  });
+};
 
-    if (points.value >= selectedReward.value.rewardPrice) {
-      points.value -= selectedReward.value.rewardPrice;
-      selectedReward.value.quantity = selectedReward.value.quantity - 1
-    } else {
-      alert ("Not enough points")
-    }
-  }
+// ===================== Fetch Current User =====================
+let currentUserData = reactive<any>({});
 
-  showSelectedRewardModal.value = false;
+const fetchPoints = () => {
+  getCurrentUser().then((res) => {
+    console.log("Current User:", currentUserData);
+    Object.assign(currentUserData, res.data.data);
+  })
+  .catch((err) => {
+    console.error(err);
+  });
+};
+
+let userRedemptions = ref<any[]>([]);
+
+// ===================== Fetch Reward Redemption =====================
+const fetchRewardRedemption = () => {
+  getRewardRedemption().then((res) => {
+    console.log("User Redemptions:", userRedemptions.value); // DEBUG
+    userRedemptions.value = res.data.data.results;
+  })
+  .catch((err) => {
+    console.error(err);
+  });
+};
+
+onMounted(() => {
+  fetchRewards();
+  fetchPoints();
+  fetchRewardRedemption();
+});
+
+// ===================== Check if the user has redeemed the reward =====================
+const hasUserRedeemed = (rewardId: any) => {
+  // Check if any redemption record matches the current user and the given reward ID
+  return userRedemptions.value.some(
+    redemption => redemption.user.id === currentUserData.id && redemption.reward.id === rewardId
+  );
+};
+
+// ===================== Action for Clicking confirm reward button =====================
+const confirmedReward = async () => {
+  // check whether has redeemed this reward
+  const alreadyRedeemed = userRedemptions.value.some(
+    redemption => redemption.user === currentUserData.id && redemption.reward === currentReward.value.id
+  );
+
+  // Check if the user has redeemed the reward
+  if (alreadyRedeemed) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Already Redeemed',
+      text: 'You have already redeemed this reward.',
+    });
+    showSelectedRewardModal.value = false;
+    return;
+  } 
+  else {
+    // Check if the user has enough point
+    if (currentUserData.total_point < currentReward.value.rewardPoints) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Not enough points',
+        text: 'You do not have sufficient points to redeem this reward.',
+      });
+      showSelectedRewardModal.value = false;
+      return;
+    }
+    
+    try {
+      // Create User reward redemption record
+      const redemptionData = {
+        reward: currentReward.value.id,
+        user: currentUserData.id,
+        points_deducted: currentReward.value.rewardPoints,
+        reward_redeemed_on: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+        reward_redemption_status: 'Not Yet Received'
+      };
+
+      const redemptionRes = await createRedemption(redemptionData);
+      if (!isCreated(redemptionRes.status)) {
+        throw new Error('Failed to create redemption record.');
+      }
+
+      // Update reward quantity
+      const updatedRewardData = {
+        reward_quantity: currentReward.value.quantity - 1
+      };
+      const updateRes = await patchReward(currentReward.value.id, updatedRewardData);
+      if (!isSuccess(updateRes.status)) {
+        throw new Error('Failed to update reward quantity.');
+      }
+
+      // Close modal
+      showSelectedRewardModal.value = false;
+
+      // Display success message
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: `You have successfully redeemed ${currentReward.value.rewardName}.`,
+        showConfirmButton: false
+      });
+
+      // Update user point
+      currentUserData.total_point -= currentReward.value.rewardPoints;
+
+      fetchRewards();
+      fetchPoints();
+
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Redemption failed',
+        text: err.message || 'An error occurred during redemption.',
+      });
+    }
+  } 
 };
 
 //go to point details page
 const router = useRouter()
-function goToPointDetails()
-{
+function goToPointDetails() {
   router.push('/home/reward-mall/point-details');
 }
 
 //go to reward history page
-function goToRewardHistory()
-{
+function goToRewardHistory() {
   router.push('/home/reward-mall/reward-history');
 }
+
 </script>
 
 <style scoped>

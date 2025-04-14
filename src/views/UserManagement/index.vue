@@ -41,7 +41,8 @@ const selectedStaff = ref<Staff>({
   employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
   numberOfLeaves: 0,
   medicalLeaves: 0,
-  annualLeaves: 0
+  annualLeaves: 0,
+  totalPoints: 0
 })
 
 /*状态卡*/
@@ -94,7 +95,8 @@ const openAddStaffModal = () => {
     employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
     numberOfLeaves: 0,
     medicalLeaves: 0,
-    annualLeaves: 0
+    annualLeaves: 0,
+    totalPoints: 0
   }
   showAddStaffModal.value = true
 }
