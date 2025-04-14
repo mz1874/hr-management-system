@@ -1,6 +1,7 @@
 <template>
-    <div class="d-flex mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Point System</h2>
+        <button type="button" class="btn btn-danger" @click="">Reset All User Point</button>
     </div>
 
     <div class="filter-container ">
@@ -11,13 +12,10 @@
                 <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <select class="search-container form-select" v-model="selectedDepartment">
-                <option value="">All Department</option>
-                <option>Sales Department</option>
-                <option>Marketing Department</option>
-                <option>Account Department</option>
-                <option>Purchasing Department</option>
-                <option>Warehouse & Warehouse Office</option>
-                <option>Logistics Department</option>
+                <option :value="0">All Departments</option>
+                <option v-for="dept in departmentTableData" :key="dept.id" :value="dept.department_name">
+                    {{ dept.department_name }}
+                </option>
             </select>
         </div>
     </div>  
@@ -37,11 +35,11 @@
             <tbody>
                 <tr v-for="item in paginatedLogs" :key="item.id">
                     <th>{{ item.id }}</th>
-                    <td>{{ item.username }}</td>
+                    <td>{{ item.name }}</td>
                     <td>{{ item.department }}</td>
                     <td>{{ item.totalPoints }}</td>
                     <td>
-                        <button type="button" class="btn btn-primary" @click="openView(item)">Point Details</button>
+                        <button type="button" class="btn btn-primary" @click="openViewModal(item)">Point Details</button>
                     </td>
                 </tr>
             </tbody>
@@ -77,15 +75,15 @@
                         <span class="text-muted">View employee points from KPIs and Rewards</span>
                     </div>
                 </div>
-                <div class="modal-body" v-if="currentPoint">
-                    <div class="point-details-item" v-for="detail in currentPoint.details" :key="detail.name">
+                <div class="modal-body">
+                    <div class="point-details-item" v-for="(point, index) in currentUserPointDetails" :key="index">
                         <div class="d-flex justify-content-between mb-1">
-                            <span>{{ detail.name }}</span>
-                            <span>{{ detail.points > 0 ? '+' : '' }}{{ detail.points }} points</span>
+                            <span>{{ point.rewardName }}</span>
+                            <span>{{ point.pointsDeducted > 0 ? '+' : '' }}{{ point.pointsDeducted }} points</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span style= "color: gray">{{ detail.type }}</span>
-                            <span style= "color: gray">{{ detail.ReceivedOn }}</span>
+                            <span style= "color: gray">{{ point.type }}</span>
+                            <span style= "color: gray">{{ point.redeemedOn }}</span>
                         </div>
                     </div>
                 </div>
@@ -97,102 +95,147 @@
     </div >
     <div class="modal-backdrop fade show" v-if="showModal"></div>
 
+    <!-- Modal for delete and reset point confirmation -->
+    <div class="modal fade" id="deleteReward" :class="{ show: showResetPointModal }" style="display: block" v-if="showResetPointModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="deleteRewardLabel">Are you sure?</h3>
+                </div>
+                <div class="modal-body">
+                    <span class="text-muted">This action cannot be undone. All users' points will be reset.</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="showResetPointModal = false">Close</button>
+                    <button type="button" class="btn btn-danger" @click="resetReward">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show" v-if="showResetPointModal"></div>
+
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import type { PointItem, RewardRedemptionItem } from '@/interface/RewardInterface'
+import type { Staff } from '@/interface/UserInterface'
+import { selectAllStaffs } from '@/api/staff';
+import { getRewardRedemption, patchUser } from '@/api/reward';
+import dayjs from 'dayjs';
+import type { Department } from '@/interface/DepartmentInterface';
+import { selectAllDepartments } from '@/api/department';
 
-interface pointItem {
-    id: number
-    username: string
-    department: string
-    totalPoints: number
-    details: {
-        name: string,
-        type: 'KPI' | 'Reward',
-        points: number,
-        ReceivedOn: string
-    }[]
+const currentUserPointDetails = ref<any[]>([]);
+
+// ===================== Fetch Staffs =====================
+const staffTableData = ref<Staff[]>([])
+const getAllStaffs = () => {
+    selectAllStaffs().then((res) => {
+        console.log(res.data)
+        staffTableData.value = res.data.data.results.map((item:any) => ({
+            id: item.id,
+            name: item.username,
+            department: item.department_name,
+            totalPoints: item.total_point
+        }))
+    }) 
 }
 
-const tableData = ref<pointItem[]>([
-    {
-        id: 1, username: 'Alex', department: 'Sales Department', totalPoints: 100, 
-        details: [
-            {
-                name: 'Complete Order',
-                type: 'KPI',
-                points: 50,
-                ReceivedOn: '2024-06-30 11:27:07'
-            },            {
-                name: 'Team Building',
-                type: 'KPI',
-                points: 100,
-                ReceivedOn: '2024-06-30 11:27:07'
+// ===================== Fetch Reward Redemption =====================
+const rewardRedemptionTableData = ref<RewardRedemptionItem[]>([])
+const fetchRewardRedemption = () => {
+    getRewardRedemption().then((res) => {
+        console.log(res.data)
+        rewardRedemptionTableData.value = res.data.data.results.map((item:any) => ({
+            redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD HH:mm:ss"),
+            pointsDeducted: item.points_deducted,
+            reward: {
+                rewardName: item.reward.reward_title
             },
-            {
-                name: 'Jaya Grocer Gift Card',
-                type: 'Reward',
-                points: -50,
-                ReceivedOn: '2024-06-30 11:27:07'
-            }]
-    },
-    {id: 2, username: 'Amanda', department: 'Sales Department', totalPoints: 50, 
-    details: [
-            {
-                name: 'Project A',
-                type: 'KPI',
-                points: 50,
-                ReceivedOn: '2024-06-30 11:27:07'
-            },
-            {
-                name: 'McDonald Gift Card',
-                type: 'Reward',
-                points: -50,
-                ReceivedOn: '2024-06-30 11:27:07'
-            }]
-    }, 
-])
+            user: {
+                id: item.user.id
+            }
+        }))
+    })
+}
 
-const currentPoint = ref<Partial<pointItem>>({});
+// ===================== Fetch department name for filter =====================
+const departmentTableData = ref<Department[]>([])
+const fetchDepartment = () => {
+    selectAllDepartments().then((res) => {
+        departmentTableData.value = res.data.data.results.map((item:any) => ({
+            id: item.id,
+            department_name: item.department_name
+        }))
+    })
+}
 
+onMounted(() => {
+    getAllStaffs();
+    fetchRewardRedemption();
+    fetchDepartment();
+})
+
+// ===================== Reset All User Points =====================
+const showResetPointModal = ref(false);
+const resetReward = () => {
+    patchUser().then((res) => {
+        
+    })
+}
+
+
+// ===================== Open modal =====================
 const showModal = ref(false)
+const openViewModal = (staff: Staff) => {
+    // console.log("Reward Redemption Data:", currentUserPointDetails.value);
+    // console.log("Staff ID Clicked:", staff.id)
+    // console.log("User IDs in Reward Data:", rewardRedemptionTableData.value.map(item => item.user.id))
 
-// Open modal and set current status
-const openView = (point: pointItem) => {
-    currentPoint.value = { ...point };
-    showModal.value = true
+    const rewardHistory = rewardRedemptionTableData.value.filter(item => item.user.id === staff.id).map(item => ({
+        type: "Reward",
+        rewardName: item.reward.rewardName,
+        pointsDeducted: item.pointsDeducted,
+        redeemedOn: item.redeemedOn
+    }))
+
+    currentUserPointDetails.value = [...rewardHistory /*, ...kpiHistory*/]
+        .sort((a, b) => new Date(b.redeemedOn).getTime() - new Date(a.redeemedOn).getTime());
+ 
+    showModal.value = true;
 };
 
-// filter
+// ===================== Filter =====================
 const searchName = ref('')
-const selectedDepartment = ref('')
+const selectedDepartment = ref(0)
 
 const filteredLogs = computed(() => {
-  return tableData.value.filter(detail => {
-    //search bar for username
-    const matchNameSearch = detail.username.toLowerCase().includes(searchName.value.toLowerCase());
+    return staffTableData.value.filter(detail => {
+        //search bar for username
+        const matchNameSearch = detail.name.toLowerCase().includes(searchName.value.toLowerCase()); 
 
-    //search for specific status
-    const matchDepartmentSearch = !selectedDepartment.value || detail.department === selectedDepartment.value
-    
-    return matchNameSearch && matchDepartmentSearch;
-  });
-});
+        //search for department
+        const matchDepartmentSearch = !selectedDepartment.value || detail.department === selectedDepartment.value
 
-// pagination
+        return matchNameSearch && matchDepartmentSearch;
+    })
+})
+
+// ===================== Pagination =====================
 const currentPage = ref(1);
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 
 const totalLogs = computed(() => filteredLogs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
+const totalPages = computed(() => Math.ceil(filteredLogs.value.length / itemsPerPage));
 
 const paginatedLogs = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredLogs.value.slice(start, start + itemsPerPage);
+  const end = start + itemsPerPage
+  return filteredLogs.value.slice(start, end);
 });
 
-// 翻页功能
+// ===================== Page turning =====================
 const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--;
 };

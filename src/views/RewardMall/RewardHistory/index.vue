@@ -27,23 +27,23 @@
         <thead>
             <tr>
                 <th scope="col">ID</th>
+                <th scope="col">Reward Name</th>
                 <th scope="col">Redeemed On</th>
                 <th scope="col">Points</th>
-                <th scope="col">Reward Name</th>
                 <th scope="col">Status</th>
                 <th scope="col">Action</th>
             </tr>
         </thead>
         <tbody>
-            <tr v-for="details in paginatedLogs" :key="details.id">
-                <td>{{ details.id}}</td>
-                <td>{{ details.redeemed}}</td>
-                <td>- {{ details.points}}</td>
-                <td>{{ details.rewardName}}</td>
-                <td :class="details.status === 'Not Received' ? 'text-danger' : 'text-success'">
-                    {{ details.status }}
+            <tr v-for="item in paginatedLogs" :key="item.id">
+                <td>{{ item.id }}</td>
+                <td>{{ item.reward.rewardName }}</td>
+                <td>{{ item.redeemedOn }}</td>
+                <td>- {{ item.pointsDeducted }}</td>
+                <td :class="item.status === 'Not Received' ? 'text-danger' : 'text-success'">
+                    {{ item.status }}
                 </td>
-                <td><button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button></td>
+                <td><button type="button" class="btn btn-primary" @click="openViewModal(item)">View Details</button></td>
             </tr>
         </tbody>
     </table>
@@ -69,7 +69,7 @@
   </div>
 
   <!-- View Reward Details Modal -->
-  <div class="modal fade" id="viewRewardModal" ref="viewRewardModal">
+  <div class="modal fade" id="viewRewardModal" ref="viewRewardModal" :class="{ show: showModal }" style="display: block" v-if="showModal">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
@@ -85,27 +85,20 @@
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Image:</label>
                                 <div id="drop-area">
-                                    <img :src="selectedDetails.img" alt="Reward Image" class="image" disabled>
+                                    <img :src="currentReward.reward.img" alt="Reward Image" class="image" disabled>
                                 </div>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Name:</label>
-                                <input type="text" class="form-control" :value=" selectedDetails.rewardName " disabled>
+                                <input type="text" class="form-control" v-model="currentReward.reward.rewardName" disabled>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Points:</label>
-                                <input type="text" class="form-control" :value="selectedDetails.points" disabled>
+                                <input type="text" class="form-control" v-model="currentReward.reward.points" disabled>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">End Date & Time:</label>
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <input type="date" class="form-control" :value="selectedDetails.endDate" disabled>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <input type="time" class="form-control" :value="selectedDetails.endTime" disabled>
-                                    </div>
-                                </div>
+                                <Datepicker v-model="currentReward.reward.endDateTime" :is-24="false" :min-date="new Date()" disabled style="border: 1px solid #000000; border-radius: 0.375rem;"></Datepicker>
                             </div>
                         </form>
                     </div>
@@ -115,71 +108,104 @@
                         <form>
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Description:</label>
-                                <textarea class="form-control auto-resize" rows="6" oninput="resizeTextarea(this)" disabled>{{ selectedDetails.rewardDescription }}</textarea>
+                                <textarea class="form-control auto-resize" rows="6" oninput="resizeTextarea(this)" disabled>{{ currentReward.reward.description }}</textarea>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Terms & Conditions:</label>
-                                <textarea class="form-control auto-resize" rows="15" oninput="resizeTextarea(this)" disabled>{{ selectedDetails.terms }}</textarea>
+                                <textarea class="form-control auto-resize" rows="15" oninput="resizeTextarea(this)" disabled>{{ currentReward.reward.terms }}</textarea>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" @click="showModal=false">Close</button>
             </div>
         </div>
     </div>
  </div>
+ <div class="modal-backdrop fade show" v-if="showModal"></div>
+
 
 
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Modal } from "bootstrap";
+import { ref, computed, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
+import { getCurrentUser, getRewardRedemption } from '@/api/reward';
+import type { RewardRedemptionItem} from '@/interface/RewardInterface.ts'
+import dayjs from 'dayjs';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';  
 
-const getImagePath = (img: any) => {
-  return new URL(`/dist/assets/${img}`, import.meta.url).href;
+// ===================== Fetch User =====================
+let currentUserData = reactive<any>({});
+
+const fetchUserId = () => {
+  getCurrentUser().then((res) => {
+    Object.assign(currentUserData, res.data.data);
+  })
+  .catch((err) => {
+    console.error(err);
+  });
 };
 
-const rewardDetails = ref([
-  {
-    id: 1, 
-    img: new URL('@/assets/Jaya_Grocer_Gift_Card.png', import.meta.url).href,
-    redeemed: "2024-06-30 11:27:07", 
-    points: "50", 
-    rewardName: "Jaya Grocer's Gift Card", 
-    status: "Not Received", 
-    endDate: "2025-02-05", 
-    endTime: "23:59",
-    rewardDescription: "RM100 Jaya Grocer's Gift Card. Vouchers received will be valid for a minimum period of 6 months.",
-    terms: `1. This gift card is valid for one transaction only and is not redeemable or exchangeable for cash.
+// ===================== Fetch Reward Redemption =====================
+const tableData = ref<RewardRedemptionItem[]>([]);
 
-2. This gift card is valid at all Jaya Grocer outlets.
+const fetchRewardRedemption = () => {
+    getRewardRedemption().then((res) => {
 
-3. This gift card is valid for 6 months only from the date of card activation.
+        console.log(res.data)
+        const userId = currentUserData.id;
 
-4. During the redemption of goods, if the value of the goods is less than the amount on the gift card, no refund will be given for the remaining unused balance.
+        tableData.value = res.data.data.results.filter((item: any) => item.user.id === userId).map((item: any) => ({
+            id: item.id,
+            redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
+            pointsDeducted: item.points_deducted,
+            status: item.reward_redemption_status,
+            reward: {
+                rewardName: item.reward.reward_title,
+                description: item.reward.reward_description,
+                terms: item.reward.reward_terms_and_conditions,
+                points: item.reward.reward_points_required,
+                image: item.reward?.file?.file_url ?? '',                
+                endDateTime: dayjs(item.reward.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
+                quantity: item.reward.reward_quantity,
+                status: item.reward.reward_status,
+                createdOn: item.reward?.reward_created_date
+            }
+        }));
+    })
+}
+onMounted(() => {
+    fetchUserId();
+    fetchRewardRedemption();
+})
 
-5. If the value of goods is more than the amount on the gift card, then the difference should be paid by the bearer.
-    `
-  }
-]);
+// ===================== Open modal =====================
+const currentReward = ref<any>({})
 
-//search bar and custom date range
+const showModal = ref(false);
+
+const openViewModal = (item:any) => {
+    currentReward.value = item;
+    showModal.value = true;
+};
+
+// ===================== Search Filter =====================
 const searchQuery = ref('')
 const startDate = ref('')
 const endDate = ref('')
 
 const filteredLogs = computed(() => {
-  return rewardDetails.value.filter(detail => {
-    //search bar for task name
-    const matchesSearch = detail.rewardName.toLowerCase().includes(searchQuery.value.toLowerCase());
+  return tableData.value.filter(detail => {
+    //search bar for reward name
+    const matchesSearch = detail.reward.rewardName.toLowerCase().includes(searchQuery.value.toLowerCase());
     
     //custom date range for received date
-    const taskDate = new Date(detail.redeemed); // Convert string date to Date object
+    const taskDate = new Date(detail.redeemedOn); // Convert string date to Date object
     const start = startDate.value ? new Date(startDate.value) : null;
     const end = endDate.value ? new Date(endDate.value) : null;
 
@@ -189,7 +215,7 @@ const filteredLogs = computed(() => {
   });
 });
 
-// 分页相关
+// ===================== Pagination =====================
 const currentPage = ref(1);
 const itemsPerPage = 5;
 
@@ -201,7 +227,7 @@ const paginatedLogs = computed(() => {
   return filteredLogs.value.slice(start, start + itemsPerPage);
 });
 
-// 翻页功能
+// ===================== Page Turning =====================
 const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--;
 };
@@ -212,17 +238,7 @@ const goToPage = (page: number) => {
   currentPage.value = page;
 };
 
-//View Modal
-const viewRewardModal = ref();
-const selectedDetails = ref({ img: '',rewardName: '', points: '', endDate: '', endTime: '', rewardDescription: '', terms: '' });
-
-const openViewModal = (item:any) => {
-  selectedDetails.value = item;
-  const modal = new Modal(viewRewardModal.value);
-  modal.show();
-};
-
-//navigate back to reward mall page
+// ===================== Navigate back to reward mall page =====================
 const router = useRouter()
 function goToRewardMall()
 {
@@ -344,6 +360,17 @@ function goToRewardMall()
 input:disabled, textarea:disabled {
   background-color: transparent !important; 
   color: black !important; 
+}
+
+/* style for datepicker */
+::v-deep(.dp__input[disabled]) {
+  background-color: transparent !important;
+  color: black !important;
+}
+.dp__input:hover {
+  background-color: transparent !important;
+  border-color: none !important; 
+  box-shadow: none !important;      
 }
 
 #drop-area {
