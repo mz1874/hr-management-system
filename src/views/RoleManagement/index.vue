@@ -1,11 +1,25 @@
 <script setup lang="ts">
-import {ref, computed, reactive} from 'vue'
+import { ref, computed } from 'vue';
 import useRole from "@/hooks/useRole.ts";
-import type {RoleItem} from  "@/interface/RoleInterface.ts";
+import type { RoleItem } from "@/interface/RoleInterface.ts";
 import Swal from "sweetalert2";
-const {tableData, handleDeleteRole, handleRoleAdd} = useRole()
 
-// 所有可用的路由权限（层次结构）
+// 从封装的 useRole 中获取数据和方法
+const {
+  tableData,
+  handleDeleteRole,
+  handleRoleAdd,
+  count,
+  fetchPage,
+  paginationInfo,
+  nextPage,
+  prevPage,
+  goToPage,
+  currentPage,
+  totalPages
+} = useRole();
+
+// 所有可用的权限（层次结构）
 const allPermissions = ref<string[]>([
   '/dashboard',
   '/dashboard/overview',
@@ -22,151 +36,139 @@ const allPermissions = ref<string[]>([
   '/reports',
   '/reports/sales',
   '/reports/performance'
-])
+]);
 
-
-const showModal = ref(false)
+// 模态框控制
+const showModal = ref(false);
 const currentRole = ref<Partial<RoleItem>>({});
-const modalType = ref<'create' | 'edit' | 'view'>('create')
+const modalType = ref<'create' | 'edit' | 'view'>('create');
 
-// 获取未拥有的权限
+// 删除模态框
+const showRemoveModal = ref(false);
+const modalRemoveType = ref<'delete' | 'reset'>('delete');
+
+// 搜索与筛选
+const searchRole = ref('');
+const startDate = ref('');
+const endDate = ref('');
+
+// 未拥有权限
 const unassignedPermissions = computed(() => {
-  return allPermissions.value.filter(permission => !currentRole.value.permissions?.includes(permission))
-})
+  return allPermissions.value.filter(
+      permission => !currentRole.value.permissions?.includes(permission)
+  );
+});
 
+// 打开创建模态框
 const openRoleModal = () => {
   currentRole.value = {
-    id: tableData.value.length + 1, // 生成唯一ID
+    id: 0,
     name: '',
     permissions: [],
-    createdOn: new Date().toISOString().slice(0, 19).replace("T", " "), // 当前时间戳
-  }
-  modalType.value = 'create'
-  showModal.value = true
-}
+    createdOn: new Date().toISOString().slice(0, 19).replace("T", " "),
+  };
+  modalType.value = 'create';
+  showModal.value = true;
+};
 
+// 查看角色
 const openViewModal = (role: RoleItem) => {
-  currentRole.value = { ...role }
-  modalType.value = 'view'
-  showModal.value = true
-}
+  currentRole.value = { ...role };
+  modalType.value = 'view';
+  showModal.value = true;
+};
 
+// 编辑角色
 const openEditModal = (role: RoleItem) => {
-  currentRole.value = { ...role }
-  modalType.value = 'edit'
-  showModal.value = true
-}
+  currentRole.value = { ...role };
+  modalType.value = 'edit';
+  showModal.value = true;
+};
 
-const showRemoveModal = ref(false)
-const modalRemoveType = ref<'delete' | 'reset'>('delete')
+// 删除角色确认
 const openDeleteModal = (role: RoleItem) => {
-  currentRole.value = role
-  modalRemoveType.value = 'delete'
-  showRemoveModal.value = true
-}
+  currentRole.value = role;
+  modalRemoveType.value = 'delete';
+  showRemoveModal.value = true;
+};
 
+// 保存编辑
 const saveEditedRole = () => {
-  const index = tableData.value.findIndex(item => item.id === currentRole.value.id)
+  const index = tableData.value.findIndex(item => item.id === currentRole.value.id);
   if (index !== -1) {
-    tableData.value[index] = { ...(currentRole.value as RoleItem) }
+    tableData.value[index] = { ...(currentRole.value as RoleItem) };
   }
-  showModal.value = false
-}
+  showModal.value = false;
+};
 
+// 添加角色
 const addRole = () => {
-  if(currentRole.value.name == ''){
+  if (!currentRole.value.name) {
     Swal.fire({
       icon: "error",
       title: "Oops...",
-      text: "Role name can not be empty! ",
+      text: "Role name cannot be empty!",
     });
     return;
   }
-  let roleItem: RoleItem = {
-    id: 0,
-    name : currentRole.value.name,
-    permissions: currentRole.value.permissions || null,
-    createdOn : ''
-  }
-  handleRoleAdd(roleItem);
-  showModal.value = false
-}
 
+  const roleItem: RoleItem = {
+    id: 0,
+    name: currentRole.value.name,
+    permissions: currentRole.value.permissions || [],
+    createdOn: ''
+  };
+
+  handleRoleAdd(roleItem);
+  showModal.value = false;
+};
+
+// 确认删除角色
 const roleDelete = () => {
   handleDeleteRole(currentRole.value.id);
-  showRemoveModal.value = false
-}
+  showRemoveModal.value = false;
+};
 
 // 添加权限
 const addPermission = (permission: string) => {
-  if (!currentRole.value.permissions) currentRole.value.permissions = []
-  currentRole.value.permissions.push(permission)
-}
+  if (!currentRole.value.permissions) currentRole.value.permissions = [];
+  if (!currentRole.value.permissions.includes(permission)) {
+    currentRole.value.permissions.push(permission);
+  }
+};
 
 // 移除权限
 const removePermission = (permission: string) => {
   if (currentRole.value.permissions) {
-    currentRole.value.permissions = currentRole.value.permissions.filter(p => p !== permission)
+    currentRole.value.permissions = currentRole.value.permissions.filter(p => p !== permission);
   }
-}
+};
 
-// 将权限路由信息转换为层次结构
+// 分组权限
 const groupPermissionsByLevel = (permissions: string[]) => {
-  const grouped: { [key: string]: string[] } = {}
+  const grouped: { [key: string]: string[] } = {};
   permissions.forEach(permission => {
-    const parts = permission.split('/').filter(Boolean)
-    const parent = parts[0]
-    if (!grouped[parent]) grouped[parent] = []
-    grouped[parent].push(permission)
-  })
-  return grouped
-}
+    const parts = permission.split('/').filter(Boolean);
+    const parent = parts[0];
+    if (!grouped[parent]) grouped[parent] = [];
+    grouped[parent].push(permission);
+  });
+  return grouped;
+};
 
-// 过滤功能
-const searchRole = ref('')
-const startDate = ref('')
-const endDate = ref('')
-
+// 搜索 + 时间筛选
 const filteredLogs = computed(() => {
   return tableData.value.filter(detail => {
-    // 搜索角色名称
     const matchRoleSearch = detail.name.toLowerCase().includes(searchRole.value.toLowerCase());
-    const taskDate = new Date(detail.createdOn); // 将字符串日期转换为Date对象
+    const taskDate = new Date(detail.createdOn);
     const start = startDate.value ? new Date(startDate.value) : null;
     const end = endDate.value ? new Date(endDate.value) : null;
-
     const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
     return matchRoleSearch && matchesDateRange;
   });
 });
-
-const currentPage = ref(1);
-const itemsPerPage = 10;
-
-const totalLogs = computed(() => filteredLogs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
-
-const paginatedLogs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredLogs.value.slice(start, start + itemsPerPage);
-});
-
-// 翻页功能
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
-};
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-};
-const goToPage = (page: number) => {
-  currentPage.value = page;
-};
-
-function fetchLogs()
-{
-
-}
 </script>
+
 
 <script lang="ts">
 export default {
@@ -193,12 +195,13 @@ export default {
 
   <!-- 表格 -->
   <div class="table-card">
-    <div class="d-flex justify-content-between align-items-center mb-1">
+    <div class="d-flex justify-content-between align-items-center mb-2">
       <div></div>
       <button type="button" class="btn btn-success" @click="openRoleModal">Create A New Role</button>
     </div>
-    <table class="table">
-      <thead>
+
+    <table class="table table-hover">
+      <thead class="table-light">
       <tr>
         <th scope="col">ID</th>
         <th scope="col">Role Name</th>
@@ -207,38 +210,50 @@ export default {
       </tr>
       </thead>
       <tbody>
-      <tr v-for="item in paginatedLogs" :key="item.id">
+      <tr v-if="tableData.length === 0">
+        <td colspan="4" class="text-center">No roles found.</td>
+      </tr>
+      <tr v-for="item in tableData" :key="item.id">
         <td>{{ item.id }}</td>
         <td>{{ item.name }}</td>
         <td>{{ item.createdOn }}</td>
         <td>
-          <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">View</button>
-          <button type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
-          <button type="button" class="btn btn-danger btn-action" @click="openDeleteModal(item)">Delete</button>
+          <button type="button" class="btn btn-sm btn-primary me-1" @click="openViewModal(item)">View</button>
+          <button type="button" class="btn btn-sm btn-warning me-1" @click="openEditModal(item)">Edit</button>
+          <button type="button" class="btn btn-sm btn-danger" @click="openDeleteModal(item)">Delete</button>
         </td>
       </tr>
       </tbody>
     </table>
   </div>
 
+
   <!-- 分页 -->
   <div class="d-flex align-items-center mt-3 justify-content-start">
-    <span class="me-3">Total: {{ totalLogs }}</span>
+    <span class="me-3">Total: {{ count }}</span>
 
     <nav aria-label="Page navigation">
-      <ul class="pagination">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" @click="prevPage">Previous</button>
+      <ul class="pagination mb-0">
+        <li class="page-item" :class="{ disabled: !paginationInfo.previous }">
+          <button class="page-link" @click="prevPage" :disabled="!paginationInfo.previous">Previous</button>
         </li>
-        <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+
+        <li
+            class="page-item"
+            v-for="page in totalPages"
+            :key="page"
+            :class="{ active: page === currentPage }"
+        >
           <button class="page-link" @click="goToPage(page)">{{ page }}</button>
         </li>
-        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-          <button class="page-link" @click="nextPage">Next</button>
+
+        <li class="page-item" :class="{ disabled: !paginationInfo.next }">
+          <button class="page-link" @click="nextPage" :disabled="!paginationInfo.next">Next</button>
         </li>
       </ul>
     </nav>
   </div>
+
 
   <!-- 创建/编辑/查看角色模态框 -->
   <div class="modal fade" id="createRole" :class="{ show: showModal }" style="display: block" v-if="showModal">
