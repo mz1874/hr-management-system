@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import {ref, computed, reactive} from 'vue'
 import useRole from "@/hooks/useRole.ts";
 import type {RoleItem} from  "@/interface/RoleInterface.ts";
-
-const {tableData, handleDeleteRole} = useRole()
+import Swal from "sweetalert2";
+const {tableData, handleDeleteRole, handleRoleAdd} = useRole()
 
 // 所有可用的路由权限（层次结构）
 const allPermissions = ref<string[]>([
@@ -37,7 +37,7 @@ const unassignedPermissions = computed(() => {
 const openRoleModal = () => {
   currentRole.value = {
     id: tableData.value.length + 1, // 生成唯一ID
-    roleName: '',
+    name: '',
     permissions: [],
     createdOn: new Date().toISOString().slice(0, 19).replace("T", " "), // 当前时间戳
   }
@@ -74,12 +74,21 @@ const saveEditedRole = () => {
 }
 
 const addRole = () => {
-  tableData.value.push({
-    id: tableData.value.length + 1,
-    roleName: currentRole.value.roleName || "Untitled Role",
-    permissions: currentRole.value.permissions || [],
-    createdOn: new Date().toISOString().slice(0, 19).replace("T", " "),
-  })
+  if(currentRole.value.name == ''){
+    Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "Role name can not be empty! ",
+    });
+    return;
+  }
+  let roleItem: RoleItem = {
+    id: 0,
+    name : currentRole.value.name,
+    permissions: currentRole.value.permissions || null,
+    createdOn : ''
+  }
+  handleRoleAdd(roleItem);
   showModal.value = false
 }
 
@@ -121,22 +130,18 @@ const endDate = ref('')
 const filteredLogs = computed(() => {
   return tableData.value.filter(detail => {
     // 搜索角色名称
-    const matchRoleSearch = detail.roleName.toLowerCase().includes(searchRole.value.toLowerCase());
-
-    // 自定义日期范围
+    const matchRoleSearch = detail.name.toLowerCase().includes(searchRole.value.toLowerCase());
     const taskDate = new Date(detail.createdOn); // 将字符串日期转换为Date对象
     const start = startDate.value ? new Date(startDate.value) : null;
     const end = endDate.value ? new Date(endDate.value) : null;
 
     const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
-
     return matchRoleSearch && matchesDateRange;
   });
 });
 
-// 分页功能
 const currentPage = ref(1);
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 
 const totalLogs = computed(() => filteredLogs.value.length);
 const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
@@ -175,27 +180,16 @@ export default {
 
   <!-- 筛选条件 -->
   <div class="filter-container">
-    <div class="d-flex justify-content-between align-items-center">
-      <!-- 左侧：日期选择器 -->
-      <div class="d-flex gap-3 align-items-center">
-        <div class="input-group">
-          <input type="date" class="form-control" id="startDate" placeholder="Start Date" v-model="startDate">
-        </div>
-        <div class="input-group">
-          <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="endDate">
-        </div>
-      </div>
-
-      <!-- 右侧：搜索框和按钮 -->
-      <div class="d-flex gap-3 align-items-center">
-        <form class="search-container" role="search">
-          <i class="fas fa-search search-icon"></i>
-          <input class="form-control" type="search" placeholder="Search Role Name" v-model="searchRole">
-        </form>
-        <button type="button" class="btn btn-primary" @click="fetchLogs">Search</button>
-      </div>
+    <div class="d-flex justify-content-end align-items-center gap-2">
+      <form class="search-container d-flex align-items-center gap-2" role="search">
+        <i class="fas fa-search search-icon"></i>
+        <input class="form-control" type="search" placeholder="Search Role Name" v-model="searchRole">
+      </form>
+      <button type="button" class="btn btn-primary" @click="fetchLogs">Search</button>
     </div>
   </div>
+
+
 
   <!-- 表格 -->
   <div class="table-card">
@@ -215,7 +209,7 @@ export default {
       <tbody>
       <tr v-for="item in paginatedLogs" :key="item.id">
         <td>{{ item.id }}</td>
-        <td>{{ item.roleName }}</td>
+        <td>{{ item.name }}</td>
         <td>{{ item.createdOn }}</td>
         <td>
           <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">View</button>
@@ -263,7 +257,7 @@ export default {
           <!-- 角色名称 -->
           <div class="form-group mb-4">
             <label class="form-label">Role Name:</label>
-            <input type="text" class="form-control" placeholder="Enter role name" v-model="currentRole.roleName" :disabled="modalType === 'view'">
+            <input type="text" class="form-control" placeholder="Enter role name" v-model="currentRole.name" :disabled="modalType === 'view'">
           </div>
 
           <!-- 权限管理 -->
@@ -331,7 +325,7 @@ export default {
           <h3 class="modal-title" id="deleteRoleLabel">Are you sure?</h3>
         </div>
         <div class="modal-body">
-          <span class="text-muted">This action cannot be undone. This will permanently delete the role, <b>{{currentRole.roleName}}</b>.</span>
+          <span class="text-muted">This action cannot be undone. This will permanently delete the role, <b>{{currentRole.name}}</b>.</span>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showRemoveModal = false">Close</button>

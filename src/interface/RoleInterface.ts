@@ -1,6 +1,6 @@
 export interface RoleItem {
     id: number
-    roleName: string
+    name: string
     permissions: string[]
     createdOn: string
 }
