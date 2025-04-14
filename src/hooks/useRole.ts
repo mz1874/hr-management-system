@@ -1,4 +1,4 @@
-import { getAllRoles, deleteRoleByRoleId, addRole } from "@/api/role.ts";
+import {deleteRoleByRoleId, addRole, searchByRoleName } from "@/api/role.ts";
 import { ref, onMounted, computed, reactive } from "vue";
 import dayjs from "dayjs";
 import Swal from "sweetalert2";
@@ -8,6 +8,7 @@ import axios from "@/api/axios.ts";
 
 export default function () {
     const tableData = ref<RoleItem[]>([]);
+    const searchRole = ref('');
 
     const paginationInfo = reactive({
         next: null as string | null,
@@ -56,10 +57,7 @@ export default function () {
         }
     };
 
-    const goToPage = (page: number) => {
-        const url = `/api/role/?page=${page}`;
-        fetchPage(url);
-    };
+
 
     const handleRoleAdd = (role: RoleItem) => {
         addRole(role).then((res) => {
@@ -110,6 +108,52 @@ export default function () {
         });
     };
 
+    function handleSearchByStaffName(name: string, page: number = 1) {
+        searchByRoleName(name, page).then((res) => {
+            if (isSuccess(res.status)) {
+                const rawResults = res.data.data.results;
+                tableData.value = rawResults.map((item: any) => ({
+                    id: item.id,
+                    name: item.name,
+                    permissions: item.permissions,
+                    createdOn: dayjs(item.create_time).format("YYYY-MM-DD")
+                }));
+
+                paginationInfo.next = res.data.data.next;
+                paginationInfo.previous = res.data.data.previous;
+                paginationInfo.count = res.data.data.count;
+
+                // 存储基础搜索URL（不带page参数）
+                paginationInfo.currentUrl = `/api/role/search_by_name/?name=${encodeURIComponent(name)}`;
+
+                paginationInfo.currentPage = page;
+                paginationInfo.totalPages = Math.ceil(paginationInfo.count / paginationInfo.itemsPerPage);
+            }
+        });
+    }
+
+    const goToPage = (page: number) => {
+        if (searchRole.value) {
+            // 搜索分页 - 重新构造URL
+            const url = `/api/role/search_by_name/?name=${encodeURIComponent(searchRole.value)}&page=${page}`;
+            fetchPage(url);
+        } else {
+            // 普通分页 - 替换page参数
+            const url = paginationInfo.currentUrl.replace(/([?&]page=)\d+/, `$1${page}`);
+            if (!url.includes('page=')) {
+                // 如果URL中没有page参数，则添加
+                const separator = paginationInfo.currentUrl.includes('?') ? '&' : '?';
+                fetchPage(`${paginationInfo.currentUrl}${separator}page=${page}`);
+            } else {
+                fetchPage(url);
+            }
+        }
+    };
+
+
+
+
+
     onMounted(() => {
         fetchPage("/api/role/?page=1");
     });
@@ -122,9 +166,11 @@ export default function () {
         paginationInfo,
         nextPage,
         prevPage,
+        searchRole,
         goToPage,
         count: computed(() => paginationInfo.count),
         currentPage: computed(() => paginationInfo.currentPage),
-        totalPages: computed(() => paginationInfo.totalPages)
+        totalPages: computed(() => paginationInfo.totalPages),
+        handleSearchByStaffName
     };
 }

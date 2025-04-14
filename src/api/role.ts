@@ -14,3 +14,6 @@ export function addRole(role: RoleItem)
     return axios.post('/api/role/', role);
 }
 
+export function searchByRoleName(name: string, page?: Number) {
+    return axios.get(`/api/role/search_by_name/?name=${name}&page=${page}`);
+}

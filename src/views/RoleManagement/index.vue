@@ -4,7 +4,6 @@ import useRole from "@/hooks/useRole.ts";
 import type { RoleItem } from "@/interface/RoleInterface.ts";
 import Swal from "sweetalert2";
 
-// 从封装的 useRole 中获取数据和方法
 const {
   tableData,
   handleDeleteRole,
@@ -16,7 +15,9 @@ const {
   prevPage,
   goToPage,
   currentPage,
-  totalPages
+  totalPages,
+  searchRole,
+  handleSearchByStaffName
 } = useRole();
 
 // 所有可用的权限（层次结构）
@@ -48,9 +49,6 @@ const showRemoveModal = ref(false);
 const modalRemoveType = ref<'delete' | 'reset'>('delete');
 
 // 搜索与筛选
-const searchRole = ref('');
-const startDate = ref('');
-const endDate = ref('');
 
 // 未拥有权限
 const unassignedPermissions = computed(() => {
@@ -156,17 +154,23 @@ const groupPermissionsByLevel = (permissions: string[]) => {
   return grouped;
 };
 
-// 搜索 + 时间筛选
-const filteredLogs = computed(() => {
-  return tableData.value.filter(detail => {
-    const matchRoleSearch = detail.name.toLowerCase().includes(searchRole.value.toLowerCase());
-    const taskDate = new Date(detail.createdOn);
-    const start = startDate.value ? new Date(startDate.value) : null;
-    const end = endDate.value ? new Date(endDate.value) : null;
-    const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
-    return matchRoleSearch && matchesDateRange;
-  });
-});
+function fetchLogs()
+{
+  if(searchRole.value == '')
+  {
+    paginationInfo.currentPage = 1;
+    paginationInfo.totalPages = 1;
+    paginationInfo.itemsPerPage = 10;
+    paginationInfo.currentPage = 1;
+    paginationInfo.currentUrl = "/api/role/?page=1";
+    paginationInfo.previous= null as string | null;
+    paginationInfo.next=  null as string | null
+    fetchPage("/api/role/?page=1");
+  }else {
+    handleSearchByStaffName(searchRole.value );
+  }
+}
+
 </script>
 
 
@@ -187,7 +191,7 @@ export default {
         <i class="fas fa-search search-icon"></i>
         <input class="form-control" type="search" placeholder="Search Role Name" v-model="searchRole">
       </form>
-      <button type="button" class="btn btn-primary" @click="fetchLogs">Search</button>
+      <button type="button" class="btn btn-primary" @click="fetchLogs()">Search</button>
     </div>
   </div>
 
