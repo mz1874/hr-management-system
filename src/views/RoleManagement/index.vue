@@ -17,7 +17,8 @@ const {
   currentPage,
   totalPages,
   searchRole,
-  handleSearchByStaffName
+  handleSearchByStaffName,
+  handleRoleEdit
 } = useRole();
 
 // 所有可用的权限（层次结构）
@@ -41,7 +42,7 @@ const allPermissions = ref<string[]>([
 
 // 模态框控制
 const showModal = ref(false);
-const currentRole = ref<Partial<RoleItem>>({});
+const currentRole = ref<RoleItem>();
 const modalType = ref<'create' | 'edit' | 'view'>('create');
 
 // 删除模态框
@@ -92,9 +93,18 @@ const openDeleteModal = (role: RoleItem) => {
 
 // 保存编辑
 const saveEditedRole = () => {
-  const index = tableData.value.findIndex(item => item.id === currentRole.value.id);
-  if (index !== -1) {
-    tableData.value[index] = { ...(currentRole.value as RoleItem) };
+  if(currentRole.value.name === '' || currentRole.value.name === '' || currentRole.value.name === '') {
+    Swal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "Role name cannot be empty!",
+    });
+  }else {
+    handleRoleEdit(currentRole.value);
+    const index = tableData.value.findIndex(item => item.id === currentRole.value.id);
+    if (index !== -1) {
+      tableData.value[index] = { ...currentRole.value };
+    }
   }
   showModal.value = false;
 };

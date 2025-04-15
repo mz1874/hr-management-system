@@ -1,4 +1,9 @@
-import {deleteRoleByRoleId, addRole, searchByRoleName } from "@/api/role.ts";
+import {
+    deleteRoleByRoleId,
+    addRole,
+    searchByRoleName,
+    editRole
+} from "@/api/role.ts";
 import { ref, onMounted, computed, reactive } from "vue";
 import dayjs from "dayjs";
 import Swal from "sweetalert2";
@@ -132,6 +137,34 @@ export default function () {
         });
     }
 
+
+    /**
+     * 编译角色
+     * @param role
+     */
+    function handleRoleEdit(role: RoleItem)
+    {
+        editRole(role).then((res) => {
+            if(isSuccess(res.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Role edited successfully",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }else {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "error",
+                    title: "Role edit failed",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }
+        })
+    }
+
     const goToPage = (page: number) => {
         if (searchRole.value) {
             // 搜索分页 - 重新构造URL
@@ -171,6 +204,7 @@ export default function () {
         count: computed(() => paginationInfo.count),
         currentPage: computed(() => paginationInfo.currentPage),
         totalPages: computed(() => paginationInfo.totalPages),
-        handleSearchByStaffName
+        handleSearchByStaffName,
+        handleRoleEdit
     };
 }
