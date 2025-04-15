@@ -249,13 +249,8 @@
               <div v-if="assignType === 'user'" class="mb-3">
                 <label for="assignTo" class="form-label">Assign to:</label>
                 <div class="input-group">
-                  <select class="form-select" id="assignTo" v-model="currentTask.assignedTo">
-                    <option value="">Select Staff </option>
-                    <option v-for="staff in departmentStaff" :key="staff.id" :value="staff.username">
-                      {{ staff.username }}
-                    </option>
-                  </select>
-                  <button class="btn" type="button" style="background-color: #6CBD6C; color: white;" @click="addAssignedUser">Add</button>
+                  <input v-model="currentTask.assignedTo">
+                  <button class="btn" type="button" style="background-color: #6CBD6C; color: white;" @click="searchUser">Search</button>
                 </div>
                 <!-- Assigned Users Tags -->
                 <div class="mt-3">
@@ -341,7 +336,7 @@ import { isSuccess } from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
 import useKPI from "@/hooks/useKPI.ts";
 
-const {kpiData,fetchKpis,count } = useKPI();
+const {kpiData,fetchKpis,count,currentPage} = useKPI();
 
 const tasks = ref<Task[]>([])
 //fetch function
@@ -677,8 +672,6 @@ const confirmTerminate = () => {
 const searchTaskName = ref('')
 const selectedStatus = ref('')
 const selectedDepartment = ref('Sales Department')
-const currentPage = ref(1)
-const itemsPerPage = 20
 
 // 添加KPI数据过滤计算属性
 const filteredKpiData = computed(() => {
@@ -686,12 +679,15 @@ const filteredKpiData = computed(() => {
 });
 
 // pagination
-const totalPages = computed(() => Math.ceil(0))
+const totalPages = computed(() => Math.ceil(count.value / 10))
 
 const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-  }
+  fetchKpis(page);
+}
+
+function searchUser()
+{
+  alert(currentTask.assignedTo.value)
 }
 
 // Statistics

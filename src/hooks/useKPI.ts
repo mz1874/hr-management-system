@@ -5,10 +5,11 @@ import {isSuccess} from "@/utils/httpStatus.ts";
 
 export default function () {
     const kpiData = ref<any[]>([]);
-    const count  = ref(0);
+    const count = ref(0);
+    const currentPage = ref(1)
     /*获取所有KPI, 不分页*/
-    function fetchKpis() {
-        selectAllKpis().then((res) => {
+    function fetchKpis(page: number = 1) {
+        selectAllKpis(page).then((res) => {
             if (isSuccess(res.status)) {
                 const rawResults = res.data.data.results;
                 kpiData.value = rawResults.map((item: any) => {
@@ -16,8 +17,9 @@ export default function () {
                         id: item.id,
                         taskTitle: item.task_title,
                         taskDescription: item.task_description,
-                        startDate: item.startDate,
-                        endDate: item.endDate,
+                        startDate: dayjs(item.task_start_date).format("YYYY-MM-DD"),
+                        // startDate: item.task_start_date,
+                        endDate: dayjs(item.task_completion_date).format("YYYY-MM-DD"),
                         pointsGiven: item.points_earned,
                         status: item.kpi_status,  // KPI状态
                         totalTarget: item.target_unit,
@@ -30,10 +32,12 @@ export default function () {
                 });
             }
             count.value = res.data.data.count;
+            currentPage.value = page;
         })
     }
 
     return {
+        currentPage,
         count,
         kpiData,
         fetchKpis
