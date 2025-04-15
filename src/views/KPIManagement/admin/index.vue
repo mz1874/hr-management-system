@@ -372,6 +372,7 @@ const fetchAllStaff = () => {
 };
 
 function handleSearch(){
+
 }
 
 
@@ -758,20 +759,7 @@ const itemsPerPage = 10
 
 // 添加KPI数据过滤计算属性
 const filteredKpiData = computed(() => {
-  return kpiData.value.filter(task => {
-    // 部门筛选
-    const matchesDepartment = !selectedDepartment.value?.id || 
-      task.department_id === selectedDepartment.value.id;
-    
-    // 任务名称搜索
-    const matchesTaskName = !searchTaskName.value || 
-      task.taskTitle.toLowerCase().includes(searchTaskName.value.toLowerCase());
-    
-    // 状态筛选
-    const matchesStatus = !selectedStatus.value || task.status === selectedStatus.value;
-    
-    return matchesDepartment && matchesTaskName && matchesStatus;
-  });
+
 });
 
 
