@@ -55,7 +55,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="task in filteredKpiData" :key="task.id">
+            <tr v-for="task in kpiData" :key="task.id">
               <td>{{ task.id }}</td>
               <td>{{ task.taskTitle }}</td>
               <td>{{ task.startDate }}</td>
@@ -153,7 +153,7 @@
 
       <!-- Pagination 分页方法-->
       <div class="d-flex justify-content-start align-items-center mt-3">
-        <div>Total: {{ filteredKpiData.length }}</div>
+        <div style="margin-right: 20px">Total: {{ count }}</div>
         <nav>
           <ul class="pagination mb-0">
             <li :class="['page-item', { disabled: currentPage === 1 }]" @click="changePage(currentPage - 1)">
@@ -340,11 +340,12 @@ import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
 import { isSuccess } from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
+import useKPI from "@/hooks/useKPI.ts";
 
+const {kpiData,fetchKpis,count } = useKPI();
 
 const tasks = ref<Task[]>([])
 //fetch function
-const kpiData = ref<any[]>([]);  // 用于存储KPI数据
 const currentTask = ref<any>({});
 
 const departments = ref<any[]>([]);
@@ -391,61 +392,6 @@ const fetchDepartments = () => {
     console.error('Error fetching department list:', error);
   });
 };
-
-const fetchKpis = () => {
-    // 不再传递department_id参数，获取所有KPI数据
-    selectAllKpis().then((res) => {
-      console.log(res.data)
-      const rawResults = res.data.data.results;
-      kpiData.value = rawResults.map((item: any) => {
-        // 修改：使用自定义格式解析日期
-        let startDate = '';
-        let endDate = '';
-        
-        try {
-          // 使用自定义格式解析 DD.MM.YYYY HH:MM:SS 格式的日期
-          const [first, second] = item.task_start_date.split(" ");
-          const [day, month, year] = first.split(".");
-          startDate = `${year}-${month}-${day}`;
-          const [first2, second2] = item.task_completion_date.split(" ");
-          const [day2, month2, year2] = first2.split(".");
-          endDate = `${year2}-${month2}-${day2}`;
-          // 检查解析后的日期是否有效
-          if (startDate === "Invalid Date") {
-            console.warn("Invalid start date format:", item.task_start_date);
-            startDate = dayjs().format("YYYY-MM-DD"); // 使用当前日期作为后备
-          }
-          
-          if (endDate === "Invalid Date") {
-            console.warn("Invalid end date format:", item.task_completion_date);
-            endDate = dayjs().add(7, 'day').format("YYYY-MM-DD"); // 使用当前日期+7天作为后备
-          }
-        } catch (e) {
-          console.error("Error parsing dates:", e);
-          startDate = dayjs().format("YYYY-MM-DD");
-          endDate = dayjs().add(7, 'day').format("YYYY-MM-DD");
-        }
-        
-        return {
-          id: item.id,
-          taskTitle: item.task_title,
-          taskDescription: item.task_description,
-          startDate: startDate,
-          endDate: endDate,
-          pointsGiven: item.points_earned,
-          status: item.kpi_status,  // KPI状态
-          totalTarget: item.target_unit,
-          individualUnit: item.individual_unit,
-          createdOn: dayjs(item.create_time, "DD.MM.YYYY HH:mm:ss").format("YYYY-MM-DD"),
-          assignedUsers: item.assignedUsers || [],
-          department: item.department_name, // 直接使用API返回的部门名称
-          department_id: item.department
-        };
-      });
-    }).catch((error) => {
-        console.error("Error fetching KPIs:", error);
-    });
-  };
 
 onMounted(() =>
 {
@@ -755,22 +701,15 @@ const searchTaskName = ref('')
 const selectedStatus = ref('')
 const selectedDepartment = ref('Sales Department')
 const currentPage = ref(1)
-const itemsPerPage = 10
+const itemsPerPage = 20
 
 // 添加KPI数据过滤计算属性
 const filteredKpiData = computed(() => {
 
 });
 
-
-const paginatedTasks = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filteredKpiData.value.slice(start, end)
-})
-
 // pagination
-const totalPages = computed(() => Math.ceil(filteredKpiData.value.length / itemsPerPage))
+const totalPages = computed(() => Math.ceil(0))
 
 const changePage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
@@ -779,10 +718,10 @@ const changePage = (page: number) => {
 }
 
 // Statistics
-const totalTasks = computed(() => filteredKpiData.value.length);
-const completedTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Completed').length);
-const ongoingTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Ongoing').length);
-const delayedTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Delayed').length);
+const totalTasks = computed(() => 0);
+const completedTasks = computed(() => 0);
+const ongoingTasks = computed(() => 0);
+const delayedTasks = computed(() => 0);
 
 
 
