@@ -15,6 +15,11 @@ export function getKpi(id: number) {
     return axios.get(`/api/kpi/${id}/`)
 }
 
+/* 终止一个 KPI，更新其状态为 "Terminated" */
+export function terminateKpi(id: number, payload: any) {
+    return axios.patch(`/api/kpi/${id}/`, payload)
+}
+
 export function addAssignedUser(payload) {
     return axios.post('/api/kpi/', payload)
 }
