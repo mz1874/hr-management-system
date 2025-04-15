@@ -71,12 +71,12 @@ const fetchDepartments = async () => {
 }
 
 const onDepartmentChange = (selected) => {
-  // If we're in edit mode
+  console.log("Department selection changed:", selected);
+  
   if (isEditModalOpen.value) {
-    // Update the departments property directly
     selectedAnnouncement.value.departments = selected;
+    console.log("Updated departments in edit mode:", selectedAnnouncement.value.departments);
   } else {
-    // For new announcements
     newAnnouncement.value.department = selected;
   }
 }
@@ -338,20 +338,15 @@ const editAnnouncement = async (announcement) => {
   console.log("📋 Raw departments from announcement:", announcement.departments);
   
   // Extract department IDs directly
-  const deptIds = Array.isArray(announcement.departments) 
+  const deptIds = Array.isArray(announcement.departments)
     ? announcement.departments.map(dep => typeof dep === 'object' ? dep.id : dep)
     : [];
     
   console.log("🔢 Extracted department IDs:", deptIds);
 
-  // Get flat list of all departments for reference
-  const flatList = flattenTree(departmentTree.value);
-  console.log("📚 Flattened department tree:", flatList.map(d => ({ id: d.id, name: d.label })));
-
   selectedAnnouncement.value = {
     ...announcement,
-    // Use direct IDs for departments - no need for mapping with department objects
-    departments: [...deptIds],
+    departments: deptIds, // Directly assign deptIds here
     hasAvailability: deptIds.length > 0,
     isScheduled: !!announcement.schedule_post_time,
     scheduleDate: '',
@@ -373,14 +368,14 @@ const editAnnouncement = async (announcement) => {
 
   console.log("✅ Final selectedAnnouncement.departments:", selectedAnnouncement.value.departments);
 
-  // First, open the modal
+  // Open the modal
   modalInstances.edit.show();
   isEditModalOpen.value = true;
-  
-  // Then ensure the departments are set after the component is mounted
+
+  // Ensure the departments are set after the component is mounted
   nextTick(() => {
-    console.log("⏱️ Setting departments in nextTick:", [...deptIds]);
-    selectedAnnouncement.value.departments = [...deptIds];
+    console.log("⏱️ Setting departments in nextTick:", deptIds);
+    selectedAnnouncement.value.departments = deptIds;
   });
 };
 
@@ -527,9 +522,9 @@ const submitAnnouncement = async () => {
     const payload = {
       title: selectedAnnouncement.value.title,
       description: selectedAnnouncement.value.description,
-      departments: selectedAnnouncement.value.departments
-        .map(dep => dep?.id)
-        .filter(id => id !== null && id !== undefined),
+      departments: Array.isArray(selectedAnnouncement.value.departments) 
+        ? selectedAnnouncement.value.departments 
+        : [],
       ...(isScheduled
         ? {
             schedule_post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime),
@@ -541,6 +536,7 @@ const submitAnnouncement = async () => {
           }),
       file_ids: editedUploadedFileIds.value
     }
+    console.log("Departments in Payload:", payload.departments);
 
     await updateAnnouncement(selectedAnnouncement.value.id, payload)
     fetchAnnouncements()
@@ -1214,14 +1210,21 @@ const handleBulkDelete = () => {
                     >
                   </div>
                   <Treeselect
+                    v-if="selectedAnnouncement.hasAvailability"
                     :key="'dept-select-' + selectedAnnouncement.id"
                     v-model="selectedAnnouncement.departments"
                     :options="departmentTree"
                     :multiple="true"
-                    :value-consists-of="'LEAF_PRIORITY'"
-                    :flat="true"
+                    :normalizer="node => ({
+                      id: node.id,
+                      label: node.label,
+                      children: node.children
+                    })"
+                    :auto-select-descendants="true"
                     placeholder="Select departments"
+                    @input="onDepartmentChange"
                   />
+
 
                 </div>
 
