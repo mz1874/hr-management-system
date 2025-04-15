@@ -371,6 +371,9 @@ const fetchAllStaff = () => {
   });
 };
 
+function handleSearch(){
+}
+
 
 const fetchDepartments = () => {
   selectAllDepartments().then((res) => {
@@ -447,7 +450,6 @@ onMounted(() =>
 {
   fetchDepartments();
   fetchKpis();
-  alert("第一次调用");
   tasks.value.forEach(updateTaskStatus);
   fetchAllStaff();
 });
@@ -747,11 +749,6 @@ const confirmTerminate = () => {
 }
 
 
-// get total target
-// const getTotalTarget = (task: Task) => {
-//   return task.target.value * task.assignedUsers.length;
-// };
-
 // filter
 const searchTaskName = ref('')
 const selectedStatus = ref('')
@@ -863,25 +860,7 @@ const openCreateTaskModal = () => {
   assignType.value = 'user' // reset assignment type to default
   showModal.value = true
 }
-// const openEditTaskModal = (task: Task) => {
-//   currentTask.value = task
-//   modalType.value = 'edit'
-//   showModal.value = true
-// }
 
-// const openTerminatedModal = (task: Task) => {
-//   selectedTask.value = task
-//   showTerminatedModal.value = true
-// }
-
-// const saveEditedTask = () => {
-//   const index = tasks.value.findIndex(task => task.id === selectedTask.value.id)
-//   if (index !== -1) {
-//     tasks.value[index] = { ...selectedTask.value }
-//     updateTaskStatus(tasks.value[index]);  
-//   }
-//   showModal.value = false
-// }
 
 const markAsComplete = (task: Task) => {
   const index = tasks.value.findIndex(t => t.id === task.id);
@@ -892,47 +871,6 @@ const markAsComplete = (task: Task) => {
 };
 
 
-/*const addAssignedUser = () => {
-  if (selectedTask.value.assignedTo.trim()) {
-    selectedTask.value.assignedUsers.push({ username: selectedTask.value.assignedTo });
-    selectedTask.value.assignedTo = ''; // Clear input after adding
-  }
-};
-
-const removeAssignedUser = (index: number) => {
-  selectedTask.value.assignedUsers.splice(index, 1)
-}
-
-const createTask = () => {
-  const newId = tasks.value.length + 1
-
-  // Determine assignment based on assignType
-  const isUserAssignment = assignType.value === 'user'
-  const username = isUserAssignment && selectedTask.value.assignedUsers.length > 0 
-    ? selectedTask.value.assignedUsers[0] 
-    : selectedDepartment.value
-
-  const role = isUserAssignment ? 'Employee' : 'Department'
-
-  const task: Task = {
-    id: newId,
-    taskName: selectedTask.value.taskName,
-    taskDescription: selectedTask.value.taskDescription,
-    status: '',
-    startDate: selectedTask.value.startDate,
-    completionDate: selectedTask.value.completionDate,
-    target: { value: selectedTask.value.target.value, unit: selectedTask.value.target.unit },
-    pointsGiven: selectedTask.value.pointsGiven,
-    assignedTo: isUserAssignment ? selectedTask.value.assignedTo : '',
-    assignedUsers: isUserAssignment ? selectedTask.value.assignedUsers : [],
-    department: selectedDepartment.value
-  }
-  updateTaskStatus(task);
-  tasks.value.push(task)
-  showModal.value = false
-}
-*/
-//go to employee details page
 function goToEmployeeDetailsPage()
 {
   router.push('/home/KPI-management/employee-task-details');
