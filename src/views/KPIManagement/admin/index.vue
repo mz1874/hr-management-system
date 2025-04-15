@@ -332,9 +332,8 @@
 import router from '@/router'
 import { ref, computed, onMounted } from 'vue'
 import type {Task} from  "@/interface/KpiInterface.ts";
-import {selectAllKpis, updateKpi, createKpi, deleteKpi, terminateKpi} from "@/api/kpiAdmin.ts";
+import {updateKpi, createKpi, deleteKpi, terminateKpi} from "@/api/kpiAdmin.ts";
 import { selectAllDepartments } from "@/api/department.ts";
-import {selectAllStaffs} from "@/api/staff.ts";
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
@@ -350,27 +349,6 @@ const currentTask = ref<any>({});
 
 const departments = ref<any[]>([]);
 
-// 添加员工列表
-const allStaff = ref<any[]>([]);
-const departmentStaff = computed(() => {
-  // 根据当前选中的部门ID过滤员工
-  return allStaff.value.filter(staff => 
-    staff.department === selectedDepartment.value?.id
-  );
-});
-
-const fetchAllStaff = () => {
-  selectAllStaffs().then((res) => {
-    if (isSuccess(res.status) && res.data.code === 200) {
-      allStaff.value = res.data.data.results;
-      console.log('获取员工数据成功:', allStaff.value);
-    } else {
-      console.error('获取员工列表失败:', res);
-    }
-  }).catch((error) => {
-    console.error('获取员工列表出错:', error);
-  });
-};
 
 function handleSearch(){
 
@@ -398,7 +376,6 @@ onMounted(() =>
   fetchDepartments();
   fetchKpis();
   tasks.value.forEach(updateTaskStatus);
-  fetchAllStaff();
 });
 
 // 添加用户的函数
@@ -787,15 +764,6 @@ const openCreateTaskModal = () => {
   assignType.value = 'user' // reset assignment type to default
   showModal.value = true
 }
-
-
-const markAsComplete = (task: Task) => {
-  const index = tasks.value.findIndex(t => t.id === task.id);
-  if (index !== -1) {
-    tasks.value[index] = { ...tasks.value[index], status: 'Completed' };
-  }
-  showModal.value = false
-};
 
 
 function goToEmployeeDetailsPage()
