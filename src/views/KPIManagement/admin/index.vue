@@ -3,25 +3,22 @@
     <h2>{{ selectedDepartment.department_name || 'Department' }} KPI Management</h2>
   </div>
 
-  <!-- department filter -->
-  <div class="gap-3 mb-4">
+  <!-- Combined filter row -->
+  <div class="d-flex gap-3 mb-4 align-items-center">
+    <!-- Department filter -->
     <select class="form-select w-25" v-model="selectedDepartment" @change="handleDepartmentChange">
       <option v-for="dept in departments" :key="dept.id" :value="dept">
         {{ dept.department_name }}
       </option>
     </select>
-  </div>
 
-  <div class="line mb-4"></div>
-
-  <!-- Search and filter -->
-  <div class="d-flex gap-3 mb-4 mt-3">
-    <!-- search task name -->
+    <!-- Search task name -->
     <div class="input-group w-25">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
       <input v-model="searchTaskName" type="text" class="form-control" placeholder="Search Task Name">
     </div>
-    <!-- search status -->
+
+    <!-- Search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">All Status</option>
       <option>Not Yet Started</option>
@@ -30,6 +27,10 @@
       <option>Delayed</option>
       <option>Terminated</option>
     </select>
+
+    <button class="btn btn-primary" @click="handleSearch">
+      <i class="fas fa-search me-1"></i> Search
+    </button>
   </div>
 
   <!-- Table section -->
@@ -150,7 +151,7 @@
         </div>
       </div>
 
-      <!-- Pagination -->
+      <!-- Pagination 分页方法-->
       <div class="d-flex justify-content-between align-items-center mt-3">
         <div>Total: {{ filteredKpiData.length }}</div>
         <nav>
@@ -378,7 +379,6 @@ const fetchDepartments = () => {
       // 默认选择第一个部门
       if (departments.value.length > 0) {
         selectedDepartment.value = departments.value[0];
-        fetchKpis(); // 获取第一个部门的KPI数据
       }
     } else {
       console.error('Failed to fetch department list:', res);
@@ -447,8 +447,10 @@ onMounted(() =>
 {
   fetchDepartments();
   fetchKpis();
+  alert("第一次调用");
+  tasks.value.forEach(updateTaskStatus);
   fetchAllStaff();
-});  // 组件挂载时自动调用 fetchKpis 获取数据
+});
 
 // 添加用户的函数
 const addAssignedUser = () => {
@@ -797,14 +799,13 @@ const completedTasks = computed(() => filteredKpiData.value.filter(task => task.
 const ongoingTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Ongoing').length);
 const delayedTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Delayed').length);
 
-onMounted(() => {
-    tasks.value.forEach(updateTaskStatus);
-});
+
 
 const handleDepartmentChange = () => {
   console.log(`Department changed to: ${selectedDepartment.value.department_name}`);
   // 重置分页到第一页
   currentPage.value = 1;
+
   fetchKpis(); // 重新获取数据
 };
 
