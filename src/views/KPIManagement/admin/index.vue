@@ -152,7 +152,7 @@
       </div>
 
       <!-- Pagination 分页方法-->
-      <div class="d-flex justify-content-between align-items-center mt-3">
+      <div class="d-flex justify-content-start align-items-center mt-3">
         <div>Total: {{ filteredKpiData.length }}</div>
         <nav>
           <ul class="pagination mb-0">
