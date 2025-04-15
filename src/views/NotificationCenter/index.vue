@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { Modal } from 'bootstrap'
 import {
   createAnnouncement,
@@ -38,6 +38,9 @@ const buildDepartmentTree = (flatList: any[]) => {
     map.set(dept.id, { ...dept, label: dept.department_name, children: [] })
   })
 
+  console.log("🌳 Treeselect Flat Options:", flatList);
+
+
   flatList.forEach(dept => {
     if (dept.parent_department) {
       const parent = map.get(dept.parent_department);
@@ -52,6 +55,11 @@ const buildDepartmentTree = (flatList: any[]) => {
   return roots
 }
 
+function flattenTree(tree: any[]): any[] {
+  return tree.flatMap(node => [node, ...(node.children ? flattenTree(node.children) : [])])
+}
+
+
 const fetchDepartments = async () => {
   try {
     const res = await selectAllDepartments()
@@ -62,14 +70,15 @@ const fetchDepartments = async () => {
   }
 }
 
-const onDepartmentChange = (selected: any[]) => {
-  const selectedIds = new Set(selected.map(i => i.id))
-  const filtered = selected.filter(opt => {
-    // if a parent is selected, remove child
-    return !selectedIds.has(opt.parent_department)
-  })
-  newAnnouncement.value.department = filtered.map(i => i.id)
-  selectedDepartments.value = filtered
+const onDepartmentChange = (selected) => {
+  // If we're in edit mode
+  if (isEditModalOpen.value) {
+    // Update the departments property directly
+    selectedAnnouncement.value.departments = selected;
+  } else {
+    // For new announcements
+    newAnnouncement.value.department = selected;
+  }
 }
 
 onMounted(() => {
@@ -89,6 +98,13 @@ const isEditModalOpen = ref(false)
 const announcements = ref<any[]>([])
 const selectedIds = ref<number[]>([])
 const selectedAnnouncement = ref<any>({})
+watch(
+  () => selectedAnnouncement.value.departments,
+  (val) => {
+    console.log("✅ Current selectedAnnouncement.departments:", val);
+  },
+  { deep: true }
+)
 const uploadedFileIds = ref<number[]>([])
 const editedUploadedFileIds = ref<number[]>([])
 const searchQuery = ref('')
@@ -318,26 +334,25 @@ const editAnnouncement = async (announcement) => {
     await fetchDepartments();
   }
 
-  // Flatten department tree to match against
-  const flatDepartments = departmentTree.value.flatMap(d => [d, ...(d.children || [])]);
+  // Log the raw departments data from announcement
+  console.log("📋 Raw departments from announcement:", announcement.departments);
+  
+  // Extract department IDs directly
+  const deptIds = Array.isArray(announcement.departments) 
+    ? announcement.departments.map(dep => typeof dep === 'object' ? dep.id : dep)
+    : [];
+    
+  console.log("🔢 Extracted department IDs:", deptIds);
 
-  // Extract the department IDs from the incoming data
-  const deptIds = (announcement.departments || []).map(dep =>
-    typeof dep === 'object' ? dep.id : dep
-  );
+  // Get flat list of all departments for reference
+  const flatList = flattenTree(departmentTree.value);
+  console.log("📚 Flattened department tree:", flatList.map(d => ({ id: d.id, name: d.label })));
 
-  // 🔧 Find exact matching objects from departmentTree by ID (to match Treeselect references)
-  const mappedDepartments = deptIds
-    .map(id => flatDepartments.find(d => d.id === id))
-    .filter(Boolean); // removes any nulls just in case
-
-  console.log("✅ Mapped departments (Treeselect-compatible):", mappedDepartments);
-
-  // Final structured assignment
   selectedAnnouncement.value = {
     ...announcement,
-    departments: mappedDepartments,
-    hasAvailability: mappedDepartments.length > 0,
+    // Use direct IDs for departments - no need for mapping with department objects
+    departments: [...deptIds],
+    hasAvailability: deptIds.length > 0,
     isScheduled: !!announcement.schedule_post_time,
     scheduleDate: '',
     scheduleTime: '',
@@ -356,9 +371,20 @@ const editAnnouncement = async (announcement) => {
 
   editedUploadedFileIds.value = selectedAnnouncement.value.attachments.map(f => f.id);
 
+  console.log("✅ Final selectedAnnouncement.departments:", selectedAnnouncement.value.departments);
+
+  // First, open the modal
   modalInstances.edit.show();
   isEditModalOpen.value = true;
+  
+  // Then ensure the departments are set after the component is mounted
+  nextTick(() => {
+    console.log("⏱️ Setting departments in nextTick:", [...deptIds]);
+    selectedAnnouncement.value.departments = [...deptIds];
+  });
 };
+
+
 
 const closeModal = () => {
   modalInstances.edit.hide()
@@ -1187,18 +1213,14 @@ const handleBulkDelete = () => {
                       >Available for</label
                     >
                   </div>
-                  <treeselect
+                  <Treeselect
+                    :key="'dept-select-' + selectedAnnouncement.id"
                     v-model="selectedAnnouncement.departments"
-                    :multiple="true"
                     :options="departmentTree"
-                    :normalizer="node => ({
-                      id: node.id,
-                      label: node.label,
-                      children: node.children || []
-                    })"
+                    :multiple="true"
+                    :value-consists-of="'LEAF_PRIORITY'"
+                    :flat="true"
                     placeholder="Select departments"
-                    class="mt-2"
-                    :disabled="!selectedAnnouncement.hasAvailability"
                   />
 
                 </div>

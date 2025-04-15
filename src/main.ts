@@ -7,6 +7,8 @@ import 'vue3-treeselect/dist/vue3-treeselect.css';
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import Treeselect from 'vue3-treeselect'
+import { Transition } from 'vue'
 
 
 import App from './App.vue'
@@ -17,5 +19,12 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+app.component('Treeselect', Treeselect)
+app.component('Transition', Transition);
+
+// Use type assertion to fix TypeScript error
+(app.config as any).compatConfig = {
+  RENDER_FUNCTION: true
+}
 
 app.mount('#app')
