@@ -121,7 +121,7 @@ body {
 }
 
 .sidebar {
-  background-color: #004d40;
+  background-color: #406f8c;
   color: white;
   min-height: 100vh;
   height: auto;
