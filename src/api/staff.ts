@@ -1,7 +1,7 @@
 import axios from './axios'
 
-export function selectAllStaffs() {
-    return axios.get('/api/staff/');
+export function selectAllStaffs(page: number = 1) {
+    return axios.get('/api/staff/?page=' + page);
 }
 
 export function searchStaff(name: string): any {

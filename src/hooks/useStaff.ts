@@ -1,4 +1,4 @@
-import {onMounted, reactive} from "vue";
+import {onMounted, reactive, ref} from "vue";
 import {selectAllStaffs, searchStaff, deleteStaff as del} from '@/api/staff.ts';
 import {isSuccess} from "@/utils/httpStatus.ts";
 import type {Staff} from "@/interface/UserInterface.ts";
@@ -19,10 +19,11 @@ export default function () {
         previous: null,
         results: []
     });
+    const currentPage = ref(1)
 
     /* 获取所有用户数据 */
-    function fetchAllStaffs(): void {
-        selectAllStaffs().then((response) => {
+    function fetchAllStaffs(page: number = 1): void {
+        selectAllStaffs(page).then((response) => {
             if (isSuccess(response.status)) {
                 const res = response.data.data;
                 staffData.count = res.count;
@@ -43,6 +44,7 @@ export default function () {
                     annualLeaves: item.annual_leave,
                 }));
             }
+            currentPage.value = page;
         });
     }
 
@@ -81,8 +83,13 @@ export default function () {
 
     onMounted(() => {
         fetchAllStaffs();
-        console.log(JSON.stringify(staffData));
     });
 
-    return {fetchAllStaffs, staffData, search, deleteStaff};
+    return {
+        currentPage,
+        staffData,
+        search,
+        deleteStaff,
+        fetchAllStaffs
+    };
 }

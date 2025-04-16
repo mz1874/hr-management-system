@@ -106,7 +106,6 @@ async function submitData() {
         icon: "error"
       });
     } else {
-      console.error(err);
       Swal.fire({
         icon: "error",
         title: "Oops...",

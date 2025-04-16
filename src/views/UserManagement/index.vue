@@ -14,12 +14,13 @@ onMounted(() => {
 })
 
 
-const {staffData, search, deleteStaff} = useStaff()
+const {staffData, search, deleteStaff, fetchAllStaffs, currentPage} = useStaff()
+
 // State
 const selectedDepartment = ref(0)
 
 const searchQuery = ref('')
-const currentPage = ref(1)
+
 const itemsPerPage = 10
 
 
@@ -45,19 +46,6 @@ const selectedStaff = ref<Staff>({
   totalPoints: 0
 })
 
-/*状态卡*/
-const statistics = computed(() => {
-  /*先过滤当前的部门*/
-  const departmentStaff = staffData.results.filter(staff => {
-    return selectedDepartment.value === 0 ? staff : staff.department == selectedDepartment.value
-  })
-  return {
-    total: departmentStaff.length,
-    active: departmentStaff.filter(staff => staff.status == true).length,
-    inactive: departmentStaff.filter(staff => staff.status == false).length
-  }
-})
-
 
 const filteredStaffs = computed(() => {
   console.log(selectedDepartment.value)
@@ -68,15 +56,8 @@ const filteredStaffs = computed(() => {
 
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredStaffs.value.length / itemsPerPage)
+  return Math.ceil(staffData.count / itemsPerPage)
 })
-
-/*分页过滤 staff 信息*/
-const paginatedStaffs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  return filteredStaffs.value.slice(start, start + itemsPerPage)
-})
-
 
 const searchStaff = (searchData: string) => {
   search(searchData);
@@ -136,9 +117,7 @@ const confirmDeleteStaff = () => {
 }
 
 const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-  }
+  fetchAllStaffs(page);
 }
 
 function onImageSelected(event) {
@@ -225,7 +204,7 @@ function resetPassword(staff: Staff) {
             </tr>
             </thead>
             <tbody>
-            <tr v-for="staff in paginatedStaffs" :key="staff.id">
+            <tr v-for="staff in staffData.results" :key="staff.id">
               <td>{{ staff.id }}</td>
               <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
               <td>{{ staff.dateOfBirth }}</td>
@@ -287,7 +266,7 @@ function resetPassword(staff: Staff) {
                 <i class="fas fa-users text-white"></i>
               </div>
               <div>
-                <h3 class="mb-0">{{ statistics.total }}</h3>
+                <h3 class="mb-0">{{ staffData.count }}</h3>
                 <span class="text-muted">Total Staff</span>
               </div>
             </div>
@@ -302,7 +281,7 @@ function resetPassword(staff: Staff) {
                 <i class="fas fa-user-check text-white"></i>
               </div>
               <div>
-                <h3 class="mb-0">{{ statistics.active }}</h3>
+                <h3 class="mb-0">{{ 1 }}</h3>
                 <span class="text-muted">Active</span>
               </div>
             </div>
@@ -317,7 +296,7 @@ function resetPassword(staff: Staff) {
                 <i class="fas fa-user-clock text-white"></i>
               </div>
               <div>
-                <h3 class="mb-0">{{ statistics.inactive }}</h3>
+                <h3 class="mb-0">{{ 1 }}</h3>
                 <span class="text-muted">Inactive</span>
               </div>
             </div>
