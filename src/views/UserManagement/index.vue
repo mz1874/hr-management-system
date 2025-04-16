@@ -14,7 +14,15 @@ onMounted(() => {
 })
 
 
-const {staffData, search, deleteStaff, fetchAllStaffs, currentPage} = useStaff()
+const {
+  staffData,
+  search,
+  deleteStaff,
+  fetchAllStaffs,
+  currentPage,
+  isSearching,
+  searchDepartmentId,
+  searchName} = useStaff()
 
 // State
 const selectedDepartment = ref(0)
@@ -47,21 +55,15 @@ const selectedStaff = ref<Staff>({
 })
 
 
-const filteredStaffs = computed(() => {
-  console.log(selectedDepartment.value)
-  return staffData.results.filter(staff => {
-    return selectedDepartment.value === 0 ? staff : staff.department == selectedDepartment.value
-  })
-})
-
-
 const totalPages = computed(() => {
   return Math.ceil(staffData.count / itemsPerPage)
 })
 
 const searchStaff = (searchData: string) => {
-  search(searchData);
+  const departmentId = selectedDepartment.value === 0 ? null : selectedDepartment.value;
+  search(searchData, departmentId);
 }
+
 
 const openAddStaffModal = () => {
   selectedStaff.value = {
@@ -117,7 +119,11 @@ const confirmDeleteStaff = () => {
 }
 
 const changePage = (page: number) => {
-  fetchAllStaffs(page);
+  if (isSearching.value) {
+    search(searchName.value, searchDepartmentId.value, page);
+  } else {
+    fetchAllStaffs(page);
+  }
 }
 
 function onImageSelected(event) {

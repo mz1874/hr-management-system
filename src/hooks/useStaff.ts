@@ -19,7 +19,12 @@ export default function () {
         previous: null,
         results: []
     });
+
     const currentPage = ref(1)
+    const searchName = ref('');
+    const searchDepartmentId = ref<number | null>(null);
+    const isSearching = ref(false);
+
 
     /* 获取所有用户数据 */
     function fetchAllStaffs(page: number = 1): void {
@@ -43,6 +48,7 @@ export default function () {
                     medicalLeaves: item.medical_leave,
                     annualLeaves: item.annual_leave,
                 }));
+
             }
             currentPage.value = page;
         });
@@ -73,19 +79,46 @@ export default function () {
     }
 
 
-    function search(staffName: string): any {
-        searchStaff(staffName).then((response) => {
+    function search(staffName: string, departmentId: number | null = null, page = 1): void {
+        searchName.value = staffName;
+        searchDepartmentId.value = departmentId;
+        isSearching.value = true;
+
+        searchStaff(staffName, departmentId, page).then((response) => {
             if (isSuccess(response.status)) {
-                console.log(response);
+                const res = response.data.data;
+                staffData.count = res.count;
+                staffData.next = res.next;
+                staffData.previous = res.previous;
+                staffData.results = res.results.map((item: any) => ({
+                    id: item.id,
+                    name: item.username,
+                    dateOfBirth: dayjs(item.date_of_birth).format("YYYY-MM-DD"),
+                    role: item.roles?.[0] ? String(item.roles[0]) : '',
+                    department: item.department ? String(item.department) : '',
+                    department_name: item.department_name,
+                    status: item.status,
+                    employmentDate: dayjs(item.employment_time).format("YYYY-MM-DD"),
+                    resignationDate: undefined,
+                    numberOfLeaves: item.number_of_leave,
+                    medicalLeaves: item.medical_leave,
+                    annualLeaves: item.annual_leave,
+                }));
             }
-        })
+            currentPage.value = page;
+        });
     }
+
+
 
     onMounted(() => {
         fetchAllStaffs();
     });
 
     return {
+        isSearching,
+        searchDepartmentId,
+        searchName,
         currentPage,
         staffData,
         search,
