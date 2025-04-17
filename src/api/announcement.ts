@@ -6,13 +6,14 @@ export function createAnnouncement(payload) {
 }
 
 export function getAnnouncements(page = 1, search = '', extraParams = {}) {
-    const params = new URLSearchParams({
-      page: String(page),
-      search: search,
-      ...extraParams
-    })
-    return axios.get(`/api/announcements/?${params.toString()}`)
-  }
+  const params = {
+    page,
+    ...(search ? { search } : {}),
+    ...extraParams
+  };
+  return axios.get('/api/announcements/', { params });
+}
+
   
 // Get announcement detail
 export function getAnnouncement(id) {
