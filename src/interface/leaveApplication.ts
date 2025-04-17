@@ -13,5 +13,8 @@ export interface LeaveApplication {
     }[];
     reasons: string;
     document: string;
-  }
+    reviewComment?: string;
+    reviewDate?: string;
 
+
+  }

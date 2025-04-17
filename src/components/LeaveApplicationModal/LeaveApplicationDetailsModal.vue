@@ -2,33 +2,27 @@
 import { ref, defineProps, watch, onMounted } from 'vue';
 import { Modal } from 'bootstrap';
 import { BASE_URL } from '@/api/axios'
-import type { LeaveDate, LeaveApplication } from '@/interface/leaveApplicationInterface';
+import type {LeaveApplication } from '@/interface/leaveApplicationInterface';
 
-
-// Props to receive selected leave application data
 const props = defineProps<{ selectedApplication: LeaveApplication | null }>();
 
 const modalRef = ref<HTMLElement | null>(null);
 let modalInstance: Modal | null = null;
 
-// Initialize modal when component is mounted
 onMounted(() => {
   if (modalRef.value) {
     modalInstance = new Modal(modalRef.value);
   }
 });
 
-// Open Modal Function
 const showModal = () => {
   modalInstance?.show();
 };
 
-// Close Modal Function
 const closeModal = () => {
   modalInstance?.hide();
 };
 
-// Open modal automatically when new data is passed in
 watch(() => props.selectedApplication, (newData) => {
   if (newData) {
     console.log('Selected Application:', newData);
@@ -36,19 +30,20 @@ watch(() => props.selectedApplication, (newData) => {
   }
 });
 
-
 const formatDateOnly = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  return date.toISOString().slice(0, 10); // returns 'YYYY-MM-DD'
+  if (!dateStr.includes('-') && dateStr.includes('.')) {
+    const [day, month, year] = dateStr.split('.')
+    if (!day || !month || !year) return '-';
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return dateStr.split('T')[0];
 };
-
 </script>
 
 <template>
   <div class="modal fade" id="leaveDetailsModal" ref="modalRef" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <!-- Modal Header -->
         <div class="modal-header">
           <h5 class="modal-title">
             <i class="bi bi-info-circle me-2"></i> Leave Application Details
@@ -56,45 +51,37 @@ const formatDateOnly = (dateStr: string): string => {
           <button type="button" class="btn-close" @click="closeModal"></button>
         </div>
 
-        <!-- Modal Body -->
         <div class="modal-body" v-if="props.selectedApplication">
-          <!-- Name -->
           <div class="mb-3">
             <label class="form-label">Name</label>
             <input type="text" class="form-control" :value="props.selectedApplication.name" disabled>
           </div>
 
-          <!-- Department -->
           <div class="mb-3">
             <label class="form-label">Department</label>
             <input type="text" class="form-control" :value="props.selectedApplication.department" disabled>
           </div>
 
-          <!-- Applied On -->
           <div class="mb-3">
             <label class="form-label">Applied On</label>
             <input type="text" class="form-control" :value="formatDateOnly(props.selectedApplication.appliedOn)" disabled>
           </div>
 
-          <!-- Leave Type -->
           <div class="mb-3">
             <label class="form-label">Leave Type</label>
             <input type="text" class="form-control" :value="props.selectedApplication.leaveType" disabled>
           </div>
 
-          <!-- Status -->
           <div class="mb-3">
             <label class="form-label">Status</label>
             <input type="text" class="form-control" :value="props.selectedApplication.status" disabled>
           </div>
 
-          <!-- Reasons -->
           <div class="mb-3">
             <label class="form-label">Reasons</label>
             <textarea class="form-control" :value="props.selectedApplication.reasons" rows="3" disabled></textarea>
           </div>
 
-          <!-- Selected Dates -->
           <div class="mb-3">
             <h6 class="mb-3">Selected Dates:</h6>
             <div v-for="(date, index) in props.selectedApplication.dates" :key="index" class="date-row">
@@ -104,7 +91,18 @@ const formatDateOnly = (dateStr: string): string => {
             </div>
           </div>
 
-          <!-- Document (if available) -->
+          <!-- Review Comment -->
+          <div class="mb-3" v-if="props.selectedApplication.status !== 'Pending' && props.selectedApplication.status !== 'Withdraw'">
+            <label class="form-label">Review Comment</label>
+            <input type="text" class="form-control" :value="props.selectedApplication.reviewComment || '-'" disabled>
+          </div>
+
+          <!-- Review Date -->
+          <div class="mb-3" v-if="props.selectedApplication.status !== 'Pending' && props.selectedApplication.status !== 'Withdraw'">
+            <label class="form-label">Reviewed On</label>
+            <input type="text" class="form-control" :value="props.selectedApplication.reviewDate ? formatDateOnly(props.selectedApplication.reviewDate) : '-'" disabled>
+          </div>
+
           <div v-if="props.selectedApplication.document && props.selectedApplication.document !== 'N/A'">
             <label class="form-label">Attached Document</label>
             <div class="pdf-viewer">
@@ -118,7 +116,6 @@ const formatDateOnly = (dateStr: string): string => {
           </div>
         </div>
 
-        <!-- Modal Footer -->
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
         </div>
@@ -126,7 +123,6 @@ const formatDateOnly = (dateStr: string): string => {
     </div>
   </div>
 </template>
-
 
 <style scoped>
 .modal-header {

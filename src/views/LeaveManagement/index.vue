@@ -315,6 +315,8 @@ onMounted(() => {
       <!-- <button class="btn btn-danger">Delete</button> -->
     </div>
 
+    
+
     <!-- Applications Table -->
     <table class="table table-bordered">
       <thead>

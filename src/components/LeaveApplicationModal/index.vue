@@ -6,7 +6,7 @@ import '@vuepic/vue-datepicker/dist/main.css';
 import { getLeaveTypes, submitLeaveRequest } from '@/api/leave';
 import { getCurrentUser } from '@/api/login';
 import { uploadFile } from '@/api/file_upload';
-import type { LeaveDate, ApplicationFormData, LeaveType } from '@/interface/leaveApplicationModal';
+import type {ApplicationFormData, LeaveType } from '@/interface/leaveApplicationModal';
 
 const emit = defineEmits(['submit']);
 
