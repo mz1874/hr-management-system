@@ -14,3 +14,4 @@ export interface LeaveApplication {
     reasons: string;
     document: string;
   }
+
