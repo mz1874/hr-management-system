@@ -17,6 +17,9 @@ export interface LeaveDate {
     dates: LeaveDate[];
     reasons: string;
     document: string;
+    reviewComment?: string;
+    reviewDate?: string;
+
   }
   
 

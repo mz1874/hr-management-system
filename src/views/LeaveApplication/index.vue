@@ -2,7 +2,8 @@
 export default {
   name: "leaveManagement",
   components: {
-    LeaveApplicationModal
+    LeaveApplicationModal,
+    LeaveApplicationDetailsModal
   }
 }
 </script>
@@ -13,36 +14,20 @@ import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/Lea
 import { Modal } from "bootstrap";
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { getLeaveRequests, cancelLeaveRequest } from '@/api/leave'
-import { selectAllStaffs } from '@/api/staff'
 import { getCurrentUser } from '@/api/login';
+import type {LeaveApplication} from '@/interface/leaveApplication' 
 
 const usersById = ref<Record<number, { username: string, department: string | null }>>({});
-
-interface LeaveApplication {
-  id: number;
-  name: string;
-  department: string;
-  leaveType: string;
-  status: string;
-  appliedOn: string;
-  selected: boolean;
-  dates: {
-    date: string;
-    duration: string;
-    leaveType: string;
-  }[];
-  reasons: string;
-  document: string;
-}
 
 const currentPage = ref(1);
 const totalPages = ref(1);
 const totalCount = ref(0);
 const leaveApplications = ref<LeaveApplication[]>([]);
+const allLeaveStats = ref<{ pending: number }>({ pending: 0 });
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
-    case 'Reject': return 'badge-reject';
+    case 'Rejected': return 'badge-reject';
     case 'Pending': return 'badge-pending';
     case 'Approved': return 'badge-approved';
     case 'Cancelled': return 'badge-cancelled';
@@ -51,10 +36,6 @@ const getStatusBadgeClass = (status: string) => {
 };
 
 const filterStatus = ref('All');
-
-// Always return the current leaveApplications, filtered by backend
-const filteredApplications = computed(() => leaveApplications.value);
-
 const withdrawModal = ref<HTMLElement | null>(null);
 
 const withdrawApplication = (id: number) => {
@@ -112,7 +93,7 @@ const openApplicationDetails = (application: LeaveApplication) => {
 const currentUserId = ref<number | null>(null);
 const userLeaveInfo = ref({ annual: 0, medical: 0 });
 
-function fetchLeaveApplications(page = 1) {
+async function fetchLeaveApplications(page = 1) {
   currentPage.value = page;
 
   let statusParam = null;
@@ -126,72 +107,55 @@ function fetchLeaveApplications(page = 1) {
     statusParam = statusMap[filterStatus.value];
   }
 
-  getLeaveRequests(page, '', { status: statusParam })
-    .then(async res => {
-      const data = res.data?.data;
-
-      if (!Array.isArray(data?.results)) {
-        throw new Error('Invalid API response: data.results is not an array');
-      }
-
-      if (data.count && data.results.length === 0 && page > 1) {
-        const lastPage = Math.ceil(data.count / 5);
-        if (page > lastPage) return fetchLeaveApplications(lastPage);
-      }
-
-      totalCount.value = data.count;
-      totalPages.value = Math.ceil(data.count / 5);
-
-      const staffRes = await selectAllStaffs();
-      const staffList = Array.isArray(staffRes.data?.data?.results)
-        ? staffRes.data.data.results
-        : [];
-
-      usersById.value = Object.fromEntries(
-        staffList.map((u: any) => [
-          u.id,
-          { username: u.username, department: u.department || '-' }
-        ])
-      );
-
-      const statusMap = { P: 'Pending', A: 'Approved', R: 'Rejected', W: 'Cancelled' };
-
-      leaveApplications.value = data.results.map(item => {
-        const userInfo = usersById.value[item.user] || { username: '-', department: '-' };
-        return {
-          id: item.id,
-          name: userInfo.username,
-          department: userInfo.department,
-          leaveType: item.leave_dates?.[0]?.leave_type_display?.name || '-',
-          status: statusMap[item.status] || item.status_display || item.status,
-          appliedOn: item.created_date,
-          selected: false,
-          dates: Array.isArray(item.leave_dates)
-            ? item.leave_dates.map(d => ({
-                date: d.leave_date.split('T')[0],
-                duration: d.duration,
-                leaveType: d.leave_type_display?.name || 'N/A'
-              }))
-            : [],
-          reasons: item.reason,
-          document: item.attachment_url || ''
-        };
-      });
-    })
-    .catch(err => console.error('Error fetching leave applications:', err));
-}
-
-onMounted(async () => {
   try {
     const meRes = await getCurrentUser();
     const currentUser = meRes.data.data;
     currentUserId.value = currentUser.id;
     userLeaveInfo.value.annual = currentUser.annual_leave || 0;
     userLeaveInfo.value.medical = currentUser.medical_leave || 0;
-    fetchLeaveApplications();
+
+    // Fetch all stats for summary card (not filtered)
+    const summaryRes = await getLeaveRequests(1, '', {});
+    allLeaveStats.value.pending = summaryRes.data?.data?.summary?.pending || 0;
+
+    // Fetch filtered results for table
+    const res = await getLeaveRequests(page, '', { status: statusParam });
+    const data = res.data?.data;
+
+    if (!Array.isArray(data?.results)) throw new Error('Invalid API response');
+
+    totalCount.value = data.count;
+    totalPages.value = Math.ceil(data.count / 5);
+
+    leaveApplications.value = data.results.map(item => {
+      return {
+        id: item.id,
+        name: currentUser.username,
+        department: currentUser.department || '-',
+        leaveType: item.leave_dates?.[0]?.leave_type_display?.name || '-',
+        status: { P: 'Pending', A: 'Approved', R: 'Rejected', W: 'Cancelled' }[item.status] || item.status,
+        appliedOn: item.created_date,
+        selected: false,
+        dates: Array.isArray(item.leave_dates)
+          ? item.leave_dates.map(d => ({
+              date: d.leave_date.split('T')[0],
+              duration: d.duration,
+              leaveType: d.leave_type_display?.name || 'N/A'
+            }))
+          : [],
+        reasons: item.reason,
+        document: item.attachment_url || '',
+        reviewComment: item.review_comment || '',
+        reviewDate: item.review_date || '',
+      };
+    });
   } catch (err) {
-    console.error('Initialization failed:', err);
+    console.error('Error fetching leave applications:', err);
   }
+}
+
+onMounted(() => {
+  fetchLeaveApplications();
 });
 
 const changePage = (page: number) => {
@@ -206,10 +170,12 @@ watch(filterStatus, () => {
 });
 
 const summaryStats = computed(() => ({
-  pending: leaveApplications.value.filter(app => app.status === 'Pending').length,
+  pending: allLeaveStats.value.pending,
   annual: userLeaveInfo.value.annual,
   medical: userLeaveInfo.value.medical
 }));
+
+const filteredApplications = computed(() => leaveApplications.value);
 
 const pageNumbers = computed(() => {
   const total = totalPages.value;

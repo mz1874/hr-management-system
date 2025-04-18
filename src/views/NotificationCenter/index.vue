@@ -24,11 +24,9 @@ const modalInstances = {} as {
   new: Modal; view: Modal; delete: Modal; edit: Modal;
 }
 
-const departments = ref<{ id: number; name: string }[]>([]);
 
 // Tree data structure for department dropdown
 const departmentTree = ref<any[]>([])
-const selectedDepartments = ref<any[]>([])
 
 const buildDepartmentTree = (flatList: any[]) => {
   const map = new Map<number, any>();
@@ -53,10 +51,6 @@ const buildDepartmentTree = (flatList: any[]) => {
   })
 
   return roots
-}
-
-function flattenTree(tree: any[]): any[] {
-  return tree.flatMap(node => [node, ...(node.children ? flattenTree(node.children) : [])])
 }
 
 
@@ -117,51 +111,53 @@ const changePage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) fetchAnnouncements(page)
 }
 
-// ========== Fetch ==========
+// ========== Fetch and search==========
+const sortKey = ref<'date' | 'title'>('date'); // default sort key
+const sortOrder = ref<'asc' | 'desc'>('desc'); // default sort order
+const statusFilter = ref<'all' | 'posted' | 'scheduled'>('all');
+
+
 function fetchAnnouncements(page = 1) {
-  currentPage.value = page
-  getAnnouncements(page, searchQuery.value, { show_all: 1 })
-  .then(res => {
-      const now = new Date()
-      announcements.value = res.data.data.results.map(a => ({
-        ...a,
-        posted: new Date(a.post_time) <= now
-      }))
-      totalCount.value = res.data.data.count
+  currentPage.value = page;
+  const isSearching = !!searchQuery.value.trim();
+
+  const orderingParam = (sortOrder.value === 'asc' ? '' : '-') +
+                        (sortKey.value === 'date' ? 'post_time' : 'title');
+
+  const extraParams: any = {
+    page,
+    show_all: 1,
+    ordering: orderingParam
+  };
+
+  if (statusFilter.value !== 'all') {
+    extraParams.status = statusFilter.value;
+  }
+
+  if (isSearching) {
+    extraParams.search = searchQuery.value;
+  }
+
+  getAnnouncements(page, '', extraParams)
+    .then(res => {
+      const now = new Date();
+      const results = res.data.data.results;
+
+      announcements.value = res.data.data.results;  // Replace the list with current page's results
+      totalCount.value = res.data.data.count;       // Used for pagination control
     })
-    .catch(err => console.error('Failed to fetch announcements:', err))
+    .catch(err => console.error('Failed to fetch announcements:', err));
 }
+
+
 onMounted(fetchAnnouncements)
-
-const sortKey = ref<'date' | 'title'>('date'); // default sort
-const sortOrder = ref<'asc' | 'desc'>('desc'); // latest first
-
-const filteredAnnouncements = computed(() => {
-  const keyword = searchQuery.value.toLowerCase();
-
-  const sorted = [...announcements.value].sort((a, b) => {
-    let aVal, bVal;
-
-    if (sortKey.value === 'date') {
-      aVal = new Date(a.post_time);
-      bVal = new Date(b.post_time);
-    } else if (sortKey.value === 'title') {
-      aVal = a.title.toLowerCase();
-      bVal = b.title.toLowerCase();
-    }
-
-    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  return sorted.filter(a =>
-    [a.title, a.description].join(' ').toLowerCase().includes(keyword)
-  );
+watch(searchQuery, () => {
+  fetchAnnouncements(1); // reset to page 1
 });
 
-
-
+watch([sortKey, sortOrder], () => {
+  fetchAnnouncements(1); // reset to page 1 on sort change
+});
 
 const formattedDateTime = computed(() => {
   const postTime = selectedAnnouncement.value?.post_time
@@ -327,22 +323,17 @@ const closeDeleteModal = () => {
 };
 
 const editAnnouncement = async (announcement) => {
-  console.log("🟡 Raw incoming announcement:", announcement);
 
   // Ensure departments are loaded
   if (!departmentTree.value.length) {
     await fetchDepartments();
   }
 
-  // Log the raw departments data from announcement
-  console.log("📋 Raw departments from announcement:", announcement.departments);
-  
   // Extract department IDs directly
   const deptIds = Array.isArray(announcement.departments)
     ? announcement.departments.map(dep => typeof dep === 'object' ? dep.id : dep)
     : [];
     
-  console.log("🔢 Extracted department IDs:", deptIds);
 
   selectedAnnouncement.value = {
     ...announcement,
@@ -366,15 +357,12 @@ const editAnnouncement = async (announcement) => {
 
   editedUploadedFileIds.value = selectedAnnouncement.value.attachments.map(f => f.id);
 
-  console.log("✅ Final selectedAnnouncement.departments:", selectedAnnouncement.value.departments);
-
   // Open the modal
   modalInstances.edit.show();
   isEditModalOpen.value = true;
 
   // Ensure the departments are set after the component is mounted
   nextTick(() => {
-    console.log("⏱️ Setting departments in nextTick:", deptIds);
     selectedAnnouncement.value.departments = deptIds;
   });
 };
@@ -673,39 +661,72 @@ const handleBulkDelete = () => {
 
       </div>
     </div>
+    <div class="d-flex justify-content-between align-items-center mb-3" style="width: 100%;">
+      <!-- Status Filter Buttons -->
+      <div class="btn-group">
+        <button
+          class="btn text-white"
+          :style="{
+            backgroundColor: statusFilter === 'all' ? '#819171' : '#e0e0e0',
+            color: statusFilter === 'all' ? 'white' : '#333'
+          }"
+          @click="() => { statusFilter = 'all'; fetchAnnouncements(1); }"
+        >
+          All
+        </button>
+        <button
+          class="btn text-white"
+          :style="{
+            backgroundColor: statusFilter === 'posted' ? '#819171' : '#e0e0e0',
+            color: statusFilter === 'posted' ? 'white' : '#333'
+          }"
+          @click="() => { statusFilter = 'posted'; fetchAnnouncements(1); }"
+        >
+          Posted
+        </button>
+        <button
+          class="btn text-white"
+          :style="{
+            backgroundColor: statusFilter === 'scheduled' ? '#819171' : '#e0e0e0',
+            color: statusFilter === 'scheduled' ? 'white' : '#333'
+          }"
+          @click="() => { statusFilter = 'scheduled'; fetchAnnouncements(1); }"
+        >
+          Scheduled
+        </button>
+      </div>
 
-    <!-- Sorting Controls (Floated to Right) -->
-    <div class="d-flex justify-content-end align-items-center px-3 mb-3" style="width: 100%;">
-      <label class="form-label mb-0 me-2 fw-semibold text-muted">Sort by:</label>
 
-      <select
-        v-model="sortKey"
-        class="form-select form-select-sm w-auto me-2"
-      >
-        <option value="date">Date</option>
-        <option value="title">Title</option>
-      </select>
+      <!-- Sorting Controls -->
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 me-1 fw-semibold text-muted">Sort by:</label>
 
-      <button
-        class="btn btn-sm text-white border-0"
-        :style="{
-          backgroundColor: sortOrder === 'asc' ? '#819171' : '#CBD5C0'
-        }"
-        @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
-      >
-        <i :class="sortOrder === 'asc' ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i>
-        {{ sortOrder === 'asc' ? 'Asc' : 'Desc' }}
-      </button>
+        <select
+          v-model="sortKey"
+          class="form-select form-select-sm w-auto"
+        >
+          <option value="date">Date</option>
+          <option value="title">Title</option>
+        </select>
 
-
+        <button
+          class="btn btn-sm text-white border-0"
+          :style="{ backgroundColor: sortOrder === 'asc' ? '#819171' : '#CBD5C0' }"
+          @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
+        >
+          <i :class="sortOrder === 'asc' ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i>
+          {{ sortOrder === 'asc' ? 'Asc' : 'Desc' }}
+        </button>
+      </div>
     </div>
+
 
 
 
     <!-- Announcement Cards -->
     <div
       class="announcement-card"
-      v-for="announcement in filteredAnnouncements"
+      v-for="announcement in announcements"
       :key="announcement.id"
     >
       <div

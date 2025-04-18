@@ -6,38 +6,24 @@ export default {
 
 <script setup lang="ts">
 import { Modal } from "bootstrap";
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import {
   getLeaveRequests,
   reviewLeaveRequest,
   getLeaveTypes
 } from '@/api/leave'
-import { selectAllStaffs } from '@/api/staff';
-
-interface LeaveApplication {
-  id: number;
-  employeeName: string;
-  leaveType: string;
-  status: string;
-  appliedOn: string;
-  selected: boolean;
-  department: string;
-  reasons: string;
-  document: string;
-  remainingAnnualLeave: number;
-  remainingMedicalLeave: number;
-  remarks: string;
-  dates: {
-    id: number;
-    date: string;
-    duration: string;
-    leaveType: string;
-    originalLeaveType: string;
-    originalDuration: string;
-  }[];
-}
+import type  {LeaveApplication} from '@/interface/leaveApplicationManagement'
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
 
 const leaveTypeOptions = ref<{ id: number; name: string; description: string }[]>([]);
+const leaveApplications = ref<LeaveApplication[]>([]);
+const currentPage = ref(1);
+const totalPages = ref(1);
+const totalCount = ref(0);
+const filterStatus = ref('All');
+const selectedLeave = ref<LeaveApplication | null>(null);
 
 const fetchLeaveTypes = async () => {
   try {
@@ -48,58 +34,66 @@ const fetchLeaveTypes = async () => {
   }
 };
 
-const leaveApplications = ref<LeaveApplication[]>([]);
-const userMap = ref<Record<number, { username: string; department: string | null }>>({});
-
 const fetchLeaveApplications = async () => {
   try {
-    const staffRes = await selectAllStaffs();
-    const staffList = staffRes.data.data.results;
-
-    userMap.value = Object.fromEntries(
-      staffList.map((s: any) => [
-        s.id,
-        {
-          username: s.username,
-          department: s.department || '-'
-        }
-      ])
-    );
-
-    const res = await getLeaveRequests(1, '', { hrPage: true });
-    const rawResults = res.data?.data?.results || [];
     await fetchLeaveTypes();
 
-    leaveApplications.value = rawResults.map(item => {
-      const userInfo = userMap.value[item.user] || { username: '-', department: '-' };
+    // 🔹 1. First: fetch filtered leave applications
+    const statusParam = filterStatus.value !== 'All' ? filterStatus.value.charAt(0) : '';
+    const filteredRes = await getLeaveRequests(currentPage.value, '', { hrPage: true, status: statusParam });
+    const rawResults = filteredRes.data?.data?.results || [];
+    totalPages.value = Math.ceil(filteredRes.data?.data?.count / 10);
+    totalCount.value = filteredRes.data?.data?.count;
 
+    // 🔹 2. Second: fetch full summary stats (ALL statuses)
+    const summaryRes = await getLeaveRequests(1, '', { hrPage: true });  // no status filter here
+    summaryStats.value = {
+      all: summaryRes.data?.data?.count || 0,
+      pending: summaryRes.data?.data?.summary?.pending || 0,
+      approved: summaryRes.data?.data?.summary?.approved || 0,
+      rejected: summaryRes.data?.data?.summary?.rejected || 0,
+    };
+
+    // 🔹 3. Now map filtered results for current page
+    leaveApplications.value = rawResults.map(item => {
+      const parsedCreated = dayjs(item.created_date, 'DD.MM.YYYY HH:mm:ss');
       return {
         id: item.id,
-        employeeName: userInfo.username,
-        department: userInfo.department,
+        employeeName: item.username || '-',
+        department: item.department_name || '-',
         leaveType: Array.from(new Set(item.leave_dates?.map(d => d.leave_type_display?.name))).join(', '),
         status: mapStatus(item.status),
-        appliedOn: new Date(item.created_date).toLocaleDateString(),
+        appliedOn: parsedCreated.isValid() ? parsedCreated.format('YYYY-MM-DD') : 'Invalid Date',
         reasons: item.reason || '-',
         document: item.attachment_url || '',
         remainingAnnualLeave: 0,
         remainingMedicalLeave: 0,
         remarks: item.review_comment || '',
-        dates: item.leave_dates?.map(d => ({
-          id: d.id,
-          date: new Date(d.leave_date).toLocaleDateString(),
-          duration: d.duration,
-          originalDuration: d.duration,
-          leaveType: d.leave_type_display?.name || '-',
-          originalLeaveType: d.leave_type_display?.name || '-'
-        })) || [],
+        dates: item.leave_dates?.map(d => {
+          const parsedDate = dayjs(d.leave_date);
+          return {
+            id: d.id,
+            date: parsedDate.isValid() ? parsedDate.format('YYYY-MM-DD') : '-',
+            duration: d.duration,
+            originalDuration: d.duration,
+            leaveType: d.leave_type_display?.name || '-',
+            originalLeaveType: d.leave_type_display?.name || '-'
+          };
+        }) || [],
         selected: false
       };
-
-      console.log (leaveApplications);
     });
   } catch (err) {
     console.error('Error during fetch:', err);
+  }
+};
+
+
+watch([filterStatus, currentPage], fetchLeaveApplications);
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
   }
 };
 
@@ -113,32 +107,11 @@ function mapStatus(code: string): string {
   return map[code] || code
 }
 
-onMounted(() => {
-  fetchLeaveApplications()
-})
+const summaryStats = ref({ all: 0, pending: 0, approved: 0, rejected: 0 });
 
-const filterStatus = ref('All');
-const filteredApplications = computed(() => {
-  const nonWithdrawnApps = leaveApplications.value.filter(app => app.status !== 'Withdraw');
-  if (filterStatus.value === 'All') {
-    return nonWithdrawnApps;
-  } else {
-    return nonWithdrawnApps.filter(app => app.status === filterStatus.value);
-  }
-});
-
-const summaryStats = computed(() => ({
-  all: leaveApplications.value.filter(app => app.status !== 'Withdraw').length,
-  pending: leaveApplications.value.filter(app => app.status === 'Pending').length,
-  approved: leaveApplications.value.filter(app => app.status === 'Approved').length,
-  rejected: leaveApplications.value.filter(app => app.status === 'Reject').length
-}));
 
 const saveChanges = async () => {
-  console.log('Current status:', selectedLeave.value.status);
-
   if (!selectedLeave.value) return;
-
 
   const reverseStatusMap = {
     'Pending': 'P',
@@ -147,70 +120,47 @@ const saveChanges = async () => {
     'Withdraw': 'W'
   };
 
-  // Create a mapping of leave type names to their ids
   const leaveTypeIdMap = leaveTypeOptions.value.reduce((map, type) => {
     map[type.name] = type.id;
     return map;
   }, {} as Record<string, number>);
 
-  // Prepare the payload for updating the leave request
   const updated = {
     id: selectedLeave.value.id,
     review_comment: selectedLeave.value.remarks,
-    status: reverseStatusMap[selectedLeave.value.status], // Status before change
+    status: reverseStatusMap[selectedLeave.value.status],
     leave_dates: selectedLeave.value.dates.map(d => ({
       id: d.id,
-      leave_date: new Date(d.date).toISOString(),  // Convert to ISO 8601 format
+      leave_date: new Date(d.date).toISOString(),
       duration: d.duration,
-      leave_type: leaveTypeIdMap[d.leaveType] || null // Map the name to ID
+      leave_type: leaveTypeIdMap[d.leaveType] || null
     }))
   };
 
-  console.log('Sending review request payload:', updated);
-
   try {
-    // Send the request to the backend
-    const response = await reviewLeaveRequest(selectedLeave.value.id, updated);
-    console.log('Backend response:', response);
-
-    // Only after backend success, update the status in the frontend
-    selectedLeave.value.status = 'Approved';  // Update status locally after backend confirmation
-    await fetchLeaveApplications();  // Re-fetch leave applications to reflect the changes
+    await reviewLeaveRequest(selectedLeave.value.id, updated);
+    selectedLeave.value.status = 'Approved';
+    await fetchLeaveApplications();
   } catch (e: any) {
     console.error('Failed to update leave request:', e.response?.data || e);
   }
 };
 
-
-
-
-
 const approveSingle = async () => {
   if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    // Update remarks
     selectedLeave.value.remarks = "Approved by HR";
-
-    // Set the status to 'Approved' before sending to the backend
-    selectedLeave.value.status = 'Approved'; 
-
-    // Call saveChanges to send the updated data to the backend
+    selectedLeave.value.status = 'Approved';
     await saveChanges();
   }
 };
 
 const rejectSingle = async () => {
   if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    // Update remarks
     selectedLeave.value.remarks = "Rejected by HR";
-
-    // Set the status to 'Rejected' before sending to the backend
-    selectedLeave.value.status = 'Reject'; 
-
-    // Call saveChanges to send the updated data to the backend
+    selectedLeave.value.status = 'Reject';
     await saveChanges();
   }
 };
-
 
 const bulkApprove = () => {
   leaveApplications.value.forEach(app => {
@@ -246,7 +196,6 @@ const formatDuration = (code: string) => {
 };
 
 const leaveDetailsModal = ref<HTMLElement | null>(null);
-const selectedLeave = ref<LeaveApplication | null>(null);
 
 const openDocument = () => {
   if (selectedLeave.value) {
@@ -277,8 +226,10 @@ const showLeaveDetails = (application: LeaveApplication) => {
 
 onMounted(() => {
   import('bootstrap');
+  fetchLeaveApplications();
 });
 </script>
+
 
 <template>
   <div class="main-content">
@@ -364,24 +315,26 @@ onMounted(() => {
       <!-- <button class="btn btn-danger">Delete</button> -->
     </div>
 
+    
+
     <!-- Applications Table -->
     <table class="table table-bordered">
       <thead>
         <tr>
-          <!-- <th style="width: 50px"></th> -->
+          <th style="width: 50px"></th>
           <th>Employee Name</th>
           <th>Leave Type</th>
           <th>Status</th>
           <th>Applied On</th>
           <th style="width: 50px">Info</th>
-          <th style="width: 50px">Actions</th>
+          <!-- <th style="width: 50px">Actions</th> -->
         </tr>
       </thead>
       <tbody>
-        <tr v-for="application in filteredApplications" :key="application.id">
-          <!-- <td>
+        <tr v-for="application in leaveApplications" :key="application.id">
+          <td>
             <input type="checkbox" v-model="application.selected" class="select-checkbox">
-          </td> -->
+          </td>
           <td>{{ application.employeeName }}</td>
           <td>
             <div v-if="application.dates.length">
@@ -412,14 +365,40 @@ onMounted(() => {
               <i class="bi bi-info-circle"></i>
             </button>
           </td>
-          <td>
+          <!-- <td>
             <button class="btn btn-sm btn-danger">
               <i class="bi bi-trash"></i>
             </button>
-          </td>
+          </td> -->
         </tr>
       </tbody>
     </table>
+    <div class="d-flex align-items-center gap-3 my-3">
+      <div class="text-muted fs-5">
+        Total Applications: {{ totalCount }}
+      </div>
+
+      <nav>
+        <ul class="pagination mb-0">
+          <li :class="['page-item', { disabled: currentPage === 1 }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+          </li>
+
+          <li
+            v-for="page in totalPages"
+            :key="page"
+            :class="['page-item', { active: currentPage === page }]"
+          >
+            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+          </li>
+
+          <li :class="['page-item', { disabled: currentPage === totalPages }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
 
     <!-- Leave Details Modal for Individual Application -->
     <div class="modal fade" ref="leaveDetailsModal" id="leaveDetailsModal" tabindex="-1" aria-hidden="true">
