@@ -272,7 +272,7 @@ function resetPassword(staff: Staff) {
                 <i class="fas fa-users text-white"></i>
               </div>
               <div>
-                <h3 class="mb-0">{{ staffData.count }}</h3>
+                <h3 class="mb-0">{{ staffData.summary.total_users }}</h3>
                 <span class="text-muted">Total Staff</span>
               </div>
             </div>
@@ -287,7 +287,7 @@ function resetPassword(staff: Staff) {
                 <i class="fas fa-user-check text-white"></i>
               </div>
               <div>
-                <h3 class="mb-0">{{ 1 }}</h3>
+                <h3 class="mb-0">{{ staffData.summary.active_users }}</h3>
                 <span class="text-muted">Active</span>
               </div>
             </div>
@@ -302,7 +302,7 @@ function resetPassword(staff: Staff) {
                 <i class="fas fa-user-clock text-white"></i>
               </div>
               <div>
-                <h3 class="mb-0">{{ 1 }}</h3>
+                <h3 class="mb-0">{{ staffData.summary.inactive_users }}</h3>
                 <span class="text-muted">Inactive</span>
               </div>
             </div>
