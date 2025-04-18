@@ -136,7 +136,6 @@ function fetchAnnouncements(page = 1) {
 
   if (isSearching) {
     extraParams.search = searchQuery.value;
-    extraParams.page_size = 1000;
   }
 
   getAnnouncements(page, '', extraParams)
@@ -324,22 +323,17 @@ const closeDeleteModal = () => {
 };
 
 const editAnnouncement = async (announcement) => {
-  console.log("🟡 Raw incoming announcement:", announcement);
 
   // Ensure departments are loaded
   if (!departmentTree.value.length) {
     await fetchDepartments();
   }
 
-  // Log the raw departments data from announcement
-  console.log("📋 Raw departments from announcement:", announcement.departments);
-  
   // Extract department IDs directly
   const deptIds = Array.isArray(announcement.departments)
     ? announcement.departments.map(dep => typeof dep === 'object' ? dep.id : dep)
     : [];
     
-  console.log("🔢 Extracted department IDs:", deptIds);
 
   selectedAnnouncement.value = {
     ...announcement,
@@ -363,15 +357,12 @@ const editAnnouncement = async (announcement) => {
 
   editedUploadedFileIds.value = selectedAnnouncement.value.attachments.map(f => f.id);
 
-  console.log("✅ Final selectedAnnouncement.departments:", selectedAnnouncement.value.departments);
-
   // Open the modal
   modalInstances.edit.show();
   isEditModalOpen.value = true;
 
   // Ensure the departments are set after the component is mounted
   nextTick(() => {
-    console.log("⏱️ Setting departments in nextTick:", deptIds);
     selectedAnnouncement.value.departments = deptIds;
   });
 };

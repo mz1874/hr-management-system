@@ -14,7 +14,6 @@ export function getAnnouncements(page = 1, search = '', extraParams = {}) {
   return axios.get('/api/announcements/', { params });
 }
 
-  
 // Get announcement detail
 export function getAnnouncement(id) {
     return axios.get(`/api/announcements/${id}/`)
