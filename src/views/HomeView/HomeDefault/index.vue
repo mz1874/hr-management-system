@@ -1,16 +1,17 @@
 <template>
   <main class="main-content">
+    <!-- Task Statistics Section -->
     <div class="row row-center text-center my-4">
       <div class="col-md-3">
         <div class="p-4 bg-primary text-white">
           <h3>Tasks</h3>
-          <p><b>100</b></p>
+          <p><b>{{ totalTasks }}</b></p>
         </div>
       </div>
       <div class="col-md-3">
         <div class="p-4 bg-success text-white">
           <h3>Done</h3>
-          <p><b>65</b></p>
+          <p><b>{{ completedTasks }}</b></p>
         </div>
       </div>
     </div>
@@ -19,35 +20,36 @@
       <div class="col-md-3">
         <div class="p-4 bg-warning text-white">
           <h3>Ongoing</h3>
-          <p><b>25</b></p>
+          <p><b>{{ ongoingTasks }}</b></p>
         </div>
       </div>
       <div class="col-md-3">
         <div class="p-4 bg-danger text-white">
           <h3>Delayed</h3>
-          <p><b>10</b></p>
+          <p><b>{{ delayedTasks }}</b></p>
         </div>
       </div>
     </div>
 
-    <br>
-    <!-- Dynamic Department Title -->
-    <h2>{{ selectedDepartment }} Department</h2>
+    <!-- Department & Month Filters -->
+    <h2>{{ selectedDepartment.department_name || 'Department' }} KPI Management</h2>
     <div class="chart-section my-4">
-      <!-- Dynamic Chart Header -->
-      <h4 class="text-center">Number of finished jobs in {{ selectedDepartment }} department</h4>
+      <h4 class="text-center">Number of finished jobs in {{ selectedDepartment.department_name }} department</h4>
+
+      <!-- Department Filter -->
       <div class="d-flex justify-content-center my-3">
-        <select v-model="selectedDepartment" class="form-select mx-2" style="width: 150px;">
-          <option v-for="dept in departments" :key="dept" :value="dept">
-            {{ dept }}
+        <select v-model="selectedDepartment" class="form-select mx-2" style="width: 150px;" @change="handleDepartmentChange">
+          <option v-for="dept in departments" :key="dept.id" :value="dept">
+            {{ dept.department_name }}
           </option>
         </select>
+        <!-- Month Filter -->
         <select v-model="selectedMonth" class="form-select mx-2" style="width: 150px;">
-          <option value="January">January</option>
-          <option value="February">February</option>
-          <option value="March">March</option>
+          <option v-for="month in months" :key="month" :value="month">{{ month }}</option>
         </select>
       </div>
+
+      <!-- Chart Section -->
       <div class="text-center">
         <canvas ref="chartCanvas" style="max-width: 600px; margin: auto;"></canvas>
       </div>
@@ -56,68 +58,102 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
-import Chart from "chart.js/auto";
-import {getCurrentUser} from "@/api/login.ts";
+import { ref, computed, onMounted, watch } from 'vue';
+import Chart from 'chart.js/auto';
+import { selectAllDepartments } from "@/api/department.ts";
+import { selectAllKpis } from "@/api/kpiAdmin.ts";
+import { isSuccess } from '@/utils/httpStatus';
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let chartInstance: Chart | null = null;
 
-const selectedDepartment = ref("HR");
-const selectedMonth = ref("January");
+const departments = ref<any[]>([]);
+const selectedDepartment = ref<any>({});
+const selectedMonth = ref('January');
+const selectedStatus = ref('');  // Initialize selectedStatus here
 
-const departments = ref([
-  "Warehouse",
-  "Logistic",
-  "Supply Chain",
-  "Account",
-  "HR",
-  "Marketing",
-  "Sales"
-]);
+const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const chartData: Record<string, Record<string, number[]>> = {
-  Warehouse: { January: [60, 30, 10], February: [50, 40, 10], March: [70, 20, 10] },
-  Logistic: { January: [80, 15, 5], February: [75, 20, 5], March: [90, 5, 5] },
-  "Supply Chain": { January: [50, 40, 10], February: [60, 30, 10], March: [55, 35, 10] },
-  Account: { January: [60, 30, 10], February: [50, 40, 10], March: [70, 20, 10] },
-  HR: { January: [60, 30, 10], February: [50, 40, 10], March: [70, 20, 10] },
-  Marketing: { January: [80, 15, 5], February: [75, 20, 5], March: [90, 5, 5] },
-  Sales: { January: [50, 40, 10], February: [60, 30, 10], March: [55, 35, 10] }
+const kpiData = ref<any[]>([]);
+const totalTasks = computed(() => kpiData.value.length);
+const completedTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Completed').length);
+const ongoingTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Ongoing').length);
+const delayedTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Delayed').length);
+
+const fetchDepartments = () => {
+  selectAllDepartments().then((res) => {
+    if (isSuccess(res.status)) {
+      departments.value = res.data.data.results;
+      if (departments.value.length > 0) {
+        selectedDepartment.value = departments.value[0];
+        fetchKpis();
+      }
+    }
+  }).catch((error) => console.error('Error fetching departments:', error));
+};
+
+const fetchKpis = () => {
+  const params: any = {
+    department_id: selectedDepartment.value.id,
+    status: selectedStatus.value,  // Ensure the selected status is passed in the request
+    month: selectedMonth.value,
+  };
+  
+  console.log("Fetching KPI data with params:", params);
+
+  selectAllKpis(params).then((res) => {
+    if (isSuccess(res.status)) {
+      kpiData.value = res.data.data.results;
+      updateChart(); // Update chart with new data
+    }
+  }).catch((error) => {
+    console.error("Error fetching KPIs:", error);
+  });
 };
 
 const updateChart = () => {
-  const newData = chartData[selectedDepartment.value][selectedMonth.value];
+  // Count tasks by status
+  const doneCount = kpiData.value.filter((task: any) => task.kpi_status === 'Completed').length;
+  const ongoingCount = kpiData.value.filter((task: any) => task.kpi_status === 'Ongoing').length;
+  const delayedCount = kpiData.value.filter((task: any) => task.kpi_status === 'Delayed').length;
+
+  // Print the data to the console for debugging
+  console.log("Chart Data:", [doneCount, ongoingCount, delayedCount]);
+
+  // If the chart instance exists, update it
   if (chartInstance) {
-    chartInstance.data.datasets[0].data = newData;
+    chartInstance.data.datasets[0].data = [doneCount, ongoingCount, delayedCount];
     chartInstance.update();
   }
 };
 
-
 onMounted(() => {
-
-
-
+  // Fetch initial departments
+  fetchDepartments();
+  
+  // Initialize Chart.js with default data
   if (chartCanvas.value) {
     chartInstance = new Chart(chartCanvas.value, {
-      type: "pie",
+      type: 'pie',
       data: {
-        labels: ["Done", "Ongoing", "Delayed"],
+        labels: ['Done', 'Ongoing', 'Delayed'],
         datasets: [
           {
-            data: chartData[selectedDepartment.value][selectedMonth.value],
-            backgroundColor: ["#6CC763", "#FFC107", "#F2A9A3"],
-            borderColor: ["#ABE3A5", "#FDD853", "#F3C5C1"],
+            data: [0, 0, 0],  // Initialize with 0s
+            backgroundColor: ['#6CC763', '#FFC107', '#F2A9A3'],
+            borderColor: ['#ABE3A5', '#FDD853', '#F3C5C1'],
             borderWidth: 3
           }
         ]
       }
     });
   }
+
+  // Fetch KPIs after chart initialization
+  fetchKpis();
 });
 
-watch([selectedDepartment, selectedMonth], updateChart);
+watch([selectedDepartment, selectedMonth, selectedStatus], fetchKpis);
 </script>
 
 <style scoped>
