@@ -135,7 +135,7 @@
                     @change="updateEmployeeProgress(employee)"
                     style="width: 80px; text-align: center;"
                 />
-                <span>/100</span>
+                <span>/{{ employee.targetUnit }}</span>
               </td>
               <td>
                 <div class="action-buttons">
@@ -143,7 +143,12 @@
                     Show History
                   </button>
                   <!-- Add margin to separate buttons -->
-                  <button v-if="employee.progress === 100 && (employee.status === 'Ongoing' || employee.status === 'Confirming')" @click="openApproveModal(employee)" class="btn btn-success btn-sm ms-3">Mark as Completed</button>
+                  <button 
+                    v-if="employee.progress >= employee.targetUnit && (employee.status === 'Ongoing' || employee.status === 'Confirming')" 
+                    @click="openApproveModal(employee)" 
+                    class="btn btn-success btn-sm ms-3">
+                    Mark as Completed
+                  </button>
                 </div>
               </td>
             </tr>
@@ -164,7 +169,7 @@
         <div class="modal-body">
           <ul>
             <li v-for="(record, index) in selectedEmployee.progressHistory" :key="index">
-              {{ formatDate(record.date) }} - Progress: {{ record.progress }}%
+              {{ formatDate(record.date) }} - Progress: {{ record.progress }}
             </li>
           </ul>
         </div>
@@ -196,52 +201,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
-import type {Employee} from  "@/interface/KpiEmployeeInterface.ts";
-import type {EmployeeTask} from  "@/interface/KpiEmployeeInterface.ts";
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { getKpi } from '@/api/kpiAdmin'
+import { getKpiPersonalDetails, updateKpiProgress, markPersonalKpiAsComplete } from '@/api/kpiAdmin'
+import type { Employee } from "@/interface/KpiEmployeeInterface.ts"
+import Swal from 'sweetalert2'
 
-const token = localStorage.getItem('access_token') 
+const router = useRouter()
+const route = useRoute()
+const kpiId = ref(Number(route.params.id))
 
-if (token) {
-  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+// 添加 isSuccess 辅助函数
+const isSuccess = (status: number) => {
+  return status >= 200 && status < 300
 }
 
-const updateEmployeeProgress = async (employee: Employee) => {
-  try {
-    const response = await axios.post(`http://localhost:8000/api/kpi-personal/${employee.id}/update-progress/`, {
-      completed_unit: employee.progress
-    });
-    console.log('✅ Progress updated:', response.data);
-    alert('Progress updated successfully!')
-
-    // ✅ 添加进度历史记录
-    const today = new Date().toISOString().split('T')[0];
-    employee.progressHistory.push({
-      date: today,
-      progress: employee.progress
-    });
-
-    // 更新状态
-    if (employee.progress >= 100 && employee.status !== 'Completed') {
-      employee.status = 'Confirming';
-    }
-  } catch (error) {
-    console.error('❌ Failed to update progress:', error);
-  }
-};
-
+// 任务详情
 const selectedTask = ref({
-  taskName: 'Complete Order'
+  id: 0,
+  taskName: '',
+  taskDescription: '',
+  startDate: '',
+  endDate: '',
+  status: '',
+  department: ''
 })
 
-const assignedEmployees = ref<Employee[]>([
-  { id: 1, username: 'Alice', progress: 50, progressHistory: [], status: 'Ongoing' },
-  { id: 2, username: 'Jester', progress: 100, progressHistory: [], status: 'Confirming' },
-  { id: 3, username: 'Amanda', progress: 30, progressHistory: [], status: 'Ongoing' },
-])
-
+// 员工列表
+const assignedEmployees = ref<Employee[]>([])
 const searchUsername = ref('')
 const selectedStatus = ref('')
 const showHistoryModal = ref(false)
@@ -250,49 +238,208 @@ const selectedEmployee = ref<Employee>({
   id: 0, username: '', progress: 0, progressHistory: [], status: 'Ongoing'
 })
 
+// 统计数据
 const totalTasks = computed(() => assignedEmployees.value.length)
 const completedTasks = computed(() => assignedEmployees.value.filter(e => e.status === 'Completed').length)
 const ongoingTasks = computed(() => assignedEmployees.value.filter(e => e.status === 'Ongoing' || e.status === 'Confirming').length)
 const delayedTasks = computed(() => assignedEmployees.value.filter(e => e.status === 'Delayed').length)
 
+// 过滤员工列表
 const filteredEmployees = computed(() => {
   return assignedEmployees.value.filter(e => {
     const matchUser = e.username.toLowerCase().includes(searchUsername.value.toLowerCase())
     const matchStatus = !selectedStatus.value || e.status === selectedStatus.value || 
-                        (selectedStatus.value === 'Ongoing' && e.status === 'Confirming')
+                      (selectedStatus.value === 'Ongoing' && e.status === 'Confirming')
     return matchUser && matchStatus
   })
 })
 
-const openApproveModal = (employee: Employee) => {
-  selectedEmployee.value = employee
-  showApproveModal.value = true
-}
-
-const approveTaskCompletion = (employee: Employee) => {
-  if (employee.progress === 100 && employee.status === 'Confirming') {
-    employee.status = 'Completed'
+// 获取任务详情
+const fetchTaskDetails = async () => {
+  try {
+    const res = await getKpi(kpiId.value)
+    if (isSuccess(res.status)) {
+      const data = res.data
+      selectedTask.value = {
+        id: data.id,
+        taskName: data.task_title,
+        taskDescription: data.task_description,
+        startDate: data.task_start_date,
+        endDate: data.task_completion_date,
+        status: data.kpi_status,
+        department: data.department_name
+      }
+      
+      // 获取个人任务详情
+      fetchPersonalDetails()
+    }
+  } catch (error) {
+    console.error('Failed to fetch task details:', error)
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to fetch task details'
+    })
   }
-  showApproveModal.value = false
 }
 
+// 获取个人任务详情
+// 获取个人任务详情
+const fetchPersonalDetails = async () => {
+  try {
+    const res = await getKpiPersonalDetails(kpiId.value)
+    if (isSuccess(res.status)) {
+      // 添加日志，查看后端返回的数据
+      console.log('Personal details response:', res.data)
+      
+      // 修改这里，正确获取 results 数组
+      const personalDetails = res.data.results || res.data.data?.results || []
+      
+      // 转换数据格式
+      assignedEmployees.value = personalDetails.map((detail: any) => {
+        // 处理进度历史记录
+        const progressHistory = detail.progress_history.map((history: any) => {
+          return {
+            date: history.update_time,
+            progress: history.updated_unit,
+            status: history.updated_status_display,
+            remarks: history.remarks,
+            updatedBy: history.update_by_name
+          }
+        })
+        
+        // 状态映射
+        let status = detail.current_status;
+        if (status === 'N') status = 'Not Yet Started';
+        else if (status === 'O') status = 'Ongoing';
+        else if (status === 'F') status = 'Confirming';
+        else if (status === 'C') status = 'Completed';
+        else if (status === 'D') status = 'Delayed';
+        
+        return {
+          id: detail.id,
+          username: detail.staff_name,
+          progress: detail.completed_unit,
+          progressHistory: progressHistory,
+          status: status,
+          staffId: detail.staff_id,
+          targetUnit: detail.target_unit  // 确保这里正确获取了target_unit
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Failed to fetch personal task details:', error)
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to fetch personal task details'
+    })
+  }
+}
+
+const updateEmployeeProgress = async (employee: Employee) => {
+  try {
+    const response = await updateKpiProgress(employee.id, {
+      completed_unit: employee.progress,
+      remarks: "Progress updated", 
+      update_by: employee.staffId,
+      progress_value: employee.progress,
+    })
+    
+    if (isSuccess(response.status)) {
+      Swal.fire({
+        position: 'top-end',
+        icon: 'success',
+        title: 'Progress updated successfully',
+        showConfirmButton: false,
+        timer: 1500
+      })
+      
+      // 根据targetUnit正确设置状态
+      if (employee.progress === 0) {
+        employee.status = 'Not Yet Started';
+      } else if (employee.progress >= employee.targetUnit) {
+        employee.status = 'Confirming';
+      } else if (employee.progress > 0 && employee.progress < employee.targetUnit) {
+        employee.status = 'Ongoing';
+      }
+      
+      // 重新获取最新的进度历史
+      fetchPersonalDetails()
+    }
+  } catch (error) {
+    console.error('Failed to update progress:', error)
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to update progress'
+    })
+  }
+}
+
+// 显示历史记录
 const showHistory = (employee: Employee) => {
   selectedEmployee.value = employee
   showHistoryModal.value = true
 }
 
-const formatDate = (date: string) => {
-  const newDate = new Date(date)
-  const year = newDate.getFullYear()
-  const month = String(newDate.getMonth() + 1).padStart(2, '0')
-  const day = String(newDate.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+// 打开确认完成模态框
+const openApproveModal = (employee: Employee) => {
+  selectedEmployee.value = employee
+  showApproveModal.value = true
 }
 
-const router = useRouter()
-function goToKPIManagement() {
-  router.push('/home/KPI-management');
+// 确认任务完成
+const approveTaskCompletion = async (employee: Employee) => {
+  try {
+    const response = await markPersonalKpiAsComplete(employee.id)
+    
+    if (isSuccess(response.status)) {
+      Swal.fire({
+        position: 'top-end',
+        icon: 'success',
+        title: 'Task has been marked as completed',
+        showConfirmButton: false,
+        timer: 1500
+      })
+      
+      employee.status = 'Completed'
+      showApproveModal.value = false
+      
+      // 重新获取最新数据
+      fetchPersonalDetails()
+    }
+  } catch (error) {
+    console.error('Failed to mark task as completed:', error)
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to mark task as completed'
+    })
+  }
 }
+
+// 格式化日期
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 返回 KPI 管理页面
+function goToKPIManagement() {
+  router.push('/home/KPI-management')
+}
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchTaskDetails()
+})
 </script>
 
 

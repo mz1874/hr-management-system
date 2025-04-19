@@ -3,22 +3,25 @@
     <h2>{{ selectedDepartment.department_name || 'Department' }} KPI Management</h2>
   </div>
 
-  <!-- Combined filter row -->
-  <div class="d-flex gap-3 mb-4 align-items-center">
-    <!-- Department filter -->
+  <!-- department filter -->
+  <div class="gap-3 mb-4">
     <select class="form-select w-25" v-model="selectedDepartment" @change="handleDepartmentChange">
       <option v-for="dept in departments" :key="dept.id" :value="dept">
         {{ dept.department_name }}
       </option>
     </select>
+  </div>
 
-    <!-- Search task name -->
+  <div class="line mb-4"></div>
+
+  <!-- Search and filter -->
+  <div class="d-flex gap-3 mb-4 mt-3">
+    <!-- search task name -->
     <div class="input-group w-25">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
       <input v-model="searchTaskName" type="text" class="form-control" placeholder="Search Task Name">
     </div>
-
-    <!-- Search status -->
+    <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">All Status</option>
       <option>Not Yet Started</option>
@@ -27,10 +30,6 @@
       <option>Delayed</option>
       <option>Terminated</option>
     </select>
-
-    <button class="btn btn-primary" @click="handleSearch">
-      <i class="fas fa-search me-1"></i> Search
-    </button>
   </div>
 
   <!-- Table section -->
@@ -50,18 +49,20 @@
               <th>Due Date</th>
               <th>Total Target</th>
               <th>Current</th>
+              <th>Department</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="task in kpiData" :key="task.id">
+            <tr v-for="task in filteredKpiData" :key="task.id">
               <td>{{ task.id }}</td>
               <td>{{ task.taskTitle }}</td>
               <td>{{ task.startDate }}</td>
               <td>{{ task.endDate }}</td>
               <td>{{ task.totalTarget }} {{ task.individualUnit }}</td>
-              <td>180</td>
+              <td>{{ calculateTotalProgress(task) }} {{ task.individualUnit }}</td>
+              <td>{{ task.department }}</td>
               <td>
                 <span 
                 :class="['badge',
@@ -74,7 +75,7 @@
                 </span>
               </td>
               <td>
-                <button @click="goToEmployeeDetailsPage()" class="btn btn-primary btn-sm">Employee Details</button>
+                <button @click="goToEmployeeDetailsPage(task.id)" class="btn btn-primary btn-sm">Employee Details</button>
                 <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
                 <button @click="openDeleteModal(task)" class="btn btn-danger btn-sm">Delete</button>
               </td>
@@ -151,9 +152,9 @@
         </div>
       </div>
 
-      <!-- Pagination 分页方法-->
-      <div class="d-flex justify-content-start align-items-center mt-3">
-        <div style="margin-right: 20px">Total: {{ count }}</div>
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>Total: {{ filteredKpiData.length }}</div>
         <nav>
           <ul class="pagination mb-0">
             <li :class="['page-item', { disabled: currentPage === 1 }]" @click="changePage(currentPage - 1)">
@@ -236,26 +237,47 @@
             <div class="col-md-6">
               <!-- Assignment Type Toggle -->
               <div class="mb-3">
-                <label class="form-label">Assign Task To:</label>
+                <label class="form-label">Assign task to:</label>
                 <div>
                   <input type="radio" id="assignUser" value="user" v-model="assignType">
                   <label for="assignUser">Employee</label>
                   <input type="radio" id="assignDept" value="department" v-model="assignType" class="ms-3">
-                  <label for="assignDept">Whole Department</label>
+                  <label for="assignDept">Whole department</label>
                 </div>
               </div>
 
               <!-- Conditionally show the assign input for Employee -->
               <div v-if="assignType === 'user'" class="mb-3">
-                <label for="assignTo" class="form-label">Assign to:</label>
-                <div class="input-group">
-                  <input v-model="currentTask.assignedTo">
-                  <button class="btn" type="button" style="background-color: #6CBD6C; color: white;" @click="searchUser">Search</button>
+                <label for="assignTo" class="form-label">Assign to employees:</label>
+                <div class="input-group mb-2">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Search employees..." 
+                    v-model="staffSearchKeyword"
+                    @input="searchStaffMembers"
+                  />
+                  <button class="btn btn-outline-secondary" type="button" @click="searchStaffMembers">
+                    <i class="fas fa-search"></i>
+                  </button>
                 </div>
-                <!-- Assigned Users Tags -->
-                <div class="mt-3">
+                
+                <!-- 搜索结果下拉列表 -->
+                <div v-if="staffSearchResults && staffSearchResults.length > 0" class="search-results border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;">
+                  <div 
+                    v-for="staff in staffSearchResults" 
+                    :key="staff.id" 
+                    class="search-result-item p-2 hover-bg-light cursor-pointer"
+                    @click="selectStaffMember(staff)"
+                  >
+                    {{ staff.username }} ({{ staff.department_name }})
+                  </div>
+                </div>
+                
+                <!-- 已选择的员工标签 -->
+                <div class="mt-2">
                   <div class="d-flex flex-wrap gap-2">
-                    <span v-for="(user, index) in currentTask.assignedUsers" :key="index" class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
+                    <span v-for="(user, index) in (currentTask.assignedUsers || [])" :key="index" class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
                       <i class="fas fa-user-circle me-2"></i>
                       {{ user.username }}
                       <button type="button" class="btn-close ms-2" aria-label="Remove" @click="removeAssignedUser(index)"></button>
@@ -264,9 +286,16 @@
                 </div>
               </div>
 
-              <!-- For department assignment, show a message -->
+              <!-- 部门分配选项 -->
               <div v-if="assignType === 'department'" class="mb-3">
-                <p>Assigning To <strong>{{ selectedDepartment.department_name }}</strong> 's All ({{ departmentStaff.length }}) Staff。</p>
+                <p>Assign to all employees in the <strong>{{ selectedDepartment.department_name }}</strong> department.</p>
+                
+                <div class="form-check mt-2">
+                  <input class="form-check-input" type="checkbox" v-model="assignToAllMembers" id="assignToAllMembers">
+                  <label class="form-check-label" for="assignToAllMembers">
+                    Confirm assignment to all members
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -327,27 +356,109 @@
 import router from '@/router'
 import { ref, computed, onMounted } from 'vue'
 import type {Task} from  "@/interface/KpiInterface.ts";
-import {updateKpi, createKpi, deleteKpi, terminateKpi} from "@/api/kpiAdmin.ts";
+import { searchStaff, getStaffByDepartment, assignKpiToDepartment, selectAllStaffs} from "@/api/staff.ts";
+import { 
+  selectAllKpis, 
+  updateKpi, 
+  createKpi, 
+  deleteKpi, 
+  terminateKpi, 
+  assignKpiToStaff,
+  removeKpiFromStaff 
+} from "@/api/kpiAdmin.ts";
 import { selectAllDepartments } from "@/api/department.ts";
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
 import { isSuccess } from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
-import useKPI from "@/hooks/useKPI.ts";
 
-const {kpiData,fetchKpis,count,currentPage} = useKPI();
+
+// 员工搜索相关
+const staffSearchKeyword = ref('');
+const staffSearchResults = ref<any[]>([]);
+const assignToAllMembers = ref(false);
+
+// 搜索员工
+const searchStaffMembers = () => {
+  if (staffSearchKeyword.value.trim().length < 2) {
+    staffSearchResults.value = [];
+    return;
+  }
+  
+  searchStaff(staffSearchKeyword.value).then((res) => {
+    if (isSuccess(res.status) && res.data.code === 200) {
+      staffSearchResults.value = res.data.data;
+    } else {
+      console.error('Failed to search employees:', res);
+    }
+  }).catch((error) => {
+    console.error('Error searching employees:', error);
+  });
+};
+
+const selectStaffMember = (staff: any) => {
+  // 确保 currentTask.value 存在
+  if (!currentTask.value) {
+    currentTask.value = {};
+  }
+  
+  // 确保 assignedUsers 数组已初始化
+  if (!currentTask.value.assignedUsers) {
+    currentTask.value.assignedUsers = [];
+  }
+  
+  // 检查是否已经添加过该员工
+  const isDuplicate = currentTask.value.assignedUsers.some(
+    user => user.id === staff.id
+  );
+  
+  if (!isDuplicate) {
+    currentTask.value.assignedUsers.push({
+      id: staff.id,
+      username: staff.username,
+      department_id: staff.department
+    });
+    
+    staffSearchKeyword.value = ''; // 清空搜索框
+    staffSearchResults.value = []; // 清空搜索结果
+  } else {
+    Swal.fire({
+      icon: "warning",
+      title: "Duplicate Entry",
+      text: "This employee has already been added to the task"
+    });
+  }
+};
 
 const tasks = ref<Task[]>([])
 //fetch function
+const kpiData = ref<any[]>([]);  // 用于存储KPI数据
 const currentTask = ref<any>({});
 
 const departments = ref<any[]>([]);
 
+// 添加员工列表
+const allStaff = ref<any[]>([]);
+const departmentStaff = computed(() => {
+  // 根据当前选中的部门ID过滤员工
+  return allStaff.value.filter(staff => 
+    staff.department === selectedDepartment.value?.id
+  );
+});
 
-function handleSearch(){
-
-}
+const fetchAllStaff = () => {
+  selectAllStaffs().then((res) => {
+    if (isSuccess(res.status) && res.data.code === 200) {
+      allStaff.value = res.data.data.results;
+      console.log('Employee data fetched successfully:', allStaff.value);
+    } else {
+      console.error('Failed to fetch employee list:', res);
+    }
+  }).catch((error) => {
+    console.error('Error fetching employee list:', error);
+  });
+};
 
 
 const fetchDepartments = () => {
@@ -357,6 +468,7 @@ const fetchDepartments = () => {
       // 默认选择第一个部门
       if (departments.value.length > 0) {
         selectedDepartment.value = departments.value[0];
+        fetchKpis(); // 获取第一个部门的KPI数据
       }
     } else {
       console.error('Failed to fetch department list:', res);
@@ -366,11 +478,89 @@ const fetchDepartments = () => {
   });
 };
 
-onMounted(() =>
-{
-  fetchDepartments();
-  fetchKpis();
-  tasks.value.forEach(updateTaskStatus);
+const fetchKpis = () => {
+  console.log("Start fetching KPI data");
+  // 构建查询参数
+  const params: any = {};
+  
+  // 如果选择了部门，添加department_id参数
+  if (selectedDepartment.value?.id) {
+    params.department_id = selectedDepartment.value.id;
+  }
+  
+  // 如果选择了状态，添加status参数
+  if (selectedStatus.value) {
+    params.status = selectedStatus.value;
+  }
+  
+  // 如果有搜索关键词，添加search参数
+  if (searchTaskName.value) {
+    params.search = searchTaskName.value;
+  }
+  console.log("Fetching KPI data with params:", params);
+  
+  // 调用API获取KPI数据
+  selectAllKpis(params).then((res) => {
+    if (isSuccess(res.status)) {
+      console.log("KPI data:", res.data);
+      const data = res.data.data;
+      kpiData.value = data.results.map((item: any) => {
+        const [f, s] = item.task_start_date.split(" ");
+        const [day, month, year] = f.split(".");
+        const startDate = `${year}-${month}-${day}`;
+
+        const [f1, s1] = item.task_completion_date.split(" ");
+        const [day1, month1, year1] = f1.split(".");
+        const endDate = `${year1}-${month1}-${day1}`;
+        
+        // 从 personal_details 中提取用户信息
+        let assignedUsers = [];
+        if (item.personal_details && Array.isArray(item.personal_details) && item.personal_details.length > 0) {
+          assignedUsers = item.personal_details.map((detail: any) => {
+            return {
+              id: detail.staff_id,
+              username: detail.staff_name,
+              department_id: detail.department_id
+            };
+          });
+        }
+        
+        // 构建任务对象
+        return {
+          id: item.id,
+          taskTitle: item.task_title,
+          taskDescription: item.task_description,
+          startDate: startDate,
+          endDate: endDate,
+          pointsGiven: item.points_earned,
+          status: item.kpi_status,  // KPI状态
+          totalTarget: item.target_unit,
+          individualUnit: item.individual_unit,
+          createdOn: dayjs(item.create_time, "DD.MM.YYYY HH:mm:ss").format("YYYY-MM-DD"),
+          assignedUsers: assignedUsers, // 使用从 personal_details 提取的用户数据
+          department: item.department_name, // 直接使用API返回的部门名称
+          department_id: item.department,
+          personal_details: item.personal_details // 保留原始 personal_details 数据
+        };
+      });
+      
+      // 调试信息
+      console.log("Processed KPI data:", kpiData.value);
+    }
+  }).catch((error) => {
+      console.error("Error fetching KPIs:", error);
+  });
+};
+
+onMounted(() => {
+  console.log("Component has been mounted");
+  try {
+    fetchDepartments();
+    fetchAllStaff();
+    console.log("API calls have been initiated");
+  } catch (error) {
+    console.error("Error during component mount:", error);
+  }
 });
 
 // 添加用户的函数
@@ -469,30 +659,84 @@ const createTask = () => {
     individual_unit: currentTask.value.individualUnit,
     points_earned: currentTask.value.pointsGiven || 0,
     update_by: 'admin',  // 默认值
-    assigned_users: currentTask.value.assignedUsers || [],  // 正确处理已分配用户
+    // assigned_users: currentTask.value.assignedUsers || [],  // 正确处理已分配用户
     department: selectedDepartment.value.id,
   };
 
   // 关闭模态框
   showModal.value = false;
 
-  // 调用 API 创建任务
+  // 调用API创建任务
   createKpi(payload).then((res) => {
     if (isSuccess(res.status)) {
-      Swal.fire({
-        position: "top-end",
-        icon: "success",
-        title: "Task created successfully",
-        showConfirmButton: false,
-        timer: 1500,
-      });
-      fetchKpis(); // 更新任务列表
+      const kpiId = res.data.data.id;
+      
+      // 根据分配类型处理任务分配
+      if (assignType.value === 'user' && currentTask.value.assignedUsers?.length > 0) {
+        // 分配给选定的员工
+        const assignPromises = currentTask.value.assignedUsers.map((user: any) => {
+          return assignKpiToStaff(kpiId, user.id, user.department_id || selectedDepartment.value.id, currentTask.value.totalTarget);
+        });
+        
+        Promise.all(assignPromises)
+          .then(() => {
+            Swal.fire({
+              position: "top-end",
+              icon: "success",
+              title: "Task created and assigned successfully",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+            fetchKpis();
+          })
+          .catch((error) => {
+            console.error("Failed to assign task:", error);
+            Swal.fire({
+              icon: "warning",
+              title: "Warning",
+              text: "Task has been created, but there was an issue assigning to employees"
+            });
+            fetchKpis();
+          });
+      } else if (assignType.value === 'department' && assignToAllMembers.value) {
+        // 分配给部门所有成员
+        assignKpiToDepartment(kpiId, selectedDepartment.value.id, currentTask.value.totalTarget)
+          .then(() => {
+            Swal.fire({
+              position: "top-end",
+              icon: "success",
+              title: "Task created and successfully assigned to all department members",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+            fetchKpis();
+          })
+          .catch((error) => {
+            console.error("Failed to assign task to department:", error);
+            Swal.fire({
+              icon: "warning",
+              title: "Warning",
+              text: "Task has been created, but there was an issue assigning to department members"
+            });
+            fetchKpis();
+          });
+      } else {
+        // 仅创建任务，不分配
+        Swal.fire({
+          position: "top-end",
+          icon: "success",
+          title: "Task created successfully",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+        fetchKpis();
+      }
     }
   }).catch((error) => {
     Swal.fire({
       icon: "error",
       title: "Error",
-      text: "There was an error creating the task.",
+      text: "An error occurred while creating the task",
     });
   });
 };
@@ -503,14 +747,37 @@ const showModal = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 
 const openEditTaskModal = (task: Task) => {
-  currentTask.value = task
+  // 创建一个深拷贝，确保所有属性都被正确复制
+  currentTask.value = { ...task };
+  
+  // 处理已分配用户数据
+  // 从 personal_details 中提取用户信息
+  if (task.personal_details && Array.isArray(task.personal_details) && task.personal_details.length > 0) {
+    currentTask.value.assignedUsers = task.personal_details.map((detail: any) => {
+      return {
+        id: detail.staff_id,
+        username: detail.staff_name,
+        department_id: detail.department_id
+      };
+    });
+    console.log("Users extracted from personal_details:", currentTask.value.assignedUsers);
+  } else if (!currentTask.value.assignedUsers) {
+    currentTask.value.assignedUsers = [];
+  }
+  
   modalType.value = 'edit'
   showModal.value = true
-  if (task.assignedUsers && task.assignedUsers.length > 0) {
+  
+  // 根据已分配用户设置分配类型
+  if (currentTask.value.assignedUsers && currentTask.value.assignedUsers.length > 0) {
     assignType.value = 'user';
   } else {
     assignType.value = 'department';
   }
+  
+  // 调试信息
+  console.log("Editing task:", currentTask.value);
+  console.log("Assigned users:", currentTask.value.assignedUsers);
 }
 
 const saveEditedTask = () => {
@@ -581,20 +848,120 @@ const saveEditedTask = () => {
 
   updateKpi(currentTask.value.id, payload).then((res) => {
     if (isSuccess(res.status)) {
-      Swal.fire({
-        position: "top-end",
-        icon: "success",
-        title: "Task edited successfully",
-        showConfirmButton: false,
-        timer: 1500
-      });
-      fetchKpis();
+      const kpiId = currentTask.value.id;
+      
+      // 根据分配类型处理任务分配
+      if (assignType.value === 'user') {
+        // 获取当前已分配的用户详情
+        const existingDetails = currentTask.value.personal_details || [];
+        
+        // 创建映射：员工ID -> 个人详情ID
+        const existingStaffMap = new Map();
+        existingDetails.forEach((detail: any) => {
+          existingStaffMap.set(detail.staff_id, detail.id);
+        });
+        
+        // 获取新的用户ID列表
+        const newUserIds = currentTask.value.assignedUsers.map((user: any) => user.id);
+        
+        // 找出需要添加的用户（在新列表中但不在旧列表中）
+        const usersToAdd = newUserIds.filter((userId: number) => !existingStaffMap.has(userId));
+        
+        // 找出需要删除的用户详情（在旧列表中但不在新列表中）
+        const detailsToRemove = existingDetails
+          .filter((detail: any) => !newUserIds.includes(detail.staff_id))
+          .map((detail: any) => detail.id);
+        
+        console.log("Users to add:", usersToAdd);
+        console.log("Details of users to remove:", detailsToRemove);
+        
+        // 创建所有操作的Promise数组
+        const promises: Promise<any>[] = [];
+        
+        // 添加新用户的Promise
+        usersToAdd.forEach((userId: number) => {
+          const user = currentTask.value.assignedUsers.find((u: any) => u.id === userId);
+          const departmentId = user?.department_id || selectedDepartment.value.id;
+          promises.push(assignKpiToStaff(kpiId, userId, departmentId, currentTask.value.totalTarget));
+        });
+        
+        // 删除旧用户的Promise
+        detailsToRemove.forEach((detailId: number) => {
+          promises.push(removeKpiFromStaff(detailId));
+        });
+        
+        // 如果有需要执行的操作
+        if (promises.length > 0) {
+          Promise.all(promises)
+            .then(() => {
+              Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "Task updated and reassigned successfully",
+                showConfirmButton: false,
+                timer: 1500,
+              });
+              fetchKpis();
+            })
+            .catch((error) => {
+              console.error("Failed to reassign task:", error);
+              Swal.fire({
+                icon: "warning",
+                title: "Warning",
+                text: "Task has been updated, but there was an issue reassigning to staff"
+              });
+              fetchKpis();
+            });
+        } else {
+          // 如果没有新的分配操作，直接显示成功
+          Swal.fire({
+            position: "top-end",
+            icon: "success",
+            title: "Task updated successfully",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          fetchKpis();
+        }
+      } else if (assignType.value === 'department' && assignToAllMembers.value) {
+        // 分配给部门所有成员的逻辑保持不变
+        assignKpiToDepartment(kpiId, selectedDepartment.value.id, currentTask.value.totalTarget)
+          .then(() => {
+            Swal.fire({
+              position: "top-end",
+              icon: "success",
+              title: "Task updated and successfully assigned to all department members",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+            fetchKpis();
+          })
+          .catch((error) => {
+            console.error("Failed to assign task to department:", error);
+            Swal.fire({
+              icon: "warning",
+              title: "Warning",
+              text: "Task updated, but there was an issue assigning to department members"
+            });
+            fetchKpis();
+          });
+      } else {
+        // 仅更新任务，不重新分配
+        Swal.fire({
+          position: "top-end",
+          icon: "success",
+          title: "Task updated successfully",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+        fetchKpis();
+      }
     }
   }).catch((error) => {
     Swal.fire({
       icon: "error",
       title: "Error",
-      text: "There was an error updating the task."
+      text: "An error occurred while updating the task"
     });
   });
 };
@@ -668,42 +1035,65 @@ const confirmTerminate = () => {
 }
 
 
+// get total target
+// const getTotalTarget = (task: Task) => {
+//   return task.target.value * task.assignedUsers.length;
+// };
+
 // filter
 const searchTaskName = ref('')
 const selectedStatus = ref('')
 const selectedDepartment = ref('Sales Department')
+const currentPage = ref(1)
+const itemsPerPage = 10
 
 // 添加KPI数据过滤计算属性
 const filteredKpiData = computed(() => {
-
+  return kpiData.value.filter(task => {
+    
+    // 任务名称搜索
+    const matchesTaskName = !searchTaskName.value || 
+      task.taskTitle.toLowerCase().includes(searchTaskName.value.toLowerCase());
+    
+    // 状态筛选
+    const matchesStatus = !selectedStatus.value || task.status === selectedStatus.value;
+    
+    return matchesTaskName && matchesStatus;
+  });
 });
 
+
+const paginatedTasks = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredKpiData.value.slice(start, end)
+})
+
 // pagination
-const totalPages = computed(() => Math.ceil(count.value / 10))
+const totalPages = computed(() => Math.ceil(filteredKpiData.value.length / itemsPerPage))
 
 const changePage = (page: number) => {
-  fetchKpis(page);
-}
-
-function searchUser()
-{
-  alert(currentTask.assignedTo.value)
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
 }
 
 // Statistics
-const totalTasks = computed(() => 0);
-const completedTasks = computed(() => 0);
-const ongoingTasks = computed(() => 0);
-const delayedTasks = computed(() => 0);
+const totalTasks = computed(() => filteredKpiData.value.length);
+const completedTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Completed').length);
+const ongoingTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Ongoing').length);
+const delayedTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Delayed').length);
 
-
+onMounted(() => {
+    tasks.value.forEach(updateTaskStatus);
+});
 
 const handleDepartmentChange = () => {
   console.log(`Department changed to: ${selectedDepartment.value.department_name}`);
   // 重置分页到第一页
   currentPage.value = 1;
-
-  fetchKpis(); // 重新获取数据
+  // 重新获取KPI数据（现在会包含所选部门及其父部门的任务）
+  fetchKpis();
 };
 
 const updateTaskStatus = (task: Task) => {
@@ -743,28 +1133,109 @@ const selectedTask = ref<Task>({
 const assignType = ref('user')  // default assignment type is 'user'
 
 const openCreateTaskModal = () => {
-  selectedTask.value = {
+  currentTask.value = {
     id: 0,
-    taskName: '',
+    taskTitle: '',
     taskDescription: '',
     status: '',
     startDate: '',
     endDate: '',
     pointsGiven: 0,
-    target: { value: 0, unit: "" },
-    assignedTo: '',
-    assignedUsers: [],
-    department: selectedDepartment.value
+    totalTarget: 0,
+    individualUnit: '',
+    assignedUsers: [], // 确保这个数组被初始化
+    department: selectedDepartment.value?.department_name || ''
   }
   modalType.value = 'create'
   assignType.value = 'user' // reset assignment type to default
   showModal.value = true
 }
+// const openEditTaskModal = (task: Task) => {
+//   currentTask.value = task
+//   modalType.value = 'edit'
+//   showModal.value = true
+// }
+
+// const openTerminatedModal = (task: Task) => {
+//   selectedTask.value = task
+//   showTerminatedModal.value = true
+// }
+
+// const saveEditedTask = () => {
+//   const index = tasks.value.findIndex(task => task.id === selectedTask.value.id)
+//   if (index !== -1) {
+//     tasks.value[index] = { ...selectedTask.value }
+//     updateTaskStatus(tasks.value[index]);  
+//   }
+//   showModal.value = false
+// }
+
+const markAsComplete = (task: Task) => {
+  const index = tasks.value.findIndex(t => t.id === task.id);
+  if (index !== -1) {
+    tasks.value[index] = { ...tasks.value[index], status: 'Completed' };
+  }
+  showModal.value = false
+};
+
+const calculateTotalProgress = (task: any) => {
+  // 检查是否有personal_details数据
+  if (!task.personal_details || !Array.isArray(task.personal_details)) {
+    return 0;
+  }
+  
+  // 计算所有员工的completed_unit总和
+  return task.personal_details.reduce((total: number, detail: any) => {
+    // 确保completed_unit是数字
+    const completedUnit = Number(detail.completed_unit) || 0;
+    return total + completedUnit;
+  }, 0);
+};
 
 
-function goToEmployeeDetailsPage()
-{
-  router.push('/home/KPI-management/employee-task-details');
+/*const addAssignedUser = () => {
+  if (selectedTask.value.assignedTo.trim()) {
+    selectedTask.value.assignedUsers.push({ username: selectedTask.value.assignedTo });
+    selectedTask.value.assignedTo = ''; // Clear input after adding
+  }
+};
+
+const removeAssignedUser = (index: number) => {
+  selectedTask.value.assignedUsers.splice(index, 1)
+}
+
+const createTask = () => {
+  const newId = tasks.value.length + 1
+
+  // Determine assignment based on assignType
+  const isUserAssignment = assignType.value === 'user'
+  const username = isUserAssignment && selectedTask.value.assignedUsers.length > 0 
+    ? selectedTask.value.assignedUsers[0] 
+    : selectedDepartment.value
+
+  const role = isUserAssignment ? 'Employee' : 'Department'
+
+  const task: Task = {
+    id: newId,
+    taskName: selectedTask.value.taskName,
+    taskDescription: selectedTask.value.taskDescription,
+    status: '',
+    startDate: selectedTask.value.startDate,
+    completionDate: selectedTask.value.completionDate,
+    target: { value: selectedTask.value.target.value, unit: selectedTask.value.target.unit },
+    pointsGiven: selectedTask.value.pointsGiven,
+    assignedTo: isUserAssignment ? selectedTask.value.assignedTo : '',
+    assignedUsers: isUserAssignment ? selectedTask.value.assignedUsers : [],
+    department: selectedDepartment.value
+  }
+  updateTaskStatus(task);
+  tasks.value.push(task)
+  showModal.value = false
+}
+*/
+//go to employee details page
+const goToEmployeeDetailsPage = (taskId) => {
+  router.push(`/home/KPI-Management/employee-task-details/${taskId}`);
 }
 </script>
 
@@ -880,5 +1351,14 @@ function goToEmployeeDetailsPage()
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+.search-result-item:hover {
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

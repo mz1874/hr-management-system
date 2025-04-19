@@ -171,9 +171,9 @@ const router = createRouter({
                     component: pointSystem ,
                 },
                 {
-                    path : "KPI-Management/employee-task-details",
-                    name: 'KPI-Management/employee-task-details',
-                    component: employeeTaskDetailsPage ,
+                    path : "KPI-Management/employee-task-details/:id",
+                    name: 'employee-task-details',
+                    component: employeeTaskDetailsPage,
                 },
                 {
                     path: 'personal-information',
