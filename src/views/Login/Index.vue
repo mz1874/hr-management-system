@@ -56,7 +56,9 @@ import logo from '../../assets/logo.png';
 import {ref} from "vue";
 import {useRouter} from "vue-router";
 import {login, logout} from "@/api/login.ts";
-import {isSuccess} from "@/utils/httpStatus.ts";
+import {getUserRoutes} from "@/api/Router.ts";
+import {mapBackendRoutes} from "@/router/asyncRoutes.ts"; // 上面我们写的路由映射函数
+
 
 const router = useRouter()
 
@@ -72,20 +74,51 @@ function togglePasswordVisibility() {
 async function submitData() {
   if (!username.value.trim()) {
     Swal.fire("Please, enter username !");
-    return
+    return;
   }
 
   if (!password.value.trim()) {
     Swal.fire("Please, enter password !");
-    return
+    return;
   }
 
   try {
     const res = await login(username.value, password.value);
     const tokens = res.data?.data;
+
     if (tokens?.access && tokens?.refresh) {
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
+      const routeRes = await getUserRoutes();
+
+      const backendRoutes = routeRes.data?.data;
+      const dynamicRoutes = mapBackendRoutes(backendRoutes);
+
+
+      // 2️⃣ 注册到 Home 子路由
+      const homeRoute = router.getRoutes().find(r => r.name === 'home');
+      console.log(homeRoute, "Home 路由");
+      console.log(dynamicRoutes, "后端响应的路由");
+      // 注册动态路由到 home 下
+
+
+      if (homeRoute) {
+        dynamicRoutes.forEach(r => {
+          console.log(r);
+          router.addRoute('home', r); // ✅ 正确注册
+        });
+      }
+
+      Swal.fire({
+        position: "top-end",
+        icon: "success",
+        title: "Login success",
+        showConfirmButton: false,
+        timer: 1500
+      }).then(() => {
+        router.push({ name: 'HomeDefault' }); // 👈 根据你 router.getRoutes() 打印确认 name
+      });
+
       Swal.fire({
         position: "top-end",
         icon: "success",
@@ -99,6 +132,7 @@ async function submitData() {
       throw new Error("Invalid token structure");
     }
   } catch (err) {
+    console.log(err);
     if (err.response?.status === 401) {
       Swal.fire({
         title: "Login failed!",
@@ -113,8 +147,6 @@ async function submitData() {
       });
     }
   }
-
-
 }
 
 </script>
