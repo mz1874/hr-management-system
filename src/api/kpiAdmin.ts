@@ -1,8 +1,13 @@
 import axios from './axios'
 
 /* 查询所有的 KPI */
+<<<<<<< HEAD
+export function selectAllKpis(page: number = 1) {
+    return axios.get(`/api/kpi/?page=${page}`)
+=======
 export function selectAllKpis(params = {}) {
     return axios.get('/api/kpi/', { params })
+>>>>>>> 71297a9e84530a5501ccdc0fd954773acca23172
 }
 
 /* 创建新的 KPI */
