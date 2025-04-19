@@ -10,13 +10,11 @@ export function mapBackendRoutes(routes) {
         // 初始化组件为空
         let component = null;
 
-        // 第一种尝试：views/Foo.vue
         let componentPath1 = `/src/views/${route.component}.vue`;
         if (views[componentPath1]) {
             component = views[componentPath1];
         }
 
-        // 第二种尝试：views/Foo/index.vue
         if (!component) {
             let componentPath2 = `/src/views/${route.component}/index.vue`;
             if (views[componentPath2]) {

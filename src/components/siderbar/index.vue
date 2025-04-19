@@ -1,43 +1,17 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted } from 'vue';
+import { getUserRoutes } from '@/api/Router.ts';
 
+// 静态菜单
 const navItems = reactive([
-  { name: "Home", link: "/home" },
-  { name: "KPI Dashboard", link: "/home/KPI-Dashboard" },
-  { name: "Personal KPI Management", link: "/home/personal-KPI-Management" },
-  { name: "Notification View", link: "/home/notification-view" },
-  { name: "Leave Application", link: "/home/leave-application" },
-  { name: "Reward Mall", link: "/home/reward-mall" },
-  { name: "Leaderboard", link: "/home/leader-board" },
-  { name: "Report Generation", link: "/home/report-generation" },
-  { name: "KPI Management", link: "/home/KPI-management" },
-  { name: "Notification Center", link: "/home/notification-center" },
-  { name: "Leave Management", link: "/home/leave-management" },
-  // { name: "Evaluation Center", link: "/home/survey-management" },
 ]);
 
+// 子菜单容器
+const rewardSubmenu = ref([]);
+const evaluationCenter = ref([]);
+const systemSubmenu = ref([]);
 
-const evaluationCenter = reactive([
-  { name: "Evaluation List", link: "/home/survey-management" },
-  { name: "Department Evaluation", link: "/home/department-evaluation" }
-]);
-
-const rewardSubmenu = reactive([
-  { name: "Reward Management", link: "/home/reward-management" },
-  { name: "Redemption Status", link: "/home/redemption-status" },
-  { name: "Point System", link: "/home/point-system" }
-]);
-
-const systemSubmenu = reactive([
-  { name: "User management", link: "/home/user-management" },
-  { name: "Role management", link: "/home/role-management" },
-  { name: "Department management", link: "/home/department-management" },
-  { name: "System Logs", link: "/home/system-log" },
-  { name: "Authorization Management", link: "/home/authorization-management" },
-  { name: "Router Management", link: "/home/router-management" },
-]);
-
-// 控制子目录的展开和收起
+// 展开状态
 const showRewardSubmenu = ref(false);
 const showSystemSubmenu = ref(false);
 const showEvaluationCenter = ref(false);
@@ -53,6 +27,41 @@ const toggleEvaluationCenter = () => {
 const toggleSystemSubmenu = () => {
   showSystemSubmenu.value = !showSystemSubmenu.value;
 };
+
+onMounted(async () => {
+  try {
+    const res = await getUserRoutes();
+    const routes = res.data?.data || [];
+
+    routes.forEach(route => {
+      if (route.meta?.title?.includes('Reward')) {
+        rewardSubmenu.value.push({
+          name: route.meta.title,
+          link: route.path
+        });
+      } else if (route.meta?.title?.includes('Evaluation')) {
+        evaluationCenter.value.push({
+          name: route.meta.title,
+          link: route.path
+        });
+      } else if (route.meta?.title?.includes('System')) {
+        systemSubmenu.value.push({
+          name: route.meta.title,
+          link: route.path
+        });
+      } else {
+        navItems.push({
+          name: route.meta?.title || route.code,
+          link: route.path
+        });
+      }
+    });
+
+    console.log("后端菜单结构：", routes);
+  } catch (err) {
+    console.error("获取菜单失败：", err);
+  }
+});
 </script>
 
 <template>

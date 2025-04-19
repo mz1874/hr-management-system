@@ -101,14 +101,13 @@ async function submitData() {
       console.log(dynamicRoutes, "后端响应的路由");
       // 注册动态路由到 home 下
 
-
       if (homeRoute) {
         dynamicRoutes.forEach(r => {
           console.log(r);
           router.addRoute('home', r); // ✅ 正确注册
         });
       }
-
+      console.log(router.getRoutes());
       Swal.fire({
         position: "top-end",
         icon: "success",
@@ -116,17 +115,7 @@ async function submitData() {
         showConfirmButton: false,
         timer: 1500
       }).then(() => {
-        router.push({ name: 'HomeDefault' }); // 👈 根据你 router.getRoutes() 打印确认 name
-      });
-
-      Swal.fire({
-        position: "top-end",
-        icon: "success",
-        title: "Login success",
-        showConfirmButton: false,
-        timer: 1500
-      }).then(() => {
-        router.push({ name: 'home-default' });
+        router.push({name: 'home-default'});
       });
     } else {
       throw new Error("Invalid token structure");
