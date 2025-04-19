@@ -234,7 +234,9 @@ export default {
         <td>
           <button type="button" class="btn btn-sm btn-primary me-1" @click="openViewModal(item)">View</button>
           <button type="button" class="btn btn-sm btn-warning me-1" @click="openEditModal(item)">Edit</button>
-          <button type="button" class="btn btn-sm btn-danger" @click="openDeleteModal(item)">Delete</button>
+          <button type="button" v-show="item.name.toLowerCase() !== 'admin'.toLowerCase()" class="btn btn-sm btn-danger" @click="openDeleteModal(item)">
+            Delete
+          </button>
         </td>
       </tr>
       </tbody>
