@@ -34,28 +34,16 @@ onMounted(async () => {
     const routes = res.data?.data || [];
 
     routes.forEach(route => {
-      if (route.meta?.title?.includes('Reward')) {
-        rewardSubmenu.value.push({
-          name: route.meta.title,
-          link: route.path
-        });
-      } else if (route.meta?.title?.includes('Evaluation')) {
-        evaluationCenter.value.push({
-          name: route.meta.title,
-          link: route.path
-        });
-      } else if (route.meta?.title?.includes('System')) {
-        systemSubmenu.value.push({
-          name: route.meta.title,
-          link: route.path
-        });
-      } else {
+      if (route.path) {
         navItems.push({
           name: route.meta?.title || route.code,
           link: route.path
         });
+      } else {
+      //   不需要处理
       }
     });
+
 
     console.log("后端菜单结构：", routes);
   } catch (err) {

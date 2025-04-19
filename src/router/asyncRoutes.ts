@@ -6,40 +6,31 @@ export function mapBackendRoutes(routes) {
         return [];
     }
 
-    return routes.map(route => {
-        // 初始化组件为空
-        let component = null;
+    return routes
+        .filter(route => route.path || (route.children && route.children.length)) // 保证至少有 path 或 children
+        .map(route => {
+            let component = null;
 
-        let componentPath1 = `/src/views/${route.component}.vue`;
-        if (views[componentPath1]) {
-            component = views[componentPath1];
-        }
+            if (route.component) {
+                const path1 = `/src/views/${route.component}.vue`;
+                const path2 = `/src/views/${route.component}/index.vue`;
+                component = views[path1] || views[path2] || null;
 
-        if (!component) {
-            let componentPath2 = `/src/views/${route.component}/index.vue`;
-            if (views[componentPath2]) {
-                component = views[componentPath2];
+                if (!component) {
+                    console.warn(`⚠️ 组件未找到: ${route.component}`);
+                }
             }
-        }
 
-        // 如果找不到组件，输出警告
-        if (!component) {
-            // console.error(`❌ 组件未找到: ${route.component}`);
-        }
+            const routeObj = {
+                path: route.path || '',
+                name: route.name?.replace(/\s+/g, '-').toLowerCase(),
+                ...(component && { component }), // 仅在 component 存在时添加
+            };
 
-        // 构造路由对象
-        const r = {
-            path: route.path,
-            name: route.name,
-            component: component,
-            children: []
-        };
+            if (Array.isArray(route.children) && route.children.length > 0) {
+                routeObj.children = mapBackendRoutes(route.children);
+            }
 
-        // 递归处理子路由
-        if (Array.isArray(route.children) && route.children.length > 0) {
-            r.children = mapBackendRoutes(route.children);
-        }
-
-        return r;
-    });
+            return routeObj;
+        });
 }
