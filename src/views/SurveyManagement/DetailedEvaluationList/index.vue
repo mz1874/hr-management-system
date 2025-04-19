@@ -1,123 +1,131 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+// Use type-only imports for interfaces
+import { getAllSurveys, getSurveyById, saveEmployeeEvaluation } from '@/api/survey'
+import type { Survey, Question, Answer, SurveySubmission } from '@/api/survey'
 
-interface Question {
-  id: number
-  type: 'grade' | 'option' | 'remark' // 问题类型
-  question: string // 问题内容
-  score?: number // 评分题的分数（1-5）
-  options?: string[] // 选择题的选项
-  selectedOption?: string // 选择题的选中项
-  remark?: string // 备注内容
+// Interface for the survey list items
+interface SurveyListItem {
+  id: number;
+  name: string;
+  publishTime: string | null;
+  // status is implicitly 'published' based on fetch logic
 }
 
-// 评分模态框
-const showEvaluateModal = ref(false)
+// --- State --- 
+const availableSurveys = ref<SurveyListItem[]>([])
+const totalSurveys = ref(0)
+const isLoadingSurveys = ref(false)
+const isLoadingDetails = ref(false)
 
-const openEvaluateModal = (employee: Employee) => {
-  currentEmployee.value = JSON.parse(JSON.stringify(employee)) // 深拷贝员工数据
-  showEvaluateModal.value = true
-}
+const showSurveyModal = ref(false)
+const currentSurvey = ref<Survey | null>(null) // Holds the full details of the survey being taken
+const currentAnswers = ref<Record<number, Answer>>({}) // Holds answers keyed by questionId
 
-const closeEvaluateModal = () => {
-  showEvaluateModal.value = false
-}
-
-const saveEvaluation = () => {
-  const employeeIndex = allEmployees.value.findIndex(emp => emp.id === currentEmployee.value.id)
-  if (employeeIndex !== -1) {
-    allEmployees.value[employeeIndex] = currentEmployee.value
-  }
-  closeEvaluateModal()
-}
-
-interface Employee {
-  id: number
-  name: string
-  department: string
-  evaluationName: string
-  questions: Question[] // 问题列表
-}
-
-// 模拟数据
-const allEmployees = ref<Employee[]>([
-  {
-    id: 1,
-    name: 'John Doe',
-    department: 'HR',
-    evaluationName: 'Evaluation 1',
-    questions: [
-      {
-        id: 1,
-        type: 'grade',
-        question: 'How satisfied are you with your job?',
-        score: 4,
-      },
-      {
-        id: 2,
-        type: 'option',
-        question: 'Which team do you enjoy working with the most?',
-        options: ['HR', 'Finance', 'IT', 'Marketing'],
-        selectedOption: 'HR',
-      },
-      {
-        id: 3,
-        type: 'remark',
-        question: 'Additional comments:',
-        remark: 'Good performance overall.',
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    department: 'Finance',
-    evaluationName: 'Evaluation 2',
-    questions: [
-      {
-        id: 1,
-        type: 'grade',
-        question: 'How would you rate your work-life balance?',
-        score: 5,
-      },
-      {
-        id: 2,
-        type: 'remark',
-        question: 'Additional comments:',
-        remark: 'Excellent work environment.',
-      },
-    ],
-  },
-  // 更多员工数据...
-])
-
-// 筛选条件
-const selectedDepartment = ref('')
-const selectedEvaluation = ref('')
-
-// 分页功能
+// Pagination state
 const currentPage = ref(1)
-const itemsPerPage = 5
+const itemsPerPage = ref(5) // Consider making this configurable or dynamic
 
-// 筛选后的员工列表
-const filteredEmployees = computed(() => {
-  return allEmployees.value.filter(employee => {
-    const matchesDepartment = selectedDepartment.value ? employee.department === selectedDepartment.value : true
-    const matchesEvaluation = selectedEvaluation.value ? employee.evaluationName === selectedEvaluation.value : true
-    return matchesDepartment && matchesEvaluation
-  })
-})
+// --- Computed Properties ---
+const totalPages = computed(() => Math.ceil(totalSurveys.value / itemsPerPage.value))
 
-// 分页后的员工列表
-const paginatedEmployees = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  return filteredEmployees.value.slice(start, start + itemsPerPage)
-})
+// --- Methods --- 
 
-// 总页数
-const totalPages = computed(() => Math.ceil(filteredEmployees.value.length / itemsPerPage))
+// Fetch published surveys
+const fetchAvailableSurveys = async () => {
+  isLoadingSurveys.value = true;
+  try {
+    // We only want published surveys for users to take
+    const response = await getAllSurveys(currentPage.value, { status: 'published' }); 
+    // Assuming API returns { data: { results: [], count: number } }
+    // Make sure the 'results' match SurveyListItem structure (id, name, publishTime)
+    availableSurveys.value = response.data.data.results.map((s: any) => ({ // Map to ensure structure
+        id: s.id,
+        name: s.name,
+        publishTime: s.publishTime
+    })); 
+    totalSurveys.value = response.data.data.count; 
+  } catch (error) {
+    console.error("Failed to fetch available surveys:", error);
+    availableSurveys.value = [];
+    totalSurveys.value = 0;
+    // TODO: Show error message to user
+  } finally {
+    isLoadingSurveys.value = false;
+  }
+}
 
-// 翻页功能
+// Initialize the answer structure for the current survey
+const initializeAnswers = () => {
+  if (!currentSurvey.value) {
+    currentAnswers.value = {};
+    return;
+  }
+  const initialAnswers: Record<number, Answer> = {};
+  currentSurvey.value.questions.forEach(question => {
+    initialAnswers[question.id] = {
+      questionId: question.id,
+      // Initialize based on type, e.g., score to null/undefined, remark to '', etc.
+      score: undefined, 
+      selectedOption: undefined,
+      remark: ''
+    };
+  });
+  currentAnswers.value = initialAnswers;
+};
+
+// Open the modal to take a survey
+const openSurveyModal = async (surveyItem: SurveyListItem) => {
+  currentSurvey.value = null; // Clear previous survey
+  currentAnswers.value = {};
+  isLoadingDetails.value = true;
+  showSurveyModal.value = true;
+  try {
+    const response = await getSurveyById(surveyItem.id);
+    // Assuming response.data.data is the full Survey object including questions
+    currentSurvey.value = response.data.data; 
+    initializeAnswers(); // Setup the answer structure
+  } catch (error) {
+    console.error(`Failed to fetch survey details for ID ${surveyItem.id}:`, error);
+    // TODO: Show error to user in the modal or close it
+    showSurveyModal.value = false; // Close modal on error fetching details
+  } finally {
+    isLoadingDetails.value = false;
+  }
+}
+
+const closeSurveyModal = () => {
+  showSurveyModal.value = false;
+  currentSurvey.value = null;
+  currentAnswers.value = {};
+}
+
+// Submit the survey answers
+const submitSurvey = async () => {
+  if (!currentSurvey.value) return;
+
+  // Basic Validation (Optional: Add more specific validation per question type)
+  const answersArray = Object.values(currentAnswers.value);
+  // Example: Check if all required questions are answered
+
+  const submissionPayload: SurveySubmission = {
+    surveyId: currentSurvey.value.id,
+    answers: answersArray,
+  };
+
+  try {
+    await saveEmployeeEvaluation(submissionPayload);
+    // TODO: Show success message to user
+    closeSurveyModal();
+    // Optional: Refresh the list if needed, though usually not necessary for taking surveys
+    // await fetchAvailableSurveys(); 
+  } catch (error) {
+    console.error("Failed to submit survey:", error);
+    // TODO: Show error message to user (e.g., within the modal)
+  }
+}
+
+// Pagination Navigation
 const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--
 }
@@ -125,263 +133,142 @@ const nextPage = () => {
   if (currentPage.value < totalPages.value) currentPage.value++
 }
 const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
   currentPage.value = page
 }
-
-// 查看员工详情
-const showEmployeeDetailModal = ref(false)
-const currentEmployee = ref<Employee | null>(null)
-
-const viewEmployeeDetail = (employee: Employee) => {
-  currentEmployee.value = employee
-  showEmployeeDetailModal.value = true
 }
+
+// --- Lifecycle Hooks --- 
+onMounted(() => {
+  fetchAvailableSurveys();
+});
+
+// Refetch data when page changes
+watch(currentPage, fetchAvailableSurveys);
 </script>
 
 <template>
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Employee Evaluation Results</h2>
+    <h2>Available Surveys</h2>
   </div>
 
-  <!-- 筛选条件 -->
-  <div class="filter-container">
-    <div class="d-flex gap-3 align-items-center">
-      <div class="input-group">
-        <label class="form-label me-2">Department:</label>
-        <select class="form-control" v-model="selectedDepartment">
-          <option value="">All Departments</option>
-          <option value="HR">HR</option>
-          <option value="Finance">Finance</option>
-          <option value="IT">IT</option>
-          <option value="Marketing">Marketing</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label class="form-label me-2">Evaluation:</label>
-        <select class="form-control" v-model="selectedEvaluation">
-          <option value="">All Evaluations</option>
-          <option value="Evaluation 1">Evaluation 1</option>
-          <option value="Evaluation 2">Evaluation 2</option>
-          <option value="Evaluation 3">Evaluation 3</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- 表格 -->
+  <!-- Table -->
   <div class="table-card">
     <table class="table">
       <thead>
       <tr>
         <th scope="col">ID</th>
         <th scope="col">Name</th>
-        <th scope="col">Department</th>
-        <th scope="col">Evaluation Name</th>
+        <th scope="col">Publish Time</th>
         <th scope="col">Actions</th>
       </tr>
       </thead>
       <tbody>
-      <tr v-for="employee in paginatedEmployees" :key="employee.id">
-        <td>{{ employee.id }}</td>
-        <td>{{ employee.name }}</td>
-        <td>{{ employee.department }}</td>
-        <td>{{ employee.evaluationName }}</td>
+      <tr v-if="isLoadingSurveys">
+          <td colspan="4" class="text-center">Loading surveys...</td>
+      </tr>
+      <tr v-else-if="availableSurveys.length === 0">
+          <td colspan="4" class="text-center">No surveys available to take.</td>
+      </tr>
+      <tr v-else v-for="survey in availableSurveys" :key="survey.id">
+        <td>{{ survey.id }}</td>
+        <td>{{ survey.name }}</td>
+        <td>{{ survey.publishTime ? new Date(survey.publishTime).toLocaleString() : 'N/A' }}</td>
         <td>
-          <button type="button" class="btn btn-primary btn-action" @click="viewEmployeeDetail(employee)">View</button>
-          <button type="button" class="btn btn-success btn-action" @click="openEvaluateModal(employee)">Evaluate</button>
+          <button type="button" class="btn btn-success btn-action" @click="openSurveyModal(survey)">Take Survey</button>
         </td>
       </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- 评分模态框 -->
-  <div class="modal fade" :class="{ show: showEvaluateModal }" style="display: block" v-if="showEvaluateModal">
+  <!-- Survey Taking Modal -->
+  <div class="modal fade" :class="{ show: showSurveyModal }" style="display: block" v-if="showSurveyModal">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">Evaluate Employee</h3>
+          <h3 class="modal-title">Take Survey: {{ currentSurvey?.name || 'Loading...' }}</h3>
+          <button type="button" class="btn-close" @click="closeSurveyModal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <!-- 员工基本信息 -->
-          <div class="row mb-4">
-            <div class="col-md-4">
-              <div class="form-group">
-                <label class="form-label">Employee Name:</label>
-                <input type="text" class="form-control" v-model="currentEmployee.name" disabled>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label class="form-label">Department:</label>
-                <input type="text" class="form-control" v-model="currentEmployee.department" disabled>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label class="form-label">Evaluation Name:</label>
-                <input type="text" class="form-control" v-model="currentEmployee.evaluationName" disabled>
-              </div>
-            </div>
+          <div v-if="isLoadingDetails" class="text-center">
+            Loading survey details...
           </div>
-
-          <!-- 问题列表 -->
+          <div v-else-if="currentSurvey && currentAnswers">
           <div class="mb-4">
             <div class="mb-4 text-center">
               <h3 class="form-label">Questions</h3>
             </div>
-            <div v-for="(question, index) in currentEmployee.questions" :key="index" class="mb-3">
+                <div v-for="(question, index) in currentSurvey.questions" :key="question.id" class="mb-3 border p-3 rounded">
               <div class="d-flex justify-content-between align-items-center">
-                <h6>{{ question.type === 'grade' ? 'Grade Question' : question.type === 'option' ? 'Option Question' : 'Remark' }}</h6>
+                    <h6>{{ index + 1 }}. {{ question.type === 'grade' ? 'Grade Question' : question.type === 'option' ? 'Option Question' : 'Remark' }}</h6>
               </div>
-              <input type="text" class="form-control mb-2" v-model="question.question" disabled>
+                  <p class="form-control mb-2 bg-light">{{ question.question_text }}</p>
 
-              <!-- 评分题 -->
               <div v-if="question.type === 'grade'" class="form-group">
                 <label class="form-label">Score (1-5):</label>
-                <input type="number" class="form-control" v-model="question.score" min="1" max="5">
+                    <input type="number" class="form-control" v-model.number="currentAnswers[question.id].score" min="1" max="5">
               </div>
 
-              <!-- 选择题 -->
-              <div v-if="question.type === 'option'" class="option-container ms-3">
-                <div class="row">
-                  <template v-for="(option, optionIndex) in question.options" :key="optionIndex">
-                    <div class="col-6 mb-2 d-flex align-items-center">
-                      <label class="form-check-label w-100">
+                  <div v-if="question.type === 'option' && question.options && currentAnswers[question.id]" class="option-container ms-3">
+                      <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="form-check mb-2">
                         <input type="radio"
                                class="form-check-input me-2"
                                :name="'option-' + question.id"
                                :value="option"
-                               v-model="question.selectedOption">
-                        Option {{ optionIndex + 1 }}: {{ option }}
-                      </label>
-                    </div>
-                  </template>
+                              v-model="currentAnswers[question.id].selectedOption">
+                        <label class="form-check-label w-100">{{ option }}</label>
                 </div>
               </div>
 
-              <!-- 备注 -->
               <div v-if="question.type === 'remark'" class="form-group">
                 <label class="form-label">Remark:</label>
-                <textarea class="form-control auto-resize" v-model="question.remark"></textarea>
+                    <textarea class="form-control auto-resize" v-model="currentAnswers[question.id].remark"></textarea>
+                  </div>
+                </div>
+                 <div v-if="!currentSurvey.questions || currentSurvey.questions.length === 0" class="text-muted text-center">
+                    This survey has no questions.
+                 </div>
               </div>
             </div>
+          <div v-else class="text-center text-danger">
+                Failed to load survey details.
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="closeEvaluateModal">Close</button>
-          <button type="button" class="btn btn-primary" @click="saveEvaluation">Save</button>
+          <button type="button" class="btn btn-secondary" @click="closeSurveyModal">Close</button>
+          <button type="button" class="btn btn-primary" @click="submitSurvey" :disabled="isLoadingDetails || !currentSurvey">Submit</button>
         </div>
       </div>
     </div>
   </div>
-  <div class="modal-backdrop fade show" v-if="showEvaluateModal"></div>
+  <div class="modal-backdrop fade show" v-if="showSurveyModal"></div>
 
-  <!-- 分页 -->
-  <div class="d-flex align-items-center mt-3 justify-content-start">
-    <span class="me-3">Total: {{ filteredEmployees.length }}</span>
+  <div class="d-flex align-items-center mt-3 justify-content-start" v-if="totalSurveys > 0">
+    <span class="me-3">Total Surveys: {{ totalSurveys }}</span>
     <nav aria-label="Page navigation">
       <ul class="pagination">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" @click="prevPage">Previous</button>
+          <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
         </li>
         <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
           <button class="page-link" @click="goToPage(page)">{{ page }}</button>
         </li>
         <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-          <button class="page-link" @click="nextPage">Next</button>
+          <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
         </li>
       </ul>
     </nav>
+    <span class="ms-3">Items per page: {{ itemsPerPage }}</span>
   </div>
-
-  <!-- 员工详情模态框 -->
-  <div class="modal fade" :class="{ show: showEmployeeDetailModal }" style="display: block" v-if="showEmployeeDetailModal">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Employee Evaluation Details</h3>
-        </div>
-        <div class="modal-body">
-          <!-- 员工基本信息 -->
-          <div class="row mb-4">
-            <div class="col-md-4">
-              <div class="form-group">
-                <label class="form-label">Employee Name:</label>
-                <input type="text" class="form-control" v-model="currentEmployee.name" disabled>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label class="form-label">Department:</label>
-                <input type="text" class="form-control" v-model="currentEmployee.department" disabled>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label class="form-label">Evaluation Name:</label>
-                <input type="text" class="form-control" v-model="currentEmployee.evaluationName" disabled>
-              </div>
-            </div>
-          </div>
-
-          <!-- 问题列表 -->
-          <div class="mb-4">
-            <!-- 问题列表 -->
-            <div class="mb-4 text-center"> <!-- 添加text-center类来居中对齐 -->
-              <h3 class="form-label">Questions</h3>
-            </div>
-            <div v-for="(question, index) in currentEmployee.questions" :key="index" class="mb-3">
-              <div class="d-flex justify-content-between align-items-center">
-                <h6>{{ question.type === 'grade' ? 'Grade Question' : question.type === 'option' ? 'Option Question' : 'Remark' }}</h6>
-              </div>
-              <input type="text" class="form-control mb-2" v-model="question.question" disabled>
-
-              <!-- 评分题 -->
-              <div v-if="question.type === 'grade'" class="form-group">
-                <label class="form-label">Score (1-5):</label>
-                <input type="text" class="form-control" v-model="question.score" disabled>
-              </div>
-
-              <!-- 选择题 -->
-              <div v-if="question.type === 'option'" class="option-container ms-3"> <!-- 使用ms-3类名进行缩进 -->
-                <div class="row">
-                  <template v-for="(option, optionIndex) in question.options" :key="optionIndex">
-                    <div class="col-6 mb-2 d-flex align-items-center">
-                      <label class="form-check-label w-100">
-                        <input type="radio"
-                               class="form-check-input me-2"
-                               :name="'option-' + question.id"
-                               :value="option"
-                               :checked="option === question.selectedOption"
-                               disabled>
-                        Option {{ optionIndex + 1 }}: {{ option }}
-                      </label>
-                    </div>
-                  </template>
-                </div>
-              </div>
-
-              <!-- 备注 -->
-              <div v-if="question.type === 'remark'" class="form-group">
-                <label class="form-label">Remark:</label>
-                <textarea class="form-control auto-resize" v-model="question.remark" disabled></textarea>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showEmployeeDetailModal = false">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="modal-backdrop fade show" v-if="showEmployeeDetailModal"></div>
 </template>
 
 <style scoped>
 
-/* 自定义样式 */
+/* Keep existing relevant styles, remove styles specific to old modals/elements if desired */
+/* Add styles for loading indicators or new elements if needed */
+
+/* Ensure existing styles for form-group, form-label, table, modal, pagination etc. are suitable */
 .form-group {
   margin-bottom: 1rem;
 }
@@ -390,9 +277,6 @@ const viewEmployeeDetail = (employee: Employee) => {
   font-weight: bold;
   display: block;
   margin-bottom: 0.5rem;
-}
-.filter-container {
-  margin-bottom: 2rem;
 }
 
 .modal {
@@ -430,20 +314,17 @@ const viewEmployeeDetail = (employee: Employee) => {
   margin-left: 0.5rem;
 }
 
-.modal {
-  display: none;
-}
-
 .modal-content {
   padding: 15px;
 }
 
-.form-label {
-  font-weight: bold;
-}
-
 .form-control {
   border-color: #000000;
+}
+
+/* Style for option questions */
+.option-container {
+    padding-left: 1rem;
 }
 
 .auto-resize {
@@ -470,4 +351,22 @@ const viewEmployeeDetail = (employee: Employee) => {
   background-color: #008080;
   border-color: #008080;
 }
+
+/* Added style for disabled pagination */
+.page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+
+/* Ensure question text is readable */
+.bg-light {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    white-space: pre-wrap; /* Allow text wrapping */
+    word-wrap: break-word; /* Break long words */
+}
+
 </style>
