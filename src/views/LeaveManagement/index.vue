@@ -10,7 +10,8 @@ import { ref, computed, onMounted, watch } from 'vue';
 import {
   getLeaveRequests,
   reviewLeaveRequest,
-  getLeaveTypes
+  getLeaveTypes,
+  getLeaveBalance
 } from '@/api/leave'
 import type  {LeaveApplication} from '@/interface/leaveApplicationManagement'
 import dayjs from 'dayjs';
@@ -34,19 +35,19 @@ const fetchLeaveTypes = async () => {
   }
 };
 
+
 const fetchLeaveApplications = async () => {
   try {
     await fetchLeaveTypes();
 
-    // 🔹 1. First: fetch filtered leave applications
     const statusParam = filterStatus.value !== 'All' ? filterStatus.value.charAt(0) : '';
     const filteredRes = await getLeaveRequests(currentPage.value, '', { hrPage: true, status: statusParam });
     const rawResults = filteredRes.data?.data?.results || [];
     totalPages.value = Math.ceil(filteredRes.data?.data?.count / 10);
     totalCount.value = filteredRes.data?.data?.count;
 
-    // 🔹 2. Second: fetch full summary stats (ALL statuses)
-    const summaryRes = await getLeaveRequests(1, '', { hrPage: true });  // no status filter here
+    // Get summary stats once (not filtered)
+    const summaryRes = await getLeaveRequests(1, '', { hrPage: true });
     summaryStats.value = {
       all: summaryRes.data?.data?.count || 0,
       pending: summaryRes.data?.data?.summary?.pending || 0,
@@ -54,9 +55,13 @@ const fetchLeaveApplications = async () => {
       rejected: summaryRes.data?.data?.summary?.rejected || 0,
     };
 
-    // 🔹 3. Now map filtered results for current page
+    // Map results with leave balance already embedded in each item
     leaveApplications.value = rawResults.map(item => {
       const parsedCreated = dayjs(item.created_date, 'DD.MM.YYYY HH:mm:ss');
+      const balance = item.leave_balance || {};
+      const annual = balance['AL']?.remaining_days || 0;
+      const medical = balance['MC']?.remaining_days || 0;
+
       return {
         id: item.id,
         employeeName: item.username || '-',
@@ -66,8 +71,8 @@ const fetchLeaveApplications = async () => {
         appliedOn: parsedCreated.isValid() ? parsedCreated.format('YYYY-MM-DD') : 'Invalid Date',
         reasons: item.reason || '-',
         document: item.attachment_url || '',
-        remainingAnnualLeave: 0,
-        remainingMedicalLeave: 0,
+        remainingAnnualLeave: annual,
+        remainingMedicalLeave: medical,
         remarks: item.review_comment || '',
         dates: item.leave_dates?.map(d => {
           const parsedDate = dayjs(d.leave_date);
@@ -87,6 +92,7 @@ const fetchLeaveApplications = async () => {
     console.error('Error during fetch:', err);
   }
 };
+
 
 
 watch([filterStatus, currentPage], fetchLeaveApplications);

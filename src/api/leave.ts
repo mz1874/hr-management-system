@@ -16,7 +16,7 @@ export function cancelLeaveRequest(id) {
 export function getLeaveRequests(
   page = 1,
   search = '',
-  options: { hrPage?: boolean; status?: string; departmentId?: number } = {}
+  options: { hrPage?: boolean; status?: string; departmentId?: number;year?: number; } = {}
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -24,7 +24,9 @@ export function getLeaveRequests(
     ...(options.hrPage ? { hr_page: 'true' } : {}),
     ...(options.status ? { status: options.status } : {}),
     ...(options.departmentId ? { department_id: String(options.departmentId) } : {}),
+    ...(options.year ? { year: String(options.year) } : {}) 
   });
+  
 
   return axios.get(`/api/leave-request/?${params}`);
 }
@@ -65,4 +67,19 @@ export function getLeaveTypes() {
 // Create a new leave type (Only HR)
 export function createLeaveType(payload) {
   return axios.post('/api/leave-types/', payload)
+}
+
+// Get current user's (or HR's selected user's) leave balance
+export function getLeaveBalance(options: { userId?: number; year?: number } = {}) {
+  const params = new URLSearchParams();
+
+  if (options.userId) {
+    params.append('user_id', String(options.userId));
+  }
+
+  if (options.year) {
+    params.append('year', String(options.year));
+  }
+
+  return axios.get(`/api/leave-request/leave-balance/?${params.toString()}`);
 }

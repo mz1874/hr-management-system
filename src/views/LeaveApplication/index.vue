@@ -13,11 +13,13 @@ import LeaveApplicationModal from '@/components/LeaveApplicationModal/index.vue'
 import LeaveApplicationDetailsModal from '@/components/LeaveApplicationModal/LeaveApplicationDetailsModal.vue'
 import { Modal } from "bootstrap";
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { getLeaveRequests, cancelLeaveRequest } from '@/api/leave'
+import { getLeaveRequests, cancelLeaveRequest,getLeaveBalance } from '@/api/leave'
 import { getCurrentUser } from '@/api/login';
 import type {LeaveApplication} from '@/interface/leaveApplication' 
 
-const usersById = ref<Record<number, { username: string, department: string | null }>>({});
+const currentYear = new Date().getFullYear();
+const selectedYear = ref(currentYear);
+const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 const currentPage = ref(1);
 const totalPages = ref(1);
@@ -93,6 +95,13 @@ const openApplicationDetails = (application: LeaveApplication) => {
 const currentUserId = ref<number | null>(null);
 const userLeaveInfo = ref({ annual: 0, medical: 0 });
 
+const onYearChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  selectedYear.value = parseInt(target.value, 10);
+  fetchLeaveApplications();  // now it will fetch based on new selected year
+};
+
+
 async function fetchLeaveApplications(page = 1) {
   currentPage.value = page;
 
@@ -108,18 +117,37 @@ async function fetchLeaveApplications(page = 1) {
   }
 
   try {
+    // Get current user
     const meRes = await getCurrentUser();
     const currentUser = meRes.data.data;
     currentUserId.value = currentUser.id;
-    userLeaveInfo.value.annual = currentUser.annual_leave || 0;
-    userLeaveInfo.value.medical = currentUser.medical_leave || 0;
 
-    // Fetch all stats for summary card (not filtered)
-    const summaryRes = await getLeaveRequests(1, '', {});
+    // Get  leave balance from backend
+    const balanceRes = await getLeaveBalance({ year: selectedYear.value });
+    const leaveList = balanceRes.data?.data || [];
+
+    userLeaveInfo.value.annual = 0;
+    userLeaveInfo.value.medical = 0;
+
+    for (const leave of leaveList) {
+      if (leave.code === 'AL') {
+        userLeaveInfo.value.annual = leave.remaining_days ?? 0;
+      } else if (leave.code === 'MC') {
+        userLeaveInfo.value.medical = leave.remaining_days ?? 0;
+      }
+    }
+
+    //  3. Get summary stats (not filtered)
+    const summaryRes = await getLeaveRequests(1, '', {
+      year: selectedYear.value
+    });
     allLeaveStats.value.pending = summaryRes.data?.data?.summary?.pending || 0;
 
-    // Fetch filtered results for table
-    const res = await getLeaveRequests(page, '', { status: statusParam });
+    // 4. Get filtered results (for current page and status)
+    const res = await getLeaveRequests(page, '', {
+      status: statusParam,
+      year: selectedYear.value
+    });
     const data = res.data?.data;
 
     if (!Array.isArray(data?.results)) throw new Error('Invalid API response');
@@ -154,6 +182,7 @@ async function fetchLeaveApplications(page = 1) {
   }
 }
 
+
 onMounted(() => {
   fetchLeaveApplications();
 });
@@ -164,10 +193,16 @@ const changePage = (page: number) => {
   }
 };
 
-watch(filterStatus, () => {
-  currentPage.value = 1;
-  fetchLeaveApplications(1);
-});
+watch(
+  filterStatus,
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      currentPage.value = 1;
+      fetchLeaveApplications(1);
+    }
+  }
+);
+
 
 const summaryStats = computed(() => ({
   pending: allLeaveStats.value.pending,
@@ -196,6 +231,8 @@ const pageNumbers = computed(() => {
 
   return range;
 });
+
+
 </script>
 
 <template>
@@ -259,6 +296,7 @@ const pageNumbers = computed(() => {
       </div>
     </div>
 
+
     <!-- Action Buttons and Filter -->
     <div class="d-flex justify-content-end align-items-center mb-3 gap-2">
       <!-- New Application Button -->
@@ -274,6 +312,11 @@ const pageNumbers = computed(() => {
         <option value="Cancelled">Cancelled</option>
         <option value="Approved">Approved</option>
       </select>
+
+      <select v-model="selectedYear" class="form-select w-auto" @change="onYearChange">
+        <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
+      </select>
+
     </div>
 
 
