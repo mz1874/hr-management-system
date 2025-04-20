@@ -16,6 +16,7 @@ import {
 import type  {LeaveApplication} from '@/interface/leaveApplicationManagement'
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import Swal from "sweetalert2";
 dayjs.extend(customParseFormat);
 
 const leaveTypeOptions = ref<{ id: number; name: string; description: string }[]>([]);
@@ -25,6 +26,17 @@ const totalPages = ref(1);
 const totalCount = ref(0);
 const filterStatus = ref('All');
 const selectedLeave = ref<LeaveApplication | null>(null);
+
+function toastSuccess(message: string) {
+  Swal.fire({
+    icon: 'success',
+    title: 'Success',
+    text: message,
+    timer: 2000,
+    showConfirmButton: false
+  });
+}
+
 
 const fetchLeaveTypes = async () => {
   try {
@@ -116,7 +128,7 @@ function mapStatus(code: string): string {
 const summaryStats = ref({ all: 0, pending: 0, approved: 0, rejected: 0 });
 
 
-const saveChanges = async () => {
+const saveChanges = async (newStatus?: 'Approved' | 'Reject', closeModal = false) => {
   if (!selectedLeave.value) return;
 
   const reverseStatusMap = {
@@ -134,7 +146,7 @@ const saveChanges = async () => {
   const updated = {
     id: selectedLeave.value.id,
     review_comment: selectedLeave.value.remarks,
-    status: reverseStatusMap[selectedLeave.value.status],
+    status: reverseStatusMap[newStatus || selectedLeave.value.status],
     leave_dates: selectedLeave.value.dates.map(d => ({
       id: d.id,
       leave_date: new Date(d.date).toISOString(),
@@ -145,52 +157,67 @@ const saveChanges = async () => {
 
   try {
     await reviewLeaveRequest(selectedLeave.value.id, updated);
-    selectedLeave.value.status = 'Approved';
+    toastSuccess("Leave request updated successfully!");
     await fetchLeaveApplications();
+
+    // Close modal 
+    if (closeModal && leaveDetailsModal.value) {
+      const modalInstance = Modal.getInstance(leaveDetailsModal.value);
+      modalInstance?.hide();
+    }
   } catch (e: any) {
-    console.error('Failed to update leave request:', e.response?.data || e);
+    const msg = e?.response?.data?.[0] || "Failed to update leave request.";
+    console.error('Failed to update leave request:', msg);
+    Swal.fire({
+      icon: 'error',
+      title: 'Update Failed',
+      text: msg,
+    });
   }
 };
 
+
 const approveSingle = async () => {
   if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    selectedLeave.value.remarks = "Approved by HR";
-    selectedLeave.value.status = 'Approved';
-    await saveChanges();
+    if (!selectedLeave.value.remarks?.trim()) {
+      selectedLeave.value.remarks = "Approved by HR";
+    }
+    await saveChanges('Approved', true);
   }
 };
 
 const rejectSingle = async () => {
   if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    selectedLeave.value.remarks = "Rejected by HR";
-    selectedLeave.value.status = 'Reject';
-    await saveChanges();
+    if (!selectedLeave.value.remarks?.trim()) {
+      selectedLeave.value.remarks = "Rejected by HR";
+    }
+    await saveChanges('Reject', true);
   }
 };
 
-const bulkApprove = () => {
-  leaveApplications.value.forEach(app => {
+
+const bulkApprove = async () => {
+  for (const app of leaveApplications.value) {
     if (app.selected && app.status === 'Pending') {
-      app.status = 'Approved';
       app.remarks = "Approved by HR";
       selectedLeave.value = app;
-      saveChanges();
+      await saveChanges('Approved');
     }
     app.selected = false;
-  });
+  }
 };
 
-const bulkReject = () => {
-  leaveApplications.value.forEach(app => {
+const bulkReject = async () => {
+  for (const app of leaveApplications.value) {
     if (app.selected && app.status === 'Pending') {
-      app.status = 'Reject';
       app.remarks = "Rejected by HR";
       selectedLeave.value = app;
-      saveChanges();
+      await saveChanges('Reject');
     }
     app.selected = false;
-  });
+  }
 };
+
 
 const formatDuration = (code: string) => {
   switch (code) {
@@ -205,7 +232,7 @@ const leaveDetailsModal = ref<HTMLElement | null>(null);
 
 const openDocument = () => {
   if (selectedLeave.value) {
-    const documentPath = `path/to/your/${selectedLeave.value.document}`;
+    const documentPath = `localhost8000/${selectedLeave.value.document}`;
     const fileExtension = selectedLeave.value.document.split('.').pop().toLowerCase();
     if (fileExtension === 'pdf') {
       window.open(documentPath, '_blank');
