@@ -7,6 +7,7 @@ import { getLeaveTypes, submitLeaveRequest } from '@/api/leave';
 import { getCurrentUser } from '@/api/login';
 import { uploadFile } from '@/api/file_upload';
 import type {ApplicationFormData, LeaveType } from '@/interface/leaveApplicationModal';
+import Swal from 'sweetalert2';
 
 const emit = defineEmits(['submit']);
 
@@ -117,7 +118,6 @@ const closeModal = () => {
     modalInstance.hide();
   }
 };
-
 const handleSubmit = async (event?: Event) => {
   if (event) event.preventDefault();
   if (isSubmitting.value) return;
@@ -177,20 +177,30 @@ const handleSubmit = async (event?: Event) => {
       }))
     };
 
-    console.log('Emitting submit with mapped:', mapped);
     emit('submit', mapped);
-    
-    // Just close the modal - don't reset the form here
-    // The form will be reset by the hidden.bs.modal event
     closeModal();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Submitted!',
+      text: 'Your leave request has been submitted successfully.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
   } catch (e: any) {
     console.error('Submit error:', e);
-    alert(e?.message || 'Submission failed.');
+    Swal.fire({
+      icon: 'error',
+      title: 'Submission Failed',
+      text: e?.message || 'Submission failed.',
+      confirmButtonText: 'OK',
+    });
   } finally {
     isSubmitting.value = false;
-    console.log('Finished submit logic');
   }
 };
+
 </script>
 
 <template>
