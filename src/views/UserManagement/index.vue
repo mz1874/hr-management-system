@@ -6,14 +6,24 @@ import {useDepartmentStore} from "@/stores/department.ts";
 import Swal from "sweetalert2";
 import {resetPassword as resPwd} from "@/api/staff.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
+import { getLeaveTypes,getLeaveBalance } from '@/api/leave.ts';
+import { createStaff } from '@/api/staff.ts';
+
+
+
+const leaveTypes = ref<{ id: number, name: string, description: string }[]>([]);
+const leaveEntitlements = ref<{ [key: string]: number }>({});
 
 const departmentStore = useDepartmentStore();
 
-onMounted(() => {
+
+onMounted(async () => {
   departmentStore.fetchDepartments();
-})
+  const res = await getLeaveTypes();
+  console.log("Leave Types API Response:", res.data); // ← check this
 
-
+  leaveTypes.value = res.data.data.results;
+});
 const {
   staffData,
   search,
@@ -48,10 +58,8 @@ const selectedStaff = ref<Staff>({
   imgUrl:'',
   status: false,
   employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
-  numberOfLeaves: 0,
-  medicalLeaves: 0,
-  annualLeaves: 0,
-  totalPoints: 0
+  totalPoints: 0,
+  role_names : []
 })
 
 
@@ -72,27 +80,71 @@ const openAddStaffModal = () => {
     dateOfBirth: '',
     department_name: '',
     role: '',
+    role_names:[],
     department: selectedDepartment.value,
     status: false,
     imgUrl:'',
     employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
-    numberOfLeaves: 0,
-    medicalLeaves: 0,
-    annualLeaves: 0,
     totalPoints: 0
   }
+  if (Array.isArray(leaveTypes.value)) {
+    leaveEntitlements.value = {};
+    leaveTypes.value.forEach(type => {
+      leaveEntitlements.value[type.name] = 0;
+    });
+  } else {
+    console.warn("leaveTypes.value is not ready:", leaveTypes.value);
+  }
+
   showAddStaffModal.value = true
 }
 
-const openViewStaffModal = (staff: Staff) => {
-  selectedStaff.value = {...staff}
-  showViewStaffModal.value = true
-}
+const openViewStaffModal = async (staff: Staff) => {
+  selectedStaff.value = { ...staff };
 
-const openEditStaffModal = (staff: Staff) => {
-  selectedStaff.value = {...staff}
-  showEditStaffModal.value = true
-}
+  try {
+    const res = await getLeaveBalance({ userId: staff.id });
+    if (res.status === 200) {
+      selectedStaff.value.leaveBalances = res.data.data.map((item: any) => ({
+        type: item.type,
+        code: item.code,
+        year: item.year,
+        totalDays: item.total_days,
+        usedDays: item.used_days,
+        remainingDays: item.remaining_days,
+      }));
+    }
+  } catch (err) {
+    console.error("Failed to load leave balance", err);
+  }
+
+  console.log('Opening View Staff modal for:', staff);
+  showViewStaffModal.value = true;
+};
+
+
+const openEditStaffModal = async (staff: Staff) => {
+  selectedStaff.value = { ...staff };
+
+  try {
+    const res = await getLeaveBalance({ userId: staff.id });
+    if (res.status === 200) {
+      selectedStaff.value.leaveBalances = res.data.data.map((item: any) => ({
+        type: item.type,
+        code: item.code,
+        year: item.year,
+        totalDays: item.total_days,
+        usedDays: item.used_days,
+        remainingDays: item.remaining_days,
+      }));
+    }
+  } catch (err) {
+    console.error("Failed to load leave balances", err);
+  }
+
+  showEditStaffModal.value = true;
+};
+
 
 const openDeleteStaffModal = (staff: Staff) => {
   selectedStaff.value = staff
@@ -100,10 +152,50 @@ const openDeleteStaffModal = (staff: Staff) => {
   showDeleteStaffModal.value = true
 }
 
-const addStaff = () => {
-  staffData.results.push({...selectedStaff.value})
-  showAddStaffModal.value = false
-}
+const addStaff = async () => {
+  const payload = {
+    username: selectedStaff.value.name,
+    password: "default123",
+    date_of_birth: selectedStaff.value.dateOfBirth,
+    employment_time: selectedStaff.value.employmentDate,
+    status: selectedStaff.value.status,
+    department: selectedStaff.value.department,
+    total_point: selectedStaff.value.totalPoints,
+    roles: [], // add role logic here if needed
+    leave_entitlements: Object.entries(leaveEntitlements.value).map(([code, days]) => ({
+      code,
+      days
+    }))
+  };
+
+  try {
+    const res = await createStaff(payload);
+    if (isSuccess(res.status)) {
+      await fetchAllStaffs();
+      Swal.fire("Success", "Staff created successfully!", "success");
+      showAddStaffModal.value = false;
+    }
+  } catch (err: any) {
+    let message = "Failed to create staff";
+
+    // Detect if it's a Django duplicate username error
+    if (err.response?.status === 500 && err.response?.data?.includes("Duplicate entry")) {
+      message = "A user with that username already exists. Please choose another name.";
+    } else if (err.response?.data?.message) {
+      // check if there's any readable error message
+      message = err.response.data.message;
+    }
+
+    Swal.fire({
+      icon: "error",
+      title: "Creation Failed",
+      text: message,
+    });
+
+    console.error("Staff creation error:", err);
+  }
+};
+
 
 const saveEditedStaff = () => {
   const index = staffData.results.findIndex(staff => staff.id === selectedStaff.value.id)
@@ -158,6 +250,9 @@ function resetPassword(staff: Staff) {
     }
   });
 }
+
+
+
 </script>
 
 <template>
@@ -205,7 +300,6 @@ function resetPassword(staff: Staff) {
               <th>Department</th>
               <th>Status</th>
               <th>Employment Date</th>
-              <th>No of Leaves</th> <!-- Add new column header -->
               <th>Actions</th>
             </tr>
             </thead>
@@ -226,7 +320,6 @@ function resetPassword(staff: Staff) {
                   </span>
               </td>
               <td>{{ staff.employmentDate }}</td>
-              <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
                 <button @click="resetPassword(staff)" class="btn btn-secondary btn-sm">reset</button>
@@ -377,29 +470,25 @@ function resetPassword(staff: Staff) {
           </div>
           <div class="mb-3">
             <label for="staffDepartment" class="form-label">Department</label>
-            <select
-                v-model="selectedStaff.department"
-                class="form-select"
-                id="staffDepartment"
-            >
-              <option>Sales Department</option>
-              <option>Marketing Department</option>
-              <option>Human Resources</option>
-              <option>Finance Department</option>
-              <option>IT Department</option>
-              <option>Operations</option>
+            <select v-model="selectedStaff.department" class="form-select" id="staffDepartment">
+              <option disabled value="">Please select a department</option>
+              <option
+                v-for="dept in departmentStore.flatDepartmentList"
+                :key="dept.id"
+                :value="dept.id"
+              >
+                {{ dept.department_name }}
+              </option>
             </select>
+
           </div>
           <div class="mb-3">
             <label for="staffStatus" class="form-label">Status</label>
-            <select
-                v-model="selectedStaff.status"
-                class="form-select"
-                id="staffStatus"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+            <select v-model="selectedStaff.status" class="form-select" id="staffStatus">
+              <option :value="true">Active</option>
+              <option :value="false">Inactive</option>
             </select>
+
           </div>
           <div class="mb-3">
             <label class="form-label">Employment Date</label>
@@ -409,6 +498,23 @@ function resetPassword(staff: Staff) {
                 class="form-control"
             >
           </div>
+          <div
+            class="mb-3"
+            v-for="type in leaveTypes.filter(t => ['AL', 'MC'].includes(t.name))"
+            :key="type.name"
+          >
+            <label class="form-label">{{ type.description }} Entitlement</label>
+            <input
+              v-model.number="leaveEntitlements[type.name]"
+              type="number"
+              min="0"
+              class="form-control"
+              :placeholder="`e.g., 10`"
+            >
+          </div> 
+
+
+
         </div>
         <div class="modal-footer">
           <button
@@ -453,18 +559,36 @@ function resetPassword(staff: Staff) {
             >
           </div>
           <p><strong>Date of Birth:</strong> {{ selectedStaff.dateOfBirth }}</p>
-          <p><strong>Role:</strong> {{ selectedStaff.role }}</p>
+          <p><strong>Role:</strong>
+            <span v-if="selectedStaff.role_names && selectedStaff.role_names.length">
+              {{ selectedStaff.role_names.join(', ') }}
+            </span>
+            <span v-else>N/A</span>
+          </p>
           <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
-          <p><strong>Status:</strong> {{ selectedStaff.status }}</p>
+          <p><strong>Status:</strong> {{ selectedStaff.status ? 'Active' : 'Inactive' }}</p>
           <p><strong>Employment Date:</strong> {{ selectedStaff.employmentDate }}</p>
           <p v-if="selectedStaff.resignationDate">
             <strong>Resignation Date:</strong> {{ selectedStaff.resignationDate }}
           </p>
-          <div class="leaves-info">
-            <p><strong>Total Leaves:</strong> {{ selectedStaff.numberOfLeaves }}</p>
-            <p class="ms-3"><strong>Medical Leaves:</strong> {{ selectedStaff.medicalLeaves }}</p>
-            <p class="ms-3"><strong>Annual Leaves:</strong> {{ selectedStaff.annualLeaves }}</p>
+          <div class="leaves-info" v-if="selectedStaff.leaveBalances && selectedStaff.leaveBalances.length">
+            <p><strong>Leave Balances:</strong></p>
+            <ul class="ms-3">
+              <li v-for="leave in selectedStaff.leaveBalances" :key="leave.code">
+                <template v-if="['AL', 'MC'].includes(leave.code)">
+                  {{ leave.type }} ({{ leave.code }}): {{ leave.remainingDays }} remaining / {{ leave.totalDays }} total
+                </template>
+                <template v-else>
+                  {{ leave.type }} ({{ leave.code }}): {{ leave.usedDays }} used
+                </template>
+              </li>
+            </ul>
           </div>
+
+
+
+
+
         </div>
         <div class="modal-footer">
           <button
@@ -570,7 +694,23 @@ function resetPassword(staff: Staff) {
                 disabled
             >
           </div>
+          <div
+            class="mb-3"
+            v-for="leave in selectedStaff.leaveBalances?.filter(l => ['AL', 'MC'].includes(l.code))"
+            :key="leave.code"
+          >
+            <label class="form-label">{{ leave.type }} ({{ leave.code }}) Entitlement</label>
+            <input
+              type="number"
+              class="form-control"
+              v-model.number="leave.totalDays"
+              :min="0"
+              :placeholder="`e.g. 10`"
+            />
+          </div>
         </div>
+        
+
         <div class="modal-footer">
           <button
               type="button"
@@ -628,6 +768,22 @@ function resetPassword(staff: Staff) {
 </template>
 
 <style scoped>
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh; /* Viewport height cap */
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+  flex: 1 1 auto; /* Make this section take remaining height */
+}
+
 .search-container .input-group-text {
   background: white;
   border-right: none;

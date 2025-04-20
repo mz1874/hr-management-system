@@ -1,5 +1,11 @@
 import axios from './axios'
 
+//create staff
+export function createStaff(payload: any): any {
+    return axios.post('/api/staff/', payload);
+}
+
+
 export function selectAllStaffs(page: number = 1) {
     return axios.get('/api/staff/?page=' + page);
 }
