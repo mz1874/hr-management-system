@@ -38,15 +38,19 @@
 
       <!-- Department Filter -->
       <div class="d-flex justify-content-center my-3">
-        <select v-model="selectedDepartment" class="form-select mx-2" style="width: 150px;" @change="handleDepartmentChange">
+        <select v-model="selectedDepartment" class="form-select mx-2" style="width: 150px;"
+          @change="handleDepartmentChange">
           <option v-for="dept in departments" :key="dept.id" :value="dept">
             {{ dept.department_name }}
           </option>
         </select>
         <!-- Month Filter -->
         <select v-model="selectedMonth" class="form-select mx-2" style="width: 150px;">
-          <option v-for="month in months" :key="month" :value="month">{{ month }}</option>
+          <option v-for="(month, idx) in months" :key="idx" :value="idx + 1">
+            {{ month }}
+          </option>
         </select>
+
       </div>
 
       <!-- Chart Section -->
@@ -69,7 +73,7 @@ let chartInstance: Chart | null = null;
 
 const departments = ref<any[]>([]);
 const selectedDepartment = ref<any>({});
-const selectedMonth = ref('January');
+const selectedMonth = ref<number>(1);
 const selectedStatus = ref('');  // Initialize selectedStatus here
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -98,7 +102,7 @@ const fetchKpis = () => {
     status: selectedStatus.value,  // Ensure the selected status is passed in the request
     month: selectedMonth.value,
   };
-  
+
   console.log("Fetching KPI data with params:", params);
 
   selectAllKpis(params).then((res) => {
@@ -129,8 +133,8 @@ const updateChart = () => {
 
 onMounted(() => {
   // Fetch initial departments
-  fetchDepartments();
-  
+
+
   // Initialize Chart.js with default data
   if (chartCanvas.value) {
     chartInstance = new Chart(chartCanvas.value, {
@@ -150,7 +154,7 @@ onMounted(() => {
   }
 
   // Fetch KPIs after chart initialization
-  fetchKpis();
+  fetchDepartments();
 });
 
 watch([selectedDepartment, selectedMonth, selectedStatus], fetchKpis);
