@@ -95,7 +95,6 @@ async function submitData() {
       const dynamicRoutes = mapBackendRoutes(backendRoutes);
 
 
-      // 2️⃣ 注册到 Home 子路由
       const homeRoute = router.getRoutes().find(r => r.name === 'home');
       console.log(homeRoute, "Home 路由");
       console.log(dynamicRoutes, "后端响应的路由");
@@ -103,11 +102,11 @@ async function submitData() {
 
       if (homeRoute) {
         dynamicRoutes.forEach(r => {
-          console.log(r);
           router.addRoute('home', r); // ✅ 正确注册
         });
       }
-      console.log(router.getRoutes());
+
+      console.log(router.getRoutes(), "注册进系统的所有路由");
       Swal.fire({
         position: "top-end",
         icon: "success",

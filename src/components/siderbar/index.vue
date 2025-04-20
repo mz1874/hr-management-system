@@ -1,103 +1,70 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { getUserRoutes } from '@/api/Router.ts';
+import {ref, onMounted} from 'vue';
+import {getUserRoutes} from '@/api/Router.ts';
 
-// 静态菜单
-const navItems = reactive([
-]);
+const menuTree = ref([]);
+const expandedMenus = ref<Record<string, boolean>>({});
 
-// 子菜单容器
-const rewardSubmenu = ref([]);
-const evaluationCenter = ref([]);
-const systemSubmenu = ref([]);
-
-// 展开状态
-const showRewardSubmenu = ref(false);
-const showSystemSubmenu = ref(false);
-const showEvaluationCenter = ref(false);
-
-const toggleRewardSubmenu = () => {
-  showRewardSubmenu.value = !showRewardSubmenu.value;
+const toggleMenu = (name: string) => {
+  expandedMenus.value[name] = !expandedMenus.value[name];
 };
 
-const toggleEvaluationCenter = () => {
-  showEvaluationCenter.value = !showEvaluationCenter.value;
-};
-
-const toggleSystemSubmenu = () => {
-  showSystemSubmenu.value = !showSystemSubmenu.value;
+const buildMenuTree = (routes) => {
+  return routes.map(route => ({
+    name: route.name,
+    code: route.code,
+    link: route.path ? '/' + 'home/' + route.path : null,
+    children: route.children?.length ? buildMenuTree(route.children) : []
+  }));
 };
 
 onMounted(async () => {
   try {
     const res = await getUserRoutes();
     const routes = res.data?.data || [];
-
-    routes.forEach(route => {
-      if (route.path) {
-        navItems.push({
-          name: route.meta?.title || route.code,
-          link: route.path
-        });
-      } else {
-      //   不需要处理
-      }
-    });
-
-
-    console.log("后端菜单结构：", routes);
+    menuTree.value = buildMenuTree(routes);
   } catch (err) {
     console.error("获取菜单失败：", err);
   }
 });
 </script>
-
 <template>
   <nav class="sidebar col-auto">
     <div class="logo-container">
-      <img src="/logo.png" alt="ROWY Hardware" class="logo-img">
+      <img src="/logo.png" alt="ROWY Hardware" class="logo-img"/>
     </div>
 
-    <!-- 普通导航项 -->
-    <router-link v-for="item in navItems" :key="item.name" :to="item.link" class="nav-item">
-      {{ item.name }}
-    </router-link>
+    <template v-for="item in menuTree" :key="item.name">
+      <!-- 如果有子菜单 -->
+      <div v-if="item.children && item.children.length">
+        <a href="#" class="nav-item" @click.prevent="toggleMenu(item.name)">
+          {{ item.name }}
+          <span class="arrow-icon">{{ expandedMenus[item.name] ? '▲' : '▼' }}</span>
+        </a>
+        <div v-if="expandedMenus[item.name]" class="submenu">
+          <router-link
+              v-for="sub in item.children"
+              :key="sub.name"
+              :to="sub.link"
+              class="nav-item sub-item"
+          >
+            {{ sub.name }}
+          </router-link>
+        </div>
+      </div>
 
-    <!-- Reward Administration -->
-    <a href="#" class="nav-item" @click.prevent="toggleRewardSubmenu">
-      Reward Administration
-      <span class="arrow-icon">{{ showRewardSubmenu ? '▲' : '▼' }}</span>
-    </a>
-    <div v-if="showRewardSubmenu" class="submenu">
-      <router-link v-for="sub in rewardSubmenu" :key="sub.name" :to="sub.link" class="nav-item sub-item">
-        {{ sub.name }}
+      <!-- 普通一级导航 -->
+      <router-link
+          v-else
+          :to="item.link"
+          class="nav-item"
+      >
+        {{ item.name }}
       </router-link>
-    </div>
-
-
-    <!-- Evaluation center -->
-    <a href="#" class="nav-item" @click.prevent="toggleEvaluationCenter">
-      Evaluation center
-      <span class="arrow-icon">{{ showEvaluationCenter ? '▲' : '▼' }}</span>
-    </a>
-    <div v-if="showEvaluationCenter" class="submenu">
-      <router-link v-for="sub in evaluationCenter" :key="sub.name" :to="sub.link" class="nav-item sub-item">
-        {{ sub.name }}
-      </router-link>
-    </div>
-
-    <!-- System Management -->
-    <a href="#" class="nav-item" @click.prevent="toggleSystemSubmenu">
-      System Management
-      <span class="arrow-icon">{{ showSystemSubmenu ? '▲' : '▼' }}</span>
-    </a>
-    <div v-if="showSystemSubmenu" class="submenu">
-      <router-link v-for="sub in systemSubmenu" :key="sub.name" :to="sub.link" class="nav-item sub-item">
-        {{ sub.name }}
-      </router-link>
-    </div>
+    </template>
   </nav>
 </template>
+
 
 <style scoped>
 /* General Layout */
