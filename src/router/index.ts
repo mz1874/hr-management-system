@@ -1,8 +1,8 @@
 import {createRouter, createWebHashHistory, type RouteRecordRaw} from 'vue-router';
 import Login from '@/views/Login/Index.vue';
 import HomeView from '@/views/HomeView/Index.vue';
-import {mapBackendRoutes} from './asyncRoutes';
-import axios from 'axios';
+import {getUserRoutes} from "@/api/Router.ts";
+import {mapBackendRoutes} from "@/router/asyncRoutes.ts";
 
 const staticRoutes: RouteRecordRaw[]  = [
     {
@@ -28,19 +28,31 @@ const router = createRouter({
 });
 
 
+let dynamicRoutesLoaded = false;
+
 router.beforeEach(async (to, from, next) => {
     const isAuthenticated = localStorage.getItem('access_token');
-
     if (to.name === 'login') {
         return next();
     }
-
     if (!isAuthenticated) {
         return next({ name: 'login' });
+    }
+    if (!dynamicRoutesLoaded) {
+        const res = await getUserRoutes();
+        const backendRoutes = res.data?.data;
+        const dynamicRoutes = mapBackendRoutes(backendRoutes);
+
+        dynamicRoutes.forEach(r => {
+            router.addRoute('home', r);
+        });
+        dynamicRoutesLoaded = true;
+        return next({ ...to, replace: true });
     }
 
     next();
 });
+
 
 
 
