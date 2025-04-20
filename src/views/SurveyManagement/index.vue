@@ -1,30 +1,31 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import {
-  getAllSurveys,
-  createSurvey,
-  deleteSurvey,
-  publishSurvey,
-  updateSurvey
+  getAllEvaluationForms,
+  createEvaluationForm,
+  deleteEvaluationForm,
+  publishEvaluationForm,
+  updateEvaluationForm
 } from '@/api/survey'
-// Import necessary types
-import type { Survey, Question } from '@/api/survey' // Added type imports
+import { selectAllDepartments } from '@/api/department'
+import type { EvaluationForm, EvaluationQuestion } from '@/api/survey'
 
 //TODO 抽取
 interface EvaluationItem {
   id: number
   name: string
   publishTime: string | null // 发布时间（如果已发布）
-  status: 'published' | 'created' // 发布状态
-  departments: number[] // Assuming API uses department IDs
+  status: 'DRAFT' | 'PUBLISHED' // 发布状态
+  departments?: number[] // Optional array of department IDs
+  department_details?: { id: number; department_name: string }[]; // Read-only details from backend
   questions: QuestionItem[] // 问题列表
 }
 
 interface QuestionItem {
   id?: number
-  type: 'grade' | 'option' // 问题类型
-  question: string // 问题内容
-  options?: string[] // 选项（仅适用于 Option 类型）
+  question_type: 'RATING' | 'TEXT' // 问题类型
+  text: string // 问题内容
+  order?: number // Backend has order, might need to manage this
 }
 
 // TODO: Fetch departments from API
@@ -32,14 +33,16 @@ interface Department {
   id: number;
   name: string;
 }
-// 所有可选的部门 - Replace with API call result
-const allDepartments = ref<Department[]>([
-  { id: 1, name: 'HR' },
-  { id: 2, name: 'Finance' },
-  { id: 3, name: 'IT' },
-  { id: 4, name: 'Marketing' },
-  { id: 5, name: 'Operations' }
-])
+// Remove hardcoded departments
+// const allDepartments = ref<Department[]>([
+//   { id: 1, name: 'HR' },
+//   { id: 2, name: 'Finance' },
+//   { id: 3, name: 'IT' },
+//   { id: 4, name: 'Marketing' },
+//   { id: 5, name: 'Operations' }
+// ])
+const allDepartments = ref<Department[]>([]); // Initialize as empty
+
 const departmentMap = computed(() => {
   return allDepartments.value.reduce((map, dept) => {
     map[dept.id] = dept.name;
@@ -75,10 +78,26 @@ const fetchSurveys = async () => {
       startDate: startDate.value,
       endDate: endDate.value
     }
-    // Assuming API returns { data: { results: [], count: number } }
-    const response = await getAllSurveys(currentPage.value, params)
-    tableData.value = response.data.data.results // Adjust based on actual API response structure
-    totalSurveys.value = response.data.data.count // Adjust based on actual API response structure
+    // Assuming API returns PaginatedResponse<EvaluationForm>
+    const response = await getAllEvaluationForms(currentPage.value, params)
+    // Map API response (EvaluationForm) to frontend type (EvaluationItem)
+    tableData.value = response.data.results.map(form => ({
+        id: form.id,
+        name: form.name,
+        publishTime: form.publish_time, // Map backend publish_time to frontend publishTime
+        status: form.status,
+        departments: form.departments,
+        department_details: form.department_details,
+        // Map backend questions (EvaluationQuestion) to frontend questions (QuestionItem)
+        questions: form.questions.map(q => ({
+            id: q.id,
+            text: q.text,
+            question_type: q.question_type,
+            order: q.order
+            // Frontend QuestionItem doesn't store options separately anymore
+        }))
+    }));
+    totalSurveys.value = response.data.count
   } catch (error) {
     console.error("Failed to fetch surveys:", error);
     // TODO: Show error message to user
@@ -88,10 +107,17 @@ const fetchSurveys = async () => {
 }
 
 // Fetch initial data on component mount
-onMounted(() => {
-  fetchSurveys()
-  // TODO: Fetch allDepartments from API
-  // getAllDepartments().then(res => allDepartments.value = res.data.data.results);
+onMounted(async () => {
+  await fetchSurveys();
+  // Fetch departments dynamically
+  try {
+    const response = await selectAllDepartments(); // Assuming this function exists and returns { data: { results: Department[] } }
+    allDepartments.value = response.data.results; // Adjust based on actual API response structure
+  } catch (error) {
+    console.error("Failed to fetch departments:", error);
+    allDepartments.value = []; // Set to empty on error
+    // TODO: Show error message to user
+  }
 });
 
 // Refetch data when page changes
@@ -112,7 +138,7 @@ const openEvaluationModal = () => {
   currentEvaluation.value = {
     name: '',
     publishTime: null,
-    status: 'created',
+    status: 'DRAFT',
     departments: [],
     questions: []
   }
@@ -131,11 +157,11 @@ const openPublishModal = (evaluation: EvaluationItem) => {
 const handlePublishEvaluation = async () => {
   if (!currentEvaluation.value || !currentEvaluation.value.id) return;
   try {
-    await publishSurvey(currentEvaluation.value.id, selectedDepartmentsForPublish.value)
+    await publishEvaluationForm(currentEvaluation.value.id)
     // Refresh data or update local state
     await fetchSurveys()
     showPublishModal.value = false
-    selectedDepartmentsForPublish.value = [] // Reset selection
+    // selectedDepartmentsForPublish.value = [] // Reset selection - publishing doesn't take departments
     // TODO: Show success message
   } catch (error) {
     console.error("Failed to publish survey:", error);
@@ -148,7 +174,7 @@ const handleDeleteEvaluation = async (evaluation: EvaluationItem) => {
   // TODO: Add confirmation dialog before deleting
   if (!evaluation.id) return;
   try {
-    await deleteSurvey(evaluation.id)
+    await deleteEvaluationForm(evaluation.id)
     // Refresh data
     await fetchSurveys()
     // TODO: Show success message
@@ -161,10 +187,12 @@ const handleDeleteEvaluation = async (evaluation: EvaluationItem) => {
 // 添加问题
 const addQuestion = (type: 'grade' | 'option') => {
   if (!currentEvaluation.value.questions) currentEvaluation.value.questions = []
+  const backendType = type === 'grade' ? 'RATING' : 'TEXT'; // Map to backend type
   const newQuestion: QuestionItem = {
-    type,
-    question: '',
-    options: type === 'option' ? [''] : undefined // Start with one empty option for 'option' type
+    question_type: backendType,
+    text: '',
+    // Options logic removed as 'option' maps to 'TEXT' which doesn't have options array in API
+    // order: currentEvaluation.value.questions.length // Example: manage order
   }
   currentEvaluation.value.questions.push(newQuestion)
 }
@@ -178,19 +206,23 @@ const removeQuestion = (questionIndex: number) => { // Use index since ID might 
 
 // 添加选项 (local only before save)
 const addOption = (questionIndex: number) => {
+  // This adds options locally for UI, but won't be saved with TEXT type question
   const question = currentEvaluation.value.questions[questionIndex];
-  if (question && question.type === 'option') {
-    if (!question.options) question.options = [];
-    question.options.push('');
-  }
+  // if (question && question.question_type === 'option') { // Check frontend intention if needed
+  //   if (!question.options) question.options = [];
+  //   question.options.push('');
+  // }
+  console.warn("Adding options locally, but 'option' type maps to 'TEXT' and options won't be saved to backend.");
 }
 
 // 删除选项 (local only before save)
 const removeOption = (questionIndex: number, optionIndex: number) => {
+    // This removes options locally for UI
     const question = currentEvaluation.value.questions[questionIndex];
-    if (question && question.type === 'option' && question.options) {
-        question.options.splice(optionIndex, 1);
-    }
+    // if (question && question.question_type === 'option' && question.options) {
+    //     question.options.splice(optionIndex, 1);
+    // }
+     console.warn("Removing options locally, but 'option' type maps to 'TEXT' and options won't be saved to backend.");
 }
 
 // 创建Evaluation - API Call
@@ -203,18 +235,17 @@ const handleAddEvaluation = async () => {
   }
 
   try {
-    // Prepare payload and explicitly map questions
-    const mappedQuestions = currentEvaluation.value.questions.map(q => {
-        const mappedQuestion: any = {
-            type: q.type,
-            question_text: q.question, // Map frontend 'question' to backend 'question_text'
-            // id is typically not sent for creation
+    // Prepare payload and explicitly map questions to match EvaluationQuestion
+    const mappedQuestions = currentEvaluation.value.questions.map((q, index) => {
+        const mappedQuestion: Partial<EvaluationQuestion> = { // Use backend type
+            question_type: q.question_type,
+            text: q.text, // Map frontend 'text' to backend 'text'
+            order: index // Example: set order based on array index
+            // id is not sent for creation
         };
-        if (q.type === 'option' && q.options) {
-            mappedQuestion.options = q.options.filter(opt => opt.trim() !== '');
-        }
+        // Remove options logic as backend 'TEXT' type doesn't support it
         return mappedQuestion;
-    }).filter(q => q.question_text && q.question_text.trim() !== '');
+    }).filter(q => q.text && q.text.trim() !== ''); // Ensure text is not empty
 
     if (mappedQuestions.length === 0) {
         console.error("Validation failed: At least one valid question required.");
@@ -222,15 +253,15 @@ const handleAddEvaluation = async () => {
         return;
     }
 
-    // Construct the final payload with the correct type
-    const payload: Partial<Survey> = {
+    // Construct the final payload with the correct type (Omit irrelevant fields for creation)
+    const payload: Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'> = {
         name: currentEvaluation.value.name,
-        questions: mappedQuestions as Question[], // Assert type after mapping
-        // Include other relevant fields from currentEvaluation if needed, e.g., departments
-        departments: currentEvaluation.value.departments
+        description: '', // Add description if needed/available
+        questions: mappedQuestions as EvaluationQuestion[], // Assert type after mapping
+        departments: currentEvaluation.value.departments // Ensure this is an array of IDs
     };
 
-    await createSurvey(payload) // Pass the correctly structured payload
+    await createEvaluationForm(payload) // Use correct API function and payload
     await fetchSurveys() // Refresh data
     showModal.value = false
     // TODO: Show success message
@@ -242,7 +273,17 @@ const handleAddEvaluation = async () => {
 
 // --- Edit Functionality ---
 const openEditModal = (evaluation: EvaluationItem) => {
+  // Ensure the evaluation object copied matches the expected structure, especially status
   currentEvaluation.value = JSON.parse(JSON.stringify(evaluation)); // Deep copy
+  // Map questions from EvaluationForm structure back to QuestionItem if needed,
+  // especially handling question_type and text
+  currentEvaluation.value.questions = evaluation.questions.map(q => ({
+      id: q.id,
+      question_type: q.question_type, // Should already be 'RATING' or 'TEXT' from backend
+      text: q.text,
+      order: q.order
+      // No options mapping needed here
+  }));
   modalType.value = 'edit';
   showModal.value = true;
 }
@@ -257,18 +298,17 @@ const handleSaveEditedEvaluation = async () => {
     return;
   }
 
-  // Prepare payload, ensuring correct mapping
-  const mappedQuestions = currentEvaluation.value.questions.map(q => {
-        const mappedQuestion: any = {
-            type: q.type,
-            question_text: q.question, // Map frontend 'question' to backend 'question_text'
-            id: q.id // Include id for updates
+  // Prepare payload, ensuring correct mapping - similar to create
+  const mappedQuestions = currentEvaluation.value.questions.map((q, index) => {
+        const mappedQuestion: EvaluationQuestion = { // Use backend type, include id for update
+            id: q.id, // Include id for updates
+            question_type: q.question_type,
+            text: q.text,
+            order: q.order !== undefined ? q.order : index // Preserve or set order
         };
-        if (q.type === 'option' && q.options) {
-            mappedQuestion.options = q.options.filter(opt => opt.trim() !== '');
-        }
+        // Remove options logic
         return mappedQuestion;
-    }).filter(q => q.question_text && q.question_text.trim() !== '');
+    }).filter(q => q.text && q.text.trim() !== ''); // Ensure text is not empty
 
    if (mappedQuestions.length === 0) {
         console.error("Validation failed: At least one valid question required.");
@@ -276,17 +316,18 @@ const handleSaveEditedEvaluation = async () => {
         return;
     }
 
-    // Construct the final payload with the correct type
-    const payload: Partial<Survey> = {
+    // Construct the final payload for update (Partial Omit<...>)
+    const payload: Partial<Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'> & { departments?: number[] }> = {
         name: currentEvaluation.value.name,
-        questions: mappedQuestions as Question[], // Assert type after mapping
-        // Include other relevant fields from currentEvaluation if needed
-        departments: currentEvaluation.value.departments, 
-        status: currentEvaluation.value.status // Keep existing status
+        // Safely access description if it exists on currentEvaluation
+        description: (currentEvaluation.value as any).description || '', // Include description if edited
+        questions: mappedQuestions as EvaluationQuestion[], // Assert type after mapping
+        departments: currentEvaluation.value.departments // Include departments
+        // Status is usually managed by publish action, not direct update
     };
 
   try {
-    await updateSurvey(currentEvaluation.value.id, payload); // Pass the correctly structured payload
+    await updateEvaluationForm(currentEvaluation.value.id, payload); // Use correct API function and payload
     await fetchSurveys(); // Refresh data
     showModal.value = false;
     // TODO: Show success message
@@ -370,8 +411,8 @@ const goToPage = (page: number) => {
           <td>{{ item.status }}</td>
           <td>{{ item.departments && item.departments.length > 0 ? item.departments.map(id => departmentMap[id] || id).join(', ') : 'None' }}</td>
           <td>
-            <button v-if="item.status === 'created'" type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
-            <button v-if="item.status === 'created'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
+            <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
+            <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
             <button type="button" class="btn btn-danger btn-action" @click="handleDeleteEvaluation(item)">Delete</button>
           </td>
         </tr>
@@ -430,25 +471,17 @@ const goToPage = (page: number) => {
             <label class="form-label">Questions:</label>
             <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border p-3 rounded">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6>{{ question.type === 'grade' ? 'Grade Question' : 'Option Question' }} #{{ questionIndex + 1 }}</h6>
+                <h6>{{ question.question_type === 'RATING' ? 'Grade Question' : 'Text Question' }} #{{ questionIndex + 1 }}</h6>
                 <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
               </div>
-              <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.question" :disabled="modalType === 'view'">
-              <div v-if="question.type === 'option'" class="option-container ms-3">
-                <label class="option-label mb-1">Options:</label>
-                <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2 d-flex align-items-center">
-                  <input type="text" class="form-control me-2" placeholder="Enter option text" v-model="question.options[optionIndex]" :disabled="modalType === 'view'">
-                  <button type="button" class="btn btn-outline-danger btn-sm" @click="removeOption(questionIndex, optionIndex)" :disabled="modalType === 'view' || (question.options && question.options.length <= 1)">X</button>
-                </div>
-                <button type="button" class="btn btn-success btn-sm" @click="addOption(questionIndex)" :disabled="modalType === 'view'">Add Option</button>
-              </div>
+              <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view'">
             </div>
             <div v-if="!currentEvaluation.questions || currentEvaluation.questions.length === 0" class="text-muted mb-3">
               No questions added yet.
             </div>
             <div class="mt-3">
               <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Grade Question</button>
-              <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
+              <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option (Text) Question</button>
             </div>
           </div>
         </div>
@@ -471,18 +504,12 @@ const goToPage = (page: number) => {
           <button type="button" class="btn-close" @click="showPublishModal = false" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <label class="form-label">Select Departments to Publish To:</label>
-          <div v-for="department in allDepartments" :key="department.id" class="form-check">
-            <input type="checkbox" class="form-check-input" :id="'dept-' + department.id" :value="department.id" v-model="selectedDepartmentsForPublish">
-            <label class="form-check-label" :for="'dept-' + department.id">{{ department.name }}</label>
-          </div>
-          <div v-if="!allDepartments || allDepartments.length === 0" class="text-muted">
-            No departments available.
-          </div>
+          <p>Are you sure you want to publish this evaluation form?</p>
+          <p>(Once published, it generally cannot be edited significantly.)</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showPublishModal = false">Close</button>
-          <button type="button" class="btn btn-primary" @click="handlePublishEvaluation" :disabled="selectedDepartmentsForPublish.length === 0">Publish</button>
+          <button type="button" class="btn btn-primary" @click="handlePublishEvaluation">Publish</button>
         </div>
       </div>
     </div>

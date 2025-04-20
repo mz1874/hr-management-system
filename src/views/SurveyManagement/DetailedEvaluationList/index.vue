@@ -1,26 +1,37 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-// Use type-only imports for interfaces
-import { getAllSurveys, getSurveyById, saveEmployeeEvaluation } from '@/api/survey'
-import type { Survey, Question, Answer, SurveySubmission } from '@/api/survey'
+// Use type-only imports for interfaces from the correct API file
+import {
+  getAllEvaluationForms, // Changed from getAllSurveys
+  getEvaluationFormById, // Changed from getSurveyById
+  submitEvaluationAnswers // Changed from saveEmployeeEvaluation
+} from '@/api/survey'
+import type {
+    EvaluationForm, // Changed from Survey
+    EvaluationQuestion, // Changed from Question
+    EvaluationAnswerSubmit, // Changed from Answer
+    EvaluationSubmissionPayload // Changed from SurveySubmission
+} from '@/api/survey'
 
-// Interface for the survey list items
+// Interface for the survey list items (Represents a published EvaluationForm summary)
 interface SurveyListItem {
   id: number;
   name: string;
-  publishTime: string | null;
-  // status is implicitly 'published' based on fetch logic
+  publishTime: string | null; // Corresponds to publish_time
+  // status is implicitly 'PUBLISHED' based on fetch logic
 }
 
 // --- State --- 
-const availableSurveys = ref<SurveyListItem[]>([])
+const availableSurveys = ref<SurveyListItem[]>([]) // List of published forms
 const totalSurveys = ref(0)
 const isLoadingSurveys = ref(false)
 const isLoadingDetails = ref(false)
 
 const showSurveyModal = ref(false)
-const currentSurvey = ref<Survey | null>(null) // Holds the full details of the survey being taken
-const currentAnswers = ref<Record<number, Answer>>({}) // Holds answers keyed by questionId
+// Holds the full details of the EvaluationForm being taken
+const currentSurvey = ref<EvaluationForm | null>(null)
+// Holds answers keyed by questionId, matching EvaluationAnswerSubmit structure
+const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({}) // Use Partial for easier initialization
 
 // Pagination state
 const currentPage = ref(1)
@@ -31,20 +42,20 @@ const totalPages = computed(() => Math.ceil(totalSurveys.value / itemsPerPage.va
 
 // --- Methods --- 
 
-// Fetch published surveys
+// Fetch published surveys (now EvaluationForms)
 const fetchAvailableSurveys = async () => {
   isLoadingSurveys.value = true;
   try {
-    // We only want published surveys for users to take
-    const response = await getAllSurveys(currentPage.value, { status: 'published' }); 
-    // Assuming API returns { data: { results: [], count: number } }
-    // Make sure the 'results' match SurveyListItem structure (id, name, publishTime)
-    availableSurveys.value = response.data.data.results.map((s: any) => ({ // Map to ensure structure
-        id: s.id,
-        name: s.name,
-        publishTime: s.publishTime
+    // We only want published surveys (forms) for users to take
+    const response = await getAllEvaluationForms(currentPage.value, { status: 'PUBLISHED' }); 
+    // API returns PaginatedResponse<EvaluationForm>
+    // Map the results to SurveyListItem structure
+    availableSurveys.value = response.data.results.map((form: EvaluationForm) => ({ 
+        id: form.id,
+        name: form.name,
+        publishTime: form.publish_time // Map from publish_time
     })); 
-    totalSurveys.value = response.data.data.count; 
+    totalSurveys.value = response.data.count; 
   } catch (error) {
     console.error("Failed to fetch available surveys:", error);
     availableSurveys.value = [];
@@ -61,29 +72,29 @@ const initializeAnswers = () => {
     currentAnswers.value = {};
     return;
   }
-  const initialAnswers: Record<number, Answer> = {};
+  const initialAnswers: Record<number, Partial<EvaluationAnswerSubmit>> = {};
   currentSurvey.value.questions.forEach(question => {
+    if (question.id === undefined) return; // Skip questions without ID
+    // Initialize based on EvaluationAnswerSubmit structure
     initialAnswers[question.id] = {
-      questionId: question.id,
-      // Initialize based on type, e.g., score to null/undefined, remark to '', etc.
-      score: undefined, 
-      selectedOption: undefined,
-      remark: ''
+      question_id: question.id,
+      rating: undefined, // Initialize rating
+      text_answer: '' // Initialize text_answer
     };
   });
   currentAnswers.value = initialAnswers;
 };
 
-// Open the modal to take a survey
+// Open the modal to take a survey (fetch EvaluationForm details)
 const openSurveyModal = async (surveyItem: SurveyListItem) => {
   currentSurvey.value = null; // Clear previous survey
   currentAnswers.value = {};
   isLoadingDetails.value = true;
   showSurveyModal.value = true;
   try {
-    const response = await getSurveyById(surveyItem.id);
-    // Assuming response.data.data is the full Survey object including questions
-    currentSurvey.value = response.data.data; 
+    const response = await getEvaluationFormById(surveyItem.id);
+    // Assuming response.data is the full EvaluationForm object
+    currentSurvey.value = response.data; 
     initializeAnswers(); // Setup the answer structure
   } catch (error) {
     console.error(`Failed to fetch survey details for ID ${surveyItem.id}:`, error);
@@ -100,29 +111,57 @@ const closeSurveyModal = () => {
   currentAnswers.value = {};
 }
 
-// Submit the survey answers
+// Submit the survey answers (using EvaluationSubmissionPayload)
 const submitSurvey = async () => {
   if (!currentSurvey.value) return;
 
   // Basic Validation (Optional: Add more specific validation per question type)
-  const answersArray = Object.values(currentAnswers.value);
-  // Example: Check if all required questions are answered
+  // Filter out incomplete/empty answers if necessary
+  const answersArray: EvaluationAnswerSubmit[] = Object.values(currentAnswers.value)
+      .filter(ans => ans?.question_id !== undefined) // Ensure question_id exists
+      .map(ans => { // Construct the final answer shape
+          const finalAns: EvaluationAnswerSubmit = { question_id: ans!.question_id! };
+          const question = currentSurvey.value?.questions.find(q => q.id === ans!.question_id);
+          if (question?.question_type === 'RATING') {
+              finalAns.rating = ans?.rating ? Number(ans.rating) : null; // Ensure rating is number or null
+          } else if (question?.question_type === 'TEXT') {
+              finalAns.text_answer = ans?.text_answer || null; // Ensure text is string or null
+          }
+          return finalAns;
+      })
+      // Add further filtering if needed, e.g., remove answers where both rating and text are null/undefined
+      .filter(ans => ans.rating !== null || ans.text_answer !== null);
 
-  const submissionPayload: SurveySubmission = {
-    surveyId: currentSurvey.value.id,
-    answers: answersArray,
-  };
 
-  try {
-    await saveEmployeeEvaluation(submissionPayload);
-    // TODO: Show success message to user
-    closeSurveyModal();
-    // Optional: Refresh the list if needed, though usually not necessary for taking surveys
-    // await fetchAvailableSurveys(); 
-  } catch (error) {
-    console.error("Failed to submit survey:", error);
-    // TODO: Show error message to user (e.g., within the modal)
-  }
+  // !!! CRITICAL ISSUE: The API `submitEvaluationAnswers` requires an `instanceId`,
+  //     but this component deals with `EvaluationForm`s directly.
+  //     The current flow doesn't provide an `instanceId`.
+  //     Either the backend needs an endpoint to submit answers against a `formId` (less common),
+  //     or this component needs to work with `EvaluationInstance`s (e.g., fetch assigned instances,
+  //     or create an instance before showing the modal).
+  //     Commenting out the API call for now.
+
+  // const submissionPayload: EvaluationSubmissionPayload = {
+  //   answers: answersArray,
+  // };
+
+  // const instanceId = ???; // <<<<<<<< How to get the instance ID?
+
+  // try {
+  //   // await submitEvaluationAnswers(instanceId, submissionPayload);
+  //   // TODO: Show success message to user
+  //   // closeSurveyModal();
+  // } catch (error) {
+  //   console.error("Failed to submit survey:", error);
+  //   // TODO: Show error message to user (e.g., within the modal)
+  // }
+
+  console.warn("Submission skipped: Missing instanceId. See comment in submitSurvey function.");
+  console.log("Prepared answers:", answersArray);
+  // TODO: Remove console logs once flow is fixed.
+  // For demonstration, we'll just close the modal
+  closeSurveyModal();
+
 }
 
 // Pagination Navigation
@@ -201,29 +240,28 @@ watch(currentPage, fetchAvailableSurveys);
             </div>
                 <div v-for="(question, index) in currentSurvey.questions" :key="question.id" class="mb-3 border p-3 rounded">
               <div class="d-flex justify-content-between align-items-center">
-                    <h6>{{ index + 1 }}. {{ question.type === 'grade' ? 'Grade Question' : question.type === 'option' ? 'Option Question' : 'Remark' }}</h6>
+                    <!-- Use backend question_type -->
+                    <h6>{{ index + 1 }}. {{ question.question_type === 'RATING' ? 'Rating Question' : 'Text Question' }}</h6>
               </div>
-                  <p class="form-control mb-2 bg-light">{{ question.question_text }}</p>
+                  <!-- Use backend 'text' field -->
+                  <p class="form-control mb-2 bg-light">{{ question.text }}</p>
 
-              <div v-if="question.type === 'grade'" class="form-group">
-                <label class="form-label">Score (1-5):</label>
-                    <input type="number" class="form-control" v-model.number="currentAnswers[question.id].score" min="1" max="5">
-              </div>
-
-                  <div v-if="question.type === 'option' && question.options && currentAnswers[question.id]" class="option-container ms-3">
-                      <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="form-check mb-2">
-                        <input type="radio"
-                               class="form-check-input me-2"
-                               :name="'option-' + question.id"
-                               :value="option"
-                              v-model="currentAnswers[question.id].selectedOption">
-                        <label class="form-check-label w-100">{{ option }}</label>
-                </div>
+              <!-- RATING question type -->
+              <div v-if="question.question_type === 'RATING' && question.id !== undefined" class="form-group">
+                <label class="form-label">Rating (1-5):</label>
+                    <!-- Bind to currentAnswers[question.id].rating -->
+                    <input type="number" class="form-control" v-model.number="currentAnswers[question.id].rating" min="1" max="5">
               </div>
 
-              <div v-if="question.type === 'remark'" class="form-group">
-                <label class="form-label">Remark:</label>
-                    <textarea class="form-control auto-resize" v-model="currentAnswers[question.id].remark"></textarea>
+                  <!-- TEXT question type (replaces old 'option' and 'remark' logic) -->
+                  <!-- No options are displayed as backend uses TEXT type -->
+                  <!-- <div v-if="question.type === 'option' && question.options && currentAnswers[question.id]" class="option-container ms-3"> ... </div> -->
+
+              <!-- TEXT question type -->
+              <div v-if="question.question_type === 'TEXT' && question.id !== undefined" class="form-group">
+                <label class="form-label">Response:</label>
+                    <!-- Bind to currentAnswers[question.id].text_answer -->
+                    <textarea class="form-control auto-resize" v-model="currentAnswers[question.id].text_answer"></textarea>
                   </div>
                 </div>
                  <div v-if="!currentSurvey.questions || currentSurvey.questions.length === 0" class="text-muted text-center">

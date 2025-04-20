@@ -1,121 +1,138 @@
 import axios from './axios'
 
-// Type definitions (assuming basic structure, adjust as needed based on backend)
-export interface Survey {
+// --- Interface Definitions ---
+
+// Represents a question within an evaluation form
+export interface EvaluationQuestion {
+  id?: number; // Optional for creation
+  text: string;
+  question_type: 'RATING' | 'TEXT'; // Match backend choices
+  order: number;
+}
+
+// Represents the evaluation form (template)
+export interface EvaluationForm {
   id: number;
   name: string;
-  publishTime?: string | null;
-  status: 'published' | 'created';
-  departments?: number[]; // Assuming department IDs are used
-  questions: Question[];
+  description?: string;
+  departments?: number[]; // Array of department IDs (used for write/update)
+  department_details?: { id: number; department_name: string }[]; // Read-only details
+  questions: EvaluationQuestion[];
+  created_by?: string; // Read-only username
+  created_at?: string; // Read-only ISO date string
+  updated_at?: string; // Read-only ISO date string
+  status: 'DRAFT' | 'PUBLISHED'; // Match backend choices
+  publish_time?: string | null; // Read-only ISO date string or null
 }
 
-export interface Question {
-  id: number; // Assuming backend provides ID for questions within a survey
-  type: 'grade' | 'option' | 'remark'; // Added 'remark' based on original DetailedEvaluationList
-  question_text: string; // Match backend naming if different (e.g., question_text)
-  options?: string[];
+// Represents an answer being submitted by staff
+export interface EvaluationAnswerSubmit {
+    question_id: number; // Use question_id for submission
+    rating?: number | null; // For RATING type (1-5)
+    text_answer?: string | null; // For TEXT type
 }
 
-// Define structure for answers to be submitted
-export interface Answer {
-    questionId: number;
-    score?: number; // For grade type
-    selectedOption?: string; // For option type
-    remark?: string; // For remark type
+// Represents the entire submission payload for an instance
+export interface EvaluationSubmissionPayload {
+    answers: EvaluationAnswerSubmit[];
 }
 
-// Define structure for survey submissions/results
-export interface SurveySubmission {
-    surveyId: number;
-    answers: Answer[]; // Array of answers
-    // employeeId might be inferred by the backend based on authentication
+// Represents a submitted answer (for viewing results)
+export interface EvaluationAnswerView {
+    id: number;
+    question: EvaluationQuestion; // Nested question details
+    rating?: number | null;
+    text_answer?: string | null;
+}
+
+// Represents an evaluation instance (assigned task + results)
+export interface EvaluationInstance {
+    id: number;
+    form: EvaluationForm; // Nested form details
+    employee: { id: number; username: string; /* other staff details */ }; // Nested employee details
+    assigned_at: string; // ISO date string
+    submitted_at?: string | null; // ISO date string or null
+    status: 'PENDING' | 'SUBMITTED' | 'REVIEWED'; // Match backend choices
+    overall_rating_avg?: number | null;
+    answers: EvaluationAnswerView[]; // Array of submitted answers
+}
+
+// Paginated response structure (example for forms)
+export interface PaginatedResponse<T> {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: T[];
 }
 
 // --- API Functions ---
 
-// Get all surveys (evaluations) with pagination and filtering
-export function getAllSurveys(page: number = 1, searchParams: { name?: string, startDate?: string, endDate?: string, status?: 'published' | 'created' } = {}) {
-    // Add query parameters for pagination, search, date range etc.
+// Get Evaluation Forms (HR/Admin view)
+export function getAllEvaluationForms(page: number = 1, searchParams: { name?: string, status?: 'DRAFT' | 'PUBLISHED' } = {}) {
     const params = new URLSearchParams();
     params.append('page', String(page));
     if (searchParams.name) params.append('name', searchParams.name);
-    if (searchParams.startDate) params.append('startDate', searchParams.startDate);
-    if (searchParams.endDate) params.append('endDate', searchParams.endDate);
-    if (searchParams.status) params.append('status', searchParams.status); // Added status filter
+    if (searchParams.status) params.append('status', searchParams.status);
 
-    // TODO: Replace with actual backend endpoint
-    console.warn("API CALL: getAllSurveys - Using placeholder endpoint");
-    return axios.get(`/api/evaluation/survey/?${params.toString()}`);
-    // Example: return axios.get(`/api/evaluations/?${params.toString()}`);
+    return axios.get<PaginatedResponse<EvaluationForm>>(`/api/evaluation-forms/?${params.toString()}`);
 }
 
-// Get a specific survey by ID
-export function getSurveyById(id: number) {
-    // TODO: Replace with actual backend endpoint
-    console.warn("API CALL: getSurveyById - Using placeholder endpoint");
-    // Ensure the response includes the full questions array with IDs
-    return axios.get(`/api/evaluation/survey/${id}/`);
-    // Example: return axios.get(`/api/evaluations/${id}/`);
+// Get a specific Evaluation Form by ID
+export function getEvaluationFormById(id: number) {
+    return axios.get<EvaluationForm>(`/api/evaluation-forms/${id}/`);
 }
 
-// Create a new survey
-export function createSurvey(surveyData: Partial<Survey>) {
-    // TODO: Replace with actual backend endpoint
-    console.warn("API CALL: createSurvey - Using placeholder endpoint");
-    return axios.post('/api/evaluation/survey/', surveyData);
-    // Example: return axios.post('/api/evaluations/', surveyData);
+// Create a new Evaluation Form
+// Note: `departments` should be an array of IDs, `questions` the array of question objects
+export function createEvaluationForm(formData: Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'>) {
+    return axios.post<EvaluationForm>('/api/evaluation-forms/', formData);
 }
 
-// Update an existing survey (e.g., publish, add/remove questions)
-export function updateSurvey(id: number, surveyData: Partial<Survey>) {
-    // TODO: Replace with actual backend endpoint
-    console.warn("API CALL: updateSurvey - Using placeholder endpoint");
-    return axios.put(`/api/evaluation/survey/${id}/`, surveyData);
-    // Example: return axios.put(`/api/evaluations/${id}/`, surveyData);
+// Update an existing Evaluation Form
+export function updateEvaluationForm(id: number, formData: Partial<Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'> & { departments?: number[] }>) {
+    return axios.put<EvaluationForm>(`/api/evaluation-forms/${id}/`, formData);
 }
 
-// Delete a survey
-export function deleteSurvey(id: number) {
-    // TODO: Replace with actual backend endpoint
-    console.warn("API CALL: deleteSurvey - Using placeholder endpoint");
-    return axios.delete(`/api/evaluation/survey/${id}/`);
-    // Example: return axios.delete(`/api/evaluations/${id}/`);
+// Delete an Evaluation Form
+export function deleteEvaluationForm(id: number) {
+    return axios.delete(`/api/evaluation-forms/${id}/`);
 }
 
-// Publish a survey (specific update action)
-export function publishSurvey(id: number, departments: number[]) {
-    // TODO: Replace with actual backend endpoint
-    console.warn("API CALL: publishSurvey - Using placeholder endpoint");
-    // Map frontend 'departments' to backend 'department_ids'
-    const payload = { status: 'published', department_ids: departments, publishTime: new Date().toISOString() };
-    return axios.patch(`/api/evaluation/survey/${id}/publish/`, payload);
-    // Example: return axios.patch(`/api/evaluations/${id}/`, { status: 'published', department_ids }); // Corrected example key
+// Publish an Evaluation Form
+export function publishEvaluationForm(id: number) {
+    // No payload needed for this specific action based on backend setup
+    return axios.post(`/api/evaluation-forms/${id}/publish/`);
 }
 
-
-// --- Functions related to DetailedEvaluationList ---
-
-// Get survey results/submissions (potentially filtered and paginated)
-// Added optional page parameter
-export function getSurveyResults(surveyId: number, filters: any = {}, page: number = 1) {
-    // Add query parameters for filtering by department, page, etc.
+// Get Evaluation Instances (Staff/HR/Admin view)
+export function getEvaluationInstances(page: number = 1, filters: any = {}) {
     const params = new URLSearchParams();
     params.append('page', String(page));
-    if (filters.departmentId) params.append('departmentId', filters.departmentId);
-    // Add other filters as needed
+    // Add backend-supported filters here, e.g., form ID, status
+    if (filters.formId) params.append('form', filters.formId);
+    if (filters.status) params.append('status', filters.status);
 
-    // TODO: Replace with actual backend endpoint
-    console.warn("API CALL: getSurveyResults - Using placeholder endpoint");
-    return axios.get(`/api/evaluation/survey/${surveyId}/results/?${params.toString()}`);
-    // Example: return axios.get(`/api/evaluations/${surveyId}/submissions/?${params.toString()}`);
+    // Depending on role, backend filters automatically (Staff see own, HR see own created, Admin see all)
+    return axios.get<PaginatedResponse<EvaluationInstance>>(`/api/evaluation-instances/?${params.toString()}`);
 }
 
-// Submit/Save evaluation results for an employee taking a survey
-export function saveEmployeeEvaluation(submissionData: SurveySubmission) {
-    // TODO: Replace with actual backend endpoint and verify payload structure
-    // Backend might expect answers keyed differently, e.g., { survey: surveyId, answers: [...] }
-    console.warn("API CALL: saveEmployeeEvaluation - Using placeholder endpoint and payload structure");
-    return axios.post(`/api/evaluation/submit/`, submissionData); // Adjusted endpoint example
-    // Example: return axios.post(`/api/evaluation-submissions/`, submissionData);
+// Get a specific Evaluation Instance by ID
+export function getEvaluationInstanceById(id: number) {
+    return axios.get<EvaluationInstance>(`/api/evaluation-instances/${id}/`);
+}
+
+// Submit answers for an Evaluation Instance
+export function submitEvaluationAnswers(instanceId: number, submissionData: EvaluationSubmissionPayload) {
+    return axios.post(`/api/evaluation-instances/${instanceId}/submit/`, submissionData);
+}
+
+// Get Evaluation Instances (Admin specific view - if separate endpoint needed)
+export function getAdminEvaluationInstances(page: number = 1, filters: any = {}) {
+    const params = new URLSearchParams();
+    params.append('page', String(page));
+    if (filters.formId) params.append('form', filters.formId);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.employeeId) params.append('employee', filters.employeeId); // Example admin filter
+
+    return axios.get<PaginatedResponse<EvaluationInstance>>(`/api/admin/evaluation-instances/?${params.toString()}`);
 } 
