@@ -1,52 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import {ref} from 'vue'
+import type {RouteItem} from "@/interface/RouteInterface.ts";
+import useRouter from "@/hooks/useRouter.ts";
 
-interface RouteItem {
-  id: number
-  parentId: number | null
-  name: string
-  order: number
-  path: string  
-  type: 'directory' | 'menu' | 'button'
-  visible: boolean
-  permission: string
-  children?: RouteItem[]
-}
-
-const tableData = ref<RouteItem[]>([
-  {
-    id: 1,
-    parentId: null,
-    name: 'System Management',
-    order: 1,
-    path: '/system',
-    type: 'directory',
-    visible: true,
-    permission: 'system',
-    children: [
-      {
-        id: 2,
-        parentId: 1,
-        name: 'User Management',
-        order: 1,
-        path: '/system/user',
-        type: 'menu',
-        visible: true,
-        permission: 'system:user'
-      },
-      {
-        id: 3,
-        parentId: 1,
-        name: 'Role Management',
-        order: 2,
-        path: '/system/role',
-        type: 'menu',
-        visible: true,
-        permission: 'system:role'
-      }
-    ]
-  }
-])
+const {tableData,handlerAddRoute, handlerDeleteRoute} = useRouter();
 
 const showModal = ref(false)
 const currentRoute = ref<Partial<RouteItem>>({})
@@ -67,6 +24,13 @@ const toggleExpand = (id: number) => {
   }
 }
 
+let hasParent = ref(0);
+let menuType = ref(0)
+
+function handleParentRouteChange()
+{
+}
+
 // 扁平化树形数据用于表格展示
 const flattenRoutes = (routes: RouteItem[], level = 0): any[] => {
   return routes.reduce<RouteItem[]>((acc, route) => {
@@ -74,7 +38,7 @@ const flattenRoutes = (routes: RouteItem[], level = 0): any[] => {
     const children = route.children && isExpanded ? flattenRoutes(route.children, level + 1) : []
     return [
       ...acc,
-      { ...route, level, hasChildren: !!route.children?.length },
+      {...route, level, hasChildren: !!route.children?.length},
       ...children
     ]
   }, [])
@@ -94,15 +58,7 @@ const findRoute = (routes: RouteItem[], id: number): RouteItem | null => {
 
 // 添加路由
 const addRoute = (newRoute: RouteItem) => {
-  if (newRoute.parentId) {
-    const parent = findRoute(tableData.value, newRoute.parentId)
-    if (parent) {
-      if (!parent.children) parent.children = []
-      parent.children.push(newRoute)
-    }
-  } else {
-    tableData.value.push(newRoute)
-  }
+  handlerAddRoute(newRoute)
 }
 
 // 更新路由
@@ -111,19 +67,21 @@ const updateRoute = (updatedRoute: RouteItem) => {
   if (route) {
     Object.assign(route, updatedRoute)
   }
-}   
+}
 
 // 处理添加根路由
 const handleAddRoot = () => {
   currentRoute.value = {
     id: generateId(),
-    parentId: null,
+    parent: null, // 根路由的parentId为0
     name: '',
     order: 1,
     path: '',
-    type: 'directory',
-    visible: true,
-    permission: ''
+    hidden: true,
+    code: '', // 新增字段
+    description: '', // 新增字段
+    component: '', // 新增字段
+    icon: '', // 新增字段
   }
   modalType.value = 'add'
   showModal.value = true
@@ -133,13 +91,15 @@ const handleAddRoot = () => {
 const handleAddChild = (parent: RouteItem) => {
   currentRoute.value = {
     id: generateId(),
-    parentId: parent.id,
+    parent: parent.id,
     name: '',
     order: 1,
     path: '',
-    type: parent.type === 'directory' ? 'menu' : 'button',
-    visible: true,
-    permission: ''
+    hidden: true,
+    code: '',
+    description: '',
+    component: '',
+    icon: '',
   }
   modalType.value = 'addChild'
   showModal.value = true
@@ -147,16 +107,14 @@ const handleAddChild = (parent: RouteItem) => {
 
 // 处理编辑路由
 const handleEdit = (route: RouteItem) => {
-  currentRoute.value = { ...route }
+  currentRoute.value = {...route}
   modalType.value = 'edit'
   showModal.value = true
 }
 
 // 处理删除路由
 const handleDelete = (id: number) => {
-  if (confirm('确定要删除该路由吗？')) {
-    tableData.value = deleteRoute(tableData.value, id)
-  }
+  handlerDeleteRoute(id);
 }
 
 // 删除路由
@@ -178,14 +136,15 @@ const handleSubmit = () => {
     ...currentRoute.value,
     id: currentRoute.value.id || generateId(),
     order: currentRoute.value.order || 1,
-    visible: currentRoute.value.visible || false,
-    permission: currentRoute.value.permission || ''
+    hidden: !currentRoute.value.hidden || false,
   } as RouteItem
 
   if (modalType.value === 'edit') {
     updateRoute(route)
   } else {
+    console.log(route)
     addRoute(route)
+
   }
 
   showModal.value = false
@@ -208,9 +167,9 @@ const handleSubmit = () => {
         <th>Menu Name</th>
         <th style="width: 80px">Sort</th>
         <th>Request Path</th>
-        <th style="width: 100px">Type</th>
         <th style="width: 100px">Visible</th>
         <th>Authentication symbol</th>
+        <th>Has Parent Route</th> <!-- 新增列 -->
         <th style="width: 180px">Operation</th>
       </tr>
       </thead>
@@ -231,27 +190,23 @@ const handleSubmit = () => {
           <td>{{ item.order }}</td>
           <td>{{ item.path }}</td>
           <td>
-              <span class="badge" :class="{
-                'bg-primary': item.type === 'directory',
-                'bg-success': item.type === 'menu',
-                'bg-secondary': item.type === 'button'
-              }">
-                {{ { directory: 'directory', menu: 'menu', button: 'button' }[item.type] }}
-              </span>
-          </td>
-          <td>
-            <i class="bi" :class="item.visible ? 'bi-eye-fill text-success' : 'bi-eye-slash-fill text-danger'"></i>
+            <i class="bi" :class="!item.hidden ? 'bi-eye-fill text-success' : 'bi-eye-slash-fill text-danger'"></i>
           </td>
           <td>{{ item.permission }}</td>
+          <td>
+            <!-- 判断是否有父路由 -->
+            <i v-if="item.level > 0" class="bi bi-check-circle text-success"></i>
+            <i v-else class="bi bi-x-circle text-danger"></i>
+          </td>
           <td>
             <button class="btn btn-sm btn-outline-primary me-1"
                     @click="handleAddChild(item)"
                     v-if="item.type !== 'button'">
               <i class="bi bi-plus"></i>
             </button>
-            <button class="btn btn-sm btn-outline-warning me-1" @click="handleEdit(item)">
-              <i class="bi bi-pencil"></i>
-            </button>
+<!--            <button class="btn btn-sm btn-outline-warning me-1" @click="handleEdit(item)">-->
+<!--              <i class="bi bi-pencil"></i>-->
+<!--            </button>-->
             <button class="btn btn-sm btn-outline-danger" @click="handleDelete(item.id)">
               <i class="bi bi-trash"></i>
             </button>
@@ -263,7 +218,7 @@ const handleSubmit = () => {
 
     <!-- 编辑/新增模态框 -->
     <div class="modal fade" :class="{ show: showModal }" style="display: block" v-if="showModal">
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 800px; width: 90%;">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">
@@ -273,37 +228,75 @@ const handleSubmit = () => {
           </div>
           <div class="modal-body">
             <form @submit.prevent="handleSubmit">
-              <div class="mb-3">
-                <label class="form-label">Menu name</label>
-                <input type="text" class="form-control" v-model="currentRoute.name" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Sort</label>
-                <input type="number" class="form-control" v-model="currentRoute.order" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Request path</label>
-                <input type="text" class="form-control" v-model="currentRoute.path">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">type</label>
-                <select class="form-select" v-model="currentRoute.type">
-                  <option value="directory">directory</option>
-                  <option value="menu">menu</option>
-                  <option value="button">button</option>
+              <div class=" mb-3">
+                <label class="form-label">Router Type</label>
+                <select class="form-select" v-model.number="menuType" @change="handlerChangeMenuType">
+                  <option value="0">Menu</option>
+                  <option value="1">Router</option>
                 </select>
               </div>
-              <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" v-model="currentRoute.visible">
-                <label class="form-check-label">visible</label>
+              <!-- 基本信息部分 -->
+              <div class="row">
+                <div class="col-6 mb-3">
+                  <label class="form-label">Menu name</label>
+                  <input type="text" class="form-control" v-model="currentRoute.name" required>
+                </div>
+                <div class="col-6 mb-3">
+                  <label class="form-label">Sort</label>
+                  <input type="number" class="form-control" v-model="currentRoute.order" required>
+                </div>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Authorization symbol</label>
-                <input type="text" class="form-control" v-model="currentRoute.permission" required>
+
+              <div class="row">
+                <div class="col-6 mb-3">
+                  <label class="form-label">Request path</label>
+                  <input type="text" :disabled="!menuType" class="form-control" v-model="currentRoute.path">
+                </div>
+                <!-- 其他参数部分 -->
+                <div class="col-6 mb-3">
+                  <label class="form-label">Code</label>
+                  <input type="text" class="form-control" v-model="currentRoute.code">
+                </div>
               </div>
+
+
+              <div class="row">
+                <div class="col-6 mb-3">
+                  <label class="form-label">Description</label>
+                  <input type="text" class="form-control" v-model="currentRoute.description">
+                </div>
+                <div class="col-6 mb-3">
+                  <label class="form-label">Component</label>
+                  <input type="text"  :disabled="!menuType" class="form-control" v-model="currentRoute.component">
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-6 mb-3">
+                  <label class="form-label">Icon</label>
+                  <input type="text" class="form-control" v-model="currentRoute.icon">
+                </div>
+                <!-- 如果有父路由，则显示父路由选择列表 -->
+                <div v-if="menuType" class="col-6 mb-3">
+                  <label class="form-label">Select Parent Route</label>
+                  <select class="form-select" v-model="currentRoute.parent">
+                    <option v-for="parent in tableData" :key="parent.id" :value="parent.id">{{ parent.name }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 显示设置部分 -->
+              <div class="col-6 mb-3 form-check">
+                <input type="checkbox" class="form-check-input" v-model="currentRoute.hidden">
+                <label class="form-check-label">Visible</label>
+              </div>
+              <!-- 父路由部分 -->
+
+
+
               <div class="d-flex justify-content-end">
-                <button type="button" class="btn btn-secondary me-2" @click="showModal = false">cancel</button>
-                <button type="submit" class="btn btn-primary">save</button>
+                <button type="button" class="btn btn-secondary me-2" @click="showModal = false">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
               </div>
             </form>
           </div>
@@ -314,10 +307,12 @@ const handleSubmit = () => {
   </div>
 </template>
 
+
 <style scoped>
 .cursor-pointer {
   cursor: pointer;
 }
+
 .table tr td:first-child {
   position: relative;
 }
