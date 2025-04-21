@@ -6,11 +6,35 @@ import {useDepartmentStore} from "@/stores/department.ts";
 import Swal from "sweetalert2";
 import {resetPassword as resPwd} from "@/api/staff.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
+import {pageRoles} from "@/api/role.ts"
+import type {RoleItem} from "@/interface/RoleInterface.ts";
+import dayjs from "dayjs";
 
 const departmentStore = useDepartmentStore();
+const tableData = ref<RoleItem[]>([]);
 
+function fetchRoles() {
+    pageRoles(1, 1000).then(res => {
+      if (isSuccess(res.status)) {
+        tableData.value = res.data.data.results.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          permissions: item.permissions,
+          createdOn: dayjs(item.create_time).format("YYYY-MM-DD")
+        }));
+      }
+    }).catch(error=>{
+      console.error("Error fetch roles:", error);
+    })
+}
+
+function getRoleNameById(id: number) {
+  const role = tableData.value.find(r => r.id === id);
+  return role ? role.name : 'Unknown';
+}
 onMounted(() => {
   departmentStore.fetchDepartments();
+  fetchRoles();
 })
 
 
@@ -22,7 +46,8 @@ const {
   currentPage,
   isSearching,
   searchDepartmentId,
-  searchName} = useStaff()
+  searchName
+} = useStaff()
 
 // State
 const selectedDepartment = ref(0)
@@ -43,9 +68,9 @@ const selectedStaff = ref<Staff>({
   name: '',
   dateOfBirth: '',
   department_name: '',
-  role: '',
+  role: [],
   department: 0,
-  imgUrl:'',
+  imgUrl: '',
   status: false,
   employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
   numberOfLeaves: 0,
@@ -71,10 +96,10 @@ const openAddStaffModal = () => {
     name: '',
     dateOfBirth: '',
     department_name: '',
-    role: '',
+    role: [],
     department: selectedDepartment.value,
     status: false,
-    imgUrl:'',
+    imgUrl: '',
     employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
     numberOfLeaves: 0,
     medicalLeaves: 0,
@@ -323,93 +348,130 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="staffName" class="form-label">Name</label>
-            <input
-                v-model="selectedStaff.name"
-                type="text"
-                class="form-control"
-                id="staffName"
-                placeholder="Enter name"
-            >
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="staffName" class="form-label">Name</label>
+              <input
+                  v-model="selectedStaff.name"
+                  type="text"
+                  class="form-control"
+                  id="staffName"
+                  placeholder="Enter name"
+              >
+            </div>
+            <div class="mb-3 col-md-6">
+              <label for="staffImage" class="form-label">Profile Image</label>
+              <input
+                  type="file"
+                  class="form-control"
+                  id="staffImage"
+                  accept="image/*"
+                  @change="onImageSelected"
+              >
+            </div>
           </div>
 
-          <div class="mb-3">
-            <label for="staffImage" class="form-label">Profile Image</label>
-            <input
-                type="file"
-                class="form-control"
-                id="staffImage"
-                accept="image/*"
-                @change="onImageSelected"
-            >
+          <div class="row">
+            <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
+              <img
+                  :src="selectedStaff.imgUrl"
+                  alt="Profile Preview"
+                  class="img-thumbnail"
+                  style="max-width: 150px;"
+              >
+            </div>
           </div>
 
-          <div v-if="selectedStaff.imgUrl" class="mb-3">
-            <img
-                :src="selectedStaff.imgUrl"
-                alt="Profile Preview"
-                class="img-thumbnail"
-                style="max-width: 150px;"
-            >
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
+              <input
+                  v-model="selectedStaff.dateOfBirth"
+                  type="date"
+                  class="form-control"
+                  id="staffDateOfBirth"
+                  placeholder="Enter date of birth"
+              >
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label for="staffDepartment" class="form-label">Department</label>
+              <select
+                  v-model="selectedStaff.department"
+                  class="form-select"
+                  id="staffDepartment"
+              >
+                <option
+                    v-for="dept in departmentStore.flatDepartmentList"
+                    :key="dept.id"
+                    :value="dept.id"
+                >
+                  {{ dept.department_name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="staffStatus" class="form-label">Status</label>
+              <select
+                  v-model="selectedStaff.status"
+                  class="form-select"
+                  id="staffStatus"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Employment Date</label>
+              <input
+                  :value="selectedStaff.employmentDate"
+                  type="date"
+                  class="form-control"
+              >
+            </div>
           </div>
 
 
-          <div class="mb-3">
-            <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
-            <input
-                v-model="selectedStaff.dateOfBirth"
-                type="date"
-                class="form-control"
-                id="staffDateOfBirth"
-                placeholder="Enter date of birth"
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="staffRoles" class="form-label">Roles</label>
+              <select
+                  id="staffRoles"
+                  v-model="selectedStaff.role"
+                  class="form-select"
+                  multple
+              >
+                <option
+                    v-for="role in tableData"
+                    :key="role.id"
+                    :value="role.id"
+                >
+                  {{ role.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- 显示选中的角色 -->
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Selected Roles:</label>
+              <div class="d-flex flex-wrap gap-2">
+            <span
+                v-for="roleId in selectedStaff.role"
+                :key="roleId"
+                class="badge bg-info"
             >
-          </div>
-          <div class="mb-3">
-            <label for="staffRole" class="form-label">Role</label>
-            <input
-                v-model="selectedStaff.role"
-                type="text"
-                class="form-control"
-                id="staffRole"
-                placeholder="Enter role"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="staffDepartment" class="form-label">Department</label>
-            <select
-                v-model="selectedStaff.department"
-                class="form-select"
-                id="staffDepartment"
-            >
-              <option>Sales Department</option>
-              <option>Marketing Department</option>
-              <option>Human Resources</option>
-              <option>Finance Department</option>
-              <option>IT Department</option>
-              <option>Operations</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="staffStatus" class="form-label">Status</label>
-            <select
-                v-model="selectedStaff.status"
-                class="form-select"
-                id="staffStatus"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Employment Date</label>
-            <input
-                :value="selectedStaff.employmentDate"
-                type="date"
-                class="form-control"
-            >
+              {{ getRoleNameById(roleId) }}
+            </span>
+              </div>
+            </div>
           </div>
         </div>
+
+
+
         <div class="modal-footer">
           <button
               type="button"
@@ -628,6 +690,30 @@ function resetPassword(staff: Staff) {
 </template>
 
 <style scoped>
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh; /* ✅ 限制最大高度 */
+  overflow-y: auto; /* ✅ 内容太多时可滚动 */
+  padding: 1rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+}
+
 .search-container .input-group-text {
   background: white;
   border-right: none;
@@ -668,26 +754,6 @@ function resetPassword(staff: Staff) {
   border: 1px solid #eee;
 }
 
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 1rem;
-}
 
 .modal-header {
   padding: 1rem;

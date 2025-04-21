@@ -2,7 +2,7 @@ export interface Staff {
     id: number
     name: string
     dateOfBirth: string
-    role: string
+    role: number[]
     department: number
     department_name: string
     status: boolean
