@@ -1,10 +1,9 @@
 import axios from './axios'
 
 /* 查询所有的 KPI */
-export function selectAllKpis(page: number = 1) {
-    return axios.get(`/api/kpi/?page=${page}`)
+export function selectAllKpis(params = {}) {
+    return axios.get('/api/kpi/', { params })
 }
-
 
 /* 创建新的 KPI */
 export function createKpi(payload) {
