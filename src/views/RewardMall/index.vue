@@ -24,7 +24,7 @@
     <div class="row row-cols-md-3 g-4" >
     <div class="col" v-for="item in tableData" :key="item.id">
       <div class="card shadow-sm mt-4" >
-        <img :src="item.image" alt="Reward Image" class="image">
+        <img :src="item.fileDetails.file" :alt="item.fileDetails.filename" class="image">
         <div class="card-body">
             <h4 class="rewardTitle"><b>{{ item.rewardName }}</b></h4>
             <p>{{ item.description }}</p>
@@ -129,6 +129,7 @@ const openSelectedRewardModal = (reward: RewardItem) => {
 // ===================== Fetch Reward =====================
 const fetchRewards = () => {
   getAllRewards().then((res) => {   
+    console.log(res.data)
     tableData.value = res.data.data.results.filter((item: any) => item.reward_status === 'Active').map((item:any) => ({
       id: item.id,
       rewardName: item.reward_title,
@@ -138,8 +139,10 @@ const fetchRewards = () => {
       description: item.reward_description,
       terms: item.reward_terms_and_conditions,
       status: item.reward_status,
-      image: item.file
-    }));    
+      fileDetails: {
+        file: item.file?.file_url || ''
+      }
+    }));
   });
 };
 
@@ -156,9 +159,9 @@ const fetchPoints = () => {
   });
 };
 
+// ===================== Fetch Reward Redemption =====================
 let userRedemptions = ref<any[]>([]);
 
-// ===================== Fetch Reward Redemption =====================
 const fetchRewardRedemption = () => {
   getRewardRedemption().then((res) => {
     console.log("User Redemptions:", userRedemptions.value); // DEBUG
@@ -174,6 +177,7 @@ onMounted(() => {
   fetchPoints();
   fetchRewardRedemption();
 });
+
 
 // ===================== Check if the user has redeemed the reward =====================
 const hasUserRedeemed = (rewardId: any) => {
@@ -244,6 +248,7 @@ const confirmedReward = async () => {
         icon: 'success',
         title: 'Success!',
         text: `You have successfully redeemed ${currentReward.value.rewardName}.`,
+        timer: 1500,
         showConfirmButton: false
       });
 

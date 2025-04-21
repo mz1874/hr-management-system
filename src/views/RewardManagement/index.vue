@@ -7,15 +7,15 @@
         <div class="d-flex gap-3">
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
-                <input class="form-control" type="search" placeholder="Search Reward Name" v-model="searchReward">
+                <input class="form-control" type="search" placeholder="Search Reward Name" v-model="rewardSearch">
                 <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
-                <input class="form-control" type="number" placeholder="Search Points" v-model="searchPoint">
+                <input class="form-control" type="number" placeholder="Search Points" v-model="pointSearch">
                 <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
-            <select class="search-container form-select" v-model="searchStatus">
+            <select class="search-container form-select" v-model="statusSearch">
                 <option value="">All Status</option>
                 <option value="Draft">Draft</option>
                 <option value="Active">Active</option>
@@ -26,11 +26,11 @@
         <!-- filter -->
         <div class="row align-items-center">
             <div class="col-md-auto">
-                <p class="mb-0">Custom Date Range:</p>
+                <p class="mb-0">End Date Range:</p>
             </div>
             <div class="col-md-auto">
                 <div class="input-group">
-                    <input type="date" class="form-control " id="startDate" placeholder="Start Date" v-model="startDate">
+                    <input type="date" class="form-control " id="startDate" placeholder="Start Date" v-model="startDateSearch">
                 </div>
             </div>
             <div class="col-auto">
@@ -38,7 +38,7 @@
             </div>
             <div class="col-md-auto">
                 <div class="input-group">
-                    <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="endDate">
+                    <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="endDateSearch">
                 </div>
             </div>
         </div>
@@ -63,7 +63,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="item in paginatedLogs" :key="item.id">
+                <tr v-for="item in tableData" :key="item.id">
                     <td>{{ item.id}}</td>
                     <td>{{ item.rewardName}}</td>
                     <td>{{ item.rewardPoints}}</td>
@@ -87,21 +87,23 @@
 
     <!-- pagination -->
     <div class="d-flex align-items-center mt-3 justify-content-start">
-        <span class="me-3">Total: {{ totalLogs }}</span>
+        <span class="me-3">Total: {{ totalCount }}</span>
         
-        <nav aria-label="Page navigation">
-            <ul class="pagination">
-                <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                    <button class="page-link" @click="prevPage">Previous</button>
-                </li>
-                <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-                    <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-                </li>
-                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                    <button class="page-link" @click="nextPage">Next</button>
-                </li>
-            </ul>
-        </nav>
+        <nav>
+        <ul class="pagination mb-0">
+          <li :class="['page-item', { disabled: currentPage === 1 }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+          </li>
+
+          <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+          </li>
+
+          <li :class="['page-item', { disabled: currentPage === totalPages }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
     </div>
 
     <!-- Reward Modal -->
@@ -124,20 +126,48 @@
                             <form>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Image:</label>
-                                    <!-- <label for="input-file" id="drop-area">
-                                        <input type="file" accept="image/*" id="input-file" hidden @change="handleImageChange" :disabled="modalType === 'view'">
-                                        <div id="img-view" v-if="currentReward.image">
-                                            <img :src="currentReward.image" alt="Reward Image" class="img-fluid">
+                                    <!-- VIEW MODAL -->
+                                    <div v-if="modalType === 'view'">
+                                        <!-- If image exists -->
+                                        <div v-if="currentReward.fileDetails">
+                                            <label for="input-file" id="drop-area" class="me-2 flex-grow-1">
+                                                <div id="img-view" v-if="currentReward.fileDetails">
+                                                    <img :src="currentReward.fileDetails.file_url" :alt="currentReward.fileDetails.filename" class="img-fluid">
+                                                </div>        
+                                            </label>
                                         </div>
-                                        <div id="img-view" v-else>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-card-image" viewBox="0 0 16 16">
-                                                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
-                                                <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2zm13 1a.5.5 0 0 1 .5.5v6l-3.775-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12v.54L1 12.5v-9a.5.5 0 0 1 .5-.5z"/>
-                                            </svg>
-                                            <span id="img-name">Click to select image</span>                                                    
+                                        <!-- If no image -->
+                                        <div v-else>
+                                            <span class="text-muted">None</span>
                                         </div>
-                                    </label> -->
+                                    </div>
+
+                                    <!-- EDIT / CREATE MODAL -->
+                                    <div v-else>
+                                        <div class="d-flex align-items-center mb-2" v-if="currentReward.fileDetails">
+                                            <span>{{ currentReward.fileDetails.filename }}</span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" @click="removeImage">🗑️</button>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <label for="input-file" id="drop-area" class="me-2 flex-grow-1">
+                                                <input type="file" accept="image/*" id="input-file" @change="handleFileChange" hidden>
+                                                <!-- If image exists -->
+                                                <div id="img-view" v-if="currentReward.fileDetails">
+                                                    <img :src="currentReward.fileDetails.file_url" :alt="currentReward.fileDetails.filename" class="img-fluid">
+                                                </div>
+                                                <!-- If no image exists -->
+                                                <div id="img-view" v-else>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-card-image" viewBox="0 0 16 16">
+                                                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+                                                    <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2zm13 1a.5.5 0 0 1 .5.5v6l-3.775-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12v.54L1 12.5v-9a.5.5 0 0 1 .5-.5z"/>
+                                                </svg>
+                                                    <span id="img-name">Click to select image</span>                                                    
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
+
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Name:</label>
                                     <input type="text" class="form-control" placeholder="Enter reward name" v-model="currentReward.rewardName" :disabled="modalType === 'view'">
@@ -152,15 +182,7 @@
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">End Date & Time:</label>
-                                    <!-- <div class="row g-2">
-                                        <div class="col-md-6"> -->
-                                            <!-- <input type="date" class="form-control" placeholder="Select end date" v-model="currentReward.endDate" :disabled="modalType === 'view'"> -->
                                     <Datepicker v-model="currentReward.endDateTime" :is-24="false" :min-date="new Date()" :disabled="modalType === 'view'" style="border: 1px solid #000000; border-radius: 0.375rem;"></Datepicker>
-                                        <!-- </div> 
-                                        <div class="col-md-6">
-                                            <input type="time" class="form-control" placeholder="Select end time" v-model="currentReward.endTime" :disabled="modalType === 'view'">
-                                        </div>
-                                    </div> -->
                                 </div>
                             </form>
                         </div>
@@ -205,13 +227,11 @@
                     <h3 class="modal-title" id="deleteRewardLabel">Are you sure?</h3>
                 </div>
                 <div class="modal-body">
-                    <span class="text-muted" v-if="modalRemoveType === 'delete'">This action cannot be undone. This will permanently delete the reward, <b>{{currentReward.rewardName}}</b>.</span>
-                    <span class="text-muted" v-if="modalRemoveType === 'reset'">This action cannot be undone. All users' points will be reset.</span>
+                    <span class="text-muted">This action cannot be undone. This will permanently delete the reward, <b>{{currentReward.rewardName}}</b>.</span>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="showRemoveModal = false">Close</button>
-                    <button v-if="modalRemoveType === 'delete'" type="button" class="btn btn-danger" @click="confirmDelete">Confirm</button>
-                    <button v-if="modalRemoveType === 'reset'" type="button" class="btn btn-danger" @click="resetReward">Reset</button>
+                    <button type="button" class="btn btn-danger" @click="confirmDelete">Confirm</button>
                 </div>
             </div>
         </div>
@@ -222,25 +242,26 @@
 
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { getAllRewards, updateReward, createReward, deleteReward } from "@/api/reward.ts";
+import type {RewardItem} from '@/interface/RewardInterface.ts';
+import { uploadFile } from '@/api/file_upload'
 import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
-import type {RewardItem} from '@/interface/RewardInterface.ts';
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';  
+
+// ===================== Open modal =====================
+const tableData = ref<RewardItem[]>([])
+
+const currentReward = ref<any>({})
 
 const showModal = ref(false)
 const showRemoveModal = ref(false)
 const modalType = ref<'create' | 'edit' | 'view'>('create')
-const modalRemoveType = ref<'delete' | 'reset'>('delete')
-
-const tableData = ref<RewardItem[]>([])
-
-const currentReward = ref<any>({})
 
 const openCreateModal = () => { 
     currentReward.value = {
@@ -253,7 +274,6 @@ const openCreateModal = () => {
         terms: "",
         status: 'Draft',
     }
-
     modalType.value = 'create';
     showModal.value = true;
 }
@@ -269,14 +289,37 @@ const openEditModal = (reward: RewardItem) => {
 }
 const openDeleteModal = (reward: RewardItem) => { 
     currentReward.value = reward;
-    modalRemoveType.value = 'delete';
     showRemoveModal.value = true
 }
 
 // ===================== Fetch Rewards =====================
-const fetchRewards = () => {
-    getAllRewards().then((res) => {
+const rewardSearch = ref('')
+const pointSearch = ref('')
+const statusSearch = ref('')
+const startDateSearch = ref('')
+const endDateSearch = ref('')
+
+const currentPage = ref(1)
+const pageSize = 10
+const totalCount = ref(0)
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) fetchRewards(page)
+}
+const fetchRewards = (page = 1) => {
+    currentPage.value = page
+
+    getAllRewards(
+    page, 
+    rewardSearch.value.trim(), 
+    pointSearch.value, 
+    statusSearch.value.trim(),
+    startDateSearch.value,
+    endDateSearch.value)
+    .then((res) => {
         console.log(res.data); 
+        
         tableData.value = res.data.data.results.map((item: any) => ({
             id: item.id,
             rewardName: item.reward_title,
@@ -287,104 +330,194 @@ const fetchRewards = () => {
             description: item.reward_description,
             terms: item.reward_terms_and_conditions,
             status: item.reward_status,
-            image: item.file
+            // fileId: item.file,
+            fileDetails: item.file || null,
         }));
     });
 };
 onMounted(fetchRewards);
+watch([rewardSearch, pointSearch, statusSearch, startDateSearch, endDateSearch], () => {
+    fetchRewards(1) // Reset to page 1 on any search input change
+})
+
 
 // ===================== Publish Reward =====================
-const publishReward = () => {
-    if (modalType.value === 'create') {
+const publishReward = async () => {
+    try {
+        // First, upload the file if one is selected
+        let fileId = null;
+        
+        if (selectedFile.value) {
+            try {
+                const uploadResponse = await uploadFile(selectedFile.value);
+                if (isSuccess(uploadResponse.status)) {
+                    // Just store the file ID or reference instead of the entire file data
+                    fileId = uploadResponse.data.data.id; // Adjust based on your API response structure
+                    console.log("File uploaded successfully, ID:", fileId);
+                }
+            } catch (uploadError) {
+                console.error("File upload error:", uploadError);
+                    Swal.fire({
+                    icon: "error",
+                    title: "File upload failed",
+                    text: "Please try again",
+                });
+                return; // Stop if file upload fails
+            }
+        } else if (currentReward.value.fileDetails && currentReward.value.fileDetails.id) {
+            // Use existing file ID if available
+            fileId = currentReward.value.fileDetails.id;
+        }
+        
+        // Prepare data based on whether we're creating or editing
         const data = {
             reward_title: currentReward.value.rewardName || "",
             reward_points_required: currentReward.value.rewardPoints || 0,
-            reward_created_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-            // image: currentReward.value.image || "",
             reward_quantity: currentReward.value.quantity || 0,
             reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss") || "",
             reward_description: currentReward.value.description || "",
             reward_terms_and_conditions: currentReward.value.terms || "",
-            reward_status: "Active"
-        }
-
-        // console.log("Original date:", currentReward.value.reward_end_date_time);
-        // console.log("Formatted date:", dayjs(currentReward.value.reward_end_date_time).format("YYYY-MM-DD HH:mm:ss"));
-        // console.log("Raw dayjs object:", dayjs(currentReward.value.reward_end_date_time));
-
-        showModal.value = false;
-
-        createReward(data).then((res) => {
-            if (isSuccess(res.status)) {
-                Swal.fire({
-                    position: "top-end",
-                    icon: "success",
-                    title: "Reward published successfully",
-                    showConfirmButton: false,
-                    timer: 1500
-                })
-            }
-            fetchRewards()
-        }) 
-    } else if (modalType.value === 'edit') {
-        const data = {
-            reward_title: currentReward.value.rewardName,
-            reward_points_required: currentReward.value.rewardPoints,
-            reward_quantity: currentReward.value.quantity,
-            reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss"),
-            reward_description: currentReward.value.description,
-            reward_terms_and_conditions: currentReward.value.terms,
             reward_status: "Active",
-            // image: currentReward.value.file
-        }
+            // Only send the file ID instead of the whole file object
+            file_id: fileId
+        };
 
+        console.log("Creating/updating reward with data:", data);
         showModal.value = false;
 
-        updateReward(currentReward.value.id, data).then((res) => {
-            if (isSuccess(res.status)) {
-                Swal.fire({
-                    position: "top-end",
-                    icon: "success",
-                    title: "Reward published successfully",
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-                fetchRewards()
-            }
-        })
+        let res;
+        if (modalType.value === 'create') {
+            res = await createReward(data);
+        } else if (modalType.value === 'edit') {
+            res = await updateReward(currentReward.value.id, data);
+        }
+
+        if (isSuccess(res.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "Reward published successfully",
+                showConfirmButton: false,
+                timer: 1500
+            });
+            selectedFile.value = null;
+            fetchRewards();
+        }
+    } catch (error) {
+        console.error("Error with reward:", error.response?.data || error);
+        showModal.value = false;
+        Swal.fire({
+            icon: "error",
+            title: "Error publishing reward",
+            text: "Please check your form and try again",
+        });
     }
-}
+};
 
 // ===================== Save as Draft =====================
-const saveAsDraft = () => {
-    if (modalType.value === 'create') {
+const saveAsDraft = async() => {
+    try {
+        let fileId = null;
+
+        if (selectedFile.value) {
+            try {
+                const uploadResponse = await uploadFile(selectedFile.value)
+                if (isSuccess(uploadResponse.status)) {
+                    fileId = uploadResponse.data.data.id;
+                    console.log("File uploaded successfully, ID:", fileId);
+                    currentReward.value.fileDetails = uploadResponse.data.data;
+                }
+
+            } catch (uploadError) {
+                console.error("File upload error:", uploadError);
+                Swal.fire({
+                    icon: "error",
+                    title: "File upload failed",
+                    text: "Please try again",
+                });
+                return;
+            }
+        } else if (currentReward.value.fileDetails && currentReward.value.fileDetails.id) {
+            fileId = currentReward.value.fileDetails.id;
+        }
+
         const data = {
             reward_title: currentReward.value.rewardName || "",
             reward_points_required: currentReward.value.rewardPoints || 0,
-            reward_created_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-            // image: currentReward.value.image || "",
             reward_quantity: currentReward.value.quantity || 0,
             reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss") || "",
             reward_description: currentReward.value.description || "",
             reward_terms_and_conditions: currentReward.value.terms || "",
-            reward_status: "Draft"
+            reward_status: "Draft",
+            file_id: fileId
         }
 
+        console.log("Update reward payload:", data);
         showModal.value = false;
 
-        createReward(data).then((res) => {
-            if (isSuccess(res.status)) {
+        let res;
+        if (modalType.value === 'create') {
+            res = await createReward(data);
+        } else if (modalType.value === 'edit') {
+            res = await updateReward(currentReward.value.id, data);
+        }
+
+        if (isSuccess(res.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "Reward saved as draft successfully",
+                showConfirmButton: false,
+                timer: 1500
+            });
+            selectedFile.value = null;
+            fetchRewards();
+        }
+    } 
+
+    catch (error) {
+        console.error("Error with reward:", error.response?.data || error);
+        showModal.value = false;
+        Swal.fire({
+            icon: "error",
+            title: "Error publishing reward",
+            text: "Please check your form and try again",
+        });
+    }
+};
+
+// ===================== Save Reward =====================
+const saveEditedReward = async () => {
+    try {
+        // First step: If a new file is selected, upload it first
+        let fileId = null;
+        
+        if (selectedFile.value) {
+            try {
+                const uploadResponse = await uploadFile(selectedFile.value);
+                if (isSuccess(uploadResponse.status)) {
+                    // Get the file ID from the upload response
+                    fileId = uploadResponse.data.data.id;
+                    console.log("File uploaded successfully, ID:", fileId);
+                    
+                    // Update the current reward's file details with the new file data for UI display
+                    currentReward.value.fileDetails = uploadResponse.data.data;
+                }
+            } catch (uploadError) {
+                console.error("File upload error:", uploadError);
                 Swal.fire({
-                    position: "top-end",
-                    icon: "success",
-                    title: "Reward saved as draft",
-                    showConfirmButton: false,
-                    timer: 1500
-                })
+                    icon: "error",
+                    title: "File upload failed",
+                    text: "Please try again",
+                });
+                return;
             }
-            fetchRewards()
-        })
-    } else if (modalType.value === 'edit') {
+        } else if (currentReward.value.fileDetails && currentReward.value.fileDetails.id) {
+            // Use existing file ID if no new file was selected
+            fileId = currentReward.value.fileDetails.id;
+        }
+        
+        // Second step: Update the reward with the file ID reference 
         const data = {
             reward_title: currentReward.value.rewardName,
             reward_points_required: currentReward.value.rewardPoints,
@@ -392,47 +525,21 @@ const saveAsDraft = () => {
             reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss"),
             reward_description: currentReward.value.description,
             reward_terms_and_conditions: currentReward.value.terms,
-            reward_status: 'Draft',
-            // image: currentReward.value.file
-        }
+            reward_status: currentReward.value.status,
+            // Send the file ID in the file_id field instead of the file object
+            file_id: fileId
+        };
 
+        // Only add file_id if it's not null (meaning we either have a new file or kept an existing one)
+        // if (fileId !== null) {
+        //     data.file_id = fileId;
+        // }
+
+        console.log("Update reward payload:", data);
+        
         showModal.value = false;
 
-        updateReward(currentReward.value.id, data).then((res) => {
-            if (isSuccess(res.status)) {
-                Swal.fire({
-                    position: "top-end",
-                    icon: "success",
-                    title: "Reward saved as draft",
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-                fetchRewards()
-            }
-        })
-    }
-}
-
-// ===================== Save Reward =====================
-const saveEditedReward = () => {
-    const data = {
-        reward_title: currentReward.value.rewardName,
-        reward_points_required: currentReward.value.rewardPoints,
-        reward_quantity: currentReward.value.quantity,
-        reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss"),
-        reward_description: currentReward.value.description,
-        reward_terms_and_conditions: currentReward.value.terms,
-        reward_status: currentReward.value.status,
-        // image: currentReward.value.file
-    }
-
-    // console.log("Original date:", currentReward.value.endDate);
-    // console.log("Formatted date:", dayjs(currentReward.value.endDate).format("YYYY-MM-DD"));
-    // console.log("Raw dayjs object:", dayjs(currentReward.value.endDate));
-
-    showModal.value = false;
-
-    updateReward(currentReward.value.id, data).then((res) => {
+        const res = await updateReward(currentReward.value.id, data);
         if (isSuccess(res.status)) {
             Swal.fire({
                 position: "top-end",
@@ -441,11 +548,21 @@ const saveEditedReward = () => {
                 showConfirmButton: false,
                 timer: 1500
             });
-            fetchRewards()
+            selectedFile.value = null;
+            
+            fetchRewards();
         }
-    })
-}
+    } catch (error) {
+        console.error("Error updating reward:", error.response?.data || error);
+        Swal.fire({
+            icon: "error",
+            title: "Error updating reward",
+            text: "Please check your form and try again",
+        });
+    }
+};
 
+// ===================== Delete Reward =====================
 const confirmDelete = () => {
     showRemoveModal.value = false;
 
@@ -463,7 +580,36 @@ const confirmDelete = () => {
     })
 }
 
-// Filter
+// ===================== Handle image =====================
+const selectedFile = ref(null);
+
+const handleFileChange = (event) => {
+  selectedFile.value = event.target.files[0];
+  
+  if (selectedFile.value) {
+    // Create a preview for the UI
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      currentReward.value.fileDetails = {
+        file_url: e.target.result,
+        filename: selectedFile.value.name
+      };
+    };
+    reader.readAsDataURL(selectedFile.value);
+  }
+};
+
+// ===================== Remove Image =====================
+
+const removeImage = () => {
+    // Clear the file from UI
+    currentReward.value.fileDetails = null;
+    // Clear any selected file that might be pending upload
+    selectedFile.value = null;
+
+}
+
+// ===================== Filter =====================
 const searchReward = ref('')
 const searchPoint = ref('')
 const searchStatus = ref('')
@@ -492,19 +638,19 @@ const filteredLogs = computed(() => {
   });
 });
 
-// pagination
-const currentPage = ref(1);
+// ===================== Pagination =====================
+// const currentPage = ref(1);
 const itemsPerPage = 10;
 
 const totalLogs = computed(() => filteredLogs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
+// const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
 
 const paginatedLogs = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   const end = start + itemsPerPage
   return filteredLogs.value.slice(start, end);});
 
-// 翻页功能
+// ===================== Page Turning =====================
 const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--;
 };
@@ -518,43 +664,38 @@ const goToPage = (page: number) => {
 
 
 
+// const handleImage = async(event: Event) => {
+//     const target = event.target as HTMLInputElement;
+//     const file = target.files?.[0];
+//     if (!file) return;
 
-const updateRewardStatus = (reward: RewardItem) => {
-    const currentDate = new Date();
-    const endDateTime = new Date(reward.endDateTime);
-    if (reward.endDateTime) {
-        reward.status = endDateTime > currentDate ? 'Active' : 'Expired';
-    }
-};
+//     try {
+//         const response = await uploadFile(file);
+//         const uploadedFile = response.data;
 
-// Update status on mount
-onMounted(() => {
-    tableData.value.forEach(updateRewardStatus);
-});
+//         // Assuming your API returns a file_url
+//         currentReward.value.image = uploadedFile.file_url;
 
-const currentDate = new Date().toISOString().split("T")[0];
-const validateEndDate = () => {
-    if (currentReward.value.endDate && currentReward.value.endDate < currentDate) {
-        alert("End date cannot be earlier than today.");
-    }
-};
+//         console.log('Uploaded image URL:', uploadedFile.file_url);
+//     } catch (error) {
+//         console.error('Image upload failed:', error);
+//     }
+// }
 
-const resetReward = () => {
-    showRemoveModal.value = false
-}
 
-const handleImageChange = (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (e.target?.result) {
-                currentReward.value.image = e.target.result as string;
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-};
+
+// const handleImageChange = (event: Event) => {
+//     const file = (event.target as HTMLInputElement).files?.[0];
+//     if (file) {
+//         const reader = new FileReader();
+//         reader.onload = (e) => {
+//             if (e.target?.result) {
+//                 currentReward.value.image = e.target.result as string;
+//             }
+//         };
+//         reader.readAsDataURL(file);
+//     }
+// };
 
 </script>
 

@@ -11,14 +11,14 @@
         <!-- Search Bar (Left) -->
         <form class="search-container" role="search">
             <i class="fas fa-search search-icon"></i>
-            <input class="form-control" type="search" placeholder="Search Reward Name" v-model="searchQuery">
+            <input class="form-control" type="search" placeholder="Search Reward Name" v-model="rewardSearch">
         </form>
 
         <!-- Custom Date Range (Right) -->
         <div class="d-flex align-items-center gap-3">
-            <input type="date" class="form-control" id="startDate" placeholder="Start Date" v-model="startDate">
+            <input type="date" class="form-control" id="startDate" placeholder="Start Date" v-model="searchStartDate">
             <span> - </span>
-            <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="endDate">
+            <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="searchEndDate">
         </div>
   </div>
 
@@ -35,7 +35,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="item in paginatedLogs" :key="item.id">
+            <tr v-for="item in tableData" :key="item.id">
                 <td>{{ item.id }}</td>
                 <td>{{ item.reward.rewardName }}</td>
                 <td>{{ item.redeemedOn }}</td>
@@ -51,21 +51,22 @@
 
   <!-- pagination -->
   <div class="d-flex align-items-center mt-3 justify-content-start">
-    <span class="me-3">Total: {{ totalLogs }}</span>
-    
-    <nav aria-label="Page navigation">
-      <ul class="pagination">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" @click="prevPage">Previous</button>
-        </li>
-        <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="nextPage">Next</button>
-          </li>
-      </ul>
-    </nav>
+        <span class="me-3">Total: {{ totalCount }}</span>
+        <nav>
+            <ul class="pagination mb-0">
+                <li :class="['page-item', { disabled: currentPage === 1 }]">
+                    <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+                </li>
+
+                <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+                    <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+                </li>
+
+                <li :class="['page-item', { disabled: currentPage === totalPages }]">
+                    <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+                </li>
+            </ul>
+        </nav>
   </div>
 
   <!-- View Reward Details Modal -->
@@ -85,7 +86,7 @@
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Image:</label>
                                 <div id="drop-area">
-                                    <img :src="currentReward.reward.img" alt="Reward Image" class="image" disabled>
+                                    <img :src="currentReward.reward.fileDetails.file" :alt="currentReward.reward.fileDetails.filename" class="image" disabled>
                                 </div>
                             </div>
                             <div class="form-group mb-4">
@@ -131,9 +132,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { getCurrentUser, getRewardRedemption } from '@/api/reward';
+import { getCurrentUser, getEmployeeRewardRedemption, getRewardRedemption } from '@/api/reward';
 import type { RewardRedemptionItem} from '@/interface/RewardInterface.ts'
 import dayjs from 'dayjs';
 import Datepicker from '@vuepic/vue-datepicker';
@@ -154,9 +155,28 @@ const fetchUserId = () => {
 // ===================== Fetch Reward Redemption =====================
 const tableData = ref<RewardRedemptionItem[]>([]);
 
-const fetchRewardRedemption = () => {
-    getRewardRedemption().then((res) => {
+const rewardSearch = ref('')
+const searchStartDate = ref('')
+const searchEndDate = ref('')
 
+const currentPage = ref(1)
+const pageSize = 10
+const totalCount = ref(0)
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) fetchRewardRedemption(page)
+}
+
+const fetchRewardRedemption = (page = 1) => {
+    currentPage.value = page
+
+    getEmployeeRewardRedemption(
+    page, 
+    rewardSearch.value.trim(), 
+    searchStartDate.value,
+    searchEndDate.value)
+    .then((res) => {
         console.log(res.data)
         const userId = currentUserData.id;
 
@@ -169,12 +189,15 @@ const fetchRewardRedemption = () => {
                 rewardName: item.reward.reward_title,
                 description: item.reward.reward_description,
                 terms: item.reward.reward_terms_and_conditions,
-                points: item.reward.reward_points_required,
-                image: item.reward?.file?.file_url ?? '',                
+                points: item.reward.reward_points_required,          
                 endDateTime: dayjs(item.reward.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
                 quantity: item.reward.reward_quantity,
                 status: item.reward.reward_status,
-                createdOn: item.reward?.reward_created_date
+                createdOn: item.reward?.reward_created_date,
+                fileDetails: {
+                    file: item.file?.file_url || '',
+                    filename: item.file?.filename
+                }
             }
         }));
     })
@@ -182,6 +205,9 @@ const fetchRewardRedemption = () => {
 onMounted(() => {
     fetchUserId();
     fetchRewardRedemption();
+})
+watch([rewardSearch, searchStartDate, searchEndDate], () => {
+  fetchRewardRedemption(1) // Reset to page 1 on any search input change
 })
 
 // ===================== Open modal =====================
@@ -216,11 +242,11 @@ const filteredLogs = computed(() => {
 });
 
 // ===================== Pagination =====================
-const currentPage = ref(1);
+// const currentPage = ref(1);
 const itemsPerPage = 5;
 
 const totalLogs = computed(() => filteredLogs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
+// const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
 
 const paginatedLogs = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;

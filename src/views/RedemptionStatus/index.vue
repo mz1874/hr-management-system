@@ -7,15 +7,15 @@
         <div class="d-flex gap-3 ">
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
-                <input class="form-control" type="search" placeholder="Search Employee Name" v-model="searchName">
+                <input class="form-control" type="search" placeholder="Search Employee Name" v-model="userSearch">
                 <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
-                <input class="form-control" type="search" placeholder="Search Reward Name" v-model="searchReward">
+                <input class="form-control" type="search" placeholder="Search Reward Name" v-model="rewardSearch">
                 <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
-            <select class="search-container form-select" v-model="searchStatus">
+            <select class="search-container form-select" v-model="statusSearch">
                 <option value="">All Status</option>
                 <option value="Received">Received</option>
                 <option value="Not Yet Received">Not Yet Received</option>
@@ -29,7 +29,7 @@
             </div>
             <div class="col-md-auto">
                 <div class="input-group">
-                    <input type="date" class="form-control " id="startDate" placeholder="Start Date" v-model="startDate">
+                    <input type="date" class="form-control " id="startDate" placeholder="Start Date" v-model="searchStartDate">
                 </div>
             </div>
             <div class="col-auto">
@@ -37,7 +37,7 @@
             </div>
             <div class="col-md-auto">
                 <div class="input-group">
-                    <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="endDate">
+                    <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="searchEndDate">
                 </div>
             </div>
         </div>
@@ -57,7 +57,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="item in paginatedLogs" :key="item.id">
+                <tr v-for="item in tableData" :key="item.id">
                     <th>{{ item.id }}</th>
                     <td>{{ item.user.name }}</td>
                     <td>{{ item.redeemedOn }}</td>
@@ -73,21 +73,23 @@
 
     <!-- pagination -->
     <div class="d-flex align-items-center mt-3 justify-content-start">
-        <span class="me-3">Total: {{ totalLogs }}</span>
+        <span class="me-3">Total: {{ totalCount }}</span>
         
-        <nav aria-label="Page navigation">
-            <ul class="pagination">
-                <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                    <button class="page-link" @click="prevPage">Previous</button>
-                </li>
-                <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-                    <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-                </li>
-                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                    <button class="page-link" @click="nextPage">Next</button>
-                </li>
-            </ul>
-        </nav>
+        <nav>
+        <ul class="pagination mb-0">
+          <li :class="['page-item', { disabled: currentPage === 1 }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+          </li>
+
+          <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+          </li>
+
+          <li :class="['page-item', { disabled: currentPage === totalPages }]">
+            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
     </div>
 
     <!-- Modal for Change Status -->
@@ -124,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import type { RewardRedemptionItem } from '@/interface/RewardInterface'
 import { getRewardRedemption, patchRewardRedemption } from '@/api/reward';
 import dayjs from 'dayjs';
@@ -155,31 +157,60 @@ const isSaveDisabled = computed(() => {
 });
 
 //fetch reward redemption information
-const fetchRewardRedemption = () => {
-    getRewardRedemption().then((res) => {
-        tableData.value = res.data.data.results.map((item: any) => ({
-            id: item.id,
-            redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
-            pointsDeducted: item.points_deducted,
-            status: item.reward_redemption_status,
-            reward: {
-                rewardName: item.reward.reward_title,
-                description: item.reward.reward_description,
-                terms: item.reward.reward_terms_and_conditions,
-                points: item.reward.reward_points_required,
-                image: item.reward?.file?.file_url ?? '',                
-                endDateTime: dayjs(item.reward.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
-                quantity: item.reward.reward_quantity,
-                status: item.reward.reward_status,
-                createdOn: item.reward?.reward_created_date
-            },
-            user: {
-                name: item.user.username
-            }
-        }))
-    })
+const rewardSearch = ref('')
+const userSearch = ref('')
+const statusSearch = ref('')
+const searchStartDate = ref('')
+const searchEndDate = ref('')
+
+const currentPage = ref(1)
+const pageSize = 10
+const totalCount = ref(0)
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) fetchRewardRedemption(page)
 }
+
+const fetchRewardRedemption = (page = 1) => {
+    currentPage.value = page
+
+  getRewardRedemption(
+    page, 
+    rewardSearch.value.trim(), 
+    userSearch.value.trim(), 
+    statusSearch.value.trim(),
+    searchStartDate.value,
+    searchEndDate.value)
+    .then((res) => {
+        totalCount.value = res.data.data.count;  
+        tableData.value = res.data.data.results.map((item: any) => ({
+        id: item.id,
+        redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
+        pointsDeducted: item.points_deducted,
+        status: item.reward_redemption_status,
+        reward: {
+            rewardName: item.reward.reward_title,
+            description: item.reward.reward_description,
+            terms: item.reward.reward_terms_and_conditions,
+            points: item.reward.reward_points_required,
+            image: item.reward?.file?.file_url ?? '',
+            endDateTime: dayjs(item.reward.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
+            quantity: item.reward.reward_quantity,
+            status: item.reward.reward_status,
+            createdOn: item.reward?.reward_created_date,
+        },
+        user: {
+            name: item.user.username,
+        },
+    }));
+  });
+};
+
 onMounted(fetchRewardRedemption)
+watch([rewardSearch, userSearch, statusSearch, searchStartDate, searchEndDate], () => {
+  fetchRewardRedemption(1) // Reset to page 1 on any search input change
+})
 
 // Saved changed redemption status of the reward
 const saveChangedStatus = () => {
@@ -202,6 +233,10 @@ const saveChangedStatus = () => {
         }
     })
 }
+
+
+
+
 
 // filter
 const searchReward = ref('')
@@ -233,11 +268,11 @@ const filteredLogs = computed(() => {
 });
 
 // pagination
-const currentPage = ref(1);
+// const currentPage = ref(1);
 const itemsPerPage = 10;
 
 const totalLogs = computed(() => filteredLogs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
+// const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
 
 const paginatedLogs = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;

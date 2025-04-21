@@ -38,15 +38,19 @@
 
       <!-- Department Filter -->
       <div class="d-flex justify-content-center my-3">
-        <select v-model="selectedDepartment" class="form-select mx-2" style="width: 150px;" @change="handleDepartmentChange">
+        <select v-model="selectedDepartment" class="form-select mx-2" style="width: 150px;"
+          @change="handleDepartmentChange">
           <option v-for="dept in departments" :key="dept.id" :value="dept">
             {{ dept.department_name }}
           </option>
         </select>
         <!-- Month Filter -->
         <select v-model="selectedMonth" class="form-select mx-2" style="width: 150px;">
-          <option v-for="month in months" :key="month" :value="month">{{ month }}</option>
+          <option v-for="(month, idx) in months" :key="idx" :value="idx + 1">
+            {{ month }}
+          </option>
         </select>
+
       </div>
 
       <!-- Chart Section -->
@@ -63,14 +67,15 @@ import Chart from 'chart.js/auto';
 import { selectAllDepartments } from "@/api/department.ts";
 import { selectAllKpis } from "@/api/kpiAdmin.ts";
 import { isSuccess } from '@/utils/httpStatus';
+import Swal from 'sweetalert2';
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let chartInstance: Chart | null = null;
 
 const departments = ref<any[]>([]);
 const selectedDepartment = ref<any>({});
-const selectedMonth = ref('January');
-const selectedStatus = ref('');  // Initialize selectedStatus here
+const selectedMonth = ref<number>(1);
+const selectedStatus = ref('');
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -79,6 +84,9 @@ const totalTasks = computed(() => kpiData.value.length);
 const completedTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Completed').length);
 const ongoingTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Ongoing').length);
 const delayedTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Delayed').length);
+
+// Set to track which filter combos have shown an empty alert
+const emptyAlertedFilters = ref<Set<string>>(new Set());
 
 const fetchDepartments = () => {
   selectAllDepartments().then((res) => {
@@ -95,32 +103,45 @@ const fetchDepartments = () => {
 const fetchKpis = () => {
   const params: any = {
     department_id: selectedDepartment.value.id,
-    status: selectedStatus.value,  // Ensure the selected status is passed in the request
-    month: selectedMonth.value,
+    status:        selectedStatus.value,
+    month:         selectedMonth.value,
   };
-  
-  console.log("Fetching KPI data with params:", params);
 
-  selectAllKpis(params).then((res) => {
-    if (isSuccess(res.status)) {
-      kpiData.value = res.data.data.results;
-      updateChart(); // Update chart with new data
-    }
-  }).catch((error) => {
-    console.error("Error fetching KPIs:", error);
-  });
+  // Create a unique key for this filter set
+  const filterKey = `${params.department_id}-${params.status}-${params.month}`;
+
+  selectAllKpis(params)
+    .then((res) => {
+      if (isSuccess(res.status)) {
+        kpiData.value = res.data.data.results;
+
+        // Only show the alert once per unique filterKey
+        if (kpiData.value.length === 0 && !emptyAlertedFilters.value.has(filterKey)) {
+          emptyAlertedFilters.value.add(filterKey);
+          Swal.fire({
+            icon: 'info',
+            title: 'Notice',
+            text: 'There are currently no tasks to display',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
+
+        updateChart();
+      }
+    })
+    .catch((error) => {
+      console.error('Error fetching KPIs:', error);
+    });
 };
 
 const updateChart = () => {
-  // Count tasks by status
   const doneCount = kpiData.value.filter((task: any) => task.kpi_status === 'Completed').length;
   const ongoingCount = kpiData.value.filter((task: any) => task.kpi_status === 'Ongoing').length;
   const delayedCount = kpiData.value.filter((task: any) => task.kpi_status === 'Delayed').length;
 
-  // Print the data to the console for debugging
   console.log("Chart Data:", [doneCount, ongoingCount, delayedCount]);
 
-  // If the chart instance exists, update it
   if (chartInstance) {
     chartInstance.data.datasets[0].data = [doneCount, ongoingCount, delayedCount];
     chartInstance.update();
@@ -128,10 +149,6 @@ const updateChart = () => {
 };
 
 onMounted(() => {
-  // Fetch initial departments
-  fetchDepartments();
-  
-  // Initialize Chart.js with default data
   if (chartCanvas.value) {
     chartInstance = new Chart(chartCanvas.value, {
       type: 'pie',
@@ -139,7 +156,7 @@ onMounted(() => {
         labels: ['Done', 'Ongoing', 'Delayed'],
         datasets: [
           {
-            data: [0, 0, 0],  // Initialize with 0s
+            data: [0, 0, 0],
             backgroundColor: ['#6CC763', '#FFC107', '#F2A9A3'],
             borderColor: ['#ABE3A5', '#FDD853', '#F3C5C1'],
             borderWidth: 3
@@ -149,8 +166,7 @@ onMounted(() => {
     });
   }
 
-  // Fetch KPIs after chart initialization
-  fetchKpis();
+  fetchDepartments();
 });
 
 watch([selectedDepartment, selectedMonth, selectedStatus], fetchKpis);
