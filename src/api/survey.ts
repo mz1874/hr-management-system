@@ -59,6 +59,7 @@ export interface EvaluationInstance {
 
 // Paginated response structure (example for forms)
 export interface PaginatedResponse<T> {
+    data: any;
     count: number;
     next: string | null;
     previous: string | null;
