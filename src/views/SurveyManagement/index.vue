@@ -84,7 +84,7 @@ const fetchSurveys = async () => {
     const response = await getAllEvaluationForms(currentPage.value, params);
 
     // Use optional chaining and nullish coalescing for safety
-    tableData.value = (response?.data?.results ?? []).map(form => ({
+    tableData.value = (response?.data?.data.results ?? []).map(form => ({
         id: form.id,
         name: form.name,
         publishTime: form.publish_time,
