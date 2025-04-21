@@ -32,6 +32,7 @@ function getRoleNameById(id: number) {
   const role = tableData.value.find(r => r.id === id);
   return role ? role.name : 'Unknown';
 }
+
 onMounted(() => {
   departmentStore.fetchDepartments();
   fetchRoles();
@@ -437,36 +438,44 @@ function resetPassword(staff: Staff) {
 
           <div class="row">
             <div class="mb-3 col-md-6">
-              <label for="staffRoles" class="form-label">Roles</label>
-              <select
-                  id="staffRoles"
-                  v-model="selectedStaff.role"
-                  class="form-select"
-                  multple
-              >
-                <option
+              <label class="form-label">Roles</label>
+              <div class="btn-group flex-wrap" role="group">
+                <div
                     v-for="role in tableData"
                     :key="role.id"
-                    :value="role.id"
+                    class="form-check d-inline-block me-2 mb-2"
                 >
-                  {{ role.name }}
-                </option>
-              </select>
+                  <input
+                      type="checkbox"
+                      class="btn-check"
+                      :id="'btn-check-' + role.id"
+                      :value="role.id"
+                      v-model="selectedStaff.role"
+                      autocomplete="off"
+                  />
+                  <label
+                      class="btn btn-outline-primary"
+                      :for="'btn-check-' + role.id"
+                  >
+                    {{ role.name }}
+                  </label>
+                </div>
+              </div>
             </div>
 
             <!-- 显示选中的角色 -->
             <div class="mb-3 col-md-6">
               <label class="form-label">Selected Roles:</label>
               <div class="d-flex flex-wrap gap-2">
-            <span
-                v-for="roleId in selectedStaff.role"
-                :key="roleId"
-                class="badge bg-info"
-            >
-              {{ getRoleNameById(roleId) }}
-            </span>
-              </div>
-            </div>
+              <span
+                  v-for="roleId in selectedStaff.role"
+                  :key="roleId"
+                  class="badge bg-info"
+              >
+                {{ getRoleNameById(roleId) }}
+              </span>
+                        </div>
+                      </div>
           </div>
         </div>
 
