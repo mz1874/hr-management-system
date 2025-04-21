@@ -1,16 +1,18 @@
 export interface Staff {
     id: number
-    name: string
-    dateOfBirth: string
-    role: number[]
+    username: string,
+    password: string,
+    date_of_birth: string
+    roles: number[]
     department: number
     department_name: string
     status: boolean
     imgUrl:string
-    employmentDate: string
-    resignationDate?: string  // Add new property
+    employment_time: string
+    resignationDate?: string
     numberOfLeaves: number
     medicalLeaves: number
     annualLeaves: number
     totalPoints: number
+    leave_entitlements : []
 }

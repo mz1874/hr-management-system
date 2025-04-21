@@ -14,18 +14,18 @@ const departmentStore = useDepartmentStore();
 const tableData = ref<RoleItem[]>([]);
 
 function fetchRoles() {
-    pageRoles(1, 1000).then(res => {
-      if (isSuccess(res.status)) {
-        tableData.value = res.data.data.results.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          permissions: item.permissions,
-          createdOn: dayjs(item.create_time).format("YYYY-MM-DD")
-        }));
-      }
-    }).catch(error=>{
-      console.error("Error fetch roles:", error);
-    })
+  pageRoles(1, 1000).then(res => {
+    if (isSuccess(res.status)) {
+      tableData.value = res.data.data.results.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        permissions: item.permissions,
+        createdOn: dayjs(item.create_time).format("YYYY-MM-DD")
+      }));
+    }
+  }).catch(error => {
+    console.error("Error fetch roles:", error);
+  })
 }
 
 function getRoleNameById(id: number) {
@@ -47,7 +47,8 @@ const {
   currentPage,
   isSearching,
   searchDepartmentId,
-  searchName
+  searchName,
+  handlerAddStaff
 } = useStaff()
 
 // State
@@ -66,18 +67,20 @@ const showDeleteStaffModal = ref(false)
 
 const selectedStaff = ref<Staff>({
   id: 0,
-  name: '',
-  dateOfBirth: '',
+  username: '',
+  password: '123456',
+  date_of_birth: '',
   department_name: '',
-  role: [],
+  roles: [],
   department: 0,
   imgUrl: '',
   status: false,
-  employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
+  employment_time: new Date().toISOString().split('T')[0], // Set default to current date
   numberOfLeaves: 0,
   medicalLeaves: 0,
   annualLeaves: 0,
-  totalPoints: 0
+  totalPoints: 0,
+  leave_entitlements: []
 })
 
 
@@ -94,18 +97,20 @@ const searchStaff = (searchData: string) => {
 const openAddStaffModal = () => {
   selectedStaff.value = {
     id: 1,
-    name: '',
-    dateOfBirth: '',
+    username: '',
+    password: '123456',
+    date_of_birth: '',
     department_name: '',
-    role: [],
+    roles: [],
     department: selectedDepartment.value,
     status: false,
     imgUrl: '',
-    employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
+    employment_time: new Date().toISOString().split('T')[0], // Will be set automatically
     numberOfLeaves: 0,
     medicalLeaves: 0,
     annualLeaves: 0,
-    totalPoints: 0
+    totalPoints: 0,
+    leave_entitlements: []
   }
   showAddStaffModal.value = true
 }
@@ -127,7 +132,7 @@ const openDeleteStaffModal = (staff: Staff) => {
 }
 
 const addStaff = () => {
-  staffData.results.push({...selectedStaff.value})
+  handlerAddStaff(selectedStaff.value)
   showAddStaffModal.value = false
 }
 
@@ -238,8 +243,8 @@ function resetPassword(staff: Staff) {
             <tbody>
             <tr v-for="staff in staffData.results" :key="staff.id">
               <td>{{ staff.id }}</td>
-              <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
-              <td>{{ staff.dateOfBirth }}</td>
+              <td>{{ staff.username }}</td> <!-- Remove the icon div wrapper -->
+              <td>{{ staff.date_of_birth }}</td>
               <td>{{ staff.department_name }}</td>
               <td>
                   <span
@@ -251,7 +256,7 @@ function resetPassword(staff: Staff) {
                     {{ staff.status ? "Active" : "Inactive" }}
                   </span>
               </td>
-              <td>{{ staff.employmentDate }}</td>
+              <td>{{ staff.employment_time }}</td>
               <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
@@ -353,7 +358,7 @@ function resetPassword(staff: Staff) {
             <div class="col-md-6 mb-3">
               <label for="staffName" class="form-label">Name</label>
               <input
-                  v-model="selectedStaff.name"
+                  v-model="selectedStaff.username"
                   type="text"
                   class="form-control"
                   id="staffName"
@@ -387,7 +392,7 @@ function resetPassword(staff: Staff) {
             <div class="mb-3 col-md-6">
               <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
               <input
-                  v-model="selectedStaff.dateOfBirth"
+                  v-model="selectedStaff.date_of_birth"
                   type="date"
                   class="form-control"
                   id="staffDateOfBirth"
@@ -421,14 +426,14 @@ function resetPassword(staff: Staff) {
                   class="form-select"
                   id="staffStatus"
               >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
               </select>
             </div>
             <div class="mb-3 col-md-6">
               <label class="form-label">Employment Date</label>
               <input
-                  :value="selectedStaff.employmentDate"
+                  :value="selectedStaff.employment_time"
                   type="date"
                   class="form-control"
               >
@@ -450,7 +455,7 @@ function resetPassword(staff: Staff) {
                       class="btn-check"
                       :id="'btn-check-' + role.id"
                       :value="role.id"
-                      v-model="selectedStaff.role"
+                      v-model="selectedStaff.roles"
                       autocomplete="off"
                   />
                   <label
@@ -468,17 +473,16 @@ function resetPassword(staff: Staff) {
               <label class="form-label">Selected Roles:</label>
               <div class="d-flex flex-wrap gap-2">
               <span
-                  v-for="roleId in selectedStaff.role"
+                  v-for="roleId in selectedStaff.roles"
                   :key="roleId"
                   class="badge bg-info"
               >
                 {{ getRoleNameById(roleId) }}
               </span>
-                        </div>
-                      </div>
+              </div>
+            </div>
           </div>
         </div>
-
 
 
         <div class="modal-footer">
@@ -512,7 +516,7 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <p><strong>Name:</strong> {{ selectedStaff.name }}</p>
+          <p><strong>Name:</strong> {{ selectedStaff.username }}</p>
           <div class="mb-3">
             <label class="form-label">Profile Picture</label>
             <img
@@ -523,11 +527,11 @@ function resetPassword(staff: Staff) {
                 style="max-height: 150px;"
             >
           </div>
-          <p><strong>Date of Birth:</strong> {{ selectedStaff.dateOfBirth }}</p>
-          <p><strong>Role:</strong> {{ selectedStaff.role }}</p>
+          <p><strong>Date of Birth:</strong> {{ selectedStaff.date_of_birth }}</p>
+          <p><strong>Role:</strong> {{ selectedStaff.roles }}</p>
           <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
           <p><strong>Status:</strong> {{ selectedStaff.status }}</p>
-          <p><strong>Employment Date:</strong> {{ selectedStaff.employmentDate }}</p>
+          <p><strong>Employment Date:</strong> {{ selectedStaff.employment_time }}</p>
           <p v-if="selectedStaff.resignationDate">
             <strong>Resignation Date:</strong> {{ selectedStaff.resignationDate }}
           </p>
@@ -564,7 +568,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label for="editStaffName" class="form-label">Name</label>
             <input
-                v-model="selectedStaff.name"
+                v-model="selectedStaff.username"
                 type="text"
                 class="form-control"
                 id="editStaffName"
@@ -590,7 +594,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label for="editStaffDateOfBirth" class="form-label">Date of Birth</label>
             <input
-                v-model="selectedStaff.dateOfBirth"
+                v-model="selectedStaff.date_of_birth"
                 type="date"
                 class="form-control"
                 id="editStaffDateOfBirth"
@@ -600,7 +604,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label for="editStaffRole" class="form-label">Role</label>
             <input
-                v-model="selectedStaff.role"
+                v-model="selectedStaff.roles"
                 type="text"
                 class="form-control"
                 id="editStaffRole"
@@ -635,7 +639,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label class="form-label">Employment Date</label>
             <input
-                :value="selectedStaff.employmentDate"
+                :value="selectedStaff.employment_time"
                 type="date"
                 class="form-control"
                 disabled
@@ -673,7 +677,7 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete the staff :"{{ selectedStaff.name }}"?</p>
+          <p>Are you sure you want to delete the staff :"{{ selectedStaff.username }}"?</p>
           <p>This will set their resignation date to today.</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>

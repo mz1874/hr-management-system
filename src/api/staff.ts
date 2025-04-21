@@ -1,4 +1,5 @@
 import axios from './axios'
+import type {Staff} from "@/interface/UserInterface.ts";
 
 export function selectAllStaffs(page: number = 1) {
     return axios.get('/api/staff/?page=' + page);
@@ -28,4 +29,8 @@ export function deleteStaff(id: number): any {
 
 export function resetPassword(id: number): any {
     return axios.post(`/api/staff/${id}/reset-password/`);
+}
+
+export function addStaff(staff: Staff): any {
+    return axios.post(`/api/staff/`, staff);
 }
