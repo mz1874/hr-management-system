@@ -5,8 +5,17 @@ export function createReward(data: any) {
     return axios.post(`/api/reward/`, data)
 }
 
-export function getAllRewards() {
-    return axios.get(`/api/reward/`)
+export function getAllRewards(page = 1, rewardName = '', rewardPoints = '', status = '', startDate = '', endDate = '') {
+    const params = {
+        page,
+        ...(rewardName ? { reward_title: rewardName } : {}),
+        ...(rewardPoints ? { reward_points_required: rewardPoints } : {}),
+        ...(status ? { reward_status: status } : {}),
+        ...(startDate ? { start_date: startDate } : {}),
+        ...(endDate ? { end_date: endDate } : {}),
+    };
+  
+    return axios.get('/api/reward/', { params });
 }
 
 export function getReward(id: Number) {
@@ -39,10 +48,37 @@ export function createRedemption(data: any) {
     return axios.post(`/api/reward_redemption/`, data)
 }
 
-export function getRewardRedemption() {
-    return axios.get(`/api/reward_redemption/`)
+export function getRewardRedemption(page = 1, rewardName = '', name = '', status = '', startDate = '', endDate = '') {
+    const params = {
+        page,
+        ...(rewardName ? { reward_title: rewardName } : {}),
+        ...(name ? { username: name } : {}),
+        ...(status ? { reward_redemption_status: status } : {}),
+        ...(startDate ? { start_date: startDate } : {}),
+        ...(endDate ? { end_date: endDate } : {}),
+    };
+  
+    return axios.get('/api/reward_redemption/', { params });
 }
+
+export function getEmployeeRewardRedemption(page = 1, rewardName = '', startDate = '', endDate = '') {
+    const params = {
+        page,
+        ...(rewardName ? { reward_title: rewardName } : {}),
+        ...(startDate ? { start_date: startDate } : {}),
+        ...(endDate ? { end_date: endDate } : {}),
+    };
+  
+    return axios.get('/api/reward_redemption/', { params });
+}
+
+
 
 export function patchRewardRedemption(id: Number, data: any) {
     return axios.patch(`/api/reward_redemption/${id}/`, data)
+}
+
+// Point History
+export function getPointEarnedHistory() {
+    return axios.get(`/api/point_history/`)
 }
