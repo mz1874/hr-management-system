@@ -10,6 +10,9 @@ const currentRoute = ref<Partial<RouteItem>>({})
 const modalType = ref<'add' | 'edit' | 'addChild'>('add')
 const expandedIds = ref<number[]>([])
 
+/*是否为添加子路由的方式*/
+const ifAddSubRouter = ref<boolean>(false)
+
 // 生成唯一ID
 let nextId = 4
 const generateId = () => nextId++
@@ -24,11 +27,11 @@ const toggleExpand = (id: number) => {
   }
 }
 
-let hasParent = ref(0);
 let menuType = ref(0)
 
 function handleParentRouteChange()
 {
+
 }
 
 // 扁平化树形数据用于表格展示
@@ -71,6 +74,7 @@ const updateRoute = (updatedRoute: RouteItem) => {
 
 // 处理添加根路由
 const handleAddRoot = () => {
+  ifAddSubRouter.value = false;
   currentRoute.value = {
     id: generateId(),
     parent: null, // 根路由的parentId为0
@@ -89,6 +93,7 @@ const handleAddRoot = () => {
 
 // 处理添加子路由
 const handleAddChild = (parent: RouteItem) => {
+  ifAddSubRouter.value = true;
   currentRoute.value = {
     id: generateId(),
     parent: parent.id,
@@ -131,7 +136,6 @@ const deleteRoute = (routes: RouteItem[], id: number): RouteItem[] => {
 // 处理表单提交
 const handleSubmit = () => {
   if (!currentRoute.value) return
-
   const route = {
     ...currentRoute.value,
     id: currentRoute.value.id || generateId(),
@@ -143,6 +147,7 @@ const handleSubmit = () => {
     updateRoute(route)
   } else {
     console.log(route)
+
     addRoute(route)
 
   }
@@ -250,12 +255,12 @@ const handleSubmit = () => {
               <div class="row">
                 <div class="col-6 mb-3">
                   <label class="form-label">Request path</label>
-                  <input type="text" :disabled="!menuType" class="form-control" v-model="currentRoute.path">
+                  <input type="text" :disabled="!menuType" class="form-control" v-model="currentRoute.path" required>
                 </div>
                 <!-- 其他参数部分 -->
                 <div class="col-6 mb-3">
                   <label class="form-label">Code</label>
-                  <input type="text" class="form-control" v-model="currentRoute.code">
+                  <input type="text" class="form-control" v-model="currentRoute.code" required>
                 </div>
               </div>
 
@@ -263,21 +268,21 @@ const handleSubmit = () => {
               <div class="row">
                 <div class="col-6 mb-3">
                   <label class="form-label">Description</label>
-                  <input type="text" class="form-control" v-model="currentRoute.description">
+                  <input type="text" class="form-control" v-model="currentRoute.description" required>
                 </div>
                 <div class="col-6 mb-3">
                   <label class="form-label">Component</label>
-                  <input type="text"  :disabled="!menuType" class="form-control" v-model="currentRoute.component">
+                  <input type="text"  :disabled="!menuType" class="form-control" v-model="currentRoute.component" required>
                 </div>
               </div>
 
               <div class="row">
-                <div class="col-6 mb-3">
-                  <label class="form-label">Icon</label>
-                  <input type="text" class="form-control" v-model="currentRoute.icon">
-                </div>
+<!--                <div class="col-6 mb-3">-->
+<!--                  <label class="form-label">Icon</label>-->
+<!--                  <input type="text" class="form-control" v-model="currentRoute.icon">-->
+<!--                </div>-->
                 <!-- 如果有父路由，则显示父路由选择列表 -->
-                <div v-if="menuType" class="col-6 mb-3">
+                <div v-if="menuType && ! ifAddSubRouter" class="col-12 mb-3">
                   <label class="form-label">Select Parent Route</label>
                   <select class="form-select" v-model="currentRoute.parent">
                     <option v-for="parent in tableData" :key="parent.id" :value="parent.id">{{ parent.name }}</option>
@@ -291,9 +296,6 @@ const handleSubmit = () => {
                 <label class="form-check-label">Visible</label>
               </div>
               <!-- 父路由部分 -->
-
-
-
               <div class="d-flex justify-content-end">
                 <button type="button" class="btn btn-secondary me-2" @click="showModal = false">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save</button>
