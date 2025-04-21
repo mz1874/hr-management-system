@@ -81,7 +81,7 @@ const fetchSurveys = async () => {
     // Assuming API returns PaginatedResponse<EvaluationForm>
     const response = await getAllEvaluationForms(currentPage.value, params)
     // Map API response (EvaluationForm) to frontend type (EvaluationItem)
-    tableData.value = response.data.results.map(form => ({
+    tableData.value = response.data.data.results.map(form => ({
         id: form.id,
         name: form.name,
         publishTime: form.publish_time, // Map backend publish_time to frontend publishTime
@@ -98,6 +98,7 @@ const fetchSurveys = async () => {
         }))
     }));
     totalSurveys.value = response.data.count
+    console.log(tableData.value)
   } catch (error) {
     console.error("Failed to fetch surveys:", error);
     // TODO: Show error message to user
