@@ -35,9 +35,9 @@
       <tbody>
         <tr v-for="details in paginatedLogs" :key="details.id">
           <td>{{ details.id}}</td>
-          <td>{{ details.received}}</td>
-          <td class="text-success">+ {{ details.points}}</td>
-          <td>{{ details.taskName}}</td>
+          <td>{{ details.pointReceivedOn}}</td>
+          <td class="text-success">+ {{ details.pointsEarned}}</td>
+          <td>{{ details.kpi.taskTitle}}</td>
           <td><button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button></td>
         </tr>
       </tbody>
@@ -64,7 +64,7 @@
   </div>
 
   <!-- View Task Details Modal -->
-  <div class="modal fade" id="viewTaskModal" ref="viewTaskModal">
+  <div class="modal fade" id="viewTaskModal" :class="{ show: showModal }" style="display: block" v-if="showModal">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content p-10">
         <div class="modal-header">
@@ -76,57 +76,83 @@
           <form>
             <div class="form-group mb-4">
               <label class="form-label">Task Name: </label>
-              <input type="text" class="form-control" :value="selectedDetails.taskName" disabled>
+              <input type="text" class="form-control" :value="currentPointEarned.kpi.taskTitle" disabled>
             </div>
 
             <div class="form-group mb-4">
               <label class="form-label">Task Description:</label>
-              <textarea class="form-control" disabled>{{ selectedDetails.taskDescription }}</textarea>
+              <textarea class="form-control" disabled>{{ currentPointEarned.kpi.taskDescription }}</textarea>
             </div>
 
             <div class="form-group mb-4">
               <div class="row">
                 <div class="col-md-6 mb-2">
                   <label class="form-label">Start Date:</label>
-                  <input type="date" class="form-control" id="startDate" placeholder="Start Date" :value="selectedDetails.startDate" disabled>
+                  <input type="date" class="form-control" id="startDate" placeholder="Start Date" :value="currentPointEarned.kpi.startDate" disabled>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Completion Date:</label>
-                  <input type="date" class="form-control" id="endDate" placeholder="End Date" :value="selectedDetails.endDate" disabled>
+                  <input type="date" class="form-control" id="endDate" placeholder="End Date" :value="currentPointEarned.kpi.endDate" disabled>
                 </div>
               </div>
             </div>
 
             <div class="form-group mb-4">
               <label class="form-label">Points Given:</label>
-              <input type="number" class="form-control" :value="selectedDetails.points" disabled>
+              <input type="number" class="form-control" :value="currentPointEarned.kpi.pointsEarned" disabled>
             </div>
           </form>          
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
         </div>
       </div>
     </div>
   </div>
+  <div class="modal-backdrop fade show" v-if="showModal"></div>
 
 </template>
 
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Modal } from "bootstrap";
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import type { PointEarnedHistory } from '@/interface/RewardInterface.ts';
+import { getPointEarnedHistory } from '@/api/reward';
+import type { Point } from 'chart.js';
 
-const pointDetails = ref([
-  {id: 1, received: "2024-06-30 11:27:07", points: "50", taskName: "Complete Order", taskDescription: "Deliver order to customer A", startDate: "2025-02-01", endDate: "2025-02-05"},
-  {id: 2, received: "2024-07-30 11:27:07", points: "50", taskName: "Complete Task", taskDescription: "Complete task for client A", startDate: "2025-02-01", endDate: "2025-02-05"},
-  {id: 3, received: "2024-08-30 11:27:07", points: "50", taskName: "Project A", taskDescription: "Work on Project A milestones", startDate: "2025-02-01", endDate: "2025-02-05"},
-  {id: 4, received: "2024-09-30 11:27:07", points: "50", taskName: "Team Building", taskDescription: "Participate in team-building activities", startDate: "2025-02-01", endDate: "2025-02-05"},
-  {id: 5, received: "2024-10-30 11:27:07", points: "50", taskName: "Project B", taskDescription: "Work on Project B deliverables", startDate: "2025-02-01", endDate: "2025-02-05"},
-  {id: 6, received: "2025-01-30 11:27:07", points: "50", taskName: "Team Discussion", taskDescription: "Discuss project updates with the team", startDate: "2025-02-01", endDate: "2025-02-05"},
-  {id: 7, received: "2025-02-05 11:27:07", points: "50", taskName: "Project C", taskDescription: "Develop features for Project C", startDate: "2025-02-01", endDate: "2025-02-05"},
-]);
+const currentPointEarned = ref<any>({})
+
+const tableData = ref<PointEarnedHistory[]>([])
+
+const fetchPointEarned = () => {
+  getPointEarnedHistory().then((res) => {
+    console.log(res.data)
+
+    tableData.value = res.data.data.results.map((item: any) => ({
+      id: item.id,
+      user: item.user,
+      kpi: {
+        taskTitle: item.task_title,
+        taskDescription: item.task_description,
+        startDate: item.task_start_date,
+        endDate: item.task_completion_date,
+        pointsGiven: item.points_earned,
+      },
+      pointReceivedOn: item.points_received_on,
+      pointsEarned: item.points_earned
+    }))
+  })
+}
+onMounted(fetchPointEarned);
+
+//View Modal
+const showModal = ref(false);
+
+const openViewModal = (item: any) => {
+  currentPointEarned.value = item;
+  showModal.value = true;
+};
 
 //search bar and custom date range
 const searchQuery = ref('')
@@ -134,12 +160,12 @@ const startDate = ref('')
 const endDate = ref('')
 
 const filteredLogs = computed(() => {
-  return pointDetails.value.filter(detail => {
+  return tableData.value.filter(detail => {
     //search bar for task name
-    const matchesSearch = detail.taskName.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const matchesSearch = detail.kpi.taskTitle.toLowerCase().includes(searchQuery.value.toLowerCase());
     
     //custom date range for received date
-    const taskDate = new Date(detail.received); // Convert string date to Date object
+    const taskDate = new Date(detail.pointReceivedOn); // Convert string date to Date object
     const start = startDate.value ? new Date(startDate.value) : null;
     const end = endDate.value ? new Date(endDate.value) : null;
 
@@ -170,16 +196,6 @@ const nextPage = () => {
 };
 const goToPage = (page: number) => {
   currentPage.value = page;
-};
-
-//View Modal
-const viewTaskModal = ref();
-const selectedDetails = ref({ taskName: '', taskDescription: '', startDate: '', endDate: '', points: '' });
-
-const openViewModal = (item:any) => {
-  selectedDetails.value = item;
-  const modal = new Modal(viewTaskModal.value);
-  modal.show();
 };
 
 //navigate back to reward mall page
