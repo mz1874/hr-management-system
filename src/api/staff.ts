@@ -34,3 +34,14 @@ export function resetPassword(id: number): any {
 export function addStaff(staff: Staff): any {
     return axios.post(`/api/staff/`, staff);
 }
+
+export function getStaffByDepartment(departmentId: number): any {
+    return axios.get(`/api/staff/by_department/?department_id=${departmentId}`);
+}
+
+export function assignKpiToDepartment(kpiId: number, departmentId: number, target_unit: number): any {
+    return axios.post(`/api/kpi/${kpiId}/assign-to-department/`, {
+        department_id: departmentId,
+        target_unit: target_unit
+    });
+}
