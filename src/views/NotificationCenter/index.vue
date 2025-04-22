@@ -408,20 +408,25 @@ const submitNewAnnouncement = async () => {
       return;
     }
     if (isScheduled) {
-      const scheduleDateTime = new Date(`${newAnnouncement.value.scheduleDate}T${newAnnouncement.value.scheduleTime}`);
+      const scheduleDate = newAnnouncement.value.scheduleDate;
+      const scheduleTime = newAnnouncement.value.scheduleTime || '00:00';
+
+      const scheduleDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
       if (scheduleDateTime < new Date()) {
         Swal.fire({
           icon: "error",
           title: "Oops...",
-          text: "Something went wrong!",
-          footer: '⚠️ Scheduled post time cannot be in the past."',
+          text: "Scheduled post time cannot be in the past.",
+          footer: '⚠️ Please choose a valid schedule date/time.',
           showConfirmButton: false,
-
         });
-        isSubmitting.value = false
+        isSubmitting.value = false;
         return;
       }
     }
+
+    const scheduleTime = newAnnouncement.value.scheduleTime || '00:00';
+
 
     const payload = {
       title: newAnnouncement.value.title,
@@ -430,8 +435,8 @@ const submitNewAnnouncement = async () => {
       departments: newAnnouncement.value.department, 
       ...(isScheduled
         ? {
-            schedule_post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime),
-            post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, newAnnouncement.value.scheduleTime)
+            schedule_post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, scheduleTime),
+            post_time: combineLocalDateTimeToUTC(newAnnouncement.value.scheduleDate, scheduleTime),
           }
         : {
             post_time: new Date().toISOString()
@@ -493,7 +498,10 @@ const submitAnnouncement = async () => {
     }
 
     if (isScheduled) {
-      const scheduleDateTime = new Date(`${selectedAnnouncement.value.scheduleDate}T${selectedAnnouncement.value.scheduleTime}`);
+      const scheduleDate = selectedAnnouncement.value.scheduleDate;
+      const scheduleTime = selectedAnnouncement.value.scheduleTime || '00:00';
+
+      const scheduleDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
       if (scheduleDateTime < new Date()) {
         Swal.fire({
           icon: 'error',
@@ -506,7 +514,6 @@ const submitAnnouncement = async () => {
       }
     }
 
-
     const payload = {
       title: selectedAnnouncement.value.title,
       description: selectedAnnouncement.value.description,
@@ -515,8 +522,15 @@ const submitAnnouncement = async () => {
         : [],
       ...(isScheduled
         ? {
-            schedule_post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime),
-            post_time: combineLocalDateTimeToUTC(selectedAnnouncement.value.scheduleDate, selectedAnnouncement.value.scheduleTime)
+          schedule_post_time: combineLocalDateTimeToUTC(
+            selectedAnnouncement.value.scheduleDate,
+            selectedAnnouncement.value.scheduleTime || '00:00'
+          ),
+          post_time: combineLocalDateTimeToUTC(
+            selectedAnnouncement.value.scheduleDate,
+            selectedAnnouncement.value.scheduleTime || '00:00'
+          )
+
           }
         : {
             schedule_post_time: null,
@@ -618,6 +632,36 @@ const handleBulkDelete = () => {
       });
     });
 };
+
+// Watch for unchecking the "Schedule Post" checkbox in New Announcement
+watch(() => newAnnouncement.value.isScheduled, (isChecked) => {
+  if (!isChecked) {
+    newAnnouncement.value.scheduleDate = '';
+    newAnnouncement.value.scheduleTime = '';
+  }
+});
+
+// Watch for unchecking the "Available For" checkbox in New Announcement
+watch(() => newAnnouncement.value.hasAvailability, (isChecked) => {
+  if (!isChecked) {
+    newAnnouncement.value.department = [];
+  }
+});
+
+// Watch for unchecking the "Schedule Post" checkbox in Edit Announcement
+watch(() => selectedAnnouncement.value.isScheduled, (isChecked) => {
+  if (!isChecked) {
+    selectedAnnouncement.value.scheduleDate = '';
+    selectedAnnouncement.value.scheduleTime = '';
+  }
+});
+
+// Watch for unchecking the "Available For" checkbox in Edit Announcement
+watch(() => selectedAnnouncement.value.hasAvailability, (isChecked) => {
+  if (!isChecked) {
+    selectedAnnouncement.value.departments = [];
+  }
+});
 
 
 </script>
