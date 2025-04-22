@@ -9,7 +9,6 @@ const {
   handleDeleteRole,
   handleRoleAdd,
   count,
-  fetchPage,
   paginationInfo,
   nextPage,
   prevPage,

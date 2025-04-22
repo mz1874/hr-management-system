@@ -36,9 +36,11 @@ export default function useStaff() {
             status: item.status,
             employmentDate: dayjs(item.employment_time).format("YYYY-MM-DD"),
             resignationDate: undefined,
+            numberOfLeaves: item.number_of_leave,
+            medicalLeaves: item.medical_leave,
+            annualLeaves: item.annual_leave,
             imgUrl :"",
             totalPoints : item.total_points,
-            leaveEntitlements: item.leave_entitlements || {}
         };
     }
 

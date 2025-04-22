@@ -56,7 +56,9 @@ import logo from '../../assets/logo.png';
 import {ref} from "vue";
 import {useRouter} from "vue-router";
 import {login, logout} from "@/api/login.ts";
-import {isSuccess} from "@/utils/httpStatus.ts";
+import {getUserRoutes} from "@/api/Router.ts";
+import {mapBackendRoutes} from "@/router/asyncRoutes.ts"; // 上面我们写的路由映射函数
+
 
 const router = useRouter()
 
@@ -72,20 +74,39 @@ function togglePasswordVisibility() {
 async function submitData() {
   if (!username.value.trim()) {
     Swal.fire("Please, enter username !");
-    return
+    return;
   }
 
   if (!password.value.trim()) {
     Swal.fire("Please, enter password !");
-    return
+    return;
   }
 
   try {
     const res = await login(username.value, password.value);
     const tokens = res.data?.data;
+
     if (tokens?.access && tokens?.refresh) {
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
+      const routeRes = await getUserRoutes();
+
+      const backendRoutes = routeRes.data?.data;
+      const dynamicRoutes = mapBackendRoutes(backendRoutes);
+
+
+      const homeRoute = router.getRoutes().find(r => r.name === 'home');
+      console.log(homeRoute, "Home 路由");
+      console.log(dynamicRoutes, "后端响应的路由");
+      // 注册动态路由到 home 下
+
+      if (homeRoute) {
+        dynamicRoutes.forEach(r => {
+          router.addRoute('home', r); // ✅ 正确注册
+        });
+      }
+
+      console.log(router.getRoutes(), "注册进系统的所有路由");
       Swal.fire({
         position: "top-end",
         icon: "success",
@@ -93,12 +114,13 @@ async function submitData() {
         showConfirmButton: false,
         timer: 1500
       }).then(() => {
-        router.push({ name: 'home-default' });
+        router.push({name: 'home-default'});
       });
     } else {
       throw new Error("Invalid token structure");
     }
   } catch (err) {
+    console.log(err);
     if (err.response?.status === 401) {
       Swal.fire({
         title: "Login failed!",
@@ -113,8 +135,6 @@ async function submitData() {
       });
     }
   }
-
-
 }
 
 </script>
