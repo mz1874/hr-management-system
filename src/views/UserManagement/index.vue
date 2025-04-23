@@ -47,7 +47,9 @@ const {
   currentPage,
   isSearching,
   searchDepartmentId,
-  searchName} = useStaff()
+  searchName,
+  handlerAddStaff
+} = useStaff()
 
 // State
 const selectedDepartment = ref(0)
@@ -65,18 +67,20 @@ const showDeleteStaffModal = ref(false)
 
 const selectedStaff = ref<Staff>({
   id: 0,
-  name: '',
-  dateOfBirth: '',
+  username: '',
+  password: '123456',
+  date_of_birth: '',
   department_name: '',
-  role: '',
+  roles: [],
   department: 0,
-  imgUrl:'',
+  imgUrl: '',
   status: false,
-  employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
+  employment_time: new Date().toISOString().split('T')[0], // Set default to current date
   numberOfLeaves: 0,
   medicalLeaves: 0,
   annualLeaves: 0,
-  totalPoints: 0
+  totalPoints: 0,
+  leave_entitlements: []
 })
 
 
@@ -93,18 +97,20 @@ const searchStaff = (searchData: string) => {
 const openAddStaffModal = () => {
   selectedStaff.value = {
     id: 1,
-    name: '',
-    dateOfBirth: '',
+    username: '',
+    password: '123456',
+    date_of_birth: '',
     department_name: '',
-    role: '',
+    roles: [],
     department: selectedDepartment.value,
     status: false,
-    imgUrl:'',
-    employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
+    imgUrl: '',
+    employment_time: new Date().toISOString().split('T')[0], // Will be set automatically
     numberOfLeaves: 0,
     medicalLeaves: 0,
     annualLeaves: 0,
-    totalPoints: 0
+    totalPoints: 0,
+    leave_entitlements: []
   }
   showAddStaffModal.value = true
 }
@@ -126,7 +132,7 @@ const openDeleteStaffModal = (staff: Staff) => {
 }
 
 const addStaff = () => {
-  staffData.results.push({...selectedStaff.value})
+  handlerAddStaff(selectedStaff.value)
   showAddStaffModal.value = false
 }
 
@@ -237,8 +243,8 @@ function resetPassword(staff: Staff) {
             <tbody>
             <tr v-for="staff in staffData.results" :key="staff.id">
               <td>{{ staff.id }}</td>
-              <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
-              <td>{{ staff.dateOfBirth }}</td>
+              <td>{{ staff.username }}</td> <!-- Remove the icon div wrapper -->
+              <td>{{ staff.date_of_birth }}</td>
               <td>{{ staff.department_name }}</td>
               <td>
                   <span
@@ -250,7 +256,7 @@ function resetPassword(staff: Staff) {
                     {{ staff.status ? "Active" : "Inactive" }}
                   </span>
               </td>
-              <td>{{ staff.employmentDate }}</td>
+              <td>{{ staff.employment_time }}</td>
               <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
@@ -348,93 +354,137 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="staffName" class="form-label">Name</label>
-            <input
-                v-model="selectedStaff.name"
-                type="text"
-                class="form-control"
-                id="staffName"
-                placeholder="Enter name"
-            >
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="staffName" class="form-label">Name</label>
+              <input
+                  v-model="selectedStaff.username"
+                  type="text"
+                  class="form-control"
+                  id="staffName"
+                  placeholder="Enter name"
+              >
+            </div>
+            <div class="mb-3 col-md-6">
+              <label for="staffImage" class="form-label">Profile Image</label>
+              <input
+                  type="file"
+                  class="form-control"
+                  id="staffImage"
+                  accept="image/*"
+                  @change="onImageSelected"
+              >
+            </div>
           </div>
 
-          <div class="mb-3">
-            <label for="staffImage" class="form-label">Profile Image</label>
-            <input
-                type="file"
-                class="form-control"
-                id="staffImage"
-                accept="image/*"
-                @change="onImageSelected"
-            >
+          <div class="row">
+            <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
+              <img
+                  :src="selectedStaff.imgUrl"
+                  alt="Profile Preview"
+                  class="img-thumbnail"
+                  style="max-width: 150px;"
+              >
+            </div>
           </div>
 
-          <div v-if="selectedStaff.imgUrl" class="mb-3">
-            <img
-                :src="selectedStaff.imgUrl"
-                alt="Profile Preview"
-                class="img-thumbnail"
-                style="max-width: 150px;"
-            >
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
+              <input
+                  v-model="selectedStaff.date_of_birth"
+                  type="date"
+                  class="form-control"
+                  id="staffDateOfBirth"
+                  placeholder="Enter date of birth"
+              >
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label for="staffDepartment" class="form-label">Department</label>
+              <select
+                  v-model="selectedStaff.department"
+                  class="form-select"
+                  id="staffDepartment"
+              >
+                <option
+                    v-for="dept in departmentStore.flatDepartmentList"
+                    :key="dept.id"
+                    :value="dept.id"
+                >
+                  {{ dept.department_name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="staffStatus" class="form-label">Status</label>
+              <select
+                  v-model="selectedStaff.status"
+                  class="form-select"
+                  id="staffStatus"
+              >
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Employment Date</label>
+              <input
+                  :value="selectedStaff.employment_time"
+                  type="date"
+                  class="form-control"
+              >
+            </div>
           </div>
 
 
-          <div class="mb-3">
-            <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
-            <input
-                v-model="selectedStaff.dateOfBirth"
-                type="date"
-                class="form-control"
-                id="staffDateOfBirth"
-                placeholder="Enter date of birth"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="staffRole" class="form-label">Role</label>
-            <input
-                v-model="selectedStaff.role"
-                type="text"
-                class="form-control"
-                id="staffRole"
-                placeholder="Enter role"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="staffDepartment" class="form-label">Department</label>
-            <select
-                v-model="selectedStaff.department"
-                class="form-select"
-                id="staffDepartment"
-            >
-              <option>Sales Department</option>
-              <option>Marketing Department</option>
-              <option>Human Resources</option>
-              <option>Finance Department</option>
-              <option>IT Department</option>
-              <option>Operations</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="staffStatus" class="form-label">Status</label>
-            <select
-                v-model="selectedStaff.status"
-                class="form-select"
-                id="staffStatus"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Employment Date</label>
-            <input
-                :value="selectedStaff.employmentDate"
-                type="date"
-                class="form-control"
-            >
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Roles</label>
+              <div class="btn-group flex-wrap" role="group">
+                <div
+                    v-for="role in tableData"
+                    :key="role.id"
+                    class="form-check d-inline-block me-2 mb-2"
+                >
+                  <input
+                      type="checkbox"
+                      class="btn-check"
+                      :id="'btn-check-' + role.id"
+                      :value="role.id"
+                      v-model="selectedStaff.roles"
+                      autocomplete="off"
+                  />
+                  <label
+                      class="btn btn-outline-primary"
+                      :for="'btn-check-' + role.id"
+                  >
+                    {{ role.name }}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 显示选中的角色 -->
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Selected Roles:</label>
+              <div class="d-flex flex-wrap gap-2">
+              <span
+                  v-for="roleId in selectedStaff.roles"
+                  :key="roleId"
+                  class="badge bg-info"
+              >
+                {{ getRoleNameById(roleId) }}
+              </span>
+              </div>
+            </div>
           </div>
         </div>
+
+
         <div class="modal-footer">
           <button
               type="button"
@@ -466,7 +516,7 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <p><strong>Name:</strong> {{ selectedStaff.name }}</p>
+          <p><strong>Name:</strong> {{ selectedStaff.username }}</p>
           <div class="mb-3">
             <label class="form-label">Profile Picture</label>
             <img
@@ -477,11 +527,11 @@ function resetPassword(staff: Staff) {
                 style="max-height: 150px;"
             >
           </div>
-          <p><strong>Date of Birth:</strong> {{ selectedStaff.dateOfBirth }}</p>
-          <p><strong>Role:</strong> {{ selectedStaff.role }}</p>
+          <p><strong>Date of Birth:</strong> {{ selectedStaff.date_of_birth }}</p>
+          <p><strong>Role:</strong> {{ selectedStaff.roles }}</p>
           <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
           <p><strong>Status:</strong> {{ selectedStaff.status }}</p>
-          <p><strong>Employment Date:</strong> {{ selectedStaff.employmentDate }}</p>
+          <p><strong>Employment Date:</strong> {{ selectedStaff.employment_time }}</p>
           <p v-if="selectedStaff.resignationDate">
             <strong>Resignation Date:</strong> {{ selectedStaff.resignationDate }}
           </p>
@@ -518,7 +568,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label for="editStaffName" class="form-label">Name</label>
             <input
-                v-model="selectedStaff.name"
+                v-model="selectedStaff.username"
                 type="text"
                 class="form-control"
                 id="editStaffName"
@@ -544,7 +594,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label for="editStaffDateOfBirth" class="form-label">Date of Birth</label>
             <input
-                v-model="selectedStaff.dateOfBirth"
+                v-model="selectedStaff.date_of_birth"
                 type="date"
                 class="form-control"
                 id="editStaffDateOfBirth"
@@ -554,7 +604,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label for="editStaffRole" class="form-label">Role</label>
             <input
-                v-model="selectedStaff.role"
+                v-model="selectedStaff.roles"
                 type="text"
                 class="form-control"
                 id="editStaffRole"
@@ -589,7 +639,7 @@ function resetPassword(staff: Staff) {
           <div class="mb-3">
             <label class="form-label">Employment Date</label>
             <input
-                :value="selectedStaff.employmentDate"
+                :value="selectedStaff.employment_time"
                 type="date"
                 class="form-control"
                 disabled
@@ -627,7 +677,7 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete the staff :"{{ selectedStaff.name }}"?</p>
+          <p>Are you sure you want to delete the staff :"{{ selectedStaff.username }}"?</p>
           <p>This will set their resignation date to today.</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>
@@ -653,6 +703,30 @@ function resetPassword(staff: Staff) {
 </template>
 
 <style scoped>
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh; /* ✅ 限制最大高度 */
+  overflow-y: auto; /* ✅ 内容太多时可滚动 */
+  padding: 1rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+}
+
 .search-container .input-group-text {
   background: white;
   border-right: none;
@@ -693,26 +767,6 @@ function resetPassword(staff: Staff) {
   border: 1px solid #eee;
 }
 
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 1rem;
-}
 
 .modal-header {
   padding: 1rem;
