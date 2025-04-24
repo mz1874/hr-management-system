@@ -1235,10 +1235,10 @@ const createTask = () => {
   showModal.value = false
 }
 */
-//go to employee details page
-const goToEmployeeDetailsPage = (taskId) => {
-  router.push(`/home/KPI-Management/employee-task-details/${taskId}`);
-}
+const goToEmployeeDetailsPage = (taskId: string | number) => {
+  router.push(`/home/employee-task-details/${taskId}`);
+};
+
 </script>
 
 <style scoped>
