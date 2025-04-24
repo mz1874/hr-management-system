@@ -50,7 +50,8 @@ const fetchAvailableSurveys = async () => {
     const response = await getAllEvaluationForms(currentPage.value, { status: 'PUBLISHED' }); 
     // API returns PaginatedResponse<EvaluationForm>
     // Map the results to SurveyListItem structure
-    availableSurveys.value = response.data.data.results.map((form: EvaluationForm) => ({ 
+    // @ts-ignore
+    availableSurveys.value = response.data.data.results.map((form: EvaluationForm) => ({
         id: form.id,
         name: form.name,
         publishTime: form.publish_time // Map from publish_time

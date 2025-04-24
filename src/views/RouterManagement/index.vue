@@ -91,6 +91,12 @@ const handleAddRoot = () => {
   showModal.value = true
 }
 
+function handlerChangeMenuType()
+{
+
+}
+
+
 // 处理添加子路由
 const handleAddChild = (parent: RouteItem) => {
   ifAddSubRouter.value = true;
@@ -235,6 +241,7 @@ const handleSubmit = () => {
             <form @submit.prevent="handleSubmit">
               <div class=" mb-3">
                 <label class="form-label">Router Type</label>
+
                 <select class="form-select" v-model.number="menuType" @change="handlerChangeMenuType">
                   <option value="0">Menu</option>
                   <option value="1">Router</option>

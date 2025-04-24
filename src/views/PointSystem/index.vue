@@ -213,6 +213,7 @@ const selectedDepartment = ref(0)
 const filteredLogs = computed(() => {
     return staffTableData.value.filter(detail => {
         //search bar for username
+      // @ts-ignore
         const matchNameSearch = detail.name.toLowerCase().includes(searchName.value.toLowerCase()); 
 
         //search for department

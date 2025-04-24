@@ -12,6 +12,7 @@ const {
   paginationInfo,
   nextPage,
   prevPage,
+  fetchPage,
   goToPage,
   currentPage,
   totalPages,

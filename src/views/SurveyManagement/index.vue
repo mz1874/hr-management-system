@@ -81,6 +81,7 @@ const fetchSurveys = async () => {
     // Assuming API returns PaginatedResponse<EvaluationForm>
     const response = await getAllEvaluationForms(currentPage.value, params)
     // Map API response (EvaluationForm) to frontend type (EvaluationItem)
+    // @ts-ignore
     tableData.value = response.data.data.results.map(form => ({
         id: form.id,
         name: form.name,

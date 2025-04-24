@@ -28,6 +28,7 @@ export function mapBackendRoutes(routes) {
             };
 
             if (Array.isArray(route.children) && route.children.length > 0) {
+                // @ts-ignore
                 routeObj.children = mapBackendRoutes(route.children);
             }
 

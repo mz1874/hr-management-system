@@ -251,6 +251,7 @@ const filteredLogs = computed(() => {
     const matchRewardSearch = detail.reward.rewardName.toLowerCase().includes(searchReward.value.toLowerCase());
 
     //search bar for username
+    // @ts-ignore
     const matchNameSearch = detail.user.name.toLowerCase().includes(searchName.value.toLowerCase());
 
     //search for specific status
