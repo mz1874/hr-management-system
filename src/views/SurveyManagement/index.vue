@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import Swal from 'sweetalert2'; // Import SweetAlert2
 import {
   getAllEvaluationForms,
   createEvaluationForm,
@@ -93,6 +94,7 @@ const fetchSurveys = async () => {
             status: form.status,
             departments: form.departments,
             department_details: form.department_details,
+            created_at: form.created_at, // Include created_at
             questions: form.questions.map(q => ({
                 id: q.id,
                 text: q.text,
@@ -136,16 +138,21 @@ onMounted(async () => {
   }
 });
 
-// Refetch data when page changes
-watch(currentPage, fetchSurveys)
-// Note: Consider adding watchers for filters (searchName)
-// to refetch data automatically, or rely on the search button click.
+// Refetch data when page or search term changes
+watch([currentPage, searchName], () => {
+  // Reset page to 1 when search term changes, but only if it's not already 1
+  if (currentPage.value !== 1 && searchName.value !== '') {
+    currentPage.value = 1;
+  } else {
+    fetchSurveys();
+  }
+});
 
-// Trigger fetch when search button is clicked
-const handleSearch = () => {
-  currentPage.value = 1; // Reset to first page on new search
-  fetchSurveys();
-}
+// Removed handleSearch as fetching is now handled by the watcher
+// const handleSearch = () => {
+//   currentPage.value = 1; // Reset to first page on new search
+//   fetchSurveys();
+// }
 
 // --- Modal Actions ---
 
@@ -202,10 +209,10 @@ const confirmDeleteEvaluation = async () => {
     await fetchSurveys()
     showDeleteConfirmModal.value = false;
     evaluationToDelete.value = null; // Clear the item
-    // TODO: Show success message
+    Swal.fire('Success', 'Evaluation deleted successfully!', 'success'); // Show success notification
   } catch (error) {
     console.error("Failed to delete survey:", error);
-    // TODO: Show error message
+    Swal.fire('Error', 'Failed to delete evaluation.', 'error'); // Show error notification
   }
 }
 
@@ -291,10 +298,10 @@ const handleAddEvaluation = async () => {
     await createEvaluationForm(payload) // Use correct API function and payload
     await fetchSurveys() // Refresh data
     showModal.value = false
-    // TODO: Show success message
+    Swal.fire('Success', 'Evaluation created successfully!', 'success'); // Show success notification
   } catch (error) {
     console.error("Failed to create survey:", error);
-    // TODO: Show error message
+    Swal.fire('Error', 'Failed to create evaluation.', 'error'); // Show error notification
   }
 }
 
@@ -360,10 +367,10 @@ const handleSaveEditedEvaluation = async () => {
     await updateEvaluationForm(currentEvaluation.value.id, payload); // Use correct API function and payload
     await fetchSurveys(); // Refresh data
     showModal.value = false;
-    // TODO: Show success message
+    Swal.fire('Success', 'Evaluation updated successfully!', 'success'); // Show success notification
   } catch (error) {
     console.error("Failed to update survey:", error);
-    // TODO: Show error message
+    Swal.fire('Error', 'Failed to update evaluation.', 'error'); // Show error notification
   }
 }
 
@@ -410,7 +417,6 @@ const goToPage = (page: number) => {
           type="text"
           class="search-input"
           placeholder="Search Evaluation Name"
-          @input="handleSearch"
         />
       </div>
 
@@ -427,10 +433,9 @@ const goToPage = (page: number) => {
         <tr>
           <th scope="col">ID</th>
           <th scope="col">Name</th>
-          <th scope="col">Created Time</th>
+          <th scope="col">Created At</th>
           <th scope="col">Publish Time</th>
           <th scope="col">Status</th>
-          <th scope="col">Departments</th>
           <th scope="col">Actions</th>
         </tr>
         </thead>
@@ -438,10 +443,17 @@ const goToPage = (page: number) => {
           <tr v-for="item in paginatedLogs" :key="item.id">
             <td>{{ item.id }}</td>
             <td>{{ item.name }}</td>
-            <td>{{ item.created_at ? new Date(item.created_at).toLocaleString() : 'NA' }}</td>
+            <!-- Display Created Time, fallback to 'NA' if created_at is falsy. If 'NA' persists despite backend providing data, investigate frontend reactivity/timing. -->
+            <td>
+              {{
+                (() => {
+                  const date = new Date(item.created_at);
+                  return isNaN(date.getTime()) ? 'Invalid Date: ' + item.created_at : date.toLocaleString();
+                })()
+              }}
+            </td>
             <td>{{ item.publish_time ? new Date(item.publish_time).toLocaleString() : 'NA' }}</td>
             <td>{{ item.status }}</td>
-            <td>{{ item.departments && item.departments.length > 0 ? item.departments.map(id => departmentMap[id] || id).join(', ') : 'None' }}</td>
             <td>
               <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
               <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
@@ -737,6 +749,16 @@ const goToPage = (page: number) => {
     font-weight: 600;
     background-color: #f8f9fa;
     text-align: left; /* Align headers to left */
+}
+
+/* Alternating row colors */
+.table tbody tr:nth-child(odd) {
+  background-color: #f2f2f2;
+}
+
+/* Hover effect on rows */
+.table tbody tr:hover {
+  background-color: #e9e9e9;
 }
 
 .btn-action {
