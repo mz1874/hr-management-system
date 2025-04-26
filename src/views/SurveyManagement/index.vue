@@ -8,39 +8,28 @@ import {
   updateEvaluationForm
 } from '@/api/survey'
 import { selectAllDepartments } from '@/api/department'
-import type { EvaluationForm, EvaluationQuestion } from '@/api/survey'
+import type { EvaluationForm, EvaluationQuestion, RowyQuestionOption } from '@/api/survey'
 
-//TODO 抽取
-interface EvaluationItem {
-  id: number
-  name: string
-  publishTime: string | null // 发布时间（如果已发布）
-  status: 'DRAFT' | 'PUBLISHED' // 发布状态
-  departments?: number[] // Optional array of department IDs
-  department_details?: { id: number; department_name: string }[]; // Read-only details from backend
-  questions: QuestionItem[] // 问题列表
+// Interface for the evaluation form list items (matches backend EvaluationForm structure)
+interface EvaluationItem extends Omit<EvaluationForm, 'questions'> {
+    questions: QuestionItem[]; // Use local QuestionItem interface for UI state
 }
 
-interface QuestionItem {
-  id?: number
-  question_type: 'RATING' | 'TEXT' // 问题类型
-  text: string // 问题内容
-  order?: number // Backend has order, might need to manage this
+// Interface for questions within the UI state (includes options as RowyQuestionOption)
+interface QuestionItem extends Omit<EvaluationQuestion, 'options'> {
+    options?: RowyQuestionOptionItem[]; // Use local RowyQuestionOptionItem interface for UI state
 }
+
+// Interface for question options within the UI state
+interface RowyQuestionOptionItem extends RowyQuestionOption {}
+
 
 // TODO: Fetch departments from API
 interface Department {
   id: number;
   name: string;
 }
-// Remove hardcoded departments
-// const allDepartments = ref<Department[]>([
-//   { id: 1, name: 'HR' },
-//   { id: 2, name: 'Finance' },
-//   { id: 3, name: 'IT' },
-//   { id: 4, name: 'Marketing' },
-//   { id: 5, name: 'Operations' }
-// ])
+
 const allDepartments = ref<Department[]>([]); // Initialize as empty
 
 const departmentMap = computed(() => {
@@ -51,8 +40,14 @@ const departmentMap = computed(() => {
 });
 
 // Evaluation data from API
-const tableData = ref<EvaluationItem[]>([]) // Initialize empty
+const rawTableData = ref<EvaluationItem[]>([]) // Store raw data from API
 const totalSurveys = ref(0) // For pagination
+
+// Computed property for filtered data (date filtering removed, relying on backend name filter)
+const tableData = computed(() => {
+  // Backend handles name filtering, no further filtering needed here
+  return rawTableData.value;
+});
 
 // Modal state
 const showModal = ref(false)
@@ -61,49 +56,68 @@ const modalType = ref<'create' | 'edit' | 'view'>('create')
 const showPublishModal = ref(false)
 const selectedDepartmentsForPublish = ref<number[]>([]) // Use numbers for department IDs
 
+// Delete confirmation modal state
+const showDeleteConfirmModal = ref(false)
+const evaluationToDelete = ref<EvaluationItem | null>(null)
+
 // Filtering state
 const searchName = ref('')
-const startDate = ref('')
-const endDate = ref('')
+// Removed startDate and endDate as filtering is backend-handled
 
-// Pagination state (Moved up)
+// Pagination state
 const currentPage = ref(1)
-const itemsPerPage = ref(5) // TODO: Make this dynamic or fetch from API config if possible
+const itemsPerPage = ref(20) // Use default page size from backend settings (20)
+
 
 // --- Fetching Data ---
 const fetchSurveys = async () => {
   try {
-    const params = {
-      name: searchName.value,
-      startDate: startDate.value,
-      endDate: endDate.value
+    // Pass backend-supported search parameters
+    const params: { search?: string } = {}; // Changed parameter name to 'search'
+    if (searchName.value) {
+        params.search = searchName.value; // Changed parameter name to 'search'
     }
-    // Assuming API returns PaginatedResponse<EvaluationForm>
+
+    // Fetch data for the current page using backend pagination and filtering
     const response = await getAllEvaluationForms(currentPage.value, params)
-    // Map API response (EvaluationForm) to frontend type (EvaluationItem)
-    // @ts-ignore
-    tableData.value = response.data.data.results.map(form => ({
-        id: form.id,
-        name: form.name,
-        publishTime: form.publish_time, // Map backend publish_time to frontend publishTime
-        status: form.status,
-        departments: form.departments,
-        department_details: form.department_details,
-        // Map backend questions (EvaluationQuestion) to frontend questions (QuestionItem)
-        questions: form.questions.map(q => ({
-            id: q.id,
-            text: q.text,
-            question_type: q.question_type,
-            order: q.order
-            // Frontend QuestionItem doesn't store options separately anymore
-        }))
-    }));
-    totalSurveys.value = response.data.count
-    console.log(tableData.value)
+
+    // Add checks for response.data and nested data structure
+    if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
+        // Map the backend response to the local EvaluationItem interface
+        // Corrected: Access results and count from response.data.data
+        rawTableData.value = response.data.data.results.map(form => ({
+            id: form.id,
+            name: form.name,
+            description: form.description, // Include description
+            publish_time: form.publish_time, // Use backend field name
+            status: form.status,
+            departments: form.departments,
+            department_details: form.department_details,
+            questions: form.questions.map(q => ({
+                id: q.id,
+                text: q.text,
+                question_type: q.question_type,
+                order: q.order,
+                // Map backend options (RowyQuestionOption[]) to local options (RowyQuestionOptionItem[])
+                options: q.question_type === 'OPTIONS' && Array.isArray(q.options) ? q.options.map(opt => ({
+                    id: opt.id,
+                    option_text: opt.option_text,
+                    order: opt.order
+                })) : undefined // Ensure undefined if not OPTIONS or no options
+            }))
+        }));
+        totalSurveys.value = response.data.data.count; // Total count from backend
+        console.log("Fetched surveys:", rawTableData.value);
+    } else {
+        console.error("Failed to fetch surveys: Unexpected response format", response);
+        rawTableData.value = [];
+        totalSurveys.value = 0;
+        // TODO: Show a user-friendly error message
+    }
   } catch (error) {
     console.error("Failed to fetch surveys:", error);
     // TODO: Show error message to user
-    tableData.value = [] // Clear data on error
+    rawTableData.value = [] // Clear data on error
     totalSurveys.value = 0
   }
 }
@@ -124,7 +138,7 @@ onMounted(async () => {
 
 // Refetch data when page changes
 watch(currentPage, fetchSurveys)
-// Note: Consider adding watchers for filters (searchName, startDate, endDate)
+// Note: Consider adding watchers for filters (searchName)
 // to refetch data automatically, or rely on the search button click.
 
 // Trigger fetch when search button is clicked
@@ -139,7 +153,8 @@ const handleSearch = () => {
 const openEvaluationModal = () => {
   currentEvaluation.value = {
     name: '',
-    publishTime: null,
+    description: '', // Initialize description
+    publish_time: null, // Use backend field name
     status: 'DRAFT',
     departments: [],
     questions: []
@@ -159,11 +174,12 @@ const openPublishModal = (evaluation: EvaluationItem) => {
 const handlePublishEvaluation = async () => {
   if (!currentEvaluation.value || !currentEvaluation.value.id) return;
   try {
-    await publishEvaluationForm(currentEvaluation.value.id)
+    // Send selected departments with the publish request
+    await publishEvaluationForm(currentEvaluation.value.id, { departments: selectedDepartmentsForPublish.value });
     // Refresh data or update local state
     await fetchSurveys()
     showPublishModal.value = false
-    // selectedDepartmentsForPublish.value = [] // Reset selection - publishing doesn't take departments
+    selectedDepartmentsForPublish.value = [] // Reset selection
     // TODO: Show success message
   } catch (error) {
     console.error("Failed to publish survey:", error);
@@ -171,14 +187,21 @@ const handlePublishEvaluation = async () => {
   }
 }
 
-// 删除Evaluation - API Call
-const handleDeleteEvaluation = async (evaluation: EvaluationItem) => {
-  // TODO: Add confirmation dialog before deleting
-  if (!evaluation.id) return;
+// Open delete confirmation modal
+const handleDeleteEvaluation = (evaluation: EvaluationItem) => {
+  evaluationToDelete.value = evaluation;
+  showDeleteConfirmModal.value = true;
+}
+
+// Confirm and delete Evaluation - API Call
+const confirmDeleteEvaluation = async () => {
+  if (!evaluationToDelete.value || !evaluationToDelete.value.id) return;
   try {
-    await deleteEvaluationForm(evaluation.id)
+    await deleteEvaluationForm(evaluationToDelete.value.id)
     // Refresh data
     await fetchSurveys()
+    showDeleteConfirmModal.value = false;
+    evaluationToDelete.value = null; // Clear the item
     // TODO: Show success message
   } catch (error) {
     console.error("Failed to delete survey:", error);
@@ -189,12 +212,13 @@ const handleDeleteEvaluation = async (evaluation: EvaluationItem) => {
 // 添加问题
 const addQuestion = (type: 'grade' | 'option') => {
   if (!currentEvaluation.value.questions) currentEvaluation.value.questions = []
-  const backendType = type === 'grade' ? 'RATING' : 'TEXT'; // Map to backend type
+  const backendType = type === 'grade' ? 'RATING' : 'OPTIONS'; // Map to backend type
   const newQuestion: QuestionItem = {
     question_type: backendType,
     text: '',
-    // Options logic removed as 'option' maps to 'TEXT' which doesn't have options array in API
-    // order: currentEvaluation.value.questions.length // Example: manage order
+    // Initialize options array as empty for 'OPTIONS' type
+    options: backendType === 'OPTIONS' ? [{ option_text: '', order: 0 }] : undefined, // Initialize with one empty option
+    order: currentEvaluation.value.questions.length // Example: set order based on array index
   }
   currentEvaluation.value.questions.push(newQuestion)
 }
@@ -208,23 +232,24 @@ const removeQuestion = (questionIndex: number) => { // Use index since ID might 
 
 // 添加选项 (local only before save)
 const addOption = (questionIndex: number) => {
-  // This adds options locally for UI, but won't be saved with TEXT type question
   const question = currentEvaluation.value.questions[questionIndex];
-  // if (question && question.question_type === 'option') { // Check frontend intention if needed
-  //   if (!question.options) question.options = [];
-  //   question.options.push('');
-  // }
-  console.warn("Adding options locally, but 'option' type maps to 'TEXT' and options won't be saved to backend.");
+  // Only add options for 'OPTIONS' type questions
+  if (question && question.question_type === 'OPTIONS') {
+    if (!question.options) question.options = [];
+    // Add a new empty option object
+    question.options.push({ option_text: '', order: question.options.length }); // Example: set order
+  }
 }
 
 // 删除选项 (local only before save)
 const removeOption = (questionIndex: number, optionIndex: number) => {
-    // This removes options locally for UI
     const question = currentEvaluation.value.questions[questionIndex];
-    // if (question && question.question_type === 'option' && question.options) {
-    //     question.options.splice(optionIndex, 1);
-    // }
-     console.warn("Removing options locally, but 'option' type maps to 'TEXT' and options won't be saved to backend.");
+    // Only remove options for 'OPTIONS' type questions
+    if (question && question.question_type === 'OPTIONS' && question.options) {
+        question.options.splice(optionIndex, 1);
+        // Optional: re-order remaining options
+        question.options.forEach((opt, index) => opt.order = index);
+    }
 }
 
 // 创建Evaluation - API Call
@@ -238,14 +263,14 @@ const handleAddEvaluation = async () => {
 
   try {
     // Prepare payload and explicitly map questions to match EvaluationQuestion
-    const mappedQuestions = currentEvaluation.value.questions.map((q, index) => {
-        const mappedQuestion: Partial<EvaluationQuestion> = { // Use backend type
+    const mappedQuestions: EvaluationQuestion[] = currentEvaluation.value.questions.map((q, index) => {
+        const mappedQuestion: EvaluationQuestion = { // Use backend type
             question_type: q.question_type,
-            text: q.text, // Map frontend 'text' to backend 'text'
-            order: index // Example: set order based on array index
-            // id is not sent for creation
+            text: q.text,
+            order: q.order !== undefined ? q.order : index, // Preserve or set order
+            // Include options if they exist and question type is 'OPTIONS'
+            options: q.question_type === 'OPTIONS' ? q.options?.filter(opt => opt.option_text && opt.option_text.trim() !== '') : undefined // Filter out empty options
         };
-        // Remove options logic as backend 'TEXT' type doesn't support it
         return mappedQuestion;
     }).filter(q => q.text && q.text.trim() !== ''); // Ensure text is not empty
 
@@ -258,9 +283,9 @@ const handleAddEvaluation = async () => {
     // Construct the final payload with the correct type (Omit irrelevant fields for creation)
     const payload: Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'> = {
         name: currentEvaluation.value.name,
-        description: '', // Add description if needed/available
-        questions: mappedQuestions as EvaluationQuestion[], // Assert type after mapping
-        departments: currentEvaluation.value.departments // Ensure this is an array of IDs
+        description: currentEvaluation.value.description || '', // Include description
+        questions: mappedQuestions,
+        departments: currentEvaluation.value.departments || [] // Ensure this is an array of IDs
     };
 
     await createEvaluationForm(payload) // Use correct API function and payload
@@ -277,14 +302,18 @@ const handleAddEvaluation = async () => {
 const openEditModal = (evaluation: EvaluationItem) => {
   // Ensure the evaluation object copied matches the expected structure, especially status
   currentEvaluation.value = JSON.parse(JSON.stringify(evaluation)); // Deep copy
-  // Map questions from EvaluationForm structure back to QuestionItem if needed,
-  // especially handling question_type and text
+  // Map questions from EvaluationForm structure back to QuestionItem for UI state
   currentEvaluation.value.questions = evaluation.questions.map(q => ({
       id: q.id,
-      question_type: q.question_type, // Should already be 'RATING' or 'TEXT' from backend
       text: q.text,
-      order: q.order
-      // No options mapping needed here
+      question_type: q.question_type,
+      order: q.order,
+      // Map backend options (RowyQuestionOption[]) to local options (RowyQuestionOptionItem[])
+      options: q.options?.map(opt => ({
+          id: opt.id,
+          option_text: opt.option_text,
+          order: opt.order
+      })) || undefined // Ensure undefined if no options
   }));
   modalType.value = 'edit';
   showModal.value = true;
@@ -301,14 +330,15 @@ const handleSaveEditedEvaluation = async () => {
   }
 
   // Prepare payload, ensuring correct mapping - similar to create
-  const mappedQuestions = currentEvaluation.value.questions.map((q, index) => {
+  const mappedQuestions: EvaluationQuestion[] = currentEvaluation.value.questions.map((q, index) => {
         const mappedQuestion: EvaluationQuestion = { // Use backend type, include id for update
             id: q.id, // Include id for updates
             question_type: q.question_type,
             text: q.text,
-            order: q.order !== undefined ? q.order : index // Preserve or set order
+            order: q.order !== undefined ? q.order : index, // Preserve or set order
+            // Include options if they exist and question type is 'OPTIONS'
+            options: q.question_type === 'OPTIONS' ? q.options?.filter(opt => opt.option_text && opt.option_text.trim() !== '') : undefined // Filter out empty options
         };
-        // Remove options logic
         return mappedQuestion;
     }).filter(q => q.text && q.text.trim() !== ''); // Ensure text is not empty
 
@@ -319,13 +349,11 @@ const handleSaveEditedEvaluation = async () => {
     }
 
     // Construct the final payload for update (Partial Omit<...>)
-    const payload: Partial<Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'> & { departments?: number[] }> = {
+    const payload: Partial<Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details' | 'departments'>> = {
         name: currentEvaluation.value.name,
-        // Safely access description if it exists on currentEvaluation
-        description: (currentEvaluation.value as any).description || '', // Include description if edited
-        questions: mappedQuestions as EvaluationQuestion[], // Assert type after mapping
-        departments: currentEvaluation.value.departments // Include departments
-        // Status is usually managed by publish action, not direct update
+        description: currentEvaluation.value.description || '', // Include description
+        questions: mappedQuestions,
+        // Remove departments from update payload - departments are assigned/updated during publish
     };
 
   try {
@@ -341,9 +369,15 @@ const handleSaveEditedEvaluation = async () => {
 
 // --- Computed Properties for Pagination ---
 
-const totalPages = computed(() => Math.ceil(totalSurveys.value / itemsPerPage.value))
+const totalPages = computed(() => {
+    // Pagination should ideally be based on the filtered data count if filtering is active,
+    // but API provides total count before frontend filtering. Sticking to API total for now.
+    // This means pagination might show more pages than actually contain data when filters are applied.
+    return Math.ceil(totalSurveys.value / itemsPerPage.value)
+})
 
-const paginatedLogs = computed(() => tableData.value) // Use tableData directly (already paginated by API)
+// Use the computed tableData for display
+const paginatedLogs = computed(() => tableData.value)
 
 // --- Pagination Navigation ---
 const prevPage = () => {
@@ -360,93 +394,90 @@ const goToPage = (page: number) => {
 </script>
 
 <template>
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Publish Evaluation</h2>
-  </div>
+  <div class="main-content container-fluid px-3 px-md-4">
+    <!-- Main Content Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="h3">Publish Evaluation</h2>
+    </div>
 
-  <!-- 筛选条件 -->
-  <div class="filter-container">
-    <div class="d-flex justify-content-between align-items-center">
-      <!-- 左侧：日期选择器 -->
-      <div class="d-flex gap-3 align-items-center">
-        <div class="input-group">
-          <input type="date" class="form-control" id="startDate" placeholder="Start Date" v-model="startDate">
-        </div>
-        <div class="input-group">
-          <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="endDate">
-        </div>
+    <!-- Filter and Search Row -->
+    <div class="filter-container announcement-toolbar d-flex flex-wrap align-items-center gap-3 mb-4">
+      <!-- Search Input -->
+      <div class="search-container flex-grow-1">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          v-model="searchName"
+          type="text"
+          class="search-input"
+          placeholder="Search Evaluation Name"
+          @input="handleSearch"
+        />
       </div>
 
-      <!-- 右侧：搜索框和按钮 -->
-      <div class="d-flex gap-3 align-items-center">
-        <form class="search-container" role="search" @submit.prevent="handleSearch">
-          <i class="fas fa-search search-icon"></i>
-          <input class="form-control" type="search" placeholder="Search Evaluation Name" v-model="searchName">
-        </form>
-        <button type="button" class="btn btn-primary" @click="handleSearch">Search</button>
+      <!-- Create Button -->
+      <div class="d-flex gap-2">
+        <button type="button" class="btn new-announcement-btn" @click="openEvaluationModal">Create A New Evaluation</button>
       </div>
     </div>
-  </div>
 
-  <!-- 表格 -->
-  <div class="table-card">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <div></div>
-      <button type="button" class="btn btn-success" @click="openEvaluationModal">Create A New Evaluation</button>
-    </div>
-    <table class="table">
-      <thead>
-      <tr>
-        <th scope="col">ID</th>
-        <th scope="col">Name</th>
-        <th scope="col">Publish Time</th>
-        <th scope="col">Status</th>
-        <th scope="col">Departments</th>
-        <th scope="col">Actions</th>
-      </tr>
-      </thead>
-      <tbody v-if="paginatedLogs.length > 0">
-        <tr v-for="item in paginatedLogs" :key="item.id">
-          <td>{{ item.id }}</td>
-          <td>{{ item.name }}</td>
-          <td>{{ item.publishTime ? new Date(item.publishTime).toLocaleString() : 'NA' }}</td>
-          <td>{{ item.status }}</td>
-          <td>{{ item.departments && item.departments.length > 0 ? item.departments.map(id => departmentMap[id] || id).join(', ') : 'None' }}</td>
-          <td>
-            <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
-            <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
-            <button type="button" class="btn btn-danger btn-action" @click="handleDeleteEvaluation(item)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-      <tbody v-else>
+    <!-- Table -->
+    <div class="table-card">
+      <table class="table">
+        <thead>
         <tr>
-          <td colspan="6" class="text-center">No evaluations found.</td>
+          <th scope="col">ID</th>
+          <th scope="col">Name</th>
+          <th scope="col">Created Time</th>
+          <th scope="col">Publish Time</th>
+          <th scope="col">Status</th>
+          <th scope="col">Departments</th>
+          <th scope="col">Actions</th>
         </tr>
-      </tbody>
-    </table>
+        </thead>
+        <tbody v-if="paginatedLogs.length > 0">
+          <tr v-for="item in paginatedLogs" :key="item.id">
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.created_at ? new Date(item.created_at).toLocaleString() : 'NA' }}</td>
+            <td>{{ item.publish_time ? new Date(item.publish_time).toLocaleString() : 'NA' }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.departments && item.departments.length > 0 ? item.departments.map(id => departmentMap[id] || id).join(', ') : 'None' }}</td>
+            <td>
+              <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
+              <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
+              <button type="button" class="btn btn-danger btn-action" @click="handleDeleteEvaluation(item)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+        <tbody v-else>
+          <tr>
+            <td colspan="7" class="text-center">No evaluations found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex align-items-center gap-3 my-3" v-if="totalSurveys > 0">
+      <div class="text-muted fs-5">
+        Total: {{ totalSurveys }}
+      </div>
+
+      <nav aria-label="Page navigation">
+        <ul class="pagination mb-0">
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
+          </li>
+          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+          </li>
+          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
-
-  <!-- 分页 -->
-  <div class="d-flex align-items-center mt-3 justify-content-start" v-if="totalSurveys > 0">
-    <span class="me-3">Total: {{ totalSurveys }}</span>
-
-    <nav aria-label="Page navigation">
-      <ul class="pagination">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
-        </li>
-        <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-          <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-        </li>
-        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-          <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
-        </li>
-      </ul>
-    </nav>
-    <span class="ms-3">Items per page: {{ itemsPerPage }}</span>
-  </div>
-
   <!-- 创建/编辑/查看Evaluation模态框 -->
   <div class="modal fade" id="createEvaluation" :class="{ show: showModal }" style="display: block" v-if="showModal">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -468,22 +499,58 @@ const goToPage = (page: number) => {
             <input type="text" class="form-control" placeholder="Enter evaluation name" v-model="currentEvaluation.name" :disabled="modalType === 'view'">
           </div>
 
+  <!-- Department Selection -->
+          <div class="form-group mb-4" v-if="modalType !== 'create'">
+            <label class="form-label">Assigned Departments:</label>
+            <div v-if="allDepartments && allDepartments.length > 0" class="d-flex flex-wrap gap-3">
+              <div v-for="dept in allDepartments" :key="dept.id" class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  :value="dept.id"
+                  :id="'dept-' + dept.id"
+                  v-model="currentEvaluation.departments"
+                  :disabled="modalType === 'view'"
+                >
+                <label class="form-check-label" :for="'dept-' + dept.id">
+                  {{ dept.name }}
+                </label>
+              </div>
+            </div>
+            <div v-else class="text-muted">
+              No departments available.
+            </div>
+          </div>
+
           <!-- 问题管理 -->
-          <div class="mb-4">
+          <div class="mb-4" v-if="currentEvaluation.questions">
             <label class="form-label">Questions:</label>
             <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border p-3 rounded">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6>{{ question.question_type === 'RATING' ? 'Grade Question' : 'Text Question' }} #{{ questionIndex + 1 }}</h6>
+                <!-- Display based on backend type -->
+                <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : 'Option Question' }} #{{ questionIndex + 1 }}</h6>
                 <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
               </div>
+              <!-- Use 'text' field -->
               <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view'">
+
+              <!-- Option input section for OPTIONS type questions -->
+              <div v-if="question.question_type === 'OPTIONS'" class="option-container ms-3 mt-2">
+                 <label class="option-label mb-1">Options:</label>
+                 <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2 d-flex align-items-center">
+                   <input type="text" class="form-control me-2" placeholder="Enter option text" v-model="option.option_text" :disabled="modalType === 'view'">
+                   <!-- Prevent deleting the last option -->
+                   <button type="button" class="btn btn-outline-danger btn-sm" @click="removeOption(questionIndex, optionIndex)" :disabled="modalType === 'view' || (question.options?.length <= 1)">X</button>
+                 </div>
+                 <button type="button" class="btn btn-success btn-sm" @click="addOption(questionIndex)" :disabled="modalType === 'view'">Add Option</button>
+              </div>
             </div>
-            <div v-if="!currentEvaluation.questions || currentEvaluation.questions.length === 0" class="text-muted mb-3">
+            <div v-if="!currentEvaluation.questions || currentEvaluation.questions?.length === 0" class="text-muted mb-3">
               No questions added yet.
             </div>
             <div class="mt-3">
               <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Grade Question</button>
-              <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option (Text) Question</button>
+              <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
             </div>
           </div>
         </div>
@@ -507,7 +574,27 @@ const goToPage = (page: number) => {
         </div>
         <div class="modal-body">
           <p>Are you sure you want to publish this evaluation form?</p>
-          <p>(Once published, it generally cannot be edited significantly.)</p>
+          <!-- Department Selection for Publish Modal -->
+          <div class="form-group mb-4">
+            <label class="form-label">Assign to Departments:</label>
+            <div v-if="allDepartments && allDepartments.length > 0" class="d-flex flex-wrap gap-3">
+              <div v-for="dept in allDepartments" :key="dept.id" class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  :value="dept.id"
+                  :id="'publish-dept-' + dept.id"
+                  v-model="selectedDepartmentsForPublish"
+                >
+                <label class="form-check-label" :for="'publish-dept-' + dept.id">
+                  {{ dept.name }}
+                </label>
+              </div>
+            </div>
+            <div v-else class="text-muted">
+              No departments available.
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="showPublishModal = false">Close</button>
@@ -517,14 +604,322 @@ const goToPage = (page: number) => {
     </div>
   </div>
   <div class="modal-backdrop fade show" v-if="showPublishModal"></div>
+
+  <!-- 删除确认模态框 -->
+  <div class="modal fade" id="deleteConfirmModal" :class="{ show: showDeleteConfirmModal }" style="display: block" v-if="showDeleteConfirmModal">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Deletion</h5>
+          <button type="button" class="btn-close" @click="showDeleteConfirmModal = false" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to delete the evaluation form "{{ evaluationToDelete?.name }}"? This action cannot be undone.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="showDeleteConfirmModal = false">Cancel</button>
+          <button type="button" class="btn btn-danger" @click="confirmDeleteEvaluation">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" v-if="showDeleteConfirmModal"></div>
 </template>
 
 <style scoped>
+/* Styles from NotificationCenter/index.vue */
+
+/* Main Content Padding */
+.main-content {
+  padding: 1.5rem;
+}
+
+/* Search Container */
+.announcement-toolbar {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 250px;
+  height: 52px;
+  flex-grow: 1;
+}
+
+.search-icon {
+  font-size: 18px;
+  color: #555;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 16px;
+}
+
+/* Make button height match search bar */
+.new-announcement-btn,
+.bulk-delete-btn {
+  height: 52px;         /* Match height */
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.new-announcement-btn {
+  background-color: #68b866;
+  color: white;
+}
+
+.bulk-delete-btn {
+  background-color: #d66b6b;
+  color: white;
+}
+
+.bulk-delete-btn:disabled {
+  background-color: #ccc;
+  color: white;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .new-announcement-btn {
+    max-width: 100%;
+  }
+
+  .me-md-4 {
+    margin-right: 0 !important;
+  }
+}
+
+/* Table Card (using similar styling to announcement-card) */
+.table-card {
+  border: 1px solid #ddd;
+  padding: 1rem; /* Adjusted padding */
+  margin-bottom: 1rem;
+  border-radius: 4px; /* Adjusted border-radius */
+  transition: box-shadow 0.3s ease;
+  background-color: #fff; /* Added background color */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Added box-shadow */
+}
+
+.table-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Adjusted box-shadow on hover */
+}
+
+/* Table Styling */
+.table {
+  width: 100%;
+  margin-bottom: 0; /* Removed default margin */
+  border-collapse: collapse; /* Ensure borders collapse */
+}
+
+.table th, .table td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #dee2e6;
+}
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    text-align: left; /* Align headers to left */
+}
+
+.btn-action {
+  padding: 0.25rem 0.75rem;
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+}
+.btn-action:first-child {
+    margin-left: 0;
+}
+
+/* Pagination Styling */
+.pagination {
+  display: flex;
+  padding-left: 0;
+  list-style: none;
+  border-radius: 0.25rem;
+  margin-top: 0; /* Removed default margin */
+  margin-bottom: 0;
+}
+
+.page-item {
+  margin: 0 0.15rem;
+}
+
+.page-item .page-link {
+  position: relative;
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: #0d6efd;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  text-decoration: none;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #fff;
+  border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+  z-index: 1;
+  color: #fff;
+  background-color: #198754;
+  border-color: #198754;
+}
+
+/* Modal Responsive Styles */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 0;
+    max-width: none;
+    height: 100vh;
+  }
+
+  .modal-content {
+    border-radius: 0;
+    min-height: 100vh;
+  }
+}
+
+/* Border utilities */
+@media (min-width: 768px) {
+  .border-end-md {
+    border-right: 1px solid #dee2e6;
+  }
+}
+
+/* Form Styling */
+.form-control {
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+  box-shadow: none;
+  border-color: #80bdff;
+}
+
+.form-check-input {
+  cursor: pointer;
+}
+
+.form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Ensure modals are scrollable on mobile */
+.modal-body {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+/* Attachment Preview */
+.attachment-preview {
+  width: 100%;
+  height: 400px;
+  border: none;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+  .attachment-preview {
+    height: 300px;
+  }
+}
+
+/* Modal Animation */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+}
+
+.modal.fade.show .modal-dialog {
+  transform: none;
+}
+
+/* Additional Responsive Utilities */
+@media (max-width: 576px) {
+  .container-fluid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-footer {
+    padding: 1rem;
+  }
+
+  .form-control {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+/* Specific styles for SurveyManagement */
+
+/* Filter Container (overrides some announcement-toolbar styles) */
+.filter-container.announcement-toolbar {
+  margin-bottom: 1.5rem; /* Reduced padding */
+  padding: 1rem 1.5rem; /* Adjusted padding */
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  /* Ensure search and button are on the left */
+  justify-content: flex-start;
+}
+
+.filter-container.announcement-toolbar .d-flex.gap-2 {
+  margin-left: auto; /* Push create button to the right */
+}
+
+/* Search Container within Filter Container */
+.filter-container .search-container {
+  min-width: auto; /* Allow search container to shrink */
+  max-width: 300px; /* Keep max width */
+}
+
+/* Pagination alignment */
+.d-flex.align-items-center.gap-3.my-3 {
+  justify-content: flex-start; /* Align total and pagination to the left */
+}
+
+.d-flex.align-items-center.gap-3.my-3 .text-muted.fs-5 {
+  margin-right: 1rem; /* Add some space between total and pagination */
+}
+
+/* Remove "Items per page" span */
+.d-flex.align-items-center.mt-3.justify-content-start span.ms-3 {
+  display: none;
+}
+
+/* Original SurveyManagement styles (keep if still needed) */
 .btn-control {
   margin: 10px;
 }
 
-/* 新增样式 */
 .option-container {
   padding-left: 1.5rem;
   border-left: 2px solid #eee;
@@ -538,155 +933,8 @@ const goToPage = (page: number) => {
   display: block;
 }
 
-/* 筛选条件容器 */
-.filter-container {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background-color: #f8f9fa;
-  border-radius: 0.5rem;
-}
-
-/* 搜索容器 */
-.search-container {
-  position: relative;
-  width: 100%;
-  max-width: 300px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: gray;
-}
-
-.search-container .form-control {
-  padding-left: 35px;
-}
-
-/* 输入框和按钮的布局 */
-.d-flex.gap-3 {
-  gap: 1rem;
-}
-
-/* 表格卡片样式 */
-.table-card {
-  border: 1px solid #dee2e6;
-  padding: 2rem;
-  margin-bottom: 1rem;
-  border-radius: 0.5rem;
-  background-color: #fff;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-/* 表格样式 */
-.table th, .table td {
-  padding: 1rem;
-  vertical-align: middle;
-  border-bottom: 1px solid #dee2e6;
-}
-.table th {
-    font-weight: 600;
-    background-color: #f8f9fa;
-}
-
-.btn-action {
-  padding: 0.25rem 0.75rem;
-  margin-left: 0.5rem;
-  font-size: 0.875rem;
-}
-.btn-action:first-child {
-    margin-left: 0;
-}
-
-/* 分页样式 */
-.page-link {
-  border: 1px solid #cccccc;
-}
-
-.page-item .page-link {
-  color: #008080;
-}
-
-.page-item.active .page-link {
-  color: #fff;
-  background-color: #008080;
-  border-color: #008080;
-}
-.page-item.disabled .page-link {
-    color: #6c757d;
-    pointer-events: none;
-    background-color: #fff;
-    border-color: #dee2e6;
-}
-
-.pagination {
-  display: flex;
-  margin-top: 15px;
-   margin-bottom: 0;
-}
-
-/* 模态框样式 */
-.modal {
-  display: none;
-}
-.modal.show {
-    display: block;
-}
-
-.modal-content {
-  padding: 1.5rem;
-   border-radius: 0.5rem;
-}
-.modal-header {
-    border-bottom: 1px solid #dee2e6;
-    padding-bottom: 1rem;
-}
-.modal-footer {
-    border-top: 1px solid #dee2e6;
-    padding-top: 1rem;
-}
-
-.form-label {
-  font-weight: bold;
-}
-
-.form-control {
-  border-color: #ced4da;
-}
-.form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.row {
-  display: flex;
-  align-items: stretch;
-}
-
-.col-md-6:not(:last-child) {
-  border-right: 1px solid #707070;
-  padding-right: 30px;
-}
-
-.col-md-6:last-child {
-  padding-left: 30px;
-}
-
-.auto-resize {
-  resize: none;
-  overflow: hidden;
-}
-
-input:disabled, textarea:disabled {
-  background-color: #e9ecef !important;
-   opacity: 1;
-}
-
-/* 删除模态框样式 */
+/* Delete modal style (from previous task, ensure it's included) */
 #deleteRole .modal-header, #deleteRole .modal-footer {
   border: none;
 }
 </style>
-

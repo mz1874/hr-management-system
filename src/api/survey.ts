@@ -2,53 +2,61 @@ import axios from './axios'
 
 // --- Interface Definitions ---
 
-// Represents a question within an evaluation form
+// Represents an option for a multiple-choice question (matches backend model)
+export interface RowyQuestionOption {
+    id?: number; // Optional for creation
+    option_text: string;
+    order?: number; // Optional for creation
+}
+
+// Represents a question within an evaluation form (matches backend model/serializer)
 export interface EvaluationQuestion {
-  id?: number; // Optional for creation
-  text: string;
-  question_type: 'RATING' | 'TEXT'; // Match backend choices
-  order: number;
+    id?: number; // Optional for creation
+    text: string;
+    question_type: 'RATING' | 'TEXT' | 'OPTIONS';
+    order?: number; // Optional for creation
+    options?: RowyQuestionOption[]; // Nested options for OPTIONS type
 }
 
-// Represents the evaluation form (template)
+// Represents the evaluation form (template) (matches backend model/serializer)
 export interface EvaluationForm {
-  id: number;
-  name: string;
-  description?: string;
-  departments?: number[]; // Array of department IDs (used for write/update)
-  department_details?: { id: number; department_name: string }[]; // Read-only details
-  questions: EvaluationQuestion[];
-  created_by?: string; // Read-only username
-  created_at?: string; // Read-only ISO date string
-  updated_at?: string; // Read-only ISO date string
-  status: 'DRAFT' | 'PUBLISHED'; // Match backend choices
-  publish_time?: string | null; // Read-only ISO date string or null
+    id?: number; // Optional for creation
+    name: string;
+    description?: string;
+    status: 'DRAFT' | 'PUBLISHED'; // Matches backend choices
+    publish_time?: string | null; // ISO date string or null
+    created_at?: string; // Added created_at field
+    departments: number[]; // Array of department IDs for write
+    department_details?: { id: number; department_name: string }[]; // Read-only details from backend
+    questions: EvaluationQuestion[]; // Nested questions
 }
 
-// Represents an answer being submitted by staff
+// Represents an answer being submitted by staff (matches backend serializer)
 export interface EvaluationAnswerSubmit {
     question_id: number; // Use question_id for submission
     rating?: number | null; // For RATING type (1-5)
     text_answer?: string | null; // For TEXT type
+    selected_option_id?: number | null; // For OPTIONS type
 }
 
-// Represents the entire submission payload for an instance
+// Represents the entire submission payload for an instance (matches backend serializer)
 export interface EvaluationSubmissionPayload {
     answers: EvaluationAnswerSubmit[];
 }
 
-// Represents a submitted answer (for viewing results)
+// Represents a submitted answer (for viewing results) (matches backend serializer)
 export interface EvaluationAnswerView {
     id: number;
-    question: EvaluationQuestion; // Nested question details
+    question: EvaluationQuestion; // Nested question details (might include options)
     rating?: number | null;
     text_answer?: string | null;
+    selected_option?: RowyQuestionOption | null; // Nested selected option details
 }
 
-// Represents an evaluation instance (assigned task + results)
+// Represents an evaluation instance (assigned task + results) (matches backend model/serializer)
 export interface EvaluationInstance {
     id: number;
-    form: EvaluationForm; // Nested form details
+    form: EvaluationForm; // Nested form details (might include questions/options)
     employee: { id: number; username: string; /* other staff details */ }; // Nested employee details
     assigned_at: string; // ISO date string
     submitted_at?: string | null; // ISO date string or null
@@ -57,22 +65,27 @@ export interface EvaluationInstance {
     answers: EvaluationAnswerView[]; // Array of submitted answers
 }
 
-// Paginated response structure (example for forms)
+// Paginated response structure (matches the actual backend response format)
 export interface PaginatedResponse<T> {
-    count: number;
-    next: string | null;
-    previous: string | null;
-    results: T[];
+    code: number;
+    message: string;
+    data: {
+        count: number;
+        next: string | null;
+        previous: string | null;
+        results: T[];
+    };
 }
 
 // --- API Functions ---
 
 // Get Evaluation Forms (HR/Admin view)
-export function getAllEvaluationForms(page: number = 1, searchParams: { name?: string, status?: 'DRAFT' | 'PUBLISHED' } = {}) {
+export function getAllEvaluationForms(page: number = 1, searchParams: { search?: string, status?: 'DRAFT' | 'PUBLISHED' } = {}) { // Changed type to include 'search'
     const params = new URLSearchParams();
     params.append('page', String(page));
-    if (searchParams.name) params.append('name', searchParams.name);
+    if (searchParams.search) params.append('search', searchParams.search); // Changed to append 'search'
     if (searchParams.status) params.append('status', searchParams.status);
+
 
     return axios.get<PaginatedResponse<EvaluationForm>>(`/api/evaluation-forms/?${params.toString()}`);
 }
@@ -99,9 +112,9 @@ export function deleteEvaluationForm(id: number) {
 }
 
 // Publish an Evaluation Form
-export function publishEvaluationForm(id: number) {
-    // No payload needed for this specific action based on backend setup
-    return axios.post(`/api/evaluation-forms/${id}/publish/`);
+// Added optional data payload for departments
+export function publishEvaluationForm(id: number, data?: { departments: number[] }) {
+    return axios.post(`/api/evaluation-forms/${id}/publish/`, data);
 }
 
 // Get Evaluation Instances (Staff/HR/Admin view)
@@ -135,4 +148,4 @@ export function getAdminEvaluationInstances(page: number = 1, filters: any = {})
     if (filters.employeeId) params.append('employee', filters.employeeId); // Example admin filter
 
     return axios.get<PaginatedResponse<EvaluationInstance>>(`/api/admin/evaluation-instances/?${params.toString()}`);
-} 
+}
