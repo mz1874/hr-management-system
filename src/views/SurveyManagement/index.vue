@@ -28,14 +28,14 @@ interface RowyQuestionOptionItem extends RowyQuestionOption {}
 // TODO: Fetch departments from API
 interface Department {
   id: number;
-  name: string;
+  department_name: string; // Updated to match likely API response
 }
 
 const allDepartments = ref<Department[]>([]); // Initialize as empty
 
 const departmentMap = computed(() => {
   return allDepartments.value.reduce((map, dept) => {
-    map[dept.id] = dept.name;
+    map[dept.id] = dept.department_name; // Updated to match likely API response
     return map;
   }, {} as Record<number, string>);
 });
@@ -129,10 +129,17 @@ onMounted(async () => {
   await fetchSurveys();
   // Fetch departments dynamically
   try {
-    const response = await selectAllDepartments(); // Assuming this function exists and returns { data: { results: Department[] } }
-    allDepartments.value = response.data.results; // Adjust based on actual API response structure
+    const response = await selectAllDepartments();
+    if (response.data && response.data.code === 200 && Array.isArray(response.data.data.results)) {
+      allDepartments.value = response.data.data.results;
+      console.log("Departments fetched successfully:", allDepartments.value);
+    } else {
+      console.error("Failed to fetch department list: Unexpected response format or code", response);
+      allDepartments.value = [];
+      // TODO: Show a user-friendly error message
+    }
   } catch (error) {
-    console.error("Failed to fetch departments:", error);
+    console.error("Error fetching departments:", error);
     allDepartments.value = []; // Set to empty on error
     // TODO: Show error message to user
   }
@@ -525,7 +532,7 @@ const goToPage = (page: number) => {
                   :disabled="modalType === 'view'"
                 >
                 <label class="form-check-label" :for="'dept-' + dept.id">
-                  {{ dept.name }}
+                  {{ dept.department_name }}
                 </label>
               </div>
             </div>
@@ -535,34 +542,36 @@ const goToPage = (page: number) => {
           </div>
 
           <!-- 问题管理 -->
-          <div class="mb-4" v-if="currentEvaluation.questions">
+          <div class="questions-section-container mb-4" v-if="currentEvaluation.questions"> <!-- New container div -->
             <label class="form-label">Questions:</label>
-            <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border p-3 rounded">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <!-- Display based on backend type -->
-                <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : 'Option Question' }} #{{ questionIndex + 1 }}</h6>
-                <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
-              </div>
-              <!-- Use 'text' field -->
-              <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view'">
+            <div v-if="currentEvaluation.questions">
+              <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border p-3 rounded">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <!-- Display based on backend type -->
+                  <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : 'Option Question' }} #{{ questionIndex + 1 }}</h6>
+                  <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
+                </div>
+                <!-- Use 'text' field -->
+                <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view'">
 
-              <!-- Option input section for OPTIONS type questions -->
-              <div v-if="question.question_type === 'OPTIONS'" class="option-container ms-3 mt-2">
-                 <label class="option-label mb-1">Options:</label>
-                 <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2 d-flex align-items-center">
-                   <input type="text" class="form-control me-2" placeholder="Enter option text" v-model="option.option_text" :disabled="modalType === 'view'">
-                   <!-- Prevent deleting the last option -->
-                   <button type="button" class="btn btn-outline-danger btn-sm" @click="removeOption(questionIndex, optionIndex)" :disabled="modalType === 'view' || (question.options?.length <= 1)">X</button>
-                 </div>
-                 <button type="button" class="btn btn-success btn-sm" @click="addOption(questionIndex)" :disabled="modalType === 'view'">Add Option</button>
+                <!-- Option input section for OPTIONS type questions -->
+                <div v-if="question.question_type === 'OPTIONS'" class="option-container ms-3 mt-2">
+                   <label class="option-label mb-1">Options:</label>
+                   <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2 d-flex align-items-center">
+                     <input type="text" class="form-control me-2" placeholder="Enter option text" v-model="option.option_text" :disabled="modalType === 'view'">
+                     <!-- Prevent deleting the last option -->
+                     <button type="button" class="btn btn-outline-danger btn-sm" @click="removeOption(questionIndex, optionIndex)" :disabled="modalType === 'view' || (question.options?.length <= 1)">X</button>
+                   </div>
+                   <button type="button" class="btn btn-success btn-sm" @click="addOption(questionIndex)" :disabled="modalType === 'view'">Add Option</button>
+                </div>
               </div>
-            </div>
-            <div v-if="!currentEvaluation.questions || currentEvaluation.questions?.length === 0" class="text-muted mb-3">
-              No questions added yet.
-            </div>
-            <div class="mt-3">
-              <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Grade Question</button>
-              <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
+              <div v-if="!currentEvaluation.questions || currentEvaluation.questions?.length === 0" class="text-muted mb-3">
+                No questions added yet.
+              </div>
+              <div class="mt-3">
+                <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Grade Question</button>
+                <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
+              </div>
             </div>
           </div>
         </div>
@@ -599,7 +608,7 @@ const goToPage = (page: number) => {
                   v-model="selectedDepartmentsForPublish"
                 >
                 <label class="form-check-label" :for="'publish-dept-' + dept.id">
-                  {{ dept.name }}
+                  {{ dept.department_name }}
                 </label>
               </div>
             </div>
@@ -649,25 +658,26 @@ const goToPage = (page: number) => {
 /* Search Container */
 .announcement-toolbar {
   display: flex;
-  align-items: stretch;
+  align-items: center; /* Align items vertically in the center */
   gap: 1rem;
 }
 
 .search-container {
   display: flex;
   align-items: center;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border: 1px solid #ced4da; /* Adjusted border color */
+  border-radius: 0.25rem; /* Adjusted border radius */
+  padding: 0.375rem 0.75rem; /* Adjusted padding */
   min-width: 250px;
-  height: 52px;
+  height: 38px; /* Adjusted height to match typical form control */
   flex-grow: 1;
+  background-color: #fff; /* Added background color */
 }
 
 .search-icon {
-  font-size: 18px;
-  color: #555;
-  margin-right: 10px;
+  font-size: 1rem; /* Adjusted font size */
+  color: #6c757d; /* Adjusted color */
+  margin-right: 0.5rem; /* Adjusted margin */
   flex-shrink: 0;
 }
 
@@ -675,26 +685,33 @@ const goToPage = (page: number) => {
   border: none;
   outline: none;
   width: 100%;
-  font-size: 16px;
+  font-size: 1rem; /* Adjusted font size */
+  padding: 0; /* Remove default input padding */
 }
 
 /* Make button height match search bar */
 .new-announcement-btn,
 .bulk-delete-btn {
-  height: 52px;         /* Match height */
-  padding: 0 20px;
+  height: 38px; /* Match height */
+  padding: 0.375rem 0.75rem; /* Adjusted padding */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  border-radius: 8px;
+  font-size: 1rem; /* Adjusted font size */
+  border-radius: 0.25rem; /* Adjusted border radius */
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: 400; /* Adjusted font weight */
 }
 
 .new-announcement-btn {
-  background-color: #68b866;
+  background-color: #198754; /* Bootstrap success color */
   color: white;
+  border: 1px solid #198754; /* Add border */
+}
+
+.new-announcement-btn:hover {
+  background-color: #157347; /* Darker shade on hover */
+  border-color: #146c43;
 }
 
 .bulk-delete-btn {
@@ -955,8 +972,19 @@ const goToPage = (page: number) => {
   display: block;
 }
 
+/* Specific styles for SurveyManagement */
+
+/* Questions Section Container */
+.questions-section-container {
+  background-color: #f8f9fa; /* Light grey background */
+  padding: 1.5rem; /* Add padding */
+  border: 1px solid #dee2e6; /* Add border */
+  border-radius: 0.25rem; /* Add border radius */
+}
+
 /* Delete modal style (from previous task, ensure it's included) */
 #deleteRole .modal-header, #deleteRole .modal-footer {
   border: none;
 }
 </style>
+
