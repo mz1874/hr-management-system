@@ -1,31 +1,28 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import {
-  getEvaluationInstances, // Use getEvaluationInstances
-  getEvaluationInstanceById, // Use getEvaluationInstanceById
-  submitEvaluationAnswers
+  getAllEvaluationForms, // Use getAllEvaluationForms
+  submitEvaluationAnswers // Keep submitEvaluationAnswers
 } from '@/api/survey'
 import type {
-    EvaluationInstance, // Use EvaluationInstance
+    EvaluationForm, // Use EvaluationForm
     EvaluationAnswerSubmit,
     EvaluationSubmissionPayload,
     EvaluationQuestion, // Keep EvaluationQuestion for nested details
     RowyQuestionOption // Keep RowyQuestionOption for nested details
 } from '@/api/survey'
 
-// Interface for the evaluation instance list items (Represents an EvaluationInstance)
-interface EvaluationInstanceItem extends EvaluationInstance {}
-
 
 // --- State ---
-const availableInstances = ref<EvaluationInstanceItem[]>([]) // List of evaluation instances
-const totalInstances = ref(0) // For pagination
-const isLoadingInstances = ref(false)
+const availableForms = ref<EvaluationForm[]>([]) // List of published evaluation forms
+const totalForms = ref(0) // For pagination
+const isLoadingForms = ref(false)
 const isLoadingDetails = ref(false)
+const finishedCount = ref(0); // This might not be relevant for published forms, will revisit later
 
-const showInstanceModal = ref(false) // Use InstanceModal
-// Holds the full details of the EvaluationInstance being viewed/taken
-const currentInstance = ref<EvaluationInstance | null>(null)
+const showFormModal = ref(false) // Use FormModal
+// Holds the full details of the EvaluationForm being viewed/taken
+const currentForm = ref<EvaluationForm | null>(null)
 // Holds answers keyed by questionId, matching EvaluationAnswerSubmit structure
 const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({}) // Use Partial for easier initialization
 
@@ -34,115 +31,111 @@ const currentPage = ref(1)
 const itemsPerPage = ref(20) // Use default page size from backend settings (20)
 
 // --- Computed Properties ---
-const totalPages = computed(() => Math.ceil(totalInstances.value / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(totalForms.value / itemsPerPage.value))
 
 // --- Methods ---
 
-// Fetch evaluation instances
-const fetchAvailableInstances = async () => {
-  isLoadingInstances.value = true;
+// Fetch available published evaluation forms
+const fetchAvailableForms = async () => {
+  isLoadingForms.value = true;
   try {
-    // Use getEvaluationInstances API call
-    // Backend handles filtering based on user role (Staff, HR, Admin, Department Manager)
-    const response = await getEvaluationInstances(currentPage.value);
+    // Use getAllEvaluationForms API call
+    // Assuming backend can filter by status or we filter on frontend
+    const response = await getAllEvaluationForms(currentPage.value);
 
     // Add checks for response.data and nested data structure
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
-        // Map the results to EvaluationInstanceItem structure
-        // Corrected: Access results and count from response.data.data
-        availableInstances.value = response.data.data.results.map((instance: EvaluationInstance) => ({
-            id: instance.id,
-            form: instance.form,
-            employee: instance.employee,
-            assigned_at: instance.assigned_at,
-            submitted_at: instance.submitted_at,
-            status: instance.status,
-            overall_rating_avg: instance.overall_rating_avg,
-            answers: instance.answers // Include existing answers for submitted/reviewed instances
-        }));
-        totalInstances.value = response.data.data.count; // Total count from backend
-        console.log("Fetched instances:", availableInstances.value);
+        // Filter for published forms on the frontend
+        availableForms.value = response.data.data.results.filter((form: EvaluationForm) => form.status === 'PUBLISHED');
+        // Note: totalForms will reflect the total count from the backend, not just published forms
+        totalForms.value = response.data.data.count; // Total count from backend
+        // finishedCount is not relevant for published forms list
+        console.log("Fetched forms:", availableForms.value);
     } else {
-        console.error("Failed to fetch evaluation instances: Unexpected response format", response);
-        availableInstances.value = [];
-        totalInstances.value = 0;
+        console.error("Failed to fetch evaluation forms: Unexpected response format", response);
+        availableForms.value = [];
+        totalForms.value = 0;
         // TODO: Show a user-friendly error message
     }
   } catch (error) {
-    console.error("Failed to fetch available instances:", error);
-    availableInstances.value = [];
-    totalInstances.value = 0;
+    console.error("Failed to fetch available forms:", error);
+    availableForms.value = [];
+    totalForms.value = 0;
     // TODO: Show error message to user
   } finally {
-    isLoadingInstances.value = false;
+    isLoadingForms.value = false;
   }
 }
 
-// Initialize the answer structure for the current instance
+// Initialize the answer structure for the current form
 const initializeAnswers = () => {
-  if (!currentInstance.value || !currentInstance.value.form) {
+  if (!currentForm.value || !currentForm.value.questions) {
     currentAnswers.value = {};
     return;
   }
   const initialAnswers: Record<number, Partial<EvaluationAnswerSubmit>> = {};
-  currentInstance.value.form.questions.forEach(question => {
+  currentForm.value.questions.forEach(question => {
     if (question.id === undefined) return; // Skip questions without ID
-
-    // Find existing answer if instance is already submitted/reviewed
-    const existingAnswer = currentInstance.value?.answers?.find(ans => ans.question.id === question.id);
 
     // Initialize based on EvaluationAnswerSubmit structure
     initialAnswers[question.id] = {
       question_id: question.id,
-      rating: existingAnswer?.rating !== undefined ? existingAnswer.rating : undefined, // Use existing rating or undefined
-      text_answer: existingAnswer?.text_answer !== undefined ? existingAnswer.text_answer : '', // Use existing text or empty string
-      selected_option_id: existingAnswer?.selected_option?.id !== undefined ? existingAnswer.selected_option.id : undefined // Use existing selected option ID or undefined
+      rating: undefined, // Initialize rating as undefined
+      text_answer: '', // Initialize text answer as empty string
+      selected_option_id: undefined // Initialize selected option ID as undefined
     };
   });
   currentAnswers.value = initialAnswers;
 };
 
-// Open the modal to view/take an instance (fetch EvaluationInstance details)
-const openInstanceModal = async (instanceItem: EvaluationInstanceItem) => {
-  currentInstance.value = null; // Clear previous instance
+// Open the modal to view/take a form
+const openFormModal = async (formItem: EvaluationForm) => {
+  currentForm.value = null; // Clear previous form
   currentAnswers.value = {};
   isLoadingDetails.value = true;
-  showInstanceModal.value = true;
+  showFormModal.value = true;
   try {
-    const response = await getEvaluationInstanceById(instanceItem.id);
-    // Assuming response.data is the full EvaluationInstance object
-    currentInstance.value = response.data;
-    initializeAnswers(); // Setup the answer structure based on fetched instance
+    // When taking a new evaluation from a published form, we don't fetch an instance by ID.
+    // We just use the form data directly to display questions.
+    currentForm.value = formItem;
+    initializeAnswers(); // Setup the answer structure based on the form's questions
   } catch (error) {
-    console.error(`Failed to fetch instance details for ID ${instanceItem.id}:`, error);
+    console.error(`Failed to load form details for ID ${formItem.id}:`, error);
     // TODO: Show error to user in the modal or close it
-    showInstanceModal.value = false; // Close modal on error fetching details
+    showFormModal.value = false; // Close modal on error
   } finally {
     isLoadingDetails.value = false;
   }
 }
 
-const closeInstanceModal = () => {
-  showInstanceModal.value = false;
-  currentInstance.value = null;
+const closeFormModal = () => {
+  showFormModal.value = false;
+  currentForm.value = null;
   currentAnswers.value = {};
 }
 
-// Submit the instance answers (using EvaluationSubmissionPayload)
-const submitInstance = async () => {
-  if (!currentInstance.value || currentInstance.value.status !== 'PENDING') {
-      console.error("Submission Error: Instance is not available or not in PENDING status.");
+// Submit the evaluation answers (This will likely require creating a new instance first)
+const submitEvaluation = async () => {
+  if (!currentForm.value) {
+      console.error("Submission Error: No form available.");
       // TODO: Show user feedback
       return;
   }
 
+  // TODO: Before submitting answers, a new EvaluationInstance needs to be created on the backend
+  // based on the currentForm and the logged-in user. The backend should return the ID of the
+  // newly created instance, which is then used in the submitEvaluationAnswers call.
+  // This part requires a new API endpoint or modification of an existing one.
+  alert("Submission functionality requires backend implementation to create an evaluation instance first.");
+  return; // Prevent submission until backend is ready
+
+  /*
   // Basic Validation (Optional: Add more specific validation per question type)
-  // Filter out incomplete/empty answers if necessary
   const answersArray: EvaluationAnswerSubmit[] = Object.values(currentAnswers.value)
       .filter(ans => ans?.question_id !== undefined) // Ensure question_id exists
       .map(ans => { // Construct the final answer shape
           const finalAns: EvaluationAnswerSubmit = { question_id: ans!.question_id! };
-          const question = currentInstance.value?.form.questions.find(q => q.id === ans!.question_id);
+          const question = currentForm.value?.questions.find(q => q.id === ans!.question_id);
 
           if (question?.question_type === 'RATING') {
               finalAns.rating = ans?.rating !== undefined ? Number(ans.rating) : null; // Ensure rating is number or null
@@ -165,7 +158,7 @@ const submitInstance = async () => {
       .filter(ans => ans.rating !== null || ans.text_answer !== null || ans.selected_option_id !== null);
 
   // Optional: Check if all required questions have been answered
-  const requiredQuestions = currentInstance.value.form.questions;
+  const requiredQuestions = currentForm.value.questions;
   const answeredQuestionIds = new Set(answersArray.map(ans => ans.question_id));
   const allRequiredAnswered = requiredQuestions.every(q => answeredQuestionIds.has(q.id!));
 
@@ -181,18 +174,21 @@ const submitInstance = async () => {
   };
 
   try {
-    await submitEvaluationAnswers(currentInstance.value.id, submissionPayload);
+    // This call needs the ID of the newly created EvaluationInstance
+    await submitEvaluationAnswers(instanceId, submissionPayload); // instanceId needs to come from backend after instance creation
     alert("Evaluation submitted successfully!"); // Example success message
-    closeInstanceModal();
-    // Refresh the list to show updated status
-    await fetchAvailableInstances();
+    closeFormModal();
+    // Refresh the list
+    await fetchAvailableForms();
   } catch (error: any) {
     console.error("Failed to submit evaluation:", error);
     // Display specific validation errors from backend if available
     const errorMessage = error.response?.data?.detail || error.message || "An error occurred during submission.";
     alert(`Failed to submit evaluation: ${errorMessage}`); // Example error message
   }
+  */
 }
+
 
 // Pagination Navigation
 const prevPage = () => {
@@ -209,16 +205,16 @@ const goToPage = (page: number) => {
 
 // --- Lifecycle Hooks ---
 onMounted(() => {
-  fetchAvailableInstances(); // Fetch instances on mount
+  fetchAvailableForms(); // Fetch forms on mount
 });
 
 // Refetch data when page changes
-watch(currentPage, fetchAvailableInstances);
+watch(currentPage, fetchAvailableForms);
 </script>
 
 <template>
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Evaluation Instances</h2>
+    <h2>Published Evaluation Forms</h2>
   </div>
 
   <!-- Table -->
@@ -228,33 +224,29 @@ watch(currentPage, fetchAvailableInstances);
       <tr>
         <th scope="col">ID</th>
         <th scope="col">Form Name</th>
-        <th scope="col">Employee</th>
-        <th scope="col">Assigned At</th>
-        <th scope="col">Submitted At</th>
+        <th scope="col">Description</th>
+        <th scope="col">Publish Time</th>
         <th scope="col">Status</th>
-        <th scope="col">Overall Rating Avg</th>
         <th scope="col">Actions</th>
       </tr>
       </thead>
       <tbody>
-      <tr v-if="isLoadingInstances">
-          <td colspan="8" class="text-center">Loading evaluation instances...</td>
+      <tr v-if="isLoadingForms">
+          <td colspan="6" class="text-center">Loading evaluation forms...</td>
       </tr>
-      <tr v-else-if="availableInstances.length === 0">
-          <td colspan="8" class="text-center">No evaluation instances found.</td>
+      <tr v-else-if="availableForms.length === 0">
+          <td colspan="6" class="text-center">No published evaluation forms found.</td>
       </tr>
-      <tr v-else v-for="instance in availableInstances" :key="instance.id">
-        <td>{{ instance.id }}</td>
-        <td>{{ instance.form?.name || 'N/A' }}</td>
-        <td>{{ instance.employee?.username || 'N/A' }}</td>
-        <td>{{ instance.assigned_at ? new Date(instance.assigned_at).toLocaleString() : 'N/A' }}</td>
-        <td>{{ instance.submitted_at ? new Date(instance.submitted_at).toLocaleString() : 'N/A' }}</td>
-        <td>{{ instance.status }}</td>
-        <td>{{ instance.overall_rating_avg !== null ? instance.overall_rating_avg : 'N/A' }}</td>
+      <tr v-else v-for="form in availableForms" :key="form.id">
+        <td>{{ form.id }}</td>
+        <td>{{ form.name || 'N/A' }}</td>
+        <td>{{ form.description || 'N/A' }}</td>
+        <td>{{ form.publish_time ? new Date(form.publish_time).toLocaleString() : 'N/A' }}</td>
+        <td>{{ form.status }}</td>
         <td>
-          <!-- Button text changes based on status -->
-          <button type="button" class="btn btn-primary btn-action" @click="openInstanceModal(instance)">
-              {{ instance.status === 'PENDING' ? 'Take Evaluation' : 'View Evaluation' }}
+          <!-- Button to take/view the form -->
+          <button type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
+              Take Evaluation
           </button>
         </td>
       </tr>
@@ -262,29 +254,28 @@ watch(currentPage, fetchAvailableInstances);
     </table>
   </div>
 
-  <!-- Evaluation Instance Modal -->
-  <div class="modal fade" :class="{ show: showInstanceModal }" style="display: block" v-if="showInstanceModal">
+  <!-- Evaluation Form Modal -->
+  <div class="modal fade" :class="{ show: showFormModal }" style="display: block" v-if="showFormModal">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">{{ currentInstance?.status === 'PENDING' ? 'Take Evaluation' : 'View Evaluation' }}: {{ currentInstance?.form?.name || 'Loading...' }}</h3>
-          <button type="button" class="btn-close" @click="closeInstanceModal" aria-label="Close"></button>
+          <h3 class="modal-title">Take Evaluation: {{ currentForm?.name || 'Loading...' }}</h3>
+          <button type="button" class="btn-close" @click="closeFormModal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div v-if="isLoadingDetails" class="text-center">
-            Loading instance details...
+            Loading form details...
           </div>
-          <div v-else-if="currentInstance && currentInstance.form && currentAnswers">
-              <p><strong>Employee:</strong> {{ currentInstance.employee?.username || 'N/A' }}</p>
-              <p><strong>Status:</strong> {{ currentInstance.status }}</p>
-              <p v-if="currentInstance.status !== 'PENDING'"><strong>Submitted At:</strong> {{ currentInstance.submitted_at ? new Date(currentInstance.submitted_at).toLocaleString() : 'N/A' }}</p>
-              <p v-if="currentInstance.overall_rating_avg !== null"><strong>Overall Rating Avg:</strong> {{ currentInstance.overall_rating_avg }}</p>
+          <div v-else-if="currentForm && currentForm.questions && currentAnswers">
+              <p><strong>Description:</strong> {{ currentForm.description || 'N/A' }}</p>
+              <p><strong>Status:</strong> {{ currentForm.status }}</p>
+              <p><strong>Publish Time:</strong> {{ currentForm.publish_time ? new Date(currentForm.publish_time).toLocaleString() : 'N/A' }}</p>
 
               <div class="mb-4 mt-4">
                 <div class="mb-4 text-center">
                   <h3 class="form-label">Questions</h3>
                 </div>
-                <div v-for="(question, index) in currentInstance.form.questions" :key="question.id" class="mb-3 border p-3 rounded">
+                <div v-for="(question, index) in currentForm.questions" :key="question.id" class="mb-3 border p-3 rounded">
                   <div class="d-flex justify-content-between align-items-center">
                         <!-- Display based on backend question_type -->
                         <h6>{{ index + 1 }}. {{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : 'Option Question' }}</h6>
@@ -296,14 +287,14 @@ watch(currentPage, fetchAvailableInstances);
                   <div v-if="question.question_type === 'RATING' && question.id !== undefined" class="form-group">
                     <label class="form-label">Rating (1-5):</label>
                         <!-- Bind to currentAnswers[question.id].rating -->
-                        <input type="number" class="form-control" v-model.number="currentAnswers[question.id].rating" min="1" max="5" :disabled="currentInstance.status !== 'PENDING'">
+                        <input type="number" class="form-control" v-model.number="currentAnswers[question.id].rating" min="1" max="5">
                   </div>
 
                   <!-- TEXT question type -->
                   <div v-if="question.question_type === 'TEXT' && question.id !== undefined" class="form-group">
                     <label class="form-label">Response:</label>
                         <!-- Bind to currentAnswers[question.id].text_answer -->
-                        <textarea class="form-control auto-resize" v-model="currentAnswers[question.id].text_answer" :disabled="currentInstance.status !== 'PENDING'"></textarea>
+                        <textarea class="form-control auto-resize" v-model="currentAnswers[question.id].text_answer"></textarea>
                       </div>
 
                   <!-- OPTIONS question type -->
@@ -318,7 +309,6 @@ watch(currentPage, fetchAvailableInstances);
                               :id="'option_' + option.id"
                               :value="option.id"
                               v-model="currentAnswers[question.id].selected_option_id"
-                              :disabled="currentInstance.status !== 'PENDING'"
                           >
                           <label class="form-check-label" :for="'option_' + option.id">
                               {{ option.option_text }}
@@ -326,27 +316,28 @@ watch(currentPage, fetchAvailableInstances);
                       </div>
                   </div>
                     </div>
-                     <div v-if="!currentInstance.form.questions || currentInstance.form.questions.length === 0" class="text-muted text-center">
+                     <div v-if="!currentForm.questions || currentForm.questions.length === 0" class="text-muted text-center">
                         This evaluation has no questions.
                      </div>
                   </div>
                 </div>
               <div v-else class="text-center text-danger">
-                    Failed to load instance details.
+                    Failed to load form details.
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeInstanceModal">Close</button>
-              <!-- Show submit button only if status is PENDING -->
-              <button v-if="currentInstance?.status === 'PENDING'" type="button" class="btn btn-primary" @click="submitInstance" :disabled="isLoadingDetails || !currentInstance">Submit</button>
+              <button type="button" class="btn btn-secondary" @click="closeFormModal">Close</button>
+              <!-- Show submit button -->
+              <button type="button" class="btn btn-primary" @click="submitEvaluation" :disabled="isLoadingDetails || !currentForm">Submit Evaluation</button>
             </div>
           </div>
         </div>
       </div>
-      <div class="modal-backdrop fade show" v-if="showInstanceModal"></div>
+      <div class="modal-backdrop fade show" v-if="showFormModal"></div>
 
-      <div class="d-flex align-items-center mt-3 justify-content-start" v-if="totalInstances > 0">
-        <span class="me-3">Total Instances: {{ totalInstances }}</span>
+      <div class="d-flex align-items-center mt-3 justify-content-start" v-if="totalForms > 0">
+        <span class="me-3">Total Forms: {{ totalForms }}</span>
+        <!-- finishedCount is not relevant here -->
         <nav aria-label="Page navigation">
           <ul class="pagination">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">

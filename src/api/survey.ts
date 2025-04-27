@@ -74,6 +74,7 @@ export interface PaginatedResponse<T> {
         next: string | null;
         previous: string | null;
         results: T[];
+        finished_count?: number; // Add finished_count here
     };
 }
 

@@ -3,8 +3,8 @@ import Login from '@/views/Login/Index.vue';
 import HomeView from '@/views/HomeView/Index.vue';
 import {getUserRoutes} from "@/api/Router.ts";
 import {mapBackendRoutes} from "@/router/asyncRoutes.ts";
-import detailedEvaluationList from "@/views/SurveyManagement/DetailedEvaluationList/index.vue";
-import surveyManagement from "@/views/SurveyManagement/index.vue";
+import DetailedEvaluationList from "@/views/DetailedEvaluationList/index.vue";
+import SurveyManagement from "@/views/SurveyManagement/index.vue";
 
 
 const staticRoutes: RouteRecordRaw[]  = [
