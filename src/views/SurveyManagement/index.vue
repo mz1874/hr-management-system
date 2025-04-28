@@ -67,7 +67,7 @@ const searchName = ref('')
 
 // Pagination state
 const currentPage = ref(1)
-const itemsPerPage = ref(20) // Use default page size from backend settings (20)
+const itemsPerPage = ref(10) // Set items per page to 10
 
 
 // --- Fetching Data ---
@@ -79,8 +79,9 @@ const fetchSurveys = async () => {
         params.search = searchName.value; // Changed parameter name to 'search'
     }
 
-    // Fetch data for the current page using backend pagination and filtering
-    const response = await getAllEvaluationForms(currentPage.value, params)
+// Fetch data for the current page using backend pagination and filtering
+    // Add page_size parameter
+    const response = await getAllEvaluationForms(currentPage.value, { ...params, page_size: itemsPerPage.value })
 
     // Add checks for response.data and nested data structure
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
@@ -92,8 +93,9 @@ const fetchSurveys = async () => {
             description: form.description, // Include description
             publish_time: form.publish_time, // Use backend field name
             status: form.status,
-            departments: form.departments,
-            department_details: form.department_details,
+            // Map department_details (objects) to an array of department IDs
+            departments: Array.isArray(form.department_details) ? form.department_details.map(dept => dept.id) : [],
+            department_details: form.department_details, // Keep original details if needed elsewhere
             created_at: form.created_at, // Include created_at
             questions: form.questions.map(q => ({
                 id: q.id,
@@ -362,13 +364,17 @@ const handleSaveEditedEvaluation = async () => {
         return;
     }
 
-    // Construct the final payload for update (Partial Omit<...>)
-    const payload: Partial<Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details' | 'departments'>> = {
+    // Construct the base payload for update
+    const payload: Partial<Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'>> & { departments?: number[] } = {
         name: currentEvaluation.value.name,
         description: currentEvaluation.value.description || '', // Include description
         questions: mappedQuestions,
-        // Remove departments from update payload - departments are assigned/updated during publish
     };
+
+    // Conditionally add departments if the evaluation is PUBLISHED
+    if (currentEvaluation.value.status === 'PUBLISHED') {
+        payload.departments = currentEvaluation.value.departments || [];
+    }
 
   try {
     await updateEvaluationForm(currentEvaluation.value.id, payload); // Use correct API function and payload
@@ -405,6 +411,22 @@ const goToPage = (page: number) => {
     currentPage.value = page
   }
 }
+
+// Helper function for date formatting
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'NOT PUBLISHED';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date'; // Handle invalid date strings
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (e) {
+    console.error("Error formatting date:", dateString, e);
+    return 'Date Error';
+  }
+};
 </script>
 
 <template>
@@ -450,19 +472,14 @@ const goToPage = (page: number) => {
           <tr v-for="item in paginatedLogs" :key="item.id">
             <td>{{ item.id }}</td>
             <td>{{ item.name }}</td>
-            <!-- Display Created Time, fallback to 'NA' if created_at is falsy. If 'NA' persists despite backend providing data, investigate frontend reactivity/timing. -->
-            <td>
-              {{
-                (() => {
-                  const date = new Date(item.created_at);
-                  return isNaN(date.getTime()) ? 'Invalid Date: ' + item.created_at : date.toLocaleString();
-                })()
-              }}
-            </td>
-            <td>{{ item.publish_time ? new Date(item.publish_time).toLocaleString() : 'NA' }}</td>
+            <!-- Use formatDate helper -->
+            <td>{{ formatDate(item.created_at) }}</td>
+            <td>{{ formatDate(item.publish_time) }}</td>
             <td>{{ item.status }}</td>
             <td>
-              <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
+              <!-- Allow editing regardless of status -->
+              <button type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
+              <!-- Only show Publish for DRAFT status -->
               <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
               <button type="button" class="btn btn-danger btn-action" @click="handleDeleteEvaluation(item)">Delete</button>
             </td>
@@ -518,26 +535,25 @@ const goToPage = (page: number) => {
             <input type="text" class="form-control" placeholder="Enter evaluation name" v-model="currentEvaluation.name" :disabled="modalType === 'view'">
           </div>
 
-  <!-- Department Selection -->
-          <div class="form-group mb-4" v-if="modalType !== 'create'">
-            <label class="form-label">Assigned Departments:</label>
-            <div v-if="allDepartments && allDepartments.length > 0" class="d-flex flex-wrap gap-3">
-              <div v-for="dept in allDepartments" :key="dept.id" class="form-check">
+          <!-- Department Selection (Edit Modal) - Only show for PUBLISHED status -->
+          <div class="form-group mb-4" v-if="modalType === 'edit' && currentEvaluation.status === 'PUBLISHED'">
+            <label class="form-label">Assigned to:</label> <!-- Changed label -->
+            <div v-if="allDepartments && allDepartments.length > 0" class="border p-3 rounded" style="max-height: 150px; overflow-y: auto;">
+              <div v-for="dept in allDepartments" :key="'edit-' + dept.id" class="form-check mb-2">
                 <input
                   class="form-check-input"
                   type="checkbox"
                   :value="dept.id"
-                  :id="'dept-' + dept.id"
+                  :id="'edit-dept-' + dept.id"
                   v-model="currentEvaluation.departments"
-                  :disabled="modalType === 'view'"
                 >
-                <label class="form-check-label" :for="'dept-' + dept.id">
+                <label class="form-check-label" :for="'edit-dept-' + dept.id">
                   {{ dept.department_name }}
                 </label>
               </div>
             </div>
-            <div v-else class="text-muted">
-              No departments available.
+            <div v-else class="text-muted mt-2">
+              No departments available to assign.
             </div>
           </div>
 
@@ -594,12 +610,12 @@ const goToPage = (page: number) => {
           <button type="button" class="btn-close" @click="showPublishModal = false" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to publish this evaluation form?</p>
-          <!-- Department Selection for Publish Modal -->
+          <p>Select the departments you want to publish this evaluation form to:</p>
+          <!-- Department Selection for Publish Modal - Using Checkboxes in a styled container -->
           <div class="form-group mb-4">
-            <label class="form-label">Assign to Departments:</label>
-            <div v-if="allDepartments && allDepartments.length > 0" class="d-flex flex-wrap gap-3">
-              <div v-for="dept in allDepartments" :key="dept.id" class="form-check">
+             <!-- Removed label -->
+            <div v-if="allDepartments && allDepartments.length > 0" class="border p-3 rounded" style="max-height: 150px; overflow-y: auto;">
+              <div v-for="dept in allDepartments" :key="'publish-' + dept.id" class="form-check mb-2">
                 <input
                   class="form-check-input"
                   type="checkbox"
@@ -612,8 +628,8 @@ const goToPage = (page: number) => {
                 </label>
               </div>
             </div>
-            <div v-else class="text-muted">
-              No departments available.
+            <div v-else class="text-muted mt-2">
+              No departments available to assign.
             </div>
           </div>
         </div>
@@ -987,4 +1003,3 @@ const goToPage = (page: number) => {
   border: none;
 }
 </style>
-

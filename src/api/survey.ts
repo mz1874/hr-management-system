@@ -81,11 +81,13 @@ export interface PaginatedResponse<T> {
 // --- API Functions ---
 
 // Get Evaluation Forms (HR/Admin view)
-export function getAllEvaluationForms(page: number = 1, searchParams: { search?: string, status?: 'DRAFT' | 'PUBLISHED' } = {}) { // Changed type to include 'search'
+// Added page_size to searchParams type and logic
+export function getAllEvaluationForms(page: number = 1, searchParams: { search?: string, status?: 'DRAFT' | 'PUBLISHED', page_size?: number } = {}) {
     const params = new URLSearchParams();
     params.append('page', String(page));
-    if (searchParams.search) params.append('search', searchParams.search); // Changed to append 'search'
+    if (searchParams.search) params.append('search', searchParams.search);
     if (searchParams.status) params.append('status', searchParams.status);
+    if (searchParams.page_size) params.append('page_size', String(searchParams.page_size)); // Add page_size if provided
 
 
     return axios.get<PaginatedResponse<EvaluationForm>>(`/api/evaluation-forms/?${params.toString()}`);

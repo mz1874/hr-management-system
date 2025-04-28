@@ -28,7 +28,7 @@ const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({}) 
 
 // Pagination state
 const currentPage = ref(1)
-const itemsPerPage = ref(20) // Use default page size from backend settings (20)
+const itemsPerPage = ref(10) // User requested 10 items per page
 
 // --- Computed Properties ---
 const totalPages = computed(() => Math.ceil(totalForms.value / itemsPerPage.value))
