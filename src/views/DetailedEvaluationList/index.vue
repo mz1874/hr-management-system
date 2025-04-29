@@ -1,20 +1,31 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue';
+import Swal from 'sweetalert2'; // Import SweetAlert
 import {
   getAllEvaluationForms, // Use getAllEvaluationForms
+  // TODO: Import getEvaluationInstanceById when implementing results view
+  // getEvaluationInstanceById,
+  startEvaluationInstance, // Import the new function
   submitEvaluationAnswers // Keep submitEvaluationAnswers
-} from '@/api/survey'
+} from '@/api/survey';
 import type {
     EvaluationForm, // Use EvaluationForm
     EvaluationAnswerSubmit,
     EvaluationSubmissionPayload,
     EvaluationQuestion, // Keep EvaluationQuestion for nested details
-    RowyQuestionOption // Keep RowyQuestionOption for nested details
+    RowyQuestionOption, // Keep RowyQuestionOption for nested details
+    // TODO: Import EvaluationInstance, EvaluationAnswerView when implementing results view
+    // EvaluationInstance,
+    // EvaluationAnswerView
 } from '@/api/survey'
 
+// Interface to add user-specific status locally
+interface DisplayEvaluationForm extends EvaluationForm {
+  user_status: 'PUBLISHED' | 'SUBMITTED'; // Made non-optional to match computed property
+}
 
 // --- State ---
-const availableForms = ref<EvaluationForm[]>([]) // List of published evaluation forms
+const availableForms = ref<DisplayEvaluationForm[]>([]) // Use DisplayEvaluationForm
 const totalForms = ref(0) // For pagination
 const isLoadingForms = ref(false)
 const isLoadingDetails = ref(false)
@@ -28,29 +39,84 @@ const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({}) 
 
 // Pagination state
 const currentPage = ref(1)
-const itemsPerPage = ref(10) // User requested 10 items per page
+const itemsPerPage = ref(10) // Keep for API call, but hide display
+
+// Filter state
+const searchName = ref(''); // Add state for search input
+const evaluationStatusesForDropdown = ['PUBLISHED', 'SUBMITTED']; // Statuses for the dropdown
+const selectedStatus = ref<string | null>('PUBLISHED'); // Default to PUBLISHED, allow null for 'All'
+
+// Local submission tracking state
+const submittedFormIds = ref(new Set<number>()); // Track submitted forms locally for this session
+
+// Results Modal State
+const showResultsModal = ref(false);
+const currentSubmissionData = ref<DisplayEvaluationForm | null>(null); // Store form data for results modal
+const isLoadingSubmissionDetails = ref(false); // Loading state for results modal
+// const detailedSubmissionAnswers = ref<EvaluationAnswerView[]>([]); // State for actual answers (TODO)
 
 // --- Computed Properties ---
 const totalPages = computed(() => Math.ceil(totalForms.value / itemsPerPage.value))
 
+// Computed property to add user_status based on local submission tracking
+const displayForms = computed(() => {
+  // When 'All Status' (null) is selected, the backend should return all relevant forms.
+  // We don't need extra frontend filtering here based on form.status.
+  // We just map the received list to add the user-specific status.
+  return availableForms.value.map(form => ({
+    ...form,
+    // Determine user_status based on local tracking
+    user_status: submittedFormIds.value.has(form.id) ? 'SUBMITTED' : 'PUBLISHED'
+  }));
+});
+
+
 // --- Methods ---
+
+// Helper function for date formatting (YYYY-MM-DD)
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A'; // Changed from 'NOT PUBLISHED' to 'N/A' for consistency
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date'; // Handle invalid date strings
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (e) {
+    console.error("Error formatting date:", dateString, e);
+    return 'Date Error';
+  }
+};
 
 // Fetch available published evaluation forms
 const fetchAvailableForms = async () => {
   isLoadingForms.value = true;
   try {
     // Use getAllEvaluationForms API call
-    // Assuming backend can filter by status or we filter on frontend
-    const response = await getAllEvaluationForms(currentPage.value);
+    // Pass page_size, status, and search parameters
+    const params: { page_size: number; status?: string | null; search?: string } = {
+        page_size: itemsPerPage.value,
+        status: selectedStatus.value, // Pass selected status (can be null)
+        search: searchName.value || undefined // Pass search term if not empty
+    };
+    // When 'All Status' is selected (null), don't send status param to backend.
+    // Backend should return all accessible forms (likely PUBLISHED based on typical permissions).
+    // We will filter locally in the computed property if 'All Status' is selected.
+    if (params.status === null) {
+        delete params.status;
+    }
+    const response = await getAllEvaluationForms(currentPage.value, params);
 
     // Add checks for response.data and nested data structure
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
-        // Filter for published forms on the frontend
-        availableForms.value = response.data.data.results.filter((form: EvaluationForm) => form.status === 'PUBLISHED');
-        // Note: totalForms will reflect the total count from the backend, not just published forms
+        // Map API results to add the default user_status
+        availableForms.value = response.data.data.results.map((form: EvaluationForm) => ({
+            ...form,
+            user_status: 'PUBLISHED' // Add default status
+        }));
         totalForms.value = response.data.data.count; // Total count from backend
-        // finishedCount is not relevant for published forms list
-        console.log("Fetched forms:", availableForms.value);
+        console.log("Fetched forms based on status:", selectedStatus.value, availableForms.value);
     } else {
         console.error("Failed to fetch evaluation forms: Unexpected response format", response);
         availableForms.value = [];
@@ -114,7 +180,53 @@ const closeFormModal = () => {
   currentAnswers.value = {};
 }
 
-// Submit the evaluation answers (This will likely require creating a new instance first)
+// --- Results Modal Logic (Placeholder) ---
+// Accept EvaluationForm, as user_status isn't strictly needed inside yet
+const openResultsModal = async (form: EvaluationForm) => {
+  console.log("Opening results for form:", form);
+  // Assign to currentSubmissionData (which expects DisplayEvaluationForm | null)
+  // We know 'form' will have user_status added by the computed prop when rendered,
+  // but for type safety, we can cast or handle potential missing property if needed later.
+  // For now, direct assignment might work if TS allows structural compatibility,
+  // or explicitly add the expected status if needed for internal logic.
+  // Let's assume the computed property handles the display state.
+  currentSubmissionData.value = form as DisplayEvaluationForm; // Cast for assignment safety
+  showResultsModal.value = true;
+  isLoadingSubmissionDetails.value = true;
+  // detailedSubmissionAnswers.value = []; // Clear previous
+
+  // TODO: Implement actual fetching of submission details when backend is ready
+  // try {
+  //   // Assuming we need the instance ID. This needs clarification on how to get it.
+  //   // Maybe fetch instances for this form + current user?
+  //   // const instanceId = ???;
+  //   // const response = await getEvaluationInstanceById(instanceId);
+  //   // if (response.data && Array.isArray(response.data.answers)) {
+  //   //   detailedSubmissionAnswers.value = response.data.answers;
+  //   // } else {
+  //   //   console.error("Unexpected results format");
+  //   //   // Show error in modal
+  //   // }
+  // } catch (error) {
+  //   console.error("Failed to fetch submission details:", error);
+  //   // Show error in modal
+  // } finally {
+  //   isLoadingSubmissionDetails.value = false;
+  // }
+
+  // Simulate loading delay for now
+  await new Promise(resolve => setTimeout(resolve, 500));
+  isLoadingSubmissionDetails.value = false;
+};
+
+const closeResultsModal = () => {
+  showResultsModal.value = false;
+  currentSubmissionData.value = null;
+  // detailedSubmissionAnswers.value = [];
+};
+
+
+// Submit the evaluation answers
 const submitEvaluation = async () => {
   if (!currentForm.value) {
       console.error("Submission Error: No form available.");
@@ -122,15 +234,23 @@ const submitEvaluation = async () => {
       return;
   }
 
-  // TODO: Before submitting answers, a new EvaluationInstance needs to be created on the backend
-  // based on the currentForm and the logged-in user. The backend should return the ID of the
-  // newly created instance, which is then used in the submitEvaluationAnswers call.
-  // This part requires a new API endpoint or modification of an existing one.
-  alert("Submission functionality requires backend implementation to create an evaluation instance first.");
-  return; // Prevent submission until backend is ready
+  // Remove placeholder alert and commented out return
+  // alert("Submission functionality requires backend implementation to create an evaluation instance first.");
+  // return;
 
-  /*
-  // Basic Validation (Optional: Add more specific validation per question type)
+  // --- Start Actual Submission Logic ---
+  try {
+    // 1. Start the evaluation instance to get its ID
+    const startResponse = await startEvaluationInstance(currentForm.value.id);
+    console.log("DEBUG: Received start_evaluation response:", startResponse); // Add frontend logging
+    // Access instance_id from the nested data object based on standard response format
+    const instanceId = startResponse.data.data.instance_id;
+
+    if (!instanceId) {
+        throw new Error("Failed to retrieve evaluation instance ID.");
+    }
+
+    // 2. Basic Validation (Optional: Add more specific validation per question type)
   const answersArray: EvaluationAnswerSubmit[] = Object.values(currentAnswers.value)
       .filter(ans => ans?.question_id !== undefined) // Ensure question_id exists
       .map(ans => { // Construct the final answer shape
@@ -164,7 +284,7 @@ const submitEvaluation = async () => {
 
   if (!allRequiredAnswered) {
       console.error("Validation failed: Please answer all questions.");
-      alert("Please answer all questions before submitting.");
+      Swal.fire('Validation Error', 'Please answer all questions before submitting.', 'warning'); // Use Swal
       return;
   }
 
@@ -173,20 +293,27 @@ const submitEvaluation = async () => {
     answers: answersArray,
   };
 
-  try {
-    // This call needs the ID of the newly created EvaluationInstance
-    await submitEvaluationAnswers(instanceId, submissionPayload); // instanceId needs to come from backend after instance creation
-    alert("Evaluation submitted successfully!"); // Example success message
+    // 3. Submit the answers using the obtained instance ID
+    await submitEvaluationAnswers(instanceId, submissionPayload);
+
+    // 4. Show success message, add to local submitted list, close modal, refresh list
+    Swal.fire('Success', 'Evaluation submitted successfully!', 'success');
+    if (currentForm.value?.id !== undefined) {
+        submittedFormIds.value.add(currentForm.value.id); // Track locally
+    }
     closeFormModal();
-    // Refresh the list
-    await fetchAvailableForms();
-  } catch (error: any) {
+    // No need to call fetchAvailableForms() here unless we want to immediately
+    // reflect a backend status change (which isn't implemented yet).
+    // The computed property `displayForms` will handle the UI update based on `submittedFormIds`.
+    // await fetchAvailableForms();
+
+  } catch (error: any) { // Single catch block for the entire process
     console.error("Failed to submit evaluation:", error);
     // Display specific validation errors from backend if available
     const errorMessage = error.response?.data?.detail || error.message || "An error occurred during submission.";
-    alert(`Failed to submit evaluation: ${errorMessage}`); // Example error message
+    Swal.fire('Error', `Failed to submit evaluation: ${errorMessage}`, 'error');
   }
-  */
+  // --- End Actual Submission Logic ---
 }
 
 
@@ -210,44 +337,91 @@ onMounted(() => {
 
 // Refetch data when page changes
 watch(currentPage, fetchAvailableForms);
+
+// Refetch data when status filter changes
+watch(selectedStatus, () => {
+  currentPage.value = 1; // Reset to first page on filter change
+  fetchAvailableForms();
+});
+
+// Refetch data when search name changes
+watch(searchName, () => {
+  currentPage.value = 1; // Reset to first page on search change
+  fetchAvailableForms();
+});
 </script>
 
 <template>
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Published Evaluation Forms</h2>
-  </div>
+  <div class="main-content container-fluid px-3 px-md-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="h3">Department Evaluations</h2> <!-- Reverted Title -->
+    </div>
 
-  <!-- Table -->
-  <div class="table-card">
-    <table class="table">
-      <thead>
+    <!-- Filter Row - Matching SurveyManagement layout -->
+    <div class="filter-container announcement-toolbar d-flex flex-wrap align-items-center gap-3 mb-4">
+        <!-- Search Input -->
+        <div class="search-container flex-grow-1"> <!-- Re-added flex-grow-1 -->
+          <i class="fas fa-search search-icon"></i>
+          <input
+            v-model="searchName"
+            type="text"
+            class="search-input"
+            placeholder="Search Evaluation Name"
+          />
+        </div>
+
+       <!-- Status Filter Dropdown -->
+       <div class="status-filter-container">
+         <!-- Removed label, relying on default option text -->
+         <select id="statusFilter" v-model="selectedStatus" class="form-select status-filter-select">
+           <option :value="null">All Status</option> <!-- Added All Status option -->
+           <option v-for="status in evaluationStatusesForDropdown" :key="status" :value="status">
+             {{ status }}
+           </option>
+         </select>
+       </div>
+       <!-- Add other filters here if needed -->
+    </div>
+
+
+    <!-- Table -->
+    <div class="table-card">
+      <table class="table">
+        <thead>
       <tr>
         <th scope="col">ID</th>
-        <th scope="col">Form Name</th>
-        <th scope="col">Description</th>
-        <th scope="col">Publish Time</th>
-        <th scope="col">Status</th>
-        <th scope="col">Actions</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-if="isLoadingForms">
-          <td colspan="6" class="text-center">Loading evaluation forms...</td>
-      </tr>
-      <tr v-else-if="availableForms.length === 0">
-          <td colspan="6" class="text-center">No published evaluation forms found.</td>
-      </tr>
-      <tr v-else v-for="form in availableForms" :key="form.id">
-        <td>{{ form.id }}</td>
-        <td>{{ form.name || 'N/A' }}</td>
-        <td>{{ form.description || 'N/A' }}</td>
-        <td>{{ form.publish_time ? new Date(form.publish_time).toLocaleString() : 'N/A' }}</td>
-        <td>{{ form.status }}</td>
-        <td>
-          <!-- Button to take/view the form -->
-          <button type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
-              Take Evaluation
-          </button>
+        <th scope="col">Evaluation Name</th>
+        <!-- Description column removed -->
+        <th scope="col">Published Date</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-if="isLoadingForms">
+            <td colspan="5" class="text-center">Loading evaluation forms...</td>
+        </tr>
+        <tr v-else-if="displayForms.length === 0">
+            <td colspan="5" class="text-center">No evaluation forms found matching the criteria.</td>
+        </tr>
+        <!-- Iterate over computed displayForms -->
+        <tr v-else v-for="form in displayForms" :key="form.id">
+          <td>{{ form.id }}</td>
+          <td>{{ form.name || 'N/A' }}</td>
+          <td>{{ formatDate(form.publish_time) }}</td>
+          <!-- Display user_status as plain text -->
+          <td>
+            {{ form.user_status }}
+          </td>
+          <td>
+            <!-- Conditional Button -->
+            <button v-if="form.user_status === 'PUBLISHED'" type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
+                Take Evaluation
+            </button>
+            <button v-else-if="form.user_status === 'SUBMITTED'" type="button" class="btn btn-info btn-action" @click="openResultsModal(form)">
+                View Submission
+            </button>
         </td>
       </tr>
       </tbody>
@@ -267,9 +441,9 @@ watch(currentPage, fetchAvailableForms);
             Loading form details...
           </div>
           <div v-else-if="currentForm && currentForm.questions && currentAnswers">
-              <p><strong>Description:</strong> {{ currentForm.description || 'N/A' }}</p>
+              <!-- Removed Description from modal -->
               <p><strong>Status:</strong> {{ currentForm.status }}</p>
-              <p><strong>Publish Time:</strong> {{ currentForm.publish_time ? new Date(currentForm.publish_time).toLocaleString() : 'N/A' }}</p>
+              <p><strong>Published Date:</strong> {{ formatDate(currentForm.publish_time) }}</p> <!-- Use formatDate -->
 
               <div class="mb-4 mt-4">
                 <div class="mb-4 text-center">
@@ -285,9 +459,18 @@ watch(currentPage, fetchAvailableForms);
 
                   <!-- RATING question type -->
                   <div v-if="question.question_type === 'RATING' && question.id !== undefined" class="form-group">
-                    <label class="form-label">Rating (1-5):</label>
-                        <!-- Bind to currentAnswers[question.id].rating -->
-                        <input type="number" class="form-control" v-model.number="currentAnswers[question.id].rating" min="1" max="5">
+                    <label class="form-label">Rating (1-5 stars):</label>
+                    <div class="star-rating">
+                      <span
+                        v-for="star in 5"
+                        :key="star"
+                        class="star"
+                        :class="{ 'filled': currentAnswers[question.id].rating !== undefined && star <= currentAnswers[question.id].rating! }"
+                        @click="currentAnswers[question.id].rating = star"
+                      >
+                        <i class="fas fa-star"></i>
+                      </span>
+                    </div>
                   </div>
 
                   <!-- TEXT question type -->
@@ -335,11 +518,62 @@ watch(currentPage, fetchAvailableForms);
       </div>
       <div class="modal-backdrop fade show" v-if="showFormModal"></div>
 
-      <div class="d-flex align-items-center mt-3 justify-content-start" v-if="totalForms > 0">
-        <span class="me-3">Total Forms: {{ totalForms }}</span>
-        <!-- finishedCount is not relevant here -->
-        <nav aria-label="Page navigation">
-          <ul class="pagination">
+      <!-- Results Modal (Placeholder) -->
+      <div class="modal fade" :class="{ show: showResultsModal }" style="display: block" v-if="showResultsModal">
+          <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Submission Details: {{ currentSubmissionData?.name || '...' }}</h5>
+                      <button type="button" class="btn-close" @click="closeResultsModal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <div v-if="isLoadingSubmissionDetails" class="text-center">
+                          Loading submission details...
+                      </div>
+                      <div v-else>
+                          <!-- TODO: Display actual fetched answers here -->
+                          <p><strong>Status:</strong> {{ currentSubmissionData?.status }}</p>
+                          <p><strong>Publish Time:</strong> {{ formatDate(currentSubmissionData?.publish_time) }}</p>
+                          <hr/>
+                          <h6 class="mb-3">Your Answers:</h6>
+                          <div class="alert alert-info">
+                              Result display is pending backend implementation.
+                          </div>
+                          <!-- Example structure for when answers are available -->
+                          <!--
+                          <div v-if="detailedSubmissionAnswers.length > 0">
+                              <div v-for="(answer, index) in detailedSubmissionAnswers" :key="answer.id || index" class="mb-3 border-bottom pb-2">
+                                  <p class="mb-1"><strong>Q{{ index + 1 }}:</strong> {{ answer.question?.text }}</p>
+                                  <div class="ps-3">
+                                      <template v-if="answer.question?.question_type === 'RATING'">Rating: {{ answer.rating ?? 'N/A' }}</template>
+                                      <template v-else-if="answer.question?.question_type === 'OPTIONS'">Selected: {{ answer.selected_option?.option_text ?? 'N/A' }}</template>
+                                      <template v-else-if="answer.question?.question_type === 'TEXT'">Response: {{ answer.text_answer || 'N/A' }}</template>
+                                  </div>
+                              </div>
+                          </div>
+                          <div v-else>
+                              Could not load submission details or no answers were recorded.
+                          </div>
+                          -->
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" @click="closeResultsModal">Close</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div class="modal-backdrop fade show" v-if="showResultsModal"></div>
+      <!-- End Results Modal -->
+
+
+      <!-- Pagination - Matching SurveyManagement layout -->
+      <div class="d-flex align-items-center gap-3 my-3" v-if="totalForms > 0">
+        <div class="text-muted fs-5"> <!-- Re-added fs-5 -->
+          Total: {{ totalForms }}
+        </div>
+        <nav aria-label="Page navigation"> <!-- Removed ms-3 -->
+          <ul class="pagination mb-0">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
               <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
             </li>
@@ -351,11 +585,106 @@ watch(currentPage, fetchAvailableForms);
             </li>
           </ul>
         </nav>
-        <span class="ms-3">Items per page: {{ itemsPerPage }}</span>
+        <!-- Removed Items per page span -->
       </div>
-    </template>
+  </div> <!-- Close main-content -->
+</template>
 
-    <style scoped>
+<style scoped>
+/* Import relevant styles from SurveyManagement if needed, or define here */
+
+/* Search Container Styling - Ensure it matches SurveyManagement */
+.search-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #6c757d; /* Adjusted border color */
+  border-radius: 0.25rem; /* Adjusted border radius */
+  padding: 0.375rem 0.75rem; /* Adjusted padding */
+  /* min-width: 250px; */ /* Removed min-width */
+  height: 38px; /* Adjusted height to match typical form control */
+  flex-grow: 1; /* Keep flex-grow */
+  background-color: #fff; /* Added background color */
+  max-width: 350px; /* Optional: Set a max-width if needed */
+}
+
+.search-icon {
+  color: #6c757d;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 1rem;
+  padding: 0;
+}
+
+
+/* Filter Container - Ensure alignment and background */
+.filter-container {
+  padding: 1rem 1.5rem;
+  /* background-color: #f8f9fa; */ /* Removed background */
+  border-radius: 0.5rem;
+  /* border: 1px solid #dee2e6; */ /* Removed border */
+}
+
+.status-filter-container {
+  display: flex;
+  align-items: center;
+}
+
+.status-filter-select {
+  min-width: 150px; /* Adjust as needed */
+  height: 38px;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #6c757d;
+}
+
+/* Pagination Styling (ensure consistency) */
+.pagination {
+  display: flex;
+  padding-left: 0;
+  list-style: none;
+  border-radius: 0.25rem;
+}
+
+.page-item {
+  margin: 0 0.15rem;
+}
+
+.page-item .page-link {
+  position: relative;
+  display: block;
+  padding: 0.5rem 0.75rem;
+  /* Use high-contrast colors from SurveyManagement if different */
+  color: #0d6efd; /* Example blue */
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  text-decoration: none;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #fff;
+  border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+  z-index: 1;
+  color: #fff;
+  /* Use active color from SurveyManagement */
+  background-color: #198754; /* Example green */
+  border-color: #198754; /* Example green */
+}
+
+
+/* Keep existing relevant styles, remove styles specific to old modals/elements if desired */
 
     /* Keep existing relevant styles, remove styles specific to old modals/elements if desired */
     /* Add styles for loading indicators or new elements if needed */
@@ -435,13 +764,13 @@ watch(currentPage, fetchAvailableForms);
     }
 
     .page-item .page-link {
-      color: #008080;
+      color: #0d6efd;
     }
 
     .page-item.active .page-link {
       color: #fff;
-      background-color: #008080;
-      border-color: #008080;
+      background-color: #0d6efd;
+      border-color: #0d6efd;
     }
 
     /* Added style for disabled pagination */
@@ -458,7 +787,31 @@ watch(currentPage, fetchAvailableForms);
         border: 1px solid #dee2e6;
         padding: 0.5rem 0.75rem;
         white-space: pre-wrap; /* Allow text wrapping */
-        word-wrap: break-word; /* Break long words */
+    word-wrap: break-word; /* Break long words */
     }
+
+    /* Star Rating Styles */
+    .star-rating {
+      display: inline-block; /* Or flex */
+      font-size: 1.5rem; /* Adjust size as needed */
+      color: #ccc; /* Default star color */
+    }
+
+    .star {
+      cursor: pointer;
+      padding: 0 0.1em; /* Spacing between stars */
+      transition: color 0.2s;
+    }
+
+    .star.filled {
+      color: #ffc107; /* Filled star color (e.g., gold) */
+    }
+
+    .star:hover,
+    .star:hover ~ .star { /* Make stars light up on hover */
+      /* Optional: Add a hover effect if desired */
+      /* color: #ffdd7a; */
+    }
+
 
     </style>

@@ -29,6 +29,7 @@ export interface EvaluationForm {
     departments: number[]; // Array of department IDs for write
     department_details?: { id: number; department_name: string }[]; // Read-only details from backend
     questions: EvaluationQuestion[]; // Nested questions
+    submission_count?: number; // Optional: Number of submissions received
 }
 
 // Represents an answer being submitted by staff (matches backend serializer)
@@ -81,8 +82,8 @@ export interface PaginatedResponse<T> {
 // --- API Functions ---
 
 // Get Evaluation Forms (HR/Admin view)
-// Added page_size to searchParams type and logic
-export function getAllEvaluationForms(page: number = 1, searchParams: { search?: string, status?: 'DRAFT' | 'PUBLISHED', page_size?: number } = {}) {
+// Updated status type to string to allow 'SUBMITTED' from frontend, backend handles logic.
+export function getAllEvaluationForms(page: number = 1, searchParams: { search?: string, status?: string, page_size?: number } = {}) {
     const params = new URLSearchParams();
     params.append('page', String(page));
     if (searchParams.search) params.append('search', searchParams.search);
@@ -118,6 +119,20 @@ export function deleteEvaluationForm(id: number) {
 // Added optional data payload for departments
 export function publishEvaluationForm(id: number, data?: { departments: number[] }) {
     return axios.post(`/api/evaluation-forms/${id}/publish/`, data);
+}
+
+// Start an Evaluation Instance (get or create)
+// Define the expected nested structure for the response data
+interface StartInstanceResponse {
+    code: number;
+    message: string;
+    data: {
+        instance_id: number;
+    };
+}
+export function startEvaluationInstance(formId: number) {
+    // Use the defined interface for the expected response structure
+    return axios.post<StartInstanceResponse>(`/api/evaluation-forms/${formId}/start_evaluation/`);
 }
 
 // Get Evaluation Instances (Staff/HR/Admin view)

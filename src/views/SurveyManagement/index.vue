@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router'; // Import useRouter (keep for potential future use or other actions)
 import Swal from 'sweetalert2'; // Import SweetAlert2
 import {
   getAllEvaluationForms,
   createEvaluationForm,
   deleteEvaluationForm,
   publishEvaluationForm,
-  updateEvaluationForm
+  updateEvaluationForm,
+  getEvaluationInstances, // Import function to get results list
+  getEvaluationInstanceById // Import function to get single instance details
 } from '@/api/survey'
 import { selectAllDepartments } from '@/api/department'
-import type { EvaluationForm, EvaluationQuestion, RowyQuestionOption } from '@/api/survey'
+import type { EvaluationForm, EvaluationQuestion, RowyQuestionOption, EvaluationInstance, EvaluationAnswerView } from '@/api/survey' // Import EvaluationInstance & EvaluationAnswerView types
 
 // Interface for the evaluation form list items (matches backend EvaluationForm structure)
 interface EvaluationItem extends Omit<EvaluationForm, 'questions'> {
     questions: QuestionItem[]; // Use local QuestionItem interface for UI state
+    submission_count?: number; // Add optional submission count
 }
 
 // Interface for questions within the UI state (includes options as RowyQuestionOption)
@@ -63,20 +67,46 @@ const evaluationToDelete = ref<EvaluationItem | null>(null)
 
 // Filtering state
 const searchName = ref('')
+// Define possible statuses for the dropdown
+const surveyStatusesForDropdown = ['DRAFT', 'PUBLISHED', 'SUBMITTED'];
+// State for the selected status filter. Use string | null to accommodate 'SUBMITTED'.
+const selectedStatus = ref<string | null>(null);
 // Removed startDate and endDate as filtering is backend-handled
 
 // Pagination state
 const currentPage = ref(1)
 const itemsPerPage = ref(10) // Set items per page to 10
 
+// Router instance
+const router = useRouter(); // Keep router instance if needed for other actions
+
+// --- State for Results View ---
+const isViewingResults = ref(false);
+const resultsFormId = ref<number | null>(null);
+const resultsFormName = ref<string>('');
+const currentResultsData = ref<EvaluationInstance[]>([]);
+const resultsLoading = ref(false);
+const resultsError = ref<string | null>(null);
+
+// --- State for Detailed Results Modal ---
+const showDetailsModal = ref(false);
+const selectedInstanceForDetails = ref<EvaluationInstance | null>(null);
+// Use EvaluationAnswerView[] for detailed answers, assuming API returns this structure within the instance
+const detailedAnswersData = ref<EvaluationAnswerView[]>([]);
+const detailsLoading = ref(false);
+const detailsError = ref<string | null>(null);
+
 
 // --- Fetching Data ---
 const fetchSurveys = async () => {
   try {
-    // Pass backend-supported search parameters
-    const params: { search?: string } = {}; // Changed parameter name to 'search'
+    // Pass backend-supported search parameters. Status can now be string | null.
+    const params: { search?: string; status?: string; page_size?: number } = {}; // Use string for status
     if (searchName.value) {
-        params.search = searchName.value; // Changed parameter name to 'search'
+        params.search = searchName.value;
+    }
+    if (selectedStatus.value) { // Add status to params if selected
+        params.status = selectedStatus.value;
     }
 
 // Fetch data for the current page using backend pagination and filtering
@@ -93,6 +123,7 @@ const fetchSurveys = async () => {
             description: form.description, // Include description
             publish_time: form.publish_time, // Use backend field name
             status: form.status,
+            submission_count: form.submission_count || 0, // Map submission count (default to 0 if not provided)
             // Map department_details (objects) to an array of department IDs
             departments: Array.isArray(form.department_details) ? form.department_details.map(dept => dept.id) : [],
             department_details: form.department_details, // Keep original details if needed elsewhere
@@ -147,17 +178,26 @@ onMounted(async () => {
   }
 });
 
-// Refetch data when page or search term changes
-watch([currentPage, searchName], () => {
-  // Reset page to 1 when search term changes, but only if it's not already 1
-  if (currentPage.value !== 1 && searchName.value !== '') {
-    currentPage.value = 1;
-  } else {
-    fetchSurveys();
-  }
+// Watch for changes in the search term
+watch(searchName, () => {
+  // Reset to the first page when the search term changes
+  currentPage.value = 1;
+  fetchSurveys(); // Fetch data with the new search term and current status filter
 });
 
-// Removed handleSearch as fetching is now handled by the watcher
+// Watch for changes in the status filter
+watch(selectedStatus, () => {
+  currentPage.value = 1; // Reset to the first page
+  fetchSurveys(); // Fetch data with the new status filter
+});
+
+// Watch for changes in the current page
+watch(currentPage, () => {
+  // Fetch data for the new page
+  fetchSurveys();
+});
+
+// Removed handleSearch as fetching is now handled by the watchers
 // const handleSearch = () => {
 //   currentPage.value = 1; // Reset to first page on new search
 //   fetchSurveys();
@@ -427,94 +467,292 @@ const formatDate = (dateString: string | null | undefined): string => {
     return 'Date Error';
   }
 };
+
+// Helper function for date formatting (including time) - potentially needed for results
+const formatDateTime = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  } catch (e) {
+    console.error("Error formatting date:", dateString, e);
+    return 'Date Error';
+  }
+};
+
+
+// --- View Results Functionality ---
+const fetchAndShowResults = async (evaluation: EvaluationItem) => {
+  if (!evaluation.id) {
+    Swal.fire('Error', 'Cannot view results as the Evaluation ID is missing.', 'error');
+    return;
+  }
+
+  resultsFormId.value = evaluation.id;
+  resultsFormName.value = evaluation.name;
+  isViewingResults.value = true;
+  resultsLoading.value = true;
+  resultsError.value = null;
+  currentResultsData.value = [];
+
+  try {
+    // Assuming getEvaluationInstances fetches all results for a formId for now
+    // Add pagination to getEvaluationInstances if needed later
+    const response = await getEvaluationInstances(1, { formId: resultsFormId.value });
+
+    if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
+      currentResultsData.value = response.data.data.results;
+      console.log("Fetched evaluation instances:", currentResultsData.value);
+      if (currentResultsData.value.length === 0) {
+         // Optionally update form name if fetched data has it and is more accurate
+         // formName.value = currentResultsData.value[0]?.form?.name || `Form ID ${resultsFormId.value}`;
+      }
+    } else {
+      console.error("Failed to fetch evaluation results: Unexpected response format", response);
+      resultsError.value = "Failed to fetch results due to unexpected response format.";
+    }
+  } catch (err: any) {
+    console.error("Failed to fetch evaluation results:", err);
+    resultsError.value = err.response?.data?.detail || err.message || "An unknown error occurred.";
+  } finally {
+    resultsLoading.value = false;
+  }
+};
+
+const closeResultsView = () => {
+  isViewingResults.value = false;
+  resultsFormId.value = null;
+  resultsFormName.value = '';
+  currentResultsData.value = [];
+  resultsError.value = null;
+};
+
+// Modified viewResults to call the fetch function
+const viewResults = (evaluation: EvaluationItem) => {
+  console.log("View Results clicked for:", evaluation);
+  fetchAndShowResults(evaluation);
+};
+
+// --- Fetch and Show Detailed Instance Results ---
+const fetchAndShowInstanceDetails = async (instance: EvaluationInstance) => {
+  if (!instance || !instance.id) {
+    Swal.fire('Error', 'Cannot view details as the Instance ID is missing.', 'error');
+    return;
+  }
+
+  selectedInstanceForDetails.value = instance; // Store the selected instance
+  showDetailsModal.value = true; // Show the modal immediately
+  detailsLoading.value = true;
+  detailsError.value = null;
+  detailedAnswersData.value = []; // Clear previous data
+
+  try {
+    // Fetch the full instance details using the existing API function
+    const response = await getEvaluationInstanceById(instance.id);
+
+    // Check response structure - assuming response.data contains the EvaluationInstance object
+    if (response.data && Array.isArray(response.data.answers)) {
+      detailedAnswersData.value = response.data.answers; // Store the answers array
+      console.log("Fetched detailed answers:", detailedAnswersData.value);
+    } else {
+      console.error("Failed to fetch instance details: Unexpected response format", response);
+      detailsError.value = "Failed to fetch details due to unexpected response format.";
+      detailedAnswersData.value = []; // Ensure it's empty on error
+    }
+  } catch (err: any) {
+    console.error("Failed to fetch instance details:", err);
+    detailsError.value = err.response?.data?.detail || err.message || "An unknown error occurred.";
+    detailedAnswersData.value = []; // Ensure it's empty on error
+  } finally {
+    detailsLoading.value = false;
+  }
+};
+
+const closeDetailsModal = () => {
+  showDetailsModal.value = false;
+  selectedInstanceForDetails.value = null;
+  detailedAnswersData.value = [];
+  detailsError.value = null;
+  detailsLoading.value = false; // Reset loading state
+};
+
+
 </script>
 
 <template>
-  <div class="main-content container-fluid px-3 px-md-4">
-    <!-- Main Content Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="h3">Publish Evaluation</h2>
-    </div>
-
-    <!-- Filter and Search Row -->
-    <div class="filter-container announcement-toolbar d-flex flex-wrap align-items-center gap-3 mb-4">
-      <!-- Search Input -->
-      <div class="search-container flex-grow-1">
-        <i class="fas fa-search search-icon"></i>
-        <input
-          v-model="searchName"
-          type="text"
-          class="search-input"
-          placeholder="Search Evaluation Name"
-        />
+  <!-- Survey List View -->
+  <template v-if="!isViewingResults">
+    <div class="main-content container-fluid px-3 px-md-4">
+      <!-- Main Content Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3">Evaluation Center</h2>
       </div>
 
-      <!-- Create Button -->
-      <div class="d-flex gap-2">
-        <button type="button" class="btn new-announcement-btn" @click="openEvaluationModal">Create A New Evaluation</button>
-      </div>
-    </div>
+      <!-- Filter and Search Row -->
+      <div class="filter-container announcement-toolbar d-flex flex-wrap align-items-center gap-3 mb-4">
+        <!-- Search Input -->
+        <div class="search-container flex-grow-1">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            v-model="searchName"
+            type="text"
+            class="search-input"
+            placeholder="Search Evaluation Name"
+          />
+        </div>
 
-    <!-- Table -->
-    <div class="table-card">
-      <table class="table">
-        <thead>
-        <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Name</th>
-          <th scope="col">Created At</th>
-          <th scope="col">Publish Time</th>
-          <th scope="col">Status</th>
-          <th scope="col">Actions</th>
-        </tr>
-        </thead>
-        <tbody v-if="paginatedLogs.length > 0">
-          <tr v-for="item in paginatedLogs" :key="item.id">
-            <td>{{ item.id }}</td>
-            <td>{{ item.name }}</td>
-            <!-- Use formatDate helper -->
-            <td>{{ formatDate(item.created_at) }}</td>
-            <td>{{ formatDate(item.publish_time) }}</td>
-            <td>{{ item.status }}</td>
-            <td>
-              <!-- Allow editing regardless of status -->
-              <button type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
-              <!-- Only show Publish for DRAFT status -->
-              <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
-              <button type="button" class="btn btn-danger btn-action" @click="handleDeleteEvaluation(item)">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-        <tbody v-else>
+        <!-- Status Filter Dropdown -->
+        <div class="status-filter-container">
+          <select v-model="selectedStatus" class="form-select status-filter-select">
+            <option :value="null">All Status</option> <!-- Changed text slightly -->
+            <!-- Iterate over statuses defined for the dropdown -->
+            <option v-for="status in surveyStatusesForDropdown" :key="status" :value="status">
+              {{ status }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Create Button -->
+        <div class="d-flex gap-2">
+          <button type="button" class="btn new-announcement-btn" @click="openEvaluationModal">Create A New Evaluation</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <table class="table">
+          <thead>
           <tr>
-            <td colspan="7" class="text-center">No evaluations found.</td>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Created Date</th>
+            <th scope="col">Published Date</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
           </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Pagination -->
-    <div class="d-flex align-items-center gap-3 my-3" v-if="totalSurveys > 0">
-      <div class="text-muted fs-5">
-        Total: {{ totalSurveys }}
+          </thead>
+          <tbody v-if="paginatedLogs.length > 0">
+            <tr v-for="item in paginatedLogs" :key="item.id">
+              <td>{{ item.id }}</td>
+              <td>{{ item.name }}</td>
+              <!-- Use formatDate helper -->
+              <td>{{ formatDate(item.created_at) }}</td>
+              <td>{{ formatDate(item.publish_time) }}</td>
+              <!-- Display SUBMITTED if results exist, otherwise the original status -->
+              <td>{{ item.submission_count && item.submission_count > 0 ? 'SUBMITTED' : item.status }}</td>
+              <td>
+                <!-- Hide Edit button if derived status is SUBMITTED -->
+                <button v-if="!(item.submission_count && item.submission_count > 0)" type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
+                <!-- Only show Publish for DRAFT status -->
+                <button v-if="item.status === 'DRAFT'" type="button" class="btn btn-primary btn-action" @click="openPublishModal(item)">Publish</button>
+                <!-- Add View Results button for PUBLISHED status AND if submissions exist -->
+                <button v-if="item.status === 'PUBLISHED' && item.submission_count && item.submission_count > 0" type="button" class="btn btn-info btn-action" @click="viewResults(item)">View Results</button>
+                <button type="button" class="btn btn-danger btn-action" @click="handleDeleteEvaluation(item)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+          <tbody v-else>
+            <tr>
+              <td colspan="7" class="text-center">No evaluations found.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <nav aria-label="Page navigation">
-        <ul class="pagination mb-0">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
-          </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
-          </li>
-        </ul>
-      </nav>
+      <!-- Pagination -->
+      <div class="d-flex align-items-center gap-3 my-3" v-if="totalSurveys > 0">
+        <div class="text-muted fs-5">
+          Total: {{ totalSurveys }}
+        </div>
+
+        <nav aria-label="Page navigation">
+          <ul class="pagination mb-0">
+            <li class="page-item" :class="{ disabled: currentPage === 1 }">
+              <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
+            </li>
+            <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+              <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+            </li>
+            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+              <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </div>
-  </div>
-  <!-- 创建/编辑/查看Evaluation模态框 -->
+  </template>
+
+  <!-- Results View -->
+  <template v-else>
+    <div class="main-content container-fluid px-3 px-md-4">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3">Evaluation Results: {{ resultsFormName || 'Loading...' }}</h2>
+        <button @click="closeResultsView" class="btn btn-secondary">Back to List</button>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="resultsLoading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading results...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="resultsError" class="alert alert-danger" role="alert">
+        Error loading results: {{ resultsError }}
+      </div>
+
+      <!-- Results Table -->
+      <div v-else-if="currentResultsData.length > 0" class="table-card">
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Instance ID</th>
+              <th scope="col">Employee</th>
+              <th scope="col">Submitted At</th>
+              <th scope="col">Status</th>
+              <th scope="col">Avg. Rating</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="instance in currentResultsData" :key="instance.id">
+              <td>{{ instance.id }}</td>
+              <td>{{ instance.employee?.username || 'N/A' }}</td>
+              <td>{{ formatDateTime(instance.submitted_at) }}</td> <!-- Use formatDateTime -->
+              <td>
+                <span :class="['badge', instance.status === 'SUBMITTED' ? 'bg-success' : instance.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary']">
+                  {{ instance.status }}
+                </span>
+              </td>
+              <td>{{ instance.overall_rating_avg?.toFixed(2) ?? 'N/A' }}</td>
+              <td>
+                <!-- Enable button and link to fetchAndShowInstanceDetails -->
+                <button class="btn btn-sm btn-outline-primary" @click="fetchAndShowInstanceDetails(instance)">View Details</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- TODO: Add pagination controls for results if needed -->
+      </div>
+
+      <!-- No Results State -->
+      <div v-else class="alert alert-info" role="alert">
+        No submitted results found for this evaluation form yet.
+      </div>
+    </div>
+  </template>
+
+  <!-- Modals remain outside the conditional templates -->
+  <!-- 创建/编辑Evaluation模态框 -->
   <div class="modal fade" id="createEvaluation" :class="{ show: showModal }" style="display: block" v-if="showModal">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
@@ -585,7 +823,7 @@ const formatDate = (dateString: string | null | undefined): string => {
                 No questions added yet.
               </div>
               <div class="mt-3">
-                <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Grade Question</button>
+                <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Rating Question</button>
                 <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
               </div>
             </div>
@@ -661,6 +899,66 @@ const formatDate = (dateString: string | null | undefined): string => {
     </div>
   </div>
   <div class="modal-backdrop fade show" v-if="showDeleteConfirmModal"></div>
+
+  <!-- Detailed Results Modal -->
+  <div class="modal fade" id="viewDetailsModal" :class="{ show: showDetailsModal }" style="display: block" v-if="showDetailsModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Detailed Results for: {{ selectedInstanceForDetails?.employee?.username || 'N/A' }}</h5>
+          <button type="button" class="btn-close" @click="closeDetailsModal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Loading State -->
+          <div v-if="detailsLoading" class="text-center my-3">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading details...</span>
+            </div>
+            <p class="mt-2">Loading details...</p>
+          </div>
+
+          <!-- Error State -->
+          <div v-else-if="detailsError" class="alert alert-danger" role="alert">
+            Error loading details: {{ detailsError }}
+          </div>
+
+          <!-- Details Content -->
+          <div v-else-if="detailedAnswersData.length > 0">
+            <div v-for="(answer, index) in detailedAnswersData" :key="answer.id || index" class="mb-4 pb-3 border-bottom">
+              <p class="mb-1"><strong>Question {{ index + 1 }}:</strong> {{ answer.question?.text || 'Question text missing' }}</p>
+              <div class="ps-3">
+                <p class="mb-0"><strong>Answer:</strong></p>
+                <!-- Display answer based on question type -->
+                <template v-if="answer.question?.question_type === 'RATING'">
+                  <span class="badge bg-info">{{ answer.rating ?? 'N/A' }} / 5</span>
+                </template>
+                <template v-else-if="answer.question?.question_type === 'OPTIONS'">
+                  <span>{{ answer.selected_option?.option_text ?? 'N/A' }}</span>
+                </template>
+                <template v-else-if="answer.question?.question_type === 'TEXT'">
+                  <p class="text-muted fst-italic">{{ answer.text_answer || '(No answer provided)' }}</p>
+                </template>
+                <template v-else>
+                  <span class="text-danger">Unknown question type or answer format.</span>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Answers State -->
+          <div v-else class="alert alert-info" role="alert">
+            No detailed answers found for this submission.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeDetailsModal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" v-if="showDetailsModal"></div>
+  <!-- End Detailed Results Modal -->
+
 </template>
 
 <style scoped>
@@ -838,8 +1136,8 @@ const formatDate = (dateString: string | null | undefined): string => {
 .page-item.active .page-link {
   z-index: 1;
   color: #fff;
-  background-color: #198754;
-  border-color: #198754;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
 }
 
 /* Modal Responsive Styles */
@@ -942,6 +1240,8 @@ const formatDate = (dateString: string | null | undefined): string => {
   padding: 1rem 1.5rem; /* Adjusted padding */
   background-color: #f8f9fa;
   border-radius: 0.5rem;
+  /* Align items vertically */
+  align-items: center;
   /* Ensure search and button are on the left */
   justify-content: flex-start;
 }
@@ -951,6 +1251,21 @@ const formatDate = (dateString: string | null | undefined): string => {
 }
 
 /* Search Container within Filter Container */
+/* Status Filter Specific Styles */
+.status-filter-container {
+  /* Adjust width as needed */
+  min-width: 150px;
+}
+
+.status-filter-select {
+  height: 38px; /* Match search input height */
+  border-radius: 0.25rem; /* Match search input radius */
+  border: 1px solid #ced4da; /* Match search input border */
+  padding: 0.375rem 0.75rem; /* Match search input padding */
+  font-size: 1rem; /* Match search input font size */
+  background-color: #fff; /* Match search input background */
+}
+
 .filter-container .search-container {
   min-width: auto; /* Allow search container to shrink */
   max-width: 300px; /* Keep max width */
