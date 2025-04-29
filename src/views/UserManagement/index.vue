@@ -154,6 +154,12 @@ const changePage = (page: number) => {
     fetchAllStaffs(page);
   }
 }
+function hasAdminRole(roleIds: number[]): boolean {
+  return roleIds.some(roleId => {
+    const role = tableData.value.find(r => r.id === roleId);
+    return role?.name.toLowerCase() === 'admin';
+  });
+}
 
 function onImageSelected(event) {
   const file = event.target.files[0];
@@ -706,6 +712,7 @@ function resetPassword(staff: Staff) {
                   v-model="selectedStaff.department"
                   class="form-select"
                   id="editStaffDepartment"
+                  :disabled="hasAdminRole(selectedStaff.roles)"
               >
                 <option
                     v-for="dept in departmentStore.flatDepartmentList"
