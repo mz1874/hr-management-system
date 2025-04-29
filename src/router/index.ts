@@ -1,7 +1,7 @@
 import {createRouter, createWebHashHistory, type RouteRecordRaw} from 'vue-router';
 import Login from '@/views/Login/Index.vue';
 import HomeView from '@/views/HomeView/Index.vue';
-import {getUserRoutes} from "@/api/Router.ts";
+import {getUserRoutes} from "@/api/router.ts";
 import {mapBackendRoutes} from "@/router/asyncRoutes.ts";
 
 const staticRoutes: RouteRecordRaw[]  = [

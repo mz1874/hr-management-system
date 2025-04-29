@@ -56,7 +56,7 @@ import logo from '../../assets/logo.png';
 import {ref} from "vue";
 import {useRouter} from "vue-router";
 import {login, logout} from "@/api/login.ts";
-import {getUserRoutes} from "@/api/Router.ts";
+import {getUserRoutes} from "@/api/router.ts";
 import {mapBackendRoutes} from "@/router/asyncRoutes.ts"; // 上面我们写的路由映射函数
 
 

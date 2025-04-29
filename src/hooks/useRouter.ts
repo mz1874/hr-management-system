@@ -1,6 +1,6 @@
 import {onMounted, ref} from "vue";
 import type {RouteItem} from "@/interface/RouteInterface.ts";
-import {getMenuRoutes, addMenuRoute, deleteMenuRoute} from "@/api/Router.ts";
+import {getMenuRoutes, addMenuRoute, deleteMenuRoute} from "@/api/router.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
 import Swal from "sweetalert2";
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {ref, onMounted} from 'vue';
-import {getUserRoutes} from '@/api/Router.ts';
+import {getUserRoutes} from '@/api/router.ts';
 
 const menuTree = ref([]);
 const expandedMenus = ref<Record<string, boolean>>({});
