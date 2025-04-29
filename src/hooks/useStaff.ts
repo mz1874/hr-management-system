@@ -1,5 +1,5 @@
 import {onMounted, reactive, ref} from "vue";
-import {selectAllStaffs, searchStaff, deleteStaff as del, addStaff} from "@/api/staff.ts";
+import {selectAllStaffs, searchStaff, deleteStaff as del, addStaff, editStaff} from "@/api/staff.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
 import type {Staff} from "@/interface/UserInterface.ts";
 import dayjs from "dayjs";
@@ -30,7 +30,7 @@ export default function useStaff() {
             id: item.id,
             username: item.username,
             date_of_birth: dayjs(item.date_of_birth).format("YYYY-MM-DD"),
-            roles: item.roles ? [item.roles[0]] : [],
+            roles: item.roles,
             department: item.department,
             department_name: item.department_name,
             status: item.status,
@@ -106,6 +106,26 @@ export default function useStaff() {
         }
     }
 
+    async function handlerEditStaff(staff: Staff) {
+        try {
+            const response = await editStaff(staff);
+            if (isSuccess(response.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Staff edited successfully",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+                fetchAllStaffs();
+            } else {
+                throw new Error(response.data);
+            }
+        } catch (error) {
+            console.error("Search failed:", error);
+        }
+    }
+
     // 👉 搜索员工
     async function search(staffName: string, departmentId: number | null = null, page = 1): Promise<void> {
         searchName.value = staffName;
@@ -137,5 +157,6 @@ export default function useStaff() {
         deleteStaff,
         fetchAllStaffs,
         handlerAddStaff,
+        handlerEditStaff,
     };
 }

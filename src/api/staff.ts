@@ -45,3 +45,7 @@ export function assignKpiToDepartment(kpiId: number, departmentId: number, targe
         target_unit: target_unit
     });
 }
+
+export function editStaff(staff: Staff): any {
+    return axios.patch(`/api/staff/${staff.id}/`, staff);
+}
