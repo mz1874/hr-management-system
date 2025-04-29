@@ -73,7 +73,6 @@ const showRemoveModal = ref(false);
 const modalRemoveType = ref<'delete' | 'reset'>('delete');
 
 
-
 // 打开创建模态框
 const openRoleModal = () => {
   currentRole.value = {
@@ -170,18 +169,6 @@ const roleDelete = () => {
 };
 
 
-// 分组权限
-const groupPermissionsByLevel = (permissions: string[]) => {
-  const grouped: { [key: string]: string[] } = {};
-  permissions.forEach(permission => {
-    const parts = permission.split('/').filter(Boolean);
-    const parent = parts[0];
-    if (!grouped[parent]) grouped[parent] = [];
-    grouped[parent].push(permission);
-  });
-  return grouped;
-};
-
 function fetchLogs()
 {
   if(searchRole.value == '')
@@ -250,7 +237,6 @@ export default {
         <td>{{ item.name }}</td>
         <td>{{ item.createdOn }}</td>
         <td>
-          <button type="button" class="btn btn-sm btn-primary me-1" @click="openViewModal(item)">View</button>
           <button type="button" class="btn btn-sm btn-warning me-1" @click="openEditModal(item)">Edit</button>
           <button type="button" v-show="item.name.toLowerCase() !== 'admin'.toLowerCase()" class="btn btn-sm btn-danger" @click="openDeleteModal(item)">
             Delete
@@ -320,19 +306,6 @@ export default {
                     :default-expand-level="1"
                     placeholder="请选择权限"
                 />
-          </div>
-
-          <!-- 查看模式 -->
-          <div v-if="modalType === 'view'">
-            <label class="form-label">Permissions:</label>
-            <div v-for="(permissions, parent) in groupPermissionsByLevel(currentRole.permissions || [])" :key="parent" class="mb-3">
-              <h6>{{ parent }}</h6>
-              <ul class="list-group">
-                <li class="list-group-item" v-for="permission in permissions" :key="permission">
-                  {{ permission }}
-                </li>
-              </ul>
-            </div>
           </div>
         </div>
         <div class="modal-footer">
