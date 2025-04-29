@@ -21,6 +21,30 @@ function convertToTreeSelect(data) {
   }))
 }
 
+function collectAllChildIds(data, parentId) {
+  const result = [];
+  const findAndCollect = (items) => {
+    for (const item of items) {
+      if (item.id === parentId) {
+        const collectChildren = (node) => {
+          result.push(node.id);
+          if (node.children) {
+            node.children.forEach(collectChildren);
+          }
+        };
+        collectChildren(item);
+        return true;
+      }
+      if (item.children && findAndCollect(item.children)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  findAndCollect(data);
+  return result;
+}
+
 const {
   tableData,
   handleDeleteRole,
@@ -86,14 +110,20 @@ const openDeleteModal = (role: RoleItem) => {
 
 // 保存编辑
 const saveEditedRole = () => {
-  if(currentRole.value.name === '' || currentRole.value.name === '' || currentRole.value.name === '') {
+  if(currentRole.value.name === '') {
     Swal.fire({
       icon: "error",
       title: "Oops...",
       text: "Role name cannot be empty!",
     });
-  }else {
-    currentRole.value.permissions = [...selectedPermissions.value];
+  } else {
+    const finalPermissions = new Set<string>();
+    selectedPermissions.value.forEach(permissionId => {
+      finalPermissions.add(permissionId);
+      const childIds = collectAllChildIds(routerTableData.value, permissionId);
+      childIds.forEach(id => finalPermissions.add(id));
+    });
+    currentRole.value.permissions = Array.from(finalPermissions);
     handleRoleEdit(currentRole.value);
     const index = tableData.value.findIndex(item => item.id === currentRole.value.id);
     if (index !== -1) {
@@ -114,14 +144,21 @@ const addRole = () => {
     return;
   }
 
+  const finalPermissions = new Set<string>();
+
+  selectedPermissions.value.forEach(permissionId => {
+    finalPermissions.add(permissionId);
+    const childIds = collectAllChildIds(routerTableData.value, permissionId);
+    childIds.forEach(id => finalPermissions.add(id));
+  });
+
   const roleItem: RoleItem = {
     id: 0,
     name: currentRole.value.name,
-    permissions: currentRole.value.permissions || [],
+    permissions: Array.from(finalPermissions),
     createdOn: ''
   };
 
-  roleItem.permissions = selectedPermissions.value;
   handleRoleAdd(roleItem);
   showModal.value = false;
 };
@@ -132,20 +169,6 @@ const roleDelete = () => {
   showRemoveModal.value = false;
 };
 
-// 添加权限
-const addPermission = (permission: string) => {
-  if (!currentRole.value.permissions) currentRole.value.permissions = [];
-  if (!currentRole.value.permissions.includes(permission)) {
-    currentRole.value.permissions.push(permission);
-  }
-};
-
-// 移除权限
-const removePermission = (permission: string) => {
-  if (currentRole.value.permissions) {
-    currentRole.value.permissions = currentRole.value.permissions.filter(p => p !== permission);
-  }
-};
 
 // 分组权限
 const groupPermissionsByLevel = (permissions: string[]) => {
