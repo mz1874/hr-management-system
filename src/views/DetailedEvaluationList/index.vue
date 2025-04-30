@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import Swal from 'sweetalert2'; // Import SweetAlert
+
+import { searchStaff } from '@/api/staff'; // Use searchStaff API
 import {
-  getAllEvaluationForms, // Use getAllEvaluationForms
+  getAllEvaluationForms,
   // TODO: Import getEvaluationInstanceById when implementing results view
   // getEvaluationInstanceById,
   startEvaluationInstance, // Import the new function
@@ -17,25 +19,34 @@ import type {
     // TODO: Import EvaluationInstance, EvaluationAnswerView when implementing results view
     // EvaluationInstance,
     // EvaluationAnswerView
-} from '@/api/survey'
+} from '@/api/survey';
+import type { Staff } from '@/interface/UserInterface'; // Import Staff type
+import { getCurrentUser } from '@/api/login';
 
-// Interface to add user-specific status locally
+// Interface for forms in the list (may not need user_instance_status anymore)
 interface DisplayEvaluationForm extends EvaluationForm {
-  user_status: 'PUBLISHED' | 'SUBMITTED'; // Made non-optional to match computed property
+  // user_instance_status might be removed or repurposed later if backend changes
+  user_instance_status: 'PUBLISHED' | 'SUBMITTED' | 'PENDING' | 'REVIEWED' | 'NOT_STARTED' | null;
 }
 
 // --- State ---
-const availableForms = ref<DisplayEvaluationForm[]>([]) // Use DisplayEvaluationForm
+
+const availableForms = ref<DisplayEvaluationForm[]>([]) // Forms available to the manager
 const totalForms = ref(0) // For pagination
 const isLoadingForms = ref(false)
-const isLoadingDetails = ref(false)
-const finishedCount = ref(0); // This might not be relevant for published forms, will revisit later
+const isLoadingDetails = ref(false) // Keep for potential future use loading form questions if separated
+const finishedCount = ref(0); // TODO: Revisit if this count is needed and how to calculate it
 
-const showFormModal = ref(false) // Use FormModal
-// Holds the full details of the EvaluationForm being viewed/taken
+const showFormModal = ref(false)
+// Holds the full details of the EvaluationForm selected
 const currentForm = ref<EvaluationForm | null>(null)
-// Holds answers keyed by questionId, matching EvaluationAnswerSubmit structure
-const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({}) // Use Partial for easier initialization
+// Holds answers keyed by questionId for the currently selected staff member
+const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({})
+
+// New state for staff selection
+const departmentStaff = ref<Staff[]>([]);
+const selectedStaffForEvaluation = ref<Staff | null>(null);
+const isLoadingStaff = ref(false); // Loading state for staff list in modal
 
 // Pagination state
 const currentPage = ref(1)
@@ -44,10 +55,7 @@ const itemsPerPage = ref(10) // Keep for API call, but hide display
 // Filter state
 const searchName = ref(''); // Add state for search input
 const evaluationStatusesForDropdown = ['PUBLISHED', 'SUBMITTED']; // Statuses for the dropdown
-const selectedStatus = ref<string | null>('PUBLISHED'); // Default to PUBLISHED, allow null for 'All'
-
-// Local submission tracking state
-const submittedFormIds = ref(new Set<number>()); // Track submitted forms locally for this session
+const selectedStatus = ref<string | null>('PUBLISHED'); // Default to PUBLISHED, allow null for 'All' (Backend handles filtering)
 
 // Results Modal State
 const showResultsModal = ref(false);
@@ -58,16 +66,11 @@ const isLoadingSubmissionDetails = ref(false); // Loading state for results moda
 // --- Computed Properties ---
 const totalPages = computed(() => Math.ceil(totalForms.value / itemsPerPage.value))
 
-// Computed property to add user_status based on local submission tracking
+// Computed property returns the forms fetched from the backend
+// We might filter out forms the manager can't act on later if needed
 const displayForms = computed(() => {
-  // When 'All Status' (null) is selected, the backend should return all relevant forms.
-  // We don't need extra frontend filtering here based on form.status.
-  // We just map the received list to add the user-specific status.
-  return availableForms.value.map(form => ({
-    ...form,
-    // Determine user_status based on local tracking
-    user_status: submittedFormIds.value.has(form.id) ? 'SUBMITTED' : 'PUBLISHED'
-  }));
+  // Filter out DRAFT forms as they shouldn't be evaluated
+  return availableForms.value.filter(form => form.status !== 'DRAFT');
 });
 
 
@@ -110,12 +113,13 @@ const fetchAvailableForms = async () => {
 
     // Add checks for response.data and nested data structure
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
-        // Map API results to add the default user_status
-        availableForms.value = response.data.data.results.map((form: EvaluationForm) => ({
-            ...form,
-            user_status: 'PUBLISHED' // Add default status
-        }));
-        totalForms.value = response.data.data.count; // Total count from backend
+        // Assign fetched forms (casting might still be needed depending on API definition)
+        // Filter DRAFT status here as a safeguard
+        availableForms.value = response.data.data.results
+            .map((form: any) => form as DisplayEvaluationForm) // Keep cast for safety
+            .filter((form: DisplayEvaluationForm) => form.status !== 'DRAFT');
+
+        totalForms.value = response.data.data.count; // Use total count from backend for pagination
         console.log("Fetched forms based on status:", selectedStatus.value, availableForms.value);
     } else {
         console.error("Failed to fetch evaluation forms: Unexpected response format", response);
@@ -154,33 +158,56 @@ const initializeAnswers = () => {
   currentAnswers.value = initialAnswers;
 };
 
-// Open the modal to view/take a form
+// Open the modal to select staff and then evaluate
 const openFormModal = async (formItem: EvaluationForm) => {
-  currentForm.value = null; // Clear previous form
-  currentAnswers.value = {};
-  isLoadingDetails.value = true;
-  showFormModal.value = true;
+  currentForm.value = formItem; // Set the selected form
+  selectedStaffForEvaluation.value = null; // Reset selected staff
+  departmentStaff.value = []; // Clear previous staff list
+  currentAnswers.value = {}; // Clear previous answers
+  isLoadingStaff.value = true; // Start loading staff
+  showFormModal.value = true; // Show the modal
+
   try {
-    // When taking a new evaluation from a published form, we don't fetch an instance by ID.
-    // We just use the form data directly to display questions.
-    currentForm.value = formItem;
-    initializeAnswers(); // Setup the answer structure based on the form's questions
+    const departmentId = 1; // Get manager's department ID
+    if (!departmentId) {
+      throw new Error("Manager's department ID not found.");
+    }
+    // Fetch staff for the manager's department using searchStaff
+    // Pass empty string for name, department ID, and page 1
+    const response = await searchStaff('', departmentId, 1);
+    if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
+      // Assuming searchStaff returns paginated results, store only results for now
+      // TODO: Handle pagination if needed for staff list within modal
+      departmentStaff.value = response.data.data.results;
+    } else {
+      throw new Error("Failed to fetch department staff or unexpected format.");
+    }
   } catch (error) {
-    console.error(`Failed to load form details for ID ${formItem.id}:`, error);
-    // TODO: Show error to user in the modal or close it
-    showFormModal.value = false; // Close modal on error
+    console.error("Failed to fetch department staff:", error);
+    Swal.fire('Error', 'Could not load staff list for your department.', 'error');
+    // Optionally close the modal or show error within it
+    // showFormModal.value = false;
   } finally {
-    isLoadingDetails.value = false;
+    isLoadingStaff.value = false; // Stop loading staff
   }
 }
 
 const closeFormModal = () => {
   showFormModal.value = false;
   currentForm.value = null;
+  selectedStaffForEvaluation.value = null; // Reset staff selection on close
+  departmentStaff.value = [];
   currentAnswers.value = {};
 }
 
-// --- Results Modal Logic (Placeholder) ---
+// New method to handle staff selection within the modal
+const selectStaffForEvaluation = (staff: Staff) => {
+  selectedStaffForEvaluation.value = staff;
+  initializeAnswers(); // Initialize/reset answers for the selected staff and form
+  console.log(`Evaluating staff: ${staff.username} with form: ${currentForm.value?.name}`);
+}
+
+// --- Results Modal Logic (Placeholder - likely needs rework for staff-specific results) ---
 // Accept EvaluationForm, as user_status isn't strictly needed inside yet
 const openResultsModal = async (form: EvaluationForm) => {
   console.log("Opening results for form:", form);
@@ -226,31 +253,37 @@ const closeResultsModal = () => {
 };
 
 
-// Submit the evaluation answers
+// Submit the evaluation answers for the selected staff member
 const submitEvaluation = async () => {
-  if (!currentForm.value) {
-      console.error("Submission Error: No form available.");
-      // TODO: Show user feedback
+  if (!currentForm.value || !selectedStaffForEvaluation.value) {
+      console.error("Submission Error: No form or staff selected.");
+      Swal.fire('Error', 'Please select a staff member and ensure a form is loaded.', 'error');
       return;
   }
 
-  // Remove placeholder alert and commented out return
-  // alert("Submission functionality requires backend implementation to create an evaluation instance first.");
-  // return;
+  const staffId = selectedStaffForEvaluation.value.id;
+  const formId = currentForm.value.id;
 
   // --- Start Actual Submission Logic ---
   try {
-    // 1. Start the evaluation instance to get its ID
-    const startResponse = await startEvaluationInstance(currentForm.value.id);
-    console.log("DEBUG: Received start_evaluation response:", startResponse); // Add frontend logging
-    // Access instance_id from the nested data object based on standard response format
-    const instanceId = startResponse.data.data.instance_id;
+    // 1. Start the evaluation instance for the specific staff member
+    //    *** Backend Modification Needed ***
+    //    The startEvaluationInstance API needs to accept the employee_id
+    //    For now, we might still call the old API if it creates an instance for the manager,
+    //    but ideally, it should create one for the target employee.
+    //    Let's assume for now the backend handles creating the correct instance based on a modified API call (passing staffId).
+    //    If using the *current* API, it likely creates an instance for the *manager*, which is wrong.
+    console.warn("Backend API `startEvaluationInstance` needs modification to accept employee_id.");
+    // Placeholder: Call existing API, assuming backend might handle it or needs update
+    const startResponse = await startEvaluationInstance(formId); // Might need modification: startEvaluationInstance(formId, staffId);
+    console.log("DEBUG: Received start_evaluation response:", startResponse);
+    const instanceId = startResponse.data.data.instance_id; // Get instance ID (should be for the staff member)
 
     if (!instanceId) {
-        throw new Error("Failed to retrieve evaluation instance ID.");
+        throw new Error("Failed to retrieve evaluation instance ID for the selected staff.");
     }
 
-    // 2. Basic Validation (Optional: Add more specific validation per question type)
+    // 2. Validation
   const answersArray: EvaluationAnswerSubmit[] = Object.values(currentAnswers.value)
       .filter(ans => ans?.question_id !== undefined) // Ensure question_id exists
       .map(ans => { // Construct the final answer shape
@@ -296,16 +329,11 @@ const submitEvaluation = async () => {
     // 3. Submit the answers using the obtained instance ID
     await submitEvaluationAnswers(instanceId, submissionPayload);
 
-    // 4. Show success message, add to local submitted list, close modal, refresh list
+    // 4. Show success message, close modal, and refresh the list to get updated status from backend
     Swal.fire('Success', 'Evaluation submitted successfully!', 'success');
-    if (currentForm.value?.id !== undefined) {
-        submittedFormIds.value.add(currentForm.value.id); // Track locally
-    }
     closeFormModal();
-    // No need to call fetchAvailableForms() here unless we want to immediately
-    // reflect a backend status change (which isn't implemented yet).
-    // The computed property `displayForms` will handle the UI update based on `submittedFormIds`.
-    // await fetchAvailableForms();
+    // Refresh the list to show the updated status from the backend
+    await fetchAvailableForms();
 
   } catch (error: any) { // Single catch block for the entire process
     console.error("Failed to submit evaluation:", error);
@@ -392,40 +420,37 @@ watch(searchName, () => {
       <tr>
         <th scope="col">ID</th>
         <th scope="col">Evaluation Name</th>
-        <!-- Description column removed -->
         <th scope="col">Published Date</th>
-          <th scope="col">Status</th>
-          <th scope="col">Actions</th>
+        <th scope="col">Actions</th>
         </tr>
         </thead>
         <tbody>
         <tr v-if="isLoadingForms">
-            <td colspan="5" class="text-center">Loading evaluation forms...</td>
+            <td colspan="4" class="text-center">Loading evaluation forms...</td> <!-- Corrected colspan -->
         </tr>
         <tr v-else-if="displayForms.length === 0">
-            <td colspan="5" class="text-center">No evaluation forms found matching the criteria.</td>
+            <td colspan="4" class="text-center">No evaluation forms found matching the criteria.</td> <!-- Adjusted colspan -->
         </tr>
         <!-- Iterate over computed displayForms -->
         <tr v-else v-for="form in displayForms" :key="form.id">
           <td>{{ form.id }}</td>
           <td>{{ form.name || 'N/A' }}</td>
           <td>{{ formatDate(form.publish_time) }}</td>
-          <!-- Display user_status as plain text -->
+          <!-- Removed Status Column -->
           <td>
-            {{ form.user_status }}
-          </td>
-          <td>
-            <!-- Conditional Button -->
-            <button v-if="form.user_status === 'PUBLISHED'" type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
-                Take Evaluation
+            <!-- Action Button - Always show "Evaluate Staff" -->
+            <button type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
+                Evaluate Staff
             </button>
-            <button v-else-if="form.user_status === 'SUBMITTED'" type="button" class="btn btn-info btn-action" @click="openResultsModal(form)">
-                View Submission
-            </button>
+            <!-- TODO: Add a way to view results later, maybe another button or link -->
+            <!-- <button type="button" class="btn btn-info btn-action ms-2" @click="openResultsModal(form)">
+                View Results
+            </button> -->
         </td>
       </tr>
       </tbody>
     </table>
+  </div>
   </div>
 
   <!-- Evaluation Form Modal -->
@@ -433,21 +458,51 @@ watch(searchName, () => {
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">Take Evaluation: {{ currentForm?.name || 'Loading...' }}</h3>
+          <!-- Dynamically set title based on whether staff is selected -->
+          <h3 class="modal-title">
+            <span v-if="!selectedStaffForEvaluation">Select Staff for Evaluation: {{ currentForm?.name }}</span>
+            <span v-else>Evaluating: {{ selectedStaffForEvaluation?.username }} - Form: {{ currentForm?.name }}</span>
+          </h3>
           <button type="button" class="btn-close" @click="closeFormModal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div v-if="isLoadingDetails" class="text-center">
-            Loading form details...
+          <!-- Show staff list if no staff is selected -->
+          <div v-if="!selectedStaffForEvaluation">
+            <h5>Select Staff Member from Your Department</h5>
+            <div v-if="isLoadingStaff" class="text-center my-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading staff...</span>
+              </div>
+            </div>
+            <div v-else-if="departmentStaff.length > 0" class="list-group">
+              <button
+                v-for="staff in departmentStaff"
+                :key="staff.id"
+                type="button"
+                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                @click="selectStaffForEvaluation(staff)"
+              >
+                {{ staff.username }} (ID: {{ staff.id }})
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+            <div v-else class="alert alert-warning">
+              No staff members found in your department or failed to load staff list.
+            </div>
           </div>
-          <div v-else-if="currentForm && currentForm.questions && currentAnswers">
-              <!-- Removed Description from modal -->
-              <p><strong>Status:</strong> {{ currentForm.status }}</p>
-              <p><strong>Published Date:</strong> {{ formatDate(currentForm.publish_time) }}</p> <!-- Use formatDate -->
 
-              <div class="mb-4 mt-4">
-                <div class="mb-4 text-center">
-                  <h3 class="form-label">Questions</h3>
+          <!-- Show evaluation questions if staff is selected -->
+          <div v-else>
+             <!-- Button to go back to staff selection -->
+             <button type="button" class="btn btn-outline-secondary btn-sm mb-3" @click="selectedStaffForEvaluation = null">
+               <i class="fas fa-arrow-left me-1"></i> Back to Staff List
+             </button>
+
+             <!-- Existing Question Display Logic -->
+             <div v-if="currentForm && currentForm.questions && currentAnswers">
+               <div class="mb-4 mt-2"> <!-- Adjusted margin -->
+                 <div class="mb-4 text-center">
+                   <h4 class="form-label">Evaluation Questions for {{ selectedStaffForEvaluation.username }}</h4>
                 </div>
                 <div v-for="(question, index) in currentForm.questions" :key="question.id" class="mb-3 border p-3 rounded">
                   <div class="d-flex justify-content-between align-items-center">
@@ -509,9 +564,16 @@ watch(searchName, () => {
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeFormModal">Close</button>
-              <!-- Show submit button -->
-              <button type="button" class="btn btn-primary" @click="submitEvaluation" :disabled="isLoadingDetails || !currentForm">Submit Evaluation</button>
+              <button type="button" class="btn btn-secondary" @click="closeFormModal">Cancel</button>
+              <!-- Submit button only active when staff is selected -->
+              <button
+                type="button"
+                class="btn btn-primary"
+                @click="submitEvaluation"
+                :disabled="!selectedStaffForEvaluation || isLoadingStaff"
+              >
+                Submit Evaluation for {{ selectedStaffForEvaluation?.username }}
+              </button>
             </div>
           </div>
         </div>
@@ -810,7 +872,7 @@ watch(searchName, () => {
     .star:hover,
     .star:hover ~ .star { /* Make stars light up on hover */
       /* Optional: Add a hover effect if desired */
-      /* color: #ffdd7a; */
+       color: #ffdd7a; 
     }
 
 
