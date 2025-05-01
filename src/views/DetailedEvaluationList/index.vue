@@ -578,7 +578,7 @@ watch(searchName, () => {
           </div>
         </div>
       </div>
-      <div class="modal-backdrop fade show" v-if="showFormModal"></div>
+      
 
       <!-- Results Modal (Placeholder) -->
       <div class="modal fade" :class="{ show: showResultsModal }" style="display: block" v-if="showResultsModal">
