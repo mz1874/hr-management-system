@@ -44,7 +44,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="task in filteredKpiData" :key="task.id">
+            <tr v-for="task in kpiData" :key="task.id">
               <td>{{ task.id }}</td>
               <td>{{ task.taskTitle }}</td>
               <td>{{ task.startDate }}</td>
@@ -368,6 +368,13 @@ import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
 import { isSuccess } from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
+import useKPI from "@/hooks/useKPI.ts";
+
+
+const {
+  kpiData,
+  currentPage,
+} = useKPI();
 
 
 // 员工搜索相关
@@ -474,15 +481,17 @@ const fetchKpis = () => {
 
 }
 
-onMounted(() => {
-  console.log("Component has been mounted");
-  try {
-    fetchDepartments();
-    console.log("API calls have been initiated");
-  } catch (error) {
-    console.error("Error during component mount:", error);
-  }
-});
+// onMounted(() => {
+//   // handlerFetchKpis()
+//   // tasks.value.forEach(updateTaskStatus);
+//   // console.log("Component has been mounted");
+//   // try {
+//   //   fetchDepartments();
+//   //   console.log("API calls have been initiated");
+//   // } catch (error) {
+//   //   console.error("Error during component mount:", error);
+//   // }
+// });
 
 // 添加用户的函数
 const addAssignedUser = () => {
@@ -967,7 +976,6 @@ const calculateTotalTarget = (task: any): number => {
 const searchTaskName = ref('')
 const selectedStatus = ref('')
 const selectedDepartment = ref('Sales Department')
-const currentPage = ref(1)
 const itemsPerPage = 10
 
 // 添加KPI数据过滤计算属性
@@ -986,9 +994,7 @@ const paginatedTasks = computed(() => {
 const totalPages = 0
 
 const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-  }
+
 }
 
 // Statistics
@@ -997,16 +1003,12 @@ const completedTasks = 0;
 const ongoingTasks = 0;
 const delayedTasks = 0;
 
-onMounted(() => {
-    tasks.value.forEach(updateTaskStatus);
-});
 
 const handleDepartmentChange = () => {
 
 };
 
 const updateTaskStatus = (task: Task) => {
-
   const currentDate = new Date();
   const startDate = new Date(`${task.startDate}`);
   const endDate = new Date(`${task.completionDate}`); 
