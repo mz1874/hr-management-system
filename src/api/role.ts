@@ -17,3 +17,8 @@ export function searchByRoleName(name: string, page?: Number) {
 export function editRole(role: RoleItem) {
     return axios.patch(`/api/role/${role.id}/`, role);
 }
+
+
+export function pageRoles(page: number, pageSize: number) {
+    return axios.get(`/api/role/?page=${page}&page_size=${pageSize}`);
+}

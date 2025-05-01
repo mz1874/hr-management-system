@@ -155,6 +155,7 @@ export default function () {
 
     return {
         tableData,
+        fetchPage,
         handleDeleteRole,
         handleRoleAdd,
         paginationInfo,

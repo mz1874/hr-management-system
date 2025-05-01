@@ -1,18 +1,59 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import {ref, computed, reactive} from 'vue';
 import useRole from "@/hooks/useRole.ts";
 import type { RoleItem } from "@/interface/RoleInterface.ts";
 import Swal from "sweetalert2";
+import useRouter from "@/hooks/useRouter.ts";
+const { tableData: routerTableData } = useRouter();
+
+const selectedPermissions = ref([])
+
+const treeOptions = computed(() => {
+  if (!routerTableData.value?.length) return []
+  return convertToTreeSelect(routerTableData.value)
+})
+
+function convertToTreeSelect(data) {
+  return data.map(item => ({
+    id: item.id,
+    label: item.name,
+    children: item.children?.length ? convertToTreeSelect(item.children) : undefined
+  }))
+}
+
+function collectAllChildIds(data, parentId) {
+  const result = [];
+  const findAndCollect = (items) => {
+    for (const item of items) {
+      if (item.id === parentId) {
+        const collectChildren = (node) => {
+          result.push(node.id);
+          if (node.children) {
+            node.children.forEach(collectChildren);
+          }
+        };
+        collectChildren(item);
+        return true;
+      }
+      if (item.children && findAndCollect(item.children)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  findAndCollect(data);
+  return result;
+}
 
 const {
   tableData,
   handleDeleteRole,
   handleRoleAdd,
   count,
-  fetchPage,
   paginationInfo,
   nextPage,
   prevPage,
+  fetchPage,
   goToPage,
   currentPage,
   totalPages,
@@ -21,24 +62,6 @@ const {
   handleRoleEdit
 } = useRole();
 
-// 所有可用的权限（层次结构）
-const allPermissions = ref<string[]>([
-  '/dashboard',
-  '/dashboard/overview',
-  '/dashboard/analytics',
-  '/users',
-  '/users/list',
-  '/users/roles',
-  '/settings',
-  '/settings/general',
-  '/settings/security',
-  '/posts',
-  '/posts/list',
-  '/posts/create',
-  '/reports',
-  '/reports/sales',
-  '/reports/performance'
-]);
 
 // 模态框控制
 const showModal = ref(false);
@@ -49,14 +72,6 @@ const modalType = ref<'create' | 'edit' | 'view'>('create');
 const showRemoveModal = ref(false);
 const modalRemoveType = ref<'delete' | 'reset'>('delete');
 
-// 搜索与筛选
-
-// 未拥有权限
-const unassignedPermissions = computed(() => {
-  return allPermissions.value.filter(
-      permission => !currentRole.value.permissions?.includes(permission)
-  );
-});
 
 // 打开创建模态框
 const openRoleModal = () => {
@@ -80,6 +95,7 @@ const openViewModal = (role: RoleItem) => {
 // 编辑角色
 const openEditModal = (role: RoleItem) => {
   currentRole.value = { ...role };
+  selectedPermissions.value = [...role.permissions]; // 添加这行
   modalType.value = 'edit';
   showModal.value = true;
 };
@@ -93,13 +109,20 @@ const openDeleteModal = (role: RoleItem) => {
 
 // 保存编辑
 const saveEditedRole = () => {
-  if(currentRole.value.name === '' || currentRole.value.name === '' || currentRole.value.name === '') {
+  if(currentRole.value.name === '') {
     Swal.fire({
       icon: "error",
       title: "Oops...",
       text: "Role name cannot be empty!",
     });
-  }else {
+  } else {
+    const finalPermissions = new Set<string>();
+    selectedPermissions.value.forEach(permissionId => {
+      finalPermissions.add(permissionId);
+      const childIds = collectAllChildIds(routerTableData.value, permissionId);
+      childIds.forEach(id => finalPermissions.add(id));
+    });
+    currentRole.value.permissions = Array.from(finalPermissions);
     handleRoleEdit(currentRole.value);
     const index = tableData.value.findIndex(item => item.id === currentRole.value.id);
     if (index !== -1) {
@@ -120,10 +143,18 @@ const addRole = () => {
     return;
   }
 
+  const finalPermissions = new Set<string>();
+
+  selectedPermissions.value.forEach(permissionId => {
+    finalPermissions.add(permissionId);
+    const childIds = collectAllChildIds(routerTableData.value, permissionId);
+    childIds.forEach(id => finalPermissions.add(id));
+  });
+
   const roleItem: RoleItem = {
     id: 0,
     name: currentRole.value.name,
-    permissions: currentRole.value.permissions || [],
+    permissions: Array.from(finalPermissions),
     createdOn: ''
   };
 
@@ -137,32 +168,6 @@ const roleDelete = () => {
   showRemoveModal.value = false;
 };
 
-// 添加权限
-const addPermission = (permission: string) => {
-  if (!currentRole.value.permissions) currentRole.value.permissions = [];
-  if (!currentRole.value.permissions.includes(permission)) {
-    currentRole.value.permissions.push(permission);
-  }
-};
-
-// 移除权限
-const removePermission = (permission: string) => {
-  if (currentRole.value.permissions) {
-    currentRole.value.permissions = currentRole.value.permissions.filter(p => p !== permission);
-  }
-};
-
-// 分组权限
-const groupPermissionsByLevel = (permissions: string[]) => {
-  const grouped: { [key: string]: string[] } = {};
-  permissions.forEach(permission => {
-    const parts = permission.split('/').filter(Boolean);
-    const parent = parts[0];
-    if (!grouped[parent]) grouped[parent] = [];
-    grouped[parent].push(permission);
-  });
-  return grouped;
-};
 
 function fetchLogs()
 {
@@ -232,7 +237,6 @@ export default {
         <td>{{ item.name }}</td>
         <td>{{ item.createdOn }}</td>
         <td>
-          <button type="button" class="btn btn-sm btn-primary me-1" @click="openViewModal(item)">View</button>
           <button type="button" class="btn btn-sm btn-warning me-1" @click="openEditModal(item)">Edit</button>
           <button type="button" v-show="item.name.toLowerCase() !== 'admin'.toLowerCase()" class="btn btn-sm btn-danger" @click="openDeleteModal(item)">
             Delete
@@ -273,7 +277,7 @@ export default {
 
   <!-- 创建/编辑/查看角色模态框 -->
   <div class="modal fade" id="createRole" :class="{ show: showModal }" style="display: block" v-if="showModal">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog custom-modal modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <div class="header-content">
@@ -294,45 +298,14 @@ export default {
           <!-- 权限管理 -->
           <div class="row" v-if="modalType === 'edit' || modalType === 'create'">
             <!-- 左侧：未拥有的权限 -->
-            <div class="col-md-6">
-              <label class="form-label">Unassigned Permissions:</label>
-              <div v-for="(permissions, parent) in groupPermissionsByLevel(unassignedPermissions)" :key="parent" class="mb-3">
-                <h6>{{ parent }}</h6>
-                <ul class="list-group">
-                  <li class="list-group-item d-flex justify-content-between align-items-center" v-for="permission in permissions" :key="permission">
-                    {{ permission }}
-                    <button type="button" class="btn btn-success btn-sm" @click="addPermission(permission)">Add</button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- 右侧：拥有的权限 -->
-            <div class="col-md-6">
-              <label class="form-label">Assigned Permissions:</label>
-              <div v-for="(permissions, parent) in groupPermissionsByLevel(currentRole.permissions || [])" :key="parent" class="mb-3">
-                <h6>{{ parent }}</h6>
-                <ul class="list-group">
-                  <li class="list-group-item d-flex justify-content-between align-items-center" v-for="permission in permissions" :key="permission">
-                    {{ permission }}
-                    <button type="button" class="btn btn-danger btn-sm" @click="removePermission(permission)">Remove</button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <!-- 查看模式 -->
-          <div v-if="modalType === 'view'">
-            <label class="form-label">Permissions:</label>
-            <div v-for="(permissions, parent) in groupPermissionsByLevel(currentRole.permissions || [])" :key="parent" class="mb-3">
-              <h6>{{ parent }}</h6>
-              <ul class="list-group">
-                <li class="list-group-item" v-for="permission in permissions" :key="permission">
-                  {{ permission }}
-                </li>
-              </ul>
-            </div>
+              <label class="form-label">All Permissions:</label>
+                <Treeselect
+                    v-model="selectedPermissions"
+                    :multiple="true"
+                    :options="treeOptions"
+                    :default-expand-level="1"
+                    placeholder="请选择权限"
+                />
           </div>
         </div>
         <div class="modal-footer">
@@ -346,6 +319,8 @@ export default {
       </div>
     </div>
   </div>
+
+
   <div class="modal-backdrop fade show" v-if="showModal"></div>
 
   <!-- 删除角色模态框 -->
@@ -381,6 +356,7 @@ export default {
   max-width: 300px; /* 限制搜索框的最大宽度 */
 }
 
+
 .search-icon {
   position: absolute;
   left: 10px;
@@ -388,6 +364,24 @@ export default {
   transform: translateY(-50%);
   color: gray;
 }
+/* 修改这部分样式 */
+.custom-modal {
+  max-width: 700px;
+  width: 100%;
+  min-height: 600px;
+}
+
+.modal-body {
+  height: 300px;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* 确保模态框内容区域有足够空间 */
+.modal-content {
+  min-height: 100%; /* 确保内容区域填满模态框 */
+}
+
 
 .search-container .form-control {
   padding-left: 35px; /* 确保文本不与图标重叠 */

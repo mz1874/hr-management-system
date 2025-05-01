@@ -75,38 +75,38 @@ const fetchSurveys = async () => {
   try {
     const params = {
       name: searchName.value,
-      // Remove date filters if not supported by backend endpoint
-      // startDate: startDate.value,
-      // endDate: endDate.value
-      // Add status filter if needed, e.g.:
-      // status: 'PUBLISHED' // Or 'DRAFT'
-    };
-    const response = await getAllEvaluationForms(currentPage.value, params);
-
-    // Use optional chaining and nullish coalescing for safety
-    tableData.value = (response?.data?.results ?? []).map(form => ({
+      startDate: startDate.value,
+      endDate: endDate.value
+    }
+    // Assuming API returns PaginatedResponse<EvaluationForm>
+    const response = await getAllEvaluationForms(currentPage.value, params)
+    // Map API response (EvaluationForm) to frontend type (EvaluationItem)
+    // @ts-ignore
+    tableData.value = response.data.data.results.map(form => ({
         id: form.id,
         name: form.name,
-        publishTime: form.publish_time,
+        publishTime: form.publish_time, // Map backend publish_time to frontend publishTime
         status: form.status,
-        departments: form.departments ?? [], // Default to empty array if undefined/null
-        department_details: form.department_details ?? [], // Default to empty array
-        // Also add check for questions before mapping
-        questions: (form.questions ?? []).map(q => ({
+        departments: form.departments,
+        department_details: form.department_details,
+        // Map backend questions (EvaluationQuestion) to frontend questions (QuestionItem)
+        questions: form.questions.map(q => ({
             id: q.id,
             text: q.text,
             question_type: q.question_type,
             order: q.order
+            // Frontend QuestionItem doesn't store options separately anymore
         }))
     }));
-    totalSurveys.value = response?.data?.count ?? 0; // Also protect count access
-
+    totalSurveys.value = response.data.count
+    console.log(tableData.value)
   } catch (error) {
     console.error("Failed to fetch surveys:", error);
-    tableData.value = []; // Clear data on error
-    totalSurveys.value = 0;
+    // TODO: Show error message to user
+    tableData.value = [] // Clear data on error
+    totalSurveys.value = 0
   }
-};
+}
 
 // Fetch initial data on component mount
 onMounted(async () => {

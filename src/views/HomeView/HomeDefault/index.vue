@@ -85,6 +85,10 @@ const completedTasks = computed(() => kpiData.value.filter(task => task.kpi_stat
 const ongoingTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Ongoing').length);
 const delayedTasks = computed(() => kpiData.value.filter(task => task.kpi_status === 'Delayed').length);
 
+function handleDepartmentChange(){
+
+}
+
 // Set to track which filter combos have shown an empty alert
 const emptyAlertedFilters = ref<Set<string>>(new Set());
 

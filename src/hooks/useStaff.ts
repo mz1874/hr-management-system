@@ -1,7 +1,7 @@
-import { onMounted, reactive, ref } from "vue";
-import { selectAllStaffs, searchStaff, deleteStaff as del } from "@/api/staff.ts";
-import { isSuccess } from "@/utils/httpStatus.ts";
-import type { Staff } from "@/interface/UserInterface.ts";
+import {onMounted, reactive, ref} from "vue";
+import {selectAllStaffs, searchStaff, deleteStaff as del, addStaff, editStaff} from "@/api/staff.ts";
+import {isSuccess} from "@/utils/httpStatus.ts";
+import type {Staff} from "@/interface/UserInterface.ts";
 import dayjs from "dayjs";
 import Swal from "sweetalert2";
 import type {StaffPagination} from "@/interface/StaffPaginationInterface.ts";
@@ -28,17 +28,21 @@ export default function useStaff() {
     function mapStaffData(item: any): Staff {
         return {
             id: item.id,
-            name: item.username,
-            dateOfBirth: dayjs(item.date_of_birth).format("YYYY-MM-DD"),
-            role: item.roles?.[0] ? String(item.roles[0]) : "",
+            username: item.username,
+            date_of_birth: dayjs(item.date_of_birth).format("YYYY-MM-DD"),
+            roles: item.roles,
             department: item.department,
             department_name: item.department_name,
             status: item.status,
-            employmentDate: dayjs(item.employment_time).format("YYYY-MM-DD"),
+            employment_time: dayjs(item.employment_time).format("YYYY-MM-DD"),
             resignationDate: undefined,
-            imgUrl :"",
-            totalPoints : item.total_points,
-            leaveEntitlements: item.leave_entitlements || {}
+            numberOfLeaves: item.number_of_leave,
+            medicalLeaves: item.medical_leave,
+            annualLeaves: item.annual_leave,
+            password:"",
+            imgUrl: "",
+            totalPoints: item.total_points,
+            leave_entitlements: item.leave_entitlements,
         };
     }
 
@@ -65,6 +69,16 @@ export default function useStaff() {
         }
     }
 
+    function handlerAddStaff(staff: Staff) {
+        console.log(staff.date_of_birth);
+        addStaff(staff).then((res) => {
+            if(isSuccess(res.status)) {
+                console.log(res);
+                fetchAllStaffs();
+            }
+        })
+    }
+
     // 👉 删除员工
     async function deleteStaff(id: number): Promise<void> {
         try {
@@ -89,6 +103,26 @@ export default function useStaff() {
                 showConfirmButton: false,
                 timer: 1500,
             });
+        }
+    }
+
+    async function handlerEditStaff(staff: Staff) {
+        try {
+            const response = await editStaff(staff);
+            if (isSuccess(response.status)) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Staff edited successfully",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+                fetchAllStaffs();
+            } else {
+                throw new Error(response.data);
+            }
+        } catch (error) {
+            console.error("Search failed:", error);
         }
     }
 
@@ -122,5 +156,7 @@ export default function useStaff() {
         search,
         deleteStaff,
         fetchAllStaffs,
+        handlerAddStaff,
+        handlerEditStaff,
     };
 }

@@ -6,24 +6,39 @@ import {useDepartmentStore} from "@/stores/department.ts";
 import Swal from "sweetalert2";
 import {resetPassword as resPwd} from "@/api/staff.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
-import { getLeaveTypes,getLeaveBalance } from '@/api/leave.ts';
-import { createStaff } from '@/api/staff.ts';
-
-
-
-const leaveTypes = ref<{ id: number, name: string, description: string }[]>([]);
-const leaveEntitlements = ref<{ [key: string]: number }>({});
+import {pageRoles} from "@/api/role.ts"
+import type {RoleItem} from "@/interface/RoleInterface.ts";
+import dayjs from "dayjs";
 
 const departmentStore = useDepartmentStore();
+const tableData = ref<RoleItem[]>([]);
 
+function fetchRoles() {
+  pageRoles(1, 1000).then(res => {
+    if (isSuccess(res.status)) {
+      tableData.value = res.data.data.results.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        permissions: item.permissions,
+        createdOn: dayjs(item.create_time).format("YYYY-MM-DD")
+      }));
+    }
+  }).catch(error => {
+    console.error("Error fetch roles:", error);
+  })
+}
 
-onMounted(async () => {
+function getRoleNameById(id: number) {
+  const role = tableData.value.find(r => r.id === id);
+  return role ? role.name : 'Unknown';
+}
+
+onMounted(() => {
   departmentStore.fetchDepartments();
-  const res = await getLeaveTypes();
-  console.log("Leave Types API Response:", res.data); // ← check this
+  fetchRoles();
+})
 
-  leaveTypes.value = res.data.data.results;
-});
+
 const {
   staffData,
   search,
@@ -32,7 +47,10 @@ const {
   currentPage,
   isSearching,
   searchDepartmentId,
-  searchName} = useStaff()
+  searchName,
+  handlerAddStaff,
+  handlerEditStaff
+} = useStaff()
 
 // State
 const selectedDepartment = ref(0)
@@ -50,16 +68,20 @@ const showDeleteStaffModal = ref(false)
 
 const selectedStaff = ref<Staff>({
   id: 0,
-  name: '',
-  dateOfBirth: '',
+  username: '',
+  password: '123456',
+  date_of_birth: '',
   department_name: '',
-  role: '',
+  roles: [],
   department: 0,
-  imgUrl:'',
+  imgUrl: '',
   status: false,
-  employmentDate: new Date().toISOString().split('T')[0], // Set default to current date
+  employment_time: new Date().toISOString().split('T')[0], // Set default to current date
+  numberOfLeaves: 0,
+  medicalLeaves: 0,
+  annualLeaves: 0,
   totalPoints: 0,
-  role_names : []
+  leave_entitlements: []
 })
 
 
@@ -76,75 +98,33 @@ const searchStaff = (searchData: string) => {
 const openAddStaffModal = () => {
   selectedStaff.value = {
     id: 1,
-    name: '',
-    dateOfBirth: '',
+    username: '',
+    password: '123456',
+    date_of_birth: '',
     department_name: '',
-    role: '',
-    role_names:[],
+    roles: [],
     department: selectedDepartment.value,
     status: false,
-    imgUrl:'',
-    employmentDate: new Date().toISOString().split('T')[0], // Will be set automatically
-    totalPoints: 0
+    imgUrl: '',
+    employment_time: new Date().toISOString().split('T')[0], // Will be set automatically
+    numberOfLeaves: 0,
+    medicalLeaves: 0,
+    annualLeaves: 0,
+    totalPoints: 0,
+    leave_entitlements: []
   }
-  if (Array.isArray(leaveTypes.value)) {
-    leaveEntitlements.value = {};
-    leaveTypes.value.forEach(type => {
-      leaveEntitlements.value[type.name] = 0;
-    });
-  } else {
-    console.warn("leaveTypes.value is not ready:", leaveTypes.value);
-  }
-
   showAddStaffModal.value = true
 }
 
-const openViewStaffModal = async (staff: Staff) => {
-  selectedStaff.value = { ...staff };
+const openViewStaffModal = (staff: Staff) => {
+  selectedStaff.value = {...staff}
+  showViewStaffModal.value = true
+}
 
-  try {
-    const res = await getLeaveBalance({ userId: staff.id });
-    if (res.status === 200) {
-      selectedStaff.value.leaveBalances = res.data.data.map((item: any) => ({
-        type: item.type,
-        code: item.code,
-        year: item.year,
-        totalDays: item.total_days,
-        usedDays: item.used_days,
-        remainingDays: item.remaining_days,
-      }));
-    }
-  } catch (err) {
-    console.error("Failed to load leave balance", err);
-  }
-
-  console.log('Opening View Staff modal for:', staff);
-  showViewStaffModal.value = true;
-};
-
-
-const openEditStaffModal = async (staff: Staff) => {
-  selectedStaff.value = { ...staff };
-
-  try {
-    const res = await getLeaveBalance({ userId: staff.id });
-    if (res.status === 200) {
-      selectedStaff.value.leaveBalances = res.data.data.map((item: any) => ({
-        type: item.type,
-        code: item.code,
-        year: item.year,
-        totalDays: item.total_days,
-        usedDays: item.used_days,
-        remainingDays: item.remaining_days,
-      }));
-    }
-  } catch (err) {
-    console.error("Failed to load leave balances", err);
-  }
-
-  showEditStaffModal.value = true;
-};
-
+const openEditStaffModal = (staff: Staff) => {
+  selectedStaff.value = {...staff}
+  showEditStaffModal.value = true
+}
 
 const openDeleteStaffModal = (staff: Staff) => {
   selectedStaff.value = staff
@@ -152,56 +132,13 @@ const openDeleteStaffModal = (staff: Staff) => {
   showDeleteStaffModal.value = true
 }
 
-const addStaff = async () => {
-  const payload = {
-    username: selectedStaff.value.name,
-    password: "default123",
-    date_of_birth: selectedStaff.value.dateOfBirth,
-    employment_time: selectedStaff.value.employmentDate,
-    status: selectedStaff.value.status,
-    department: selectedStaff.value.department,
-    total_point: selectedStaff.value.totalPoints,
-    roles: [], // add role logic here if needed
-    leave_entitlements: Object.entries(leaveEntitlements.value).map(([code, days]) => ({
-      code,
-      days
-    }))
-  };
-
-  try {
-    const res = await createStaff(payload);
-    if (isSuccess(res.status)) {
-      await fetchAllStaffs();
-      Swal.fire("Success", "Staff created successfully!", "success");
-      showAddStaffModal.value = false;
-    }
-  } catch (err: any) {
-    let message = "Failed to create staff";
-
-    // Detect if it's a Django duplicate username error
-    if (err.response?.status === 500 && err.response?.data?.includes("Duplicate entry")) {
-      message = "A user with that username already exists. Please choose another name.";
-    } else if (err.response?.data?.message) {
-      // check if there's any readable error message
-      message = err.response.data.message;
-    }
-
-    Swal.fire({
-      icon: "error",
-      title: "Creation Failed",
-      text: message,
-    });
-
-    console.error("Staff creation error:", err);
-  }
-};
-
+const addStaff = () => {
+  handlerAddStaff(selectedStaff.value)
+  showAddStaffModal.value = false
+}
 
 const saveEditedStaff = () => {
-  const index = staffData.results.findIndex(staff => staff.id === selectedStaff.value.id)
-  if (index !== -1) {
-    staffData.results[index] = {...selectedStaff.value}
-  }
+  handlerEditStaff(selectedStaff.value)
   showEditStaffModal.value = false
 }
 
@@ -216,6 +153,12 @@ const changePage = (page: number) => {
   } else {
     fetchAllStaffs(page);
   }
+}
+function hasAdminRole(roleIds: number[]): boolean {
+  return roleIds.some(roleId => {
+    const role = tableData.value.find(r => r.id === roleId);
+    return role?.name.toLowerCase() === 'admin';
+  });
 }
 
 function onImageSelected(event) {
@@ -250,9 +193,6 @@ function resetPassword(staff: Staff) {
     }
   });
 }
-
-
-
 </script>
 
 <template>
@@ -300,14 +240,15 @@ function resetPassword(staff: Staff) {
               <th>Department</th>
               <th>Status</th>
               <th>Employment Date</th>
+              <th>No of Leaves</th> <!-- Add new column header -->
               <th>Actions</th>
             </tr>
             </thead>
             <tbody>
             <tr v-for="staff in staffData.results" :key="staff.id">
               <td>{{ staff.id }}</td>
-              <td>{{ staff.name }}</td> <!-- Remove the icon div wrapper -->
-              <td>{{ staff.dateOfBirth }}</td>
+              <td>{{ staff.username }}</td> <!-- Remove the icon div wrapper -->
+              <td>{{ staff.date_of_birth }}</td>
               <td>{{ staff.department_name }}</td>
               <td>
                   <span
@@ -319,7 +260,8 @@ function resetPassword(staff: Staff) {
                     {{ staff.status ? "Active" : "Inactive" }}
                   </span>
               </td>
-              <td>{{ staff.employmentDate }}</td>
+              <td>{{ staff.employment_time }}</td>
+              <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
                 <button @click="resetPassword(staff)" class="btn btn-secondary btn-sm">reset</button>
@@ -416,106 +358,137 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="staffName" class="form-label">Name</label>
-            <input
-                v-model="selectedStaff.name"
-                type="text"
-                class="form-control"
-                id="staffName"
-                placeholder="Enter name"
-            >
-          </div>
-
-          <div class="mb-3">
-            <label for="staffImage" class="form-label">Profile Image</label>
-            <input
-                type="file"
-                class="form-control"
-                id="staffImage"
-                accept="image/*"
-                @change="onImageSelected"
-            >
-          </div>
-
-          <div v-if="selectedStaff.imgUrl" class="mb-3">
-            <img
-                :src="selectedStaff.imgUrl"
-                alt="Profile Preview"
-                class="img-thumbnail"
-                style="max-width: 150px;"
-            >
-          </div>
-
-
-          <div class="mb-3">
-            <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
-            <input
-                v-model="selectedStaff.dateOfBirth"
-                type="date"
-                class="form-control"
-                id="staffDateOfBirth"
-                placeholder="Enter date of birth"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="staffRole" class="form-label">Role</label>
-            <input
-                v-model="selectedStaff.role"
-                type="text"
-                class="form-control"
-                id="staffRole"
-                placeholder="Enter role"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="staffDepartment" class="form-label">Department</label>
-            <select v-model="selectedStaff.department" class="form-select" id="staffDepartment">
-              <option disabled value="">Please select a department</option>
-              <option
-                v-for="dept in departmentStore.flatDepartmentList"
-                :key="dept.id"
-                :value="dept.id"
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="staffName" class="form-label">Name</label>
+              <input
+                  v-model="selectedStaff.username"
+                  type="text"
+                  class="form-control"
+                  id="staffName"
+                  placeholder="Enter name"
               >
-                {{ dept.department_name }}
-              </option>
-            </select>
-
+            </div>
+            <div class="mb-3 col-md-6">
+              <label for="staffImage" class="form-label">Profile Image</label>
+              <input
+                  type="file"
+                  class="form-control"
+                  id="staffImage"
+                  accept="image/*"
+                  @change="onImageSelected"
+              >
+            </div>
           </div>
-          <div class="mb-3">
-            <label for="staffStatus" class="form-label">Status</label>
-            <select v-model="selectedStaff.status" class="form-select" id="staffStatus">
-              <option :value="true">Active</option>
-              <option :value="false">Inactive</option>
-            </select>
 
+          <div class="row">
+            <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
+              <img
+                  :src="selectedStaff.imgUrl"
+                  alt="Profile Preview"
+                  class="img-thumbnail"
+                  style="max-width: 150px;"
+              >
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Employment Date</label>
-            <input
-                :value="selectedStaff.employmentDate"
-                type="date"
-                class="form-control"
-            >
+
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="staffDateOfBirth" class="form-label">Date of Birth</label>
+              <input
+                  v-model="selectedStaff.date_of_birth"
+                  type="date"
+                  class="form-control"
+                  id="staffDateOfBirth"
+                  placeholder="Enter date of birth"
+              >
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label for="staffDepartment" class="form-label">Department</label>
+              <select
+                  v-model="selectedStaff.department"
+                  class="form-select"
+                  id="staffDepartment"
+              >
+                <option
+                    v-for="dept in departmentStore.flatDepartmentList"
+                    :key="dept.id"
+                    :value="dept.id"
+                >
+                  {{ dept.department_name }}
+                </option>
+              </select>
+            </div>
           </div>
-          <div
-            class="mb-3"
-            v-for="type in leaveTypes.filter(t => ['AL', 'MC'].includes(t.name))"
-            :key="type.name"
-          >
-            <label class="form-label">{{ type.description }} Entitlement</label>
-            <input
-              v-model.number="leaveEntitlements[type.name]"
-              type="number"
-              min="0"
-              class="form-control"
-              :placeholder="`e.g., 10`"
-            >
-          </div> 
+
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="staffStatus" class="form-label">Status</label>
+              <select
+                  v-model="selectedStaff.status"
+                  class="form-select"
+                  id="staffStatus"
+              >
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Employment Date</label>
+              <input
+                  :value="selectedStaff.employment_time"
+                  type="date"
+                  class="form-control"
+              >
+            </div>
+          </div>
 
 
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Roles</label>
+              <div class="btn-group flex-wrap" role="group">
+                <div
+                    v-for="role in tableData"
+                    :key="role.id"
+                    class="form-check d-inline-block me-2 mb-2"
+                >
+                  <input
+                      type="checkbox"
+                      class="btn-check"
+                      :id="'btn-check-' + role.id"
+                      :value="role.id"
+                      v-model="selectedStaff.roles"
+                      autocomplete="off"
+                  />
+                  <label
+                      class="btn btn-outline-primary"
+                      :for="'btn-check-' + role.id"
+                  >
+                    {{ role.name }}
+                  </label>
+                </div>
+              </div>
+            </div>
 
+            <!-- 显示选中的角色 -->
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Selected Roles:</label>
+              <div class="d-flex flex-wrap gap-2">
+              <span
+                  v-for="roleId in selectedStaff.roles"
+                  :key="roleId"
+                  class="badge bg-info"
+              >
+                {{ getRoleNameById(roleId) }}
+              </span>
+              </div>
+            </div>
+          </div>
         </div>
+
+
         <div class="modal-footer">
           <button
               type="button"
@@ -547,48 +520,121 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <p><strong>Name:</strong> {{ selectedStaff.name }}</p>
-          <div class="mb-3">
-            <label class="form-label">Profile Picture</label>
-            <img
-                v-if="selectedStaff.imgUrl"
-                :src="selectedStaff.imgUrl"
-                alt="Profile"
-                class="img-thumbnail"
-                style="max-height: 150px;"
-            >
-          </div>
-          <p><strong>Date of Birth:</strong> {{ selectedStaff.dateOfBirth }}</p>
-          <p><strong>Role:</strong>
-            <span v-if="selectedStaff.role_names && selectedStaff.role_names.length">
-              {{ selectedStaff.role_names.join(', ') }}
-            </span>
-            <span v-else>N/A</span>
-          </p>
-          <p><strong>Department:</strong> {{ selectedStaff.department }}</p>
-          <p><strong>Status:</strong> {{ selectedStaff.status ? 'Active' : 'Inactive' }}</p>
-          <p><strong>Employment Date:</strong> {{ selectedStaff.employmentDate }}</p>
-          <p v-if="selectedStaff.resignationDate">
-            <strong>Resignation Date:</strong> {{ selectedStaff.resignationDate }}
-          </p>
-          <div class="leaves-info" v-if="selectedStaff.leaveBalances && selectedStaff.leaveBalances.length">
-            <p><strong>Leave Balances:</strong></p>
-            <ul class="ms-3">
-              <li v-for="leave in selectedStaff.leaveBalances" :key="leave.code">
-                <template v-if="['AL', 'MC'].includes(leave.code)">
-                  {{ leave.type }} ({{ leave.code }}): {{ leave.remainingDays }} remaining / {{ leave.totalDays }} total
-                </template>
-                <template v-else>
-                  {{ leave.type }} ({{ leave.code }}): {{ leave.usedDays }} used
-                </template>
-              </li>
-            </ul>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Name</label>
+              <input
+                  :value="selectedStaff.username"
+                  type="text"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Profile Image</label>
+              <div v-if="selectedStaff.imgUrl">
+                <img
+                    :src="selectedStaff.imgUrl"
+                    alt="Profile Preview"
+                    class="img-thumbnail"
+                    style="max-width: 150px;"
+                >
+              </div>
+              <div v-else class="text-muted">No image</div>
+            </div>
           </div>
 
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Date of Birth</label>
+              <input
+                  :value="selectedStaff.date_of_birth"
+                  type="date"
+                  class="form-control"
+                  disabled
+              >
+            </div>
 
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Department</label>
+              <input
+                  :value="selectedStaff.department_name"
+                  type="text"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+          </div>
 
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Status</label>
+              <input
+                  :value="selectedStaff.status ? 'Active' : 'Inactive'"
+                  type="text"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Employment Date</label>
+              <input
+                  :value="selectedStaff.employment_time"
+                  type="date"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+          </div>
 
+          <!-- 修改后的角色显示部分 -->
+          <div class="row">
+            <div class="mb-3 col-md-12">
+              <label class="form-label">Roles</label>
+              <div class="d-flex flex-wrap gap-2" style="min-height: 40px;">
+                <template v-if="selectedStaff.roles && selectedStaff.roles.length > 0">
+              <span
+                  v-for="roleId in selectedStaff.roles"
+                  :key="roleId"
+                  class="badge bg-info"
+              >
+                {{ getRoleNameById(roleId) }}
+              </span>
+                </template>
+                <span v-else class="text-muted">No roles assigned</span>
+              </div>
+            </div>
+          </div>
 
+          <div class="row">
+            <div class="mb-3 col-md-4">
+              <label class="form-label">Total Leaves</label>
+              <input
+                  :value="selectedStaff.numberOfLeaves"
+                  type="text"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+            <div class="mb-3 col-md-4">
+              <label class="form-label">Medical Leaves</label>
+              <input
+                  :value="selectedStaff.medicalLeaves"
+                  type="text"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+            <div class="mb-3 col-md-4">
+              <label class="form-label">Annual Leaves</label>
+              <input
+                  :value="selectedStaff.annualLeaves"
+                  type="text"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button
@@ -614,103 +660,136 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="editStaffName" class="form-label">Name</label>
-            <input
-                v-model="selectedStaff.name"
-                type="text"
-                class="form-control"
-                id="editStaffName"
-                placeholder="Enter name"
-            >
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Profile Picture</label>
-            <input
-                type="file"
-                accept="image/*"
-                @change="onImageSelected"
-                class="form-control"
-            >
-            <img
-                v-if="selectedStaff.imgUrl"
-                :src="selectedStaff.imgUrl"
-                alt="Profile"
-                class="img-thumbnail mt-2"
-                style="max-height: 150px;"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="editStaffDateOfBirth" class="form-label">Date of Birth</label>
-            <input
-                v-model="selectedStaff.dateOfBirth"
-                type="date"
-                class="form-control"
-                id="editStaffDateOfBirth"
-                placeholder="Enter date of birth"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="editStaffRole" class="form-label">Role</label>
-            <input
-                v-model="selectedStaff.role"
-                type="text"
-                class="form-control"
-                id="editStaffRole"
-                placeholder="Enter role"
-            >
-          </div>
-          <div class="mb-3">
-            <label for="editStaffDepartment" class="form-label">Department</label>
-            <select v-model="selectedStaff.department" class="form-select" id="editStaffDepartment">
-              <option :value="selectedStaff.department">{{ selectedStaff.department_name }}</option>
-              <option
-                  v-for="item in departmentStore.flatDepartmentList.filter(dept => dept.department_name !== selectedStaff.department_name)"
-                  :key="item.id"
-                  :value="item.id"
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="editStaffName" class="form-label">Name</label>
+              <input
+                  v-model="selectedStaff.username"
+                  type="text"
+                  class="form-control"
+                  id="editStaffName"
+                  placeholder="Enter name"
               >
-                {{ item.department_name }}
-              </option>
-            </select>
+            </div>
+            <div class="mb-3 col-md-6">
+              <label for="editStaffImage" class="form-label">Profile Image</label>
+              <input
+                  type="file"
+                  class="form-control"
+                  id="editStaffImage"
+                  accept="image/*"
+                  @change="onImageSelected"
+              >
+            </div>
           </div>
 
-          <div class="mb-3">
-            <label for="editStaffStatus" class="form-label">Status</label>
-            <select
-                v-model="selectedStaff.status"
-                class="form-select"
-                id="editStaffStatus"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+          <div class="row">
+            <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
+              <img
+                  :src="selectedStaff.imgUrl"
+                  alt="Profile Preview"
+                  class="img-thumbnail"
+                  style="max-width: 150px;"
+              >
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Employment Date</label>
-            <input
-                :value="selectedStaff.employmentDate"
-                type="date"
-                class="form-control"
-                disabled
-            >
+
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="editStaffDateOfBirth" class="form-label">Date of Birth</label>
+              <input
+                  v-model="selectedStaff.date_of_birth"
+                  type="date"
+                  class="form-control"
+                  id="editStaffDateOfBirth"
+                  placeholder="Enter date of birth"
+              >
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label for="editStaffDepartment" class="form-label">Department</label>
+              <select
+                  v-model="selectedStaff.department"
+                  class="form-select"
+                  id="editStaffDepartment"
+                  :disabled="hasAdminRole(selectedStaff.roles)"
+              >
+                <option
+                    v-for="dept in departmentStore.flatDepartmentList"
+                    :key="dept.id"
+                    :value="dept.id"
+                >
+                  {{ dept.department_name }}
+                </option>
+              </select>
+            </div>
           </div>
-          <div
-            class="mb-3"
-            v-for="leave in selectedStaff.leaveBalances?.filter(l => ['AL', 'MC'].includes(l.code))"
-            :key="leave.code"
+
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label for="editStaffStatus" class="form-label">Status</label>
+              <select
+                  v-model="selectedStaff.status"
+                  class="form-select"
+                  id="editStaffStatus"
+              >
+                <option :value="true">Active</option>
+                <option :value="false">Inactive</option>
+              </select>
+            </div>
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Employment Date</label>
+              <input
+                  :value="selectedStaff.employment_time"
+                  type="date"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Roles</label>
+              <div class="btn-group flex-wrap" role="group">
+                <div
+                    v-for="role in tableData"
+                    :key="role.id"
+                    class="form-check d-inline-block me-2 mb-2"
+                >
+                  <input
+                      type="checkbox"
+                      class="btn-check"
+                      :id="'edit-btn-check-' + role.id"
+                      :value="role.id"
+                      v-model="selectedStaff.roles"
+                      autocomplete="off"
+                  />
+                  <label
+                      class="btn btn-outline-primary"
+                      :for="'edit-btn-check-' + role.id"
+                  >
+                    {{ role.name }}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 显示选中的角色 -->
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Selected Roles:</label>
+              <div class="d-flex flex-wrap gap-2">
+          <span
+              v-for="roleId in selectedStaff.roles"
+              :key="roleId"
+              class="badge bg-info"
           >
-            <label class="form-label">{{ leave.type }} ({{ leave.code }}) Entitlement</label>
-            <input
-              type="number"
-              class="form-control"
-              v-model.number="leave.totalDays"
-              :min="0"
-              :placeholder="`e.g. 10`"
-            />
+            {{ getRoleNameById(roleId) }}
+          </span>
+              </div>
+            </div>
           </div>
         </div>
-        
-
         <div class="modal-footer">
           <button
               type="button"
@@ -742,7 +821,7 @@ function resetPassword(staff: Staff) {
           ></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete the staff :"{{ selectedStaff.name }}"?</p>
+          <p>Are you sure you want to delete the staff :"{{ selectedStaff.username }}"?</p>
           <p>This will set their resignation date to today.</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>
@@ -768,20 +847,28 @@ function resetPassword(staff: Staff) {
 </template>
 
 <style scoped>
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh; /* Viewport height cap */
-  display: flex;
-  flex-direction: column;
-}
 
-.modal-body {
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
   padding: 1rem;
   overflow-y: auto;
-  flex: 1 1 auto; /* Make this section take remaining height */
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh; /* ✅ 限制最大高度 */
+  overflow-y: auto; /* ✅ 内容太多时可滚动 */
+  padding: 1rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
 }
 
 .search-container .input-group-text {
@@ -824,26 +911,6 @@ function resetPassword(staff: Staff) {
   border: 1px solid #eee;
 }
 
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 1rem;
-}
 
 .modal-header {
   padding: 1rem;

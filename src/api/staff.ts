@@ -1,10 +1,5 @@
 import axios from './axios'
-
-//create staff
-export function createStaff(payload: any): any {
-    return axios.post('/api/staff/', payload);
-}
-
+import type {Staff} from "@/interface/UserInterface.ts";
 
 export function selectAllStaffs(page: number = 1) {
     return axios.get('/api/staff/?page=' + page);
@@ -36,6 +31,10 @@ export function resetPassword(id: number): any {
     return axios.post(`/api/staff/${id}/reset-password/`);
 }
 
+export function addStaff(staff: Staff): any {
+    return axios.post(`/api/staff/`, staff);
+}
+
 export function getStaffByDepartment(departmentId: number): any {
     return axios.get(`/api/staff/by_department/?department_id=${departmentId}`);
 }
@@ -45,4 +44,8 @@ export function assignKpiToDepartment(kpiId: number, departmentId: number, targe
         department_id: departmentId,
         target_unit: target_unit
     });
+}
+
+export function editStaff(staff: Staff): any {
+    return axios.patch(`/api/staff/${staff.id}/`, staff);
 }
