@@ -9,9 +9,10 @@ export default function () {
     const currentPage = ref(1);
 
     /* 获取所有KPI, 不分页 */
-    async function handlerFetchKpis(page: number = 1) {
+    async function handlerFetchKpis(filters: any = {}) {
         try {
-            const res = await selectAllKpis({ page });
+            const params = { page: filters.page || 1, ...filters };
+            const res = await selectAllKpis(params);
             if (isSuccess(res.status)) {
                 const rawResults = res.data.data.results;
                 kpiData.value = rawResults.map((item: any) => ({
@@ -30,7 +31,7 @@ export default function () {
                     department_id: item.department
                 }));
                 count.value = res.data.data.count;
-                currentPage.value = page;
+                currentPage.value = filters.page;
             } else {
                 console.error("接口返回失败：", res);
             }
@@ -40,7 +41,7 @@ export default function () {
     }
 
     onMounted(() => {
-        handlerFetchKpis();
+        handlerFetchKpis({page: 1});
     });
 
     return {

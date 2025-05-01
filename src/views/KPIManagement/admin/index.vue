@@ -19,6 +19,14 @@
       <option>Delayed</option>
       <option>Terminated</option>
     </select>
+
+    <select class="form-select w-25" v-model="searchDepartment">
+      <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+        {{ dept.department_name }}
+      </option>
+    </select>
+    <button class="btn btn-primary" @click="searchKPI">Search</button>
+    <button class="btn btn-primary" @click="cleanSearchCondition">Clean</button>
   </div>
 
   <!-- Table section -->
@@ -380,7 +388,7 @@
 
 <script setup lang="ts">
 import router from '@/router'
-import {ref, computed, onMounted} from 'vue'
+import {ref, computed, onMounted, nextTick} from 'vue'
 import type {Task} from "@/interface/KpiInterface.ts";
 import {searchStaff, assignKpiToDepartment} from "@/api/staff.ts";
 import {
@@ -404,13 +412,16 @@ import useKPI from "@/hooks/useKPI.ts";
 const {
   kpiData,
   currentPage,
+  handlerFetchKpis,
   count,
 } = useKPI();
 
 
 // 员工搜索相关
 const staffSearchKeyword = ref('');
+// 搜索员工的结果
 const staffSearchResults = ref<any[]>([]);
+
 const assignToAllMembers = ref(false);
 
 /**
@@ -481,7 +492,7 @@ const fetchDepartments = () => {
       // 默认选择第一个部门
       if (departments.value.length > 0) {
         selectedDepartment.value = departments.value[0];
-        fetchKpis(); // 获取第一个部门的KPI数据
+        handlerFetchKpis({page: 1});
       }
     } else {
       console.error('Failed to fetch department list:', res);
@@ -491,26 +502,6 @@ const fetchDepartments = () => {
   });
 };
 
-const fetchKpis = () => {
-  // 构建查询参数
-  const params: any = {};
-  // 如果选择了部门，添加department_id参数
-  if (selectedDepartment.value?.id) {
-    params.department_id = selectedDepartment.value.id;
-  }
-
-  // 如果选择了状态，添加status参数
-  if (selectedStatus.value) {
-    params.status = selectedStatus.value;
-  }
-
-  // 如果有搜索关键词，添加search参数
-  if (searchTaskName.value) {
-    params.search = searchTaskName.value;
-  }
-  console.log("Fetching KPI data with params:", params);
-
-}
 
 onMounted(() => {
 //   // handlerFetchKpis()
@@ -648,7 +639,7 @@ const createTask = () => {
                 showConfirmButton: false,
                 timer: 1500,
               });
-              fetchKpis();
+
             })
             .catch((error) => {
               console.error("Failed to assign task:", error);
@@ -657,7 +648,7 @@ const createTask = () => {
                 title: "Warning",
                 text: "Task has been created, but there was an issue assigning to employees"
               });
-              fetchKpis();
+              handlerFetchKpis({page: 1});
             });
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
         // 分配给部门所有成员
@@ -670,7 +661,7 @@ const createTask = () => {
                 showConfirmButton: false,
                 timer: 1500,
               });
-              fetchKpis();
+              handlerFetchKpis({page: 1});
             })
             .catch((error) => {
               console.error("Failed to assign task to department:", error);
@@ -679,7 +670,7 @@ const createTask = () => {
                 title: "Warning",
                 text: "Task has been created, but there was an issue assigning to department members"
               });
-              fetchKpis();
+              handlerFetchKpis({page: 1});
             });
       } else {
         // 仅创建任务，不分配
@@ -690,7 +681,7 @@ const createTask = () => {
           showConfirmButton: false,
           timer: 1500,
         });
-        fetchKpis();
+        handlerFetchKpis({page: 1});
       }
     }
   }).catch((error) => {
@@ -862,7 +853,7 @@ const saveEditedTask = () => {
                   showConfirmButton: false,
                   timer: 1500,
                 });
-                fetchKpis();
+                handlerFetchKpis({page: 1});
               })
               .catch((error) => {
                 console.error("Failed to reassign task:", error);
@@ -871,7 +862,7 @@ const saveEditedTask = () => {
                   title: "Warning",
                   text: "Task has been updated, but there was an issue reassigning to staff"
                 });
-                fetchKpis();
+                handlerFetchKpis({page: 1});
               });
         } else {
           // 如果没有新的分配操作，直接显示成功
@@ -882,7 +873,7 @@ const saveEditedTask = () => {
             showConfirmButton: false,
             timer: 1500,
           });
-          fetchKpis();
+          handlerFetchKpis({page: 1});
         }
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
         // 分配给部门所有成员的逻辑保持不变
@@ -895,7 +886,7 @@ const saveEditedTask = () => {
                 showConfirmButton: false,
                 timer: 1500,
               });
-              fetchKpis();
+              handlerFetchKpis({page: 1});
             })
             .catch((error) => {
               console.error("Failed to assign task to department:", error);
@@ -904,7 +895,7 @@ const saveEditedTask = () => {
                 title: "Warning",
                 text: "Task updated, but there was an issue assigning to department members"
               });
-              fetchKpis();
+              handlerFetchKpis({page: 1});
             });
       } else {
         // 仅更新任务，不重新分配
@@ -915,7 +906,7 @@ const saveEditedTask = () => {
           showConfirmButton: false,
           timer: 1500,
         });
-        fetchKpis();
+        handlerFetchKpis({page: 1});
       }
     }
   }).catch((error) => {
@@ -947,7 +938,7 @@ const confirmDeleteTask = (task: any) => {
       showConfirmButton: false,
       timer: 1500,
     });
-    fetchKpis(); // Refresh the task list after deletion
+    handlerFetchKpis({page: 1})
     showDeleteModal.value = false; // Close the modal
   }).catch((error) => {
     Swal.fire({
@@ -984,7 +975,7 @@ const confirmTerminate = () => {
     });
     showModal.value = false  // Close Edit modal
     showTerminateModal.value = false  // Close Terminate confirmation modal
-    fetchKpis()  // Fetch updated tasks
+    handlerFetchKpis({page: 1})  // Fetch updated tasks
   }).catch((error) => {
     Swal.fire({
       icon: "error",
@@ -1005,6 +996,8 @@ const calculateTotalTarget = (task: any): number => {
 // filter
 const searchTaskName = ref('')
 const selectedStatus = ref('')
+const searchDepartment = ref('')
+
 const selectedDepartment = ref('Sales Department')
 const itemsPerPage = 10
 
@@ -1026,7 +1019,28 @@ const totalPages = computed(() => {
 })
 
 const changePage = (page: number) => {
+  currentPage.value = page;
+  handlerFetchKpis({page: currentPage.value})
+}
 
+/**
+ * 根据状态或者KPI的名称查询KPI信息
+ */
+function searchKPI() {
+  const queryParams = {
+    page: 1,
+    task_title: searchTaskName.value || undefined,
+    kpi_status: selectedStatus.value || undefined,
+    department_id: searchDepartment.value || undefined,
+  };
+  handlerFetchKpis(queryParams);
+}
+
+
+function cleanSearchCondition() {
+  selectedStatus.value = '';
+  searchDepartment.value = '';
+  searchTaskName.value = '';
 }
 
 // Statistics
