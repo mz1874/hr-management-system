@@ -253,7 +253,6 @@
                     class="form-control" 
                     placeholder="Search employees..." 
                     v-model="staffSearchKeyword"
-                    @input="searchStaffMembers"
                   />
                   <button class="btn btn-outline-secondary" type="button" @click="searchStaffMembers">
                     <i class="fas fa-search"></i>
@@ -263,7 +262,7 @@
                 <!-- 搜索结果下拉列表 -->
                 <div v-if="staffSearchResults && staffSearchResults.length > 0" class="search-results border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;">
                   <div 
-                    v-for="staff in staffSearchResults" 
+                    v-for="staff in staffSearchResults"
                     :key="staff.id" 
                     class="search-result-item p-2 hover-bg-light cursor-pointer"
                     @click="selectStaffMember(staff)"
@@ -376,16 +375,18 @@ const staffSearchKeyword = ref('');
 const staffSearchResults = ref<any[]>([]);
 const assignToAllMembers = ref(false);
 
-// 搜索员工
+/**
+ *  搜索员工开始
+ *  用于新建员工时从所有员工中查询某个指定的员工设置KPI任务
+ */
 const searchStaffMembers = () => {
   if (staffSearchKeyword.value.trim().length < 2) {
     staffSearchResults.value = [];
     return;
   }
-  
   searchStaff(staffSearchKeyword.value).then((res) => {
     if (isSuccess(res.status) && res.data.code === 200) {
-      staffSearchResults.value = res.data.data;
+      staffSearchResults.value = res.data.data.results;
     } else {
       console.error('Failed to search employees:', res);
     }
@@ -393,6 +394,7 @@ const searchStaffMembers = () => {
     console.error('Error searching employees:', error);
   });
 };
+// ~搜索员工结束
 
 const selectStaffMember = (staff: any) => {
   // 确保 currentTask.value 存在
