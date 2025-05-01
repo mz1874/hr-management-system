@@ -1,6 +1,6 @@
 <script lang="ts">
 export default {
-  name: "leaveManagement",
+  name: "leaveApplication",
   components: {
     LeaveApplicationModal,
     LeaveApplicationDetailsModal
@@ -29,11 +29,26 @@ const allLeaveStats = ref<{ pending: number }>({ pending: 0 });
 
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
-    case 'Rejected': return 'badge-reject';
-    case 'Pending': return 'badge-pending';
-    case 'Approved': return 'badge-approved';
-    case 'Cancelled': return 'badge-cancelled';
-    default: return '';
+    case 'Pending':
+    case 'P':
+      return 'badge-pending';
+    case 'Approved':
+    case 'A':
+      return 'badge-approved';
+    case 'Cancelled':
+    case 'W':
+      return 'badge-cancelled';
+    case 'R1':
+    case 'Rejected by Manager':
+      return 'badge-reject';
+    case 'R2':
+    case 'Rejected by HR':
+      return 'badge-reject';
+    case 'M':
+    case 'Manager Approved':
+      return 'badge-manager-approved';
+    default:
+      return 'badge-secondary';
   }
 };
 
@@ -161,7 +176,14 @@ async function fetchLeaveApplications(page = 1) {
         name: currentUser.username,
         department: currentUser.department || '-',
         leaveType: item.leave_dates?.[0]?.leave_type_display?.name || '-',
-        status: { P: 'Pending', A: 'Approved', R: 'Rejected', W: 'Cancelled' }[item.status] || item.status,
+        status: {
+          P: 'Pending',
+          A: 'Approved',
+          R1: 'Rejected by Manager',
+          R2: 'Rejected by HR',
+          M: 'Manager Approved',
+          W: 'Cancelled'
+        }[item.status] || item.status,
         appliedOn: item.created_date,
         selected: false,
         dates: Array.isArray(item.leave_dates)
@@ -691,6 +713,36 @@ const pageNumbers = computed(() => {
   padding-left: 0;
   list-style: none;
   border-radius: 0.25rem;
+}
+
+.badge-pending {
+  background-color: #FFC107; /* Yellow */
+  color: white;
+}
+
+.badge-approved {
+  background-color: #82AD82; /* Green */
+  color: white;
+}
+
+.badge-cancelled {
+  background-color: #6c757d; /* Gray */
+  color: white;
+}
+
+.badge-reject {
+  background-color: #FF6F61; /* Red */
+  color: white;
+}
+
+.badge-manager-approved {
+  background-color: #7DA0CA; /* Blue */
+  color: white;
+}
+
+.badge-secondary {
+  background-color: #adb5bd; /* Fallback gray */
+  color: white;
 }
 
 </style>

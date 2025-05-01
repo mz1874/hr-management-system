@@ -1,22 +1,24 @@
 export interface LeaveApplication {
+  id: number;
+  employeeName: string;
+  leaveType: string;
+  status: string;         // e.g., "Pending"
+  statusCode: string;     // e.g., "P"
+  appliedOn: string;
+  selected: boolean;
+  department: string;
+  reasons: string;
+  document: string;
+  remainingAnnualLeave: number;
+  remainingMedicalLeave: number;
+  remarks: string;
+  managerComment?: string;  // add this too if you're using it
+  dates: {
     id: number;
-    employeeName: string;
+    date: string;
+    duration: string;
     leaveType: string;
-    status: string;
-    appliedOn: string;
-    selected: boolean;
-    department: string;
-    reasons: string;
-    document: string;
-    remainingAnnualLeave: number;
-    remainingMedicalLeave: number;
-    remarks: string;
-    dates: {
-      id: number;
-      date: string;
-      duration: string;
-      leaveType: string;
-      originalLeaveType: string;
-      originalDuration: string;
-    }[];
-  }
+    originalLeaveType: string;
+    originalDuration: string;
+  }[];
+}

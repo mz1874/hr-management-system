@@ -1,9 +1,3 @@
-<script lang="ts">
-export default {
-  name: "leaveManagement"
-}
-</script>
-
 <script setup lang="ts">
 import { Modal } from "bootstrap";
 import { ref, computed, onMounted, watch } from 'vue';
@@ -13,7 +7,8 @@ import {
   getLeaveTypes,
   getLeaveBalance
 } from '@/api/leave'
-import type  {LeaveApplication} from '@/interface/leaveApplicationManagement'
+import type { LeaveApplication } from '@/interface/leaveApplicationManagement'
+import { getCurrentUser } from '@/api/login'
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import Swal from "sweetalert2";
@@ -26,6 +21,19 @@ const totalPages = ref(1);
 const totalCount = ref(0);
 const filterStatus = ref('All');
 const selectedLeave = ref<LeaveApplication | null>(null);
+const summaryStats = ref({ all: 0, pending: 0, approved: 0, rejected: 0 });
+
+const currentUser = ref({
+  id: 0,
+  roles: [] as string[],  
+  department_id: null as number | null
+});
+const isHR = computed(() => Array.isArray(currentUser.value?.roles) && currentUser.value.roles.includes('hr'));
+const isManager = computed(() => Array.isArray(currentUser.value?.roles) && currentUser.value.roles.includes('manager'));
+
+
+const canManagerApprove = computed(() => selectedLeave.value?.status === 'Pending' && isManager.value);
+const canHRApprove = computed(() => selectedLeave.value?.status === 'Manager Approved' && isHR.value);
 
 function toastSuccess(message: string) {
   Swal.fire({
@@ -37,7 +45,6 @@ function toastSuccess(message: string) {
   });
 }
 
-
 const fetchLeaveTypes = async () => {
   try {
     const res = await getLeaveTypes();
@@ -47,27 +54,65 @@ const fetchLeaveTypes = async () => {
   }
 };
 
+function getStatusCodeForRole(label: string): string {
+  if (label === 'All') return '';
+
+  if (isHR.value) {
+    return {
+      'Pending': 'M',
+      'Approved': 'A',
+      'Rejected': 'R2'
+    }[label] || '';
+  }
+
+  if (isManager.value) {
+    return {
+      'Pending': 'P',
+      'Approved': 'M',
+      'Rejected': 'R1'
+    }[label] || '';
+  }
+
+  // Default for staff
+  return {
+    'Pending': 'P',
+    'Approved': 'A',
+    'Rejected': 'R1'  // or handle both R1 & R2 if needed
+  }[label] || '';
+}
+
 
 const fetchLeaveApplications = async () => {
   try {
     await fetchLeaveTypes();
 
-    const statusParam = filterStatus.value !== 'All' ? filterStatus.value.charAt(0) : '';
-    const filteredRes = await getLeaveRequests(currentPage.value, '', { hrPage: true, status: statusParam });
+    const params: Record<string, any> = {
+      page: currentPage.value,
+    };
+
+    const statusParam = getStatusCodeForRole(filterStatus.value);
+    if (statusParam) params.status = statusParam;
+    console.log('Selected:', filterStatus.value)
+
+    if (isHR.value) {
+      params.hrPage = true;
+    } else if (isManager.value) {
+      params.departmentId = currentUser.value.department_id;
+    }
+
+    const filteredRes = await getLeaveRequests(currentPage.value, '', params);
     const rawResults = filteredRes.data?.data?.results || [];
     totalPages.value = Math.ceil(filteredRes.data?.data?.count / 10);
     totalCount.value = filteredRes.data?.data?.count;
 
-    // Get summary stats once (not filtered)
-    const summaryRes = await getLeaveRequests(1, '', { hrPage: true });
+    const summaryRes = await getLeaveRequests(1, '', { hrPage: isHR.value });
     summaryStats.value = {
       all: summaryRes.data?.data?.count || 0,
       pending: summaryRes.data?.data?.summary?.pending || 0,
-      approved: summaryRes.data?.data?.summary?.approved || 0,
-      rejected: summaryRes.data?.data?.summary?.rejected || 0,
+      approved: summaryRes.data?.data?.summary?.hr_approved || 0,
+      rejected: (summaryRes.data?.data?.summary?.manager_rejected || 0) + (summaryRes.data?.data?.summary?.hr_rejected || 0),
     };
 
-    // Map results with leave balance already embedded in each item
     leaveApplications.value = rawResults.map(item => {
       const parsedCreated = dayjs(item.created_date, 'DD.MM.YYYY HH:mm:ss');
       const balance = item.leave_balance || {};
@@ -106,7 +151,6 @@ const fetchLeaveApplications = async () => {
 };
 
 
-
 watch([filterStatus, currentPage], fetchLeaveApplications);
 
 const changePage = (page: number) => {
@@ -118,25 +162,26 @@ const changePage = (page: number) => {
 function mapStatus(code: string): string {
   const map = {
     P: 'Pending',
+    M: 'Manager Approved',
+    R1: 'Rejected by Manager',
     A: 'Approved',
-    R: 'Reject',
+    R2: 'Rejected by HR',
     W: 'Withdraw'
-  }
-  return map[code] || code
+  };
+  return map[code] || code;
 }
 
-const summaryStats = ref({ all: 0, pending: 0, approved: 0, rejected: 0 });
+const reverseStatusMap = {
+  'Pending': 'P',
+  'Manager Approved': 'M',
+  'Rejected by Manager': 'R1',
+  'Approved': 'A',
+  'Rejected by HR': 'R2',
+  'Withdraw': 'W'
+};
 
-
-const saveChanges = async (newStatus?: 'Approved' | 'Reject', closeModal = false) => {
+const saveChanges = async (newStatus?: string, closeModal = false) => {
   if (!selectedLeave.value) return;
-
-  const reverseStatusMap = {
-    'Pending': 'P',
-    'Approved': 'A',
-    'Reject': 'R',
-    'Withdraw': 'W'
-  };
 
   const leaveTypeIdMap = leaveTypeOptions.value.reduce((map, type) => {
     map[type.name] = type.id;
@@ -160,7 +205,6 @@ const saveChanges = async (newStatus?: 'Approved' | 'Reject', closeModal = false
     toastSuccess("Leave request updated successfully!");
     await fetchLeaveApplications();
 
-    // Close modal 
     if (closeModal && leaveDetailsModal.value) {
       const modalInstance = Modal.getInstance(leaveDetailsModal.value);
       modalInstance?.hide();
@@ -176,47 +220,70 @@ const saveChanges = async (newStatus?: 'Approved' | 'Reject', closeModal = false
   }
 };
 
-
 const approveSingle = async () => {
-  if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    if (!selectedLeave.value.remarks?.trim()) {
-      selectedLeave.value.remarks = "Approved by HR";
-    }
-    await saveChanges('Approved', true);
+  if (!selectedLeave.value) return;
+
+  if (canManagerApprove.value) {
+    selectedLeave.value.remarks ||= "Approved by Manager";
+    await saveChanges('Manager Approved', true);
+  } else if (canHRApprove.value) {
+    selectedLeave.value.remarks ||= "Approved by HR";
+    await saveChanges('Approved', true);  
   }
 };
 
 const rejectSingle = async () => {
-  if (selectedLeave.value && selectedLeave.value.status === 'Pending') {
-    if (!selectedLeave.value.remarks?.trim()) {
-      selectedLeave.value.remarks = "Rejected by HR";
-    }
-    await saveChanges('Reject', true);
+  if (!selectedLeave.value) return;
+
+  if (canManagerApprove.value) {
+    selectedLeave.value.remarks ||= "Rejected by Manager";
+    await saveChanges('Rejected by Manager', true); 
+  } else if (canHRApprove.value) {
+    selectedLeave.value.remarks ||= "Rejected by HR";
+    await saveChanges('Rejected by HR', true);  
   }
 };
 
 
 const bulkApprove = async () => {
   for (const app of leaveApplications.value) {
-    if (app.selected && app.status === 'Pending') {
-      app.remarks = "Approved by HR";
+    const rawStatus = reverseStatusMap[app.status];
+
+    const isManagerAction = rawStatus === 'P' && isManager.value;
+    const isHRAction = rawStatus === 'M' && isHR.value;
+
+    if (app.selected && (isManagerAction || isHRAction)) {
+      app.remarks = isManagerAction ? "Approved by Manager" : "Approved by HR";
       selectedLeave.value = app;
-      await saveChanges('Approved');
+
+      const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';  // ✅ Correct mapping
+      await saveChanges(newStatus);
     }
+
     app.selected = false;
   }
 };
 
+
 const bulkReject = async () => {
   for (const app of leaveApplications.value) {
-    if (app.selected && app.status === 'Pending') {
-      app.remarks = "Rejected by HR";
+    const rawStatus = reverseStatusMap[app.status];
+
+    const isManagerAction = rawStatus === 'P' && isManager.value;
+    const isHRAction = rawStatus === 'M' && isHR.value;
+
+    if (app.selected && (isManagerAction || isHRAction)) {
+      app.remarks = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
       selectedLeave.value = app;
-      await saveChanges('Reject');
+
+      const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
+      await saveChanges(newStatus);  // ✅ Will correctly map to R1 or R2
     }
+
     app.selected = false;
   }
 };
+
 
 
 const formatDuration = (code: string) => {
@@ -257,10 +324,32 @@ const showLeaveDetails = (application: LeaveApplication) => {
   }
 };
 
-onMounted(() => {
-  import('bootstrap');
-  fetchLeaveApplications();
+const isModalReadOnly = computed(() => {
+  if (!selectedLeave.value) return true;
+
+  const rawStatus = reverseStatusMap[selectedLeave.value.status];
+
+  // Manager can only edit if it's still pending
+  if (isManager.value && rawStatus !== 'P') return true;
+
+  // HR can edit if status is 'M'
+  if (isHR.value && rawStatus === 'M') return false;
+
+  return false;
 });
+
+
+onMounted(async () => {
+  const res = await getCurrentUser();
+
+  const userData = res.data.data; 
+  currentUser.value.id = userData.id;
+  currentUser.value.roles = userData.roles || [];
+  currentUser.value.department_id = userData.department_id;
+
+  await fetchLeaveApplications();
+});
+
 </script>
 
 
@@ -323,8 +412,8 @@ onMounted(() => {
         </div>
 
         <!-- Rejected Applications Card -->
-        <div class="col" @click="filterStatus = 'Reject'">
-          <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Reject' }">
+        <div class="col" @click="filterStatus = 'Rejected'">
+          <div class="card summary-card shadow-sm p-2" :class="{ 'border-primary': filterStatus === 'Rejected' }">
             <div class="card-body d-flex align-items-center justify-content-center">
               <div class="circle">
                 <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-x-circle icon-large" viewBox="0 0 16 16">
@@ -383,15 +472,20 @@ onMounted(() => {
             <span v-else>-</span>
           </td>
           <td>
-            <span :class="['badge', {
-              'custom-reject': application.status === 'Reject',
-              'bg-warning': application.status === 'Pending',
-              'badge-approved': application.status === 'Approved',
-              'bg-secondary': application.status === 'Withdraw'
-            }]">
+            <span :class="[
+              'badge',
+              {
+                'badge-pending': application.status === 'Pending',
+                'badge-manager-approved': application.status === 'Manager Approved',
+                'badge-approved': application.status === 'Approved',
+                'badge-reject': application.status === 'Rejected by Manager' || application.status === 'Rejected by HR',
+                'badge-withdraw': application.status === 'Withdraw'
+              }
+            ]">
               {{ application.status }}
             </span>
           </td>
+
           <td>{{ application.appliedOn }}</td>
           <td>
             <button class="btn btn-light btn-sm" @click="showLeaveDetails(application)">
@@ -484,18 +578,20 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+
+            <!-- Editable Dates Section -->
             <div class="dates-section mb-4">
               <h6 class="mb-3">Dates Selected:</h6>
               <div v-for="(date, index) in selectedLeave.dates" :key="index" class="date-entry mb-2">
                 <div class="info-badge d-flex align-items-center justify-content-between">
-                  <template v-if="selectedLeave.status === 'Pending'">
+                  <template v-if="['Pending', 'Manager Approved'].includes(selectedLeave.status)">
                     <span>{{ date.date }}</span>
-                    <select v-model="date.duration" class="form-select form-select-sm ms-2 duration-select">
+                    <select v-model="date.duration" class="form-select form-select-sm ms-2 duration-select" :disabled="isModalReadOnly">
                       <option value="F">Full Day</option>
                       <option value="AM">Morning</option>
                       <option value="PM">Afternoon</option>
                     </select>
-                    <select v-model="date.leaveType" class="form-select form-select-sm ms-2 leave-type-select">
+                    <select v-model="date.leaveType" class="form-select form-select-sm ms-2 leave-type-select" :disabled="isModalReadOnly">
                       <option v-for="type in leaveTypeOptions" :key="type.id" :value="type.name">
                         {{ type.name }}
                       </option>
@@ -508,20 +604,24 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+
+            <!-- Remarks Section -->
             <div class="mb-4">
               <h6 class="mb-3">Remarks</h6>
               <textarea 
                 v-model="selectedLeave.remarks" 
                 class="form-control" 
                 rows="4" 
-                :readonly="selectedLeave.status !== 'Pending'"
-              ></textarea>
+                :readonly="isModalReadOnly"
+                ></textarea>
             </div>
-            <!-- Only show Approve/Reject buttons if status is Pending -->
-            <div v-if="selectedLeave.status === 'Pending'" class="d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-approve" @click="approveSingle">Approved</button>
+
+            <!-- Action Buttons for Approve / Reject -->
+            <div v-if="!isModalReadOnly" class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-approve" @click="approveSingle">Approve</button>
               <button type="button" class="btn btn-reject" @click="rejectSingle">Reject</button>
             </div>
+
           </div>
         </div>
       </div>
@@ -588,6 +688,17 @@ onMounted(() => {
   background-color: #82AD82;
   color: white;
 }
+
+.badge-manager-approved {
+  background-color: #7DA0CA; /* Light blue for manager-approved */
+  color: white;
+}
+
+.badge-withdraw {
+  background-color: #6c757d; /* Gray for withdrawn */
+  color: white;
+}
+
 
 
 .custom-reject:hover {

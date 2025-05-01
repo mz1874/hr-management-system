@@ -39,8 +39,9 @@ export function getLeaveRequestById(id: number) {
 
 
 // Approve or reject a leave request (HR)
-export function reviewLeaveRequest(id, data) {
-  return axios.patch(`/api/leave-request/${id}/?hr_page=true`, data);
+export function reviewLeaveRequest(id: number, data: any, isHR: boolean = false) {
+  const query = isHR ? '?hr_page=true' : '';
+  return axios.patch(`/api/leave-request/${id}/${query}`, data);
 }
 
 // Bulk approve or reject requests (HR utility)
