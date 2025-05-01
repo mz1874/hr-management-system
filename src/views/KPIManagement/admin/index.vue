@@ -1,18 +1,7 @@
 <template>
   <div class="d-flex mb-4">
-    <h2>{{ selectedDepartment.department_name || 'Department' }} KPI Management</h2>
+    <h2>{{ 'Department' }} KPI Management</h2>
   </div>
-
-  <!-- department filter -->
-  <div class="gap-3 mb-4">
-    <select class="form-select w-25" v-model="selectedDepartment" @change="handleDepartmentChange">
-      <option v-for="dept in departments" :key="dept.id" :value="dept">
-        {{ dept.department_name }}
-      </option>
-    </select>
-  </div>
-
-  <div class="line mb-4"></div>
 
   <!-- Search and filter -->
   <div class="d-flex gap-3 mb-4 mt-3">
@@ -154,7 +143,7 @@
 
       <!-- Pagination -->
       <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>Total: {{ filteredKpiData.length }}</div>
+        <div>Total: {{ filteredKpiData }}</div>
         <nav>
           <ul class="pagination mb-0">
             <li :class="['page-item', { disabled: currentPage === 1 }]" @click="changePage(currentPage - 1)">
@@ -214,6 +203,7 @@
                   </div>
                 </div>
 
+
                 <!-- Points Given -->
                 <div class="mb-3">
                   <label for="pointsGiven" class="form-label">Points Given For Each Individual:</label>
@@ -244,6 +234,14 @@
                   <input type="radio" id="assignDept" value="department" v-model="assignType" class="ms-3">
                   <label for="assignDept">Whole department</label>
                 </div>
+              </div>
+
+              <div class="gap-3 mb-3">
+                <select class="form-select" v-model="selectedDepartment" @change="handleDepartmentChange">
+                  <option v-for="dept in departments" :key="dept.id" :value="dept">
+                    {{ dept.department_name }}
+                  </option>
+                </select>
               </div>
 
               <!-- Conditionally show the assign input for Employee -->
@@ -356,10 +354,9 @@
 import router from '@/router'
 import { ref, computed, onMounted } from 'vue'
 import type {Task} from  "@/interface/KpiInterface.ts";
-import { searchStaff, getStaffByDepartment, assignKpiToDepartment, selectAllStaffs} from "@/api/staff.ts";
+import { searchStaff, assignKpiToDepartment} from "@/api/staff.ts";
 import { 
-  selectAllKpis, 
-  updateKpi, 
+  updateKpi,
   createKpi, 
   deleteKpi, 
   terminateKpi, 
@@ -432,34 +429,10 @@ const selectStaffMember = (staff: any) => {
 };
 
 const tasks = ref<Task[]>([])
-//fetch function
-const kpiData = ref<any[]>([]);  // 用于存储KPI数据
+
 const currentTask = ref<any>({});
 
 const departments = ref<any[]>([]);
-
-// 添加员工列表
-const allStaff = ref<any[]>([]);
-const departmentStaff = computed(() => {
-  // 根据当前选中的部门ID过滤员工
-  return allStaff.value.filter(staff => 
-    staff.department === selectedDepartment.value?.id
-  );
-});
-
-const fetchAllStaff = () => {
-  selectAllStaffs().then((res) => {
-    if (isSuccess(res.status) && res.data.code === 200) {
-      allStaff.value = res.data.data.results;
-      console.log('Employee data fetched successfully:', allStaff.value);
-    } else {
-      console.error('Failed to fetch employee list:', res);
-    }
-  }).catch((error) => {
-    console.error('Error fetching employee list:', error);
-  });
-};
-
 
 const fetchDepartments = () => {
   selectAllDepartments().then((res) => {
@@ -479,84 +452,30 @@ const fetchDepartments = () => {
 };
 
 const fetchKpis = () => {
-  console.log("Start fetching KPI data");
   // 构建查询参数
   const params: any = {};
-  
   // 如果选择了部门，添加department_id参数
   if (selectedDepartment.value?.id) {
     params.department_id = selectedDepartment.value.id;
   }
-  
+
   // 如果选择了状态，添加status参数
   if (selectedStatus.value) {
     params.status = selectedStatus.value;
   }
-  
+
   // 如果有搜索关键词，添加search参数
   if (searchTaskName.value) {
     params.search = searchTaskName.value;
   }
   console.log("Fetching KPI data with params:", params);
-  
-  // 调用API获取KPI数据
-  selectAllKpis(params).then((res) => {
-    if (isSuccess(res.status)) {
-      console.log("KPI data:", res.data);
-      const data = res.data.data;
-      kpiData.value = data.results.map((item: any) => {
-        const [f, s] = item.task_start_date.split(" ");
-        const [day, month, year] = f.split(".");
-        const startDate = `${year}-${month}-${day}`;
 
-        const [f1, s1] = item.task_completion_date.split(" ");
-        const [day1, month1, year1] = f1.split(".");
-        const endDate = `${year1}-${month1}-${day1}`;
-        
-        // 从 personal_details 中提取用户信息
-        let assignedUsers = [];
-        if (item.personal_details && Array.isArray(item.personal_details) && item.personal_details.length > 0) {
-          assignedUsers = item.personal_details.map((detail: any) => {
-            return {
-              id: detail.staff_id,
-              username: detail.staff_name,
-              department_id: detail.department_id
-            };
-          });
-        }
-        
-        // 构建任务对象
-        return {
-          id: item.id,
-          taskTitle: item.task_title,
-          taskDescription: item.task_description,
-          startDate: startDate,
-          endDate: endDate,
-          pointsGiven: item.points_earned,
-          status: item.kpi_status,  // KPI状态
-          totalTarget: item.target_unit,
-          individualUnit: item.individual_unit,
-          createdOn: dayjs(item.create_time, "DD.MM.YYYY HH:mm:ss").format("YYYY-MM-DD"),
-          assignedUsers: assignedUsers, // 使用从 personal_details 提取的用户数据
-          department: item.department_name, // 直接使用API返回的部门名称
-          department_id: item.department,
-          personal_details: item.personal_details // 保留原始 personal_details 数据
-        };
-      });
-      
-      // 调试信息
-      console.log("Processed KPI data:", kpiData.value);
-    }
-  }).catch((error) => {
-      console.error("Error fetching KPIs:", error);
-  });
-};
+}
 
 onMounted(() => {
   console.log("Component has been mounted");
   try {
     fetchDepartments();
-    fetchAllStaff();
     console.log("API calls have been initiated");
   } catch (error) {
     console.error("Error during component mount:", error);
@@ -1051,17 +970,7 @@ const itemsPerPage = 10
 
 // 添加KPI数据过滤计算属性
 const filteredKpiData = computed(() => {
-  return kpiData.value.filter(task => {
-    
-    // 任务名称搜索
-    const matchesTaskName = !searchTaskName.value || 
-      task.taskTitle.toLowerCase().includes(searchTaskName.value.toLowerCase());
-    
-    // 状态筛选
-    const matchesStatus = !selectedStatus.value || task.status === selectedStatus.value;
-    
-    return matchesTaskName && matchesStatus;
-  });
+
 });
 
 
@@ -1072,7 +981,7 @@ const paginatedTasks = computed(() => {
 })
 
 // pagination
-const totalPages = computed(() => Math.ceil(filteredKpiData.value.length / itemsPerPage))
+const totalPages = 0
 
 const changePage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
@@ -1081,21 +990,17 @@ const changePage = (page: number) => {
 }
 
 // Statistics
-const totalTasks = computed(() => filteredKpiData.value.length);
-const completedTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Completed').length);
-const ongoingTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Ongoing').length);
-const delayedTasks = computed(() => filteredKpiData.value.filter(task => task.status === 'Delayed').length);
+const totalTasks = 0;
+const completedTasks = 0;
+const ongoingTasks = 0;
+const delayedTasks = 0;
 
 onMounted(() => {
     tasks.value.forEach(updateTaskStatus);
 });
 
 const handleDepartmentChange = () => {
-  console.log(`Department changed to: ${selectedDepartment.value.department_name}`);
-  // 重置分页到第一页
-  currentPage.value = 1;
-  // 重新获取KPI数据（现在会包含所选部门及其父部门的任务）
-  fetchKpis();
+
 };
 
 const updateTaskStatus = (task: Task) => {
@@ -1111,24 +1016,6 @@ const updateTaskStatus = (task: Task) => {
   } else {
     task.status = 'Delayed';
   }};
-
-// Modals
-// const showModal = ref(false)
-// const modalType = ref<'create' | 'edit'>('create')
-const showTerminatedModal = ref(false)
-const selectedTask = ref<Task>({
-  id: 0,
-  taskName: '',
-  taskDescription: '',
-  status: '',
-  startDate: '',
-  completionDate: '',
-  pointsGiven: 0,
-  target: { value: 0, unit: "" },
-  assignedTo: '',
-  assignedUsers: [],
-  department: selectedDepartment.value
-})
 
 
 // New reactive variable for assignment type
@@ -1152,33 +1039,8 @@ const openCreateTaskModal = () => {
   assignType.value = 'user' // reset assignment type to default
   showModal.value = true
 }
-// const openEditTaskModal = (task: Task) => {
-//   currentTask.value = task
-//   modalType.value = 'edit'
-//   showModal.value = true
-// }
 
-// const openTerminatedModal = (task: Task) => {
-//   selectedTask.value = task
-//   showTerminatedModal.value = true
-// }
 
-// const saveEditedTask = () => {
-//   const index = tasks.value.findIndex(task => task.id === selectedTask.value.id)
-//   if (index !== -1) {
-//     tasks.value[index] = { ...selectedTask.value }
-//     updateTaskStatus(tasks.value[index]);  
-//   }
-//   showModal.value = false
-// }
-
-const markAsComplete = (task: Task) => {
-  const index = tasks.value.findIndex(t => t.id === task.id);
-  if (index !== -1) {
-    tasks.value[index] = { ...tasks.value[index], status: 'Completed' };
-  }
-  showModal.value = false
-};
 
 const calculateTotalProgress = (task: any) => {
   // 检查是否有personal_details数据
@@ -1194,47 +1056,6 @@ const calculateTotalProgress = (task: any) => {
   }, 0);
 };
 
-
-/*const addAssignedUser = () => {
-  if (selectedTask.value.assignedTo.trim()) {
-    selectedTask.value.assignedUsers.push({ username: selectedTask.value.assignedTo });
-    selectedTask.value.assignedTo = ''; // Clear input after adding
-  }
-};
-
-const removeAssignedUser = (index: number) => {
-  selectedTask.value.assignedUsers.splice(index, 1)
-}
-
-const createTask = () => {
-  const newId = tasks.value.length + 1
-
-  // Determine assignment based on assignType
-  const isUserAssignment = assignType.value === 'user'
-  const username = isUserAssignment && selectedTask.value.assignedUsers.length > 0 
-    ? selectedTask.value.assignedUsers[0] 
-    : selectedDepartment.value
-
-  const role = isUserAssignment ? 'Employee' : 'Department'
-
-  const task: Task = {
-    id: newId,
-    taskName: selectedTask.value.taskName,
-    taskDescription: selectedTask.value.taskDescription,
-    status: '',
-    startDate: selectedTask.value.startDate,
-    completionDate: selectedTask.value.completionDate,
-    target: { value: selectedTask.value.target.value, unit: selectedTask.value.target.unit },
-    pointsGiven: selectedTask.value.pointsGiven,
-    assignedTo: isUserAssignment ? selectedTask.value.assignedTo : '',
-    assignedUsers: isUserAssignment ? selectedTask.value.assignedUsers : [],
-    department: selectedDepartment.value
-  }
-  updateTaskStatus(task);
-  tasks.value.push(task)
-  showModal.value = false
-}
-*/
 const goToEmployeeDetailsPage = (taskId: string | number) => {
   router.push(`/home/employee-task-details/${taskId}`);
 };
