@@ -13,7 +13,7 @@ export interface RowyQuestionOption {
 export interface EvaluationQuestion {
     id?: number; // Optional for creation
     text: string;
-    question_type: 'RATING' | 'TEXT' | 'OPTIONS';
+    question_type: 'RATING' | 'TEXT' | 'OPTIONS' | 'TEXT_INPUT'; // Added TEXT_INPUT
     order?: number; // Optional for creation
     options?: RowyQuestionOption[]; // Nested options for OPTIONS type
 }
@@ -130,9 +130,11 @@ interface StartInstanceResponse {
         instance_id: number;
     };
 }
-export function startEvaluationInstance(formId: number) {
+// Modified to accept optional employeeId for manager evaluations
+export function startEvaluationInstance(formId: number, employeeId?: number) {
+    const payload = employeeId ? { employee_id: employeeId } : {};
     // Use the defined interface for the expected response structure
-    return axios.post<StartInstanceResponse>(`/api/evaluation-forms/${formId}/start_evaluation/`);
+    return axios.post<StartInstanceResponse>(`/api/evaluation-forms/${formId}/start_evaluation/`, payload);
 }
 
 // Get Evaluation Instances (Staff/HR/Admin view)
@@ -155,15 +157,4 @@ export function getEvaluationInstanceById(id: number) {
 // Submit answers for an Evaluation Instance
 export function submitEvaluationAnswers(instanceId: number, submissionData: EvaluationSubmissionPayload) {
     return axios.post(`/api/evaluation-instances/${instanceId}/submit/`, submissionData);
-}
-
-// Get Evaluation Instances (Admin specific view - if separate endpoint needed)
-export function getAdminEvaluationInstances(page: number = 1, filters: any = {}) {
-    const params = new URLSearchParams();
-    params.append('page', String(page));
-    if (filters.formId) params.append('form', filters.formId);
-    if (filters.status) params.append('status', filters.status);
-    if (filters.employeeId) params.append('employee', filters.employeeId); // Example admin filter
-
-    return axios.get<PaginatedResponse<EvaluationInstance>>(`/api/admin/evaluation-instances/?${params.toString()}`);
 }

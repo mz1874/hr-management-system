@@ -236,9 +236,10 @@ const handlePublishEvaluation = async () => {
     await fetchSurveys()
     showPublishModal.value = false
     selectedDepartmentsForPublish.value = [] // Reset selection
-    // TODO: Show success message
+    Swal.fire('Success', 'Evaluation published successfully!', 'success'); // Show success notification
   } catch (error) {
     console.error("Failed to publish survey:", error);
+    Swal.fire('Error', 'Failed to publish evaluation.', 'error'); // Show error notification
     // TODO: Show error message
   }
 }
@@ -266,14 +267,23 @@ const confirmDeleteEvaluation = async () => {
 }
 
 // 添加问题
-const addQuestion = (type: 'grade' | 'option') => {
+const addQuestion = (type: 'grade' | 'option' | 'text_input') => { // Add 'text_input' type
   if (!currentEvaluation.value.questions) currentEvaluation.value.questions = []
-  const backendType = type === 'grade' ? 'RATING' : 'OPTIONS'; // Map to backend type
+  let backendType: 'RATING' | 'OPTIONS' | 'TEXT_INPUT'; // Update type definition
+  let options = undefined;
+  if (type === 'grade') {
+    backendType = 'RATING';
+  } else if (type === 'option') {
+    backendType = 'OPTIONS';
+    options = [{ option_text: '', order: 0 }]; // Initialize with one empty option for OPTIONS
+  } else { // Handle 'text_input'
+    backendType = 'TEXT_INPUT';
+  }
+  // Corrected object literal: assign options only once
   const newQuestion: QuestionItem = {
     question_type: backendType,
     text: '',
-    // Initialize options array as empty for 'OPTIONS' type
-    options: backendType === 'OPTIONS' ? [{ option_text: '', order: 0 }] : undefined, // Initialize with one empty option
+    options: options, // Assign options based on type (will be undefined for RATING and TEXT_INPUT)
     order: currentEvaluation.value.questions.length // Example: set order based on array index
   }
   currentEvaluation.value.questions.push(newQuestion)
@@ -802,7 +812,7 @@ const closeDetailsModal = () => {
               <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border p-3 rounded">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <!-- Display based on backend type -->
-                  <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : 'Option Question' }} #{{ questionIndex + 1 }}</h6>
+                  <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'OPTIONS' ? 'Option Question' : question.question_type === 'TEXT_INPUT' ? 'Text Input Question' : 'Text Question' }} #{{ questionIndex + 1 }}</h6>
                   <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
                 </div>
                 <!-- Use 'text' field -->
@@ -824,7 +834,8 @@ const closeDetailsModal = () => {
               </div>
               <div class="mt-3">
                 <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Rating Question</button>
-                <button type="button" class="btn btn-primary btn-control" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
+                <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
+                <button type="button" class="btn btn-primary btn-control" @click="addQuestion('text_input')" :disabled="modalType === 'view'">Add Question</button> 
               </div>
             </div>
           </div>
@@ -935,7 +946,7 @@ const closeDetailsModal = () => {
                 <template v-else-if="answer.question?.question_type === 'OPTIONS'">
                   <span>{{ answer.selected_option?.option_text ?? 'N/A' }}</span>
                 </template>
-                <template v-else-if="answer.question?.question_type === 'TEXT'">
+                <template v-else-if="answer.question?.question_type === 'TEXT' || answer.question?.question_type === 'TEXT_INPUT'">
                   <p class="text-muted fst-italic">{{ answer.text_answer || '(No answer provided)' }}</p>
                 </template>
                 <template v-else>

@@ -5,6 +5,7 @@ import Swal from 'sweetalert2'; // Import SweetAlert
 import { searchStaff } from '@/api/staff'; // Use searchStaff API
 import {
   getAllEvaluationForms,
+  getEvaluationInstances, // Import getEvaluationInstances
   // TODO: Import getEvaluationInstanceById when implementing results view
   // getEvaluationInstanceById,
   startEvaluationInstance, // Import the new function
@@ -22,6 +23,15 @@ import type {
 } from '@/api/survey';
 import type { Staff } from '@/interface/UserInterface'; // Import Staff type
 import { getCurrentUser } from '@/api/login';
+
+// Define star rating meanings
+const starRatingMeanings: Record<number, string> = {
+  1: 'Poor',
+  2: 'Fair',
+  3: 'Satisfactory',
+  4: 'Good',
+  5: 'Excellent'
+};
 
 // Interface for forms in the list (may not need user_instance_status anymore)
 interface DisplayEvaluationForm extends EvaluationForm {
@@ -47,6 +57,9 @@ const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({})
 const departmentStaff = ref<Staff[]>([]);
 const selectedStaffForEvaluation = ref<Staff | null>(null);
 const isLoadingStaff = ref(false); // Loading state for staff list in modal
+const staffCompletionStatus = ref<Map<number, string>>(new Map()); // Map staff ID to their evaluation status (e.g., 'SUBMITTED', 'PENDING')
+const completedStaffCount = ref(0); // Count of completed evaluations for the current form
+const isLoadingStatuses = ref(false); // Loading state for statuses
 
 // Pagination state
 const currentPage = ref(1)
@@ -163,8 +176,11 @@ const openFormModal = async (formItem: EvaluationForm) => {
   currentForm.value = formItem; // Set the selected form
   selectedStaffForEvaluation.value = null; // Reset selected staff
   departmentStaff.value = []; // Clear previous staff list
+  staffCompletionStatus.value.clear(); // Clear previous statuses
+  completedStaffCount.value = 0; // Reset count
   currentAnswers.value = {}; // Clear previous answers
   isLoadingStaff.value = true; // Start loading staff
+  isLoadingStatuses.value = true; // Start loading statuses
   showFormModal.value = true; // Show the modal
 
   try {
@@ -178,17 +194,64 @@ const openFormModal = async (formItem: EvaluationForm) => {
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
       // Assuming searchStaff returns paginated results, store only results for now
       // TODO: Handle pagination if needed for staff list within modal
-      departmentStaff.value = response.data.data.results;
-    } else {
+      departmentStaff.value = response.data.data.results; // Assign staff if fetch is successful
+
+      // --- Fetch Evaluation Statuses for these staff (Moved outside the else block) ---
+      if (departmentStaff.value.length > 0 && currentForm.value?.id !== undefined) {
+        try {
+          // Fetch instances for the current form, backend should filter by evaluator implicitly
+          // Or add evaluator_id if backend requires it
+          const statusResponse = await getEvaluationInstances(1, { formId: currentForm.value.id });
+          console.log("Fetched evaluation instances for status check:", statusResponse.data);
+
+          if (statusResponse.data && statusResponse.data.data && Array.isArray(statusResponse.data.data.results)) {
+            const instances = statusResponse.data.data.results;
+            const statusMap = new Map<number, string>();
+            let completedCount = 0;
+
+            // Create a map of staff ID -> status from the fetched instances
+            instances.forEach(instance => {
+              if (instance.employee?.id && instance.status) {
+                // Consider SUBMITTED or REVIEWED as completed for this view
+                if (instance.status === 'SUBMITTED' || instance.status === 'REVIEWED') {
+                  statusMap.set(instance.employee.id, 'Completed');
+                  completedCount++;
+                } else {
+                  statusMap.set(instance.employee.id, instance.status); // Store other statuses like PENDING
+                }
+              }
+            });
+
+            staffCompletionStatus.value = statusMap;
+            completedStaffCount.value = completedCount;
+            console.log("Staff completion status map:", staffCompletionStatus.value);
+            console.log("Completed count:", completedStaffCount.value);
+          } else {
+            console.warn("No evaluation instances found or unexpected format for status check.");
+          }
+        } catch (statusError) {
+          console.error("Failed to fetch evaluation statuses:", statusError);
+          // Don't block the modal, just show staff without status info
+          Swal.fire('Warning', 'Could not load evaluation completion statuses for staff.', 'warning');
+        } finally {
+          isLoadingStatuses.value = false; // Stop loading statuses
+        }
+      } else {
+        isLoadingStatuses.value = false; // No staff or form ID, stop loading statuses
+      }
+      // --- End Fetch Evaluation Statuses ---
+
+    } else { // This else block now only handles the error case for fetching staff
       throw new Error("Failed to fetch department staff or unexpected format.");
     }
-  } catch (error) {
-    console.error("Failed to fetch department staff:", error);
-    Swal.fire('Error', 'Could not load staff list for your department.', 'error');
+  } catch (error) { // This catch handles errors from both fetching staff and fetching statuses
+    console.error("Failed to fetch department staff or statuses:", error);
+    Swal.fire('Error', 'Could not load staff list or their evaluation statuses.', 'error');
     // Optionally close the modal or show error within it
     // showFormModal.value = false;
   } finally {
     isLoadingStaff.value = false; // Stop loading staff
+    // isLoadingStatuses is handled within its own try/catch/finally
   }
 }
 
@@ -272,10 +335,10 @@ const submitEvaluation = async () => {
     //    For now, we might still call the old API if it creates an instance for the manager,
     //    but ideally, it should create one for the target employee.
     //    Let's assume for now the backend handles creating the correct instance based on a modified API call (passing staffId).
-    //    If using the *current* API, it likely creates an instance for the *manager*, which is wrong.
-    console.warn("Backend API `startEvaluationInstance` needs modification to accept employee_id.");
-    // Placeholder: Call existing API, assuming backend might handle it or needs update
-    const startResponse = await startEvaluationInstance(formId); // Might need modification: startEvaluationInstance(formId, staffId);
+    //    The backend API now expects the employee_id to associate the instance correctly.
+
+    // Call API, passing the ID of the staff member being evaluated
+    const startResponse = await startEvaluationInstance(formId, staffId); 
     console.log("DEBUG: Received start_evaluation response:", startResponse);
     const instanceId = startResponse.data.data.instance_id; // Get instance ID (should be for the staff member)
 
@@ -329,11 +392,17 @@ const submitEvaluation = async () => {
     // 3. Submit the answers using the obtained instance ID
     await submitEvaluationAnswers(instanceId, submissionPayload);
 
-    // 4. Show success message, close modal, and refresh the list to get updated status from backend
-    Swal.fire('Success', 'Evaluation submitted successfully!', 'success');
-    closeFormModal();
-    // Refresh the list to show the updated status from the backend
-    await fetchAvailableForms();
+    // 4. Update local state immediately
+    const currentStaffId = selectedStaffForEvaluation.value.id;
+    staffCompletionStatus.value.set(currentStaffId, 'Completed');
+    completedStaffCount.value = Array.from(staffCompletionStatus.value.values()).filter(status => status === 'Completed').length;
+
+    // 5. Show success message and return to staff list
+    Swal.fire('Saved', `Evaluation saved successfully for ${selectedStaffForEvaluation.value.username}.`, 'success');
+    // Return to staff list view within the modal
+    selectedStaffForEvaluation.value = null; 
+    // No need to clear answers here, they get re-initialized when selecting next staff
+    // Modal is no longer closed automatically here
 
   } catch (error: any) { // Single catch block for the entire process
     console.error("Failed to submit evaluation:", error);
@@ -342,6 +411,15 @@ const submitEvaluation = async () => {
     Swal.fire('Error', `Failed to submit evaluation: ${errorMessage}`, 'error');
   }
   // --- End Actual Submission Logic ---
+}
+
+// Placeholder function for the final submit button
+const handleFinalSubmit = () => {
+  console.log("Final Submit button clicked. All evaluations are complete.");
+  // Currently does nothing as requested. 
+  // Future implementation might involve a final API call or just closing the modal.
+  Swal.fire('Ready to Submit', 'All staff evaluations are complete. Final submission logic needs to be implemented.', 'info');
+  // closeFormModal(); // Example: Could close the modal here if needed
 }
 
 
@@ -469,24 +547,43 @@ watch(searchName, () => {
           <!-- Show staff list if no staff is selected -->
           <div v-if="!selectedStaffForEvaluation">
             <h5>Select Staff Member from Your Department</h5>
-            <div v-if="isLoadingStaff" class="text-center my-3">
+             <!-- Loading Indicator for Staff and Statuses -->
+             <div v-if="isLoadingStaff || isLoadingStatuses" class="text-center my-3">
               <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading staff...</span>
+                <span class="visually-hidden">Loading staff & statuses...</span>
               </div>
             </div>
-            <div v-else-if="departmentStaff.length > 0" class="list-group">
-              <button
-                v-for="staff in departmentStaff"
-                :key="staff.id"
-                type="button"
-                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                @click="selectStaffForEvaluation(staff)"
-              >
-                {{ staff.username }} (ID: {{ staff.id }})
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
-            <div v-else class="alert alert-warning">
+             <!-- Staff List Display -->
+             <div v-else-if="departmentStaff.length > 0">
+               <!-- Completion Count -->
+               <p class="text-muted mb-2">
+                 Completed: {{ completedStaffCount }} / {{ departmentStaff.length }}
+               </p>
+               <div class="list-group">
+                 <button
+                   v-for="staff in departmentStaff"
+                   :key="staff.id"
+                   type="button"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                   @click="selectStaffForEvaluation(staff)"
+                   :disabled="staffCompletionStatus.get(staff.id) === 'Completed'"
+                 >
+                   <span>
+                     {{ staff.username }}
+                     <!-- Add text indicator -->
+                     <span v-if="staffCompletionStatus.get(staff.id) === 'Completed'"> (Completed)</span>
+                     <!-- Status Badge -->
+                     <span v-if="staffCompletionStatus.get(staff.id) === 'Completed'" class="badge bg-success ms-2">Completed</span>
+                     <span v-else-if="staffCompletionStatus.get(staff.id) === 'PENDING'" class="badge bg-warning text-dark ms-2">Not Completed</span>
+                     <!-- Add other statuses if needed, e.g., a default badge if status is unknown -->
+                     <span v-else class="badge bg-secondary ms-2">Not Started</span> 
+                   </span>
+                   <!-- Show arrow only if not completed -->
+                   <i v-if="staffCompletionStatus.get(staff.id) !== 'Completed'" class="fas fa-chevron-right"></i>
+                 </button>
+               </div>
+             </div>
+             <div v-else class="alert alert-warning">
               No staff members found in your department or failed to load staff list.
             </div>
           </div>
@@ -507,7 +604,7 @@ watch(searchName, () => {
                 <div v-for="(question, index) in currentForm.questions" :key="question.id" class="mb-3 border p-3 rounded">
                   <div class="d-flex justify-content-between align-items-center">
                         <!-- Display based on backend question_type -->
-                        <h6>{{ index + 1 }}. {{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : 'Option Question' }}</h6>
+                        <h6>{{ index + 1 }}. {{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : question.question_type === 'OPTIONS' ? 'Option Question' : 'Text Input Question' }}</h6>
                   </div>
                       <!-- Use backend 'text' field -->
                       <p class="form-control mb-2 bg-light">{{ question.text }}</p>
@@ -526,6 +623,10 @@ watch(searchName, () => {
                         <i class="fas fa-star"></i>
                       </span>
                     </div>
+                    <!-- Display meaning of selected rating -->
+                    <p v-if="currentAnswers[question.id].rating" class="text-muted mt-1 mb-0 small">
+                      Selected: {{ currentAnswers[question.id].rating }} Star(s) - {{ starRatingMeanings[currentAnswers[question.id].rating!] }}
+                    </p>
                   </div>
 
                   <!-- TEXT question type -->
@@ -533,6 +634,13 @@ watch(searchName, () => {
                     <label class="form-label">Response:</label>
                         <!-- Bind to currentAnswers[question.id].text_answer -->
                         <textarea class="form-control auto-resize" v-model="currentAnswers[question.id].text_answer"></textarea>
+                      </div>
+                  
+                  <!-- TEXT_INPUT question type -->
+                  <div v-if="question.question_type === 'TEXT_INPUT' && question.id !== undefined" class="form-group">
+                    <label class="form-label">Response:</label>
+                        <!-- Bind to currentAnswers[question.id].text_answer -->
+                        <input type="text" class="form-control" v-model="currentAnswers[question.id].text_answer">
                       </div>
 
                   <!-- OPTIONS question type -->
@@ -563,18 +671,42 @@ watch(searchName, () => {
                     Failed to load form details.
               </div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeFormModal">Cancel</button>
-              <!-- Submit button only active when staff is selected -->
-              <button
-                type="button"
-                class="btn btn-primary"
-                @click="submitEvaluation"
-                :disabled="!selectedStaffForEvaluation || isLoadingStaff"
-              >
-                Submit Evaluation {{ selectedStaffForEvaluation?.username }}
-              </button>
-            </div>
+            <div class="modal-footer justify-content-between">
+               <!-- Left side: Back to list / Cancel -->
+               <div>
+                 <button 
+                   v-if="selectedStaffForEvaluation" 
+                   type="button" 
+                   class="btn btn-outline-secondary me-2" 
+                   @click="selectedStaffForEvaluation = null"
+                 >
+                   <i class="fas fa-arrow-left me-1"></i> Back to Staff List
+                 </button>
+                 <button type="button" class="btn btn-secondary" @click="closeFormModal">Cancel</button>
+               </div>
+               <!-- Right side: Submit individual / Final Submit -->
+               <div>
+                 <button
+                   v-if="selectedStaffForEvaluation"
+                   type="button"
+                   class="btn btn-primary"
+                   @click="submitEvaluation"
+                   :disabled="isLoadingStaff || isLoadingStatuses"
+                 >
+                   Save Evaluation for {{ selectedStaffForEvaluation?.username }}
+                 </button>
+                 <!-- New Final Submit Button -->
+                 <button
+                   v-if="!selectedStaffForEvaluation" 
+                   type="button"
+                   class="btn btn-success"
+                   @click="handleFinalSubmit"
+                   :disabled="completedStaffCount !== departmentStaff.length || departmentStaff.length === 0"
+                 >
+                   Submit Department Evaluation
+                 </button>
+               </div>
+             </div>
           </div>
         </div>
       </div>
