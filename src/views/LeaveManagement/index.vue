@@ -33,7 +33,15 @@ const isManager = computed(() => Array.isArray(currentUser.value?.roles) && curr
 
 
 const canManagerApprove = computed(() => selectedLeave.value?.status === 'Pending' && isManager.value);
-const canHRApprove = computed(() => selectedLeave.value?.status === 'Manager Approved' && isHR.value);
+const canHRApprove = computed(() => {
+  const rawStatus = reverseStatusMap[selectedLeave.value?.status || ''];
+  const isApplicantHR = selectedLeave.value?.userRoles?.includes('hr') ?? false;
+
+  return isHR.value && (
+    rawStatus === 'M' ||  // HR can approve manager-approved
+    (isApplicantHR && rawStatus === 'P')  // HR can directly approve P if applicant is HR
+  );
+});
 
 function toastSuccess(message: string) {
   Swal.fire({
@@ -123,6 +131,7 @@ const fetchLeaveApplications = async () => {
         id: item.id,
         employeeName: item.username || '-',
         department: item.department_name || '-',
+        userRoles: item.user_roles || [] , // Add this in your mapping
         leaveType: Array.from(new Set(item.leave_dates?.map(d => d.leave_type_display?.name))).join(', '),
         status: mapStatus(item.status),
         appliedOn: parsedCreated.isValid() ? parsedCreated.format('YYYY-MM-DD') : 'Invalid Date',
@@ -180,6 +189,14 @@ const reverseStatusMap = {
   'Withdraw': 'W'
 };
 
+function appendRemarkWithTimestamp(existing: string, label: string): string {
+  const now = dayjs().format('YYYY-MM-DD HH:mm');
+  const newLine = `${label} on ${now}`;
+  if (existing.includes(label)) return existing; // Prevent duplicate
+  return existing ? `${existing}\n${newLine}` : newLine;
+}
+
+
 const saveChanges = async (newStatus?: string, closeModal = false) => {
   if (!selectedLeave.value) return;
 
@@ -224,11 +241,18 @@ const approveSingle = async () => {
   if (!selectedLeave.value) return;
 
   if (canManagerApprove.value) {
-    selectedLeave.value.remarks ||= "Approved by Manager";
+    selectedLeave.value.remarks = appendRemarkWithTimestamp(
+      selectedLeave.value.remarks || '',
+      "Approved by Manager"
+    );
     await saveChanges('Manager Approved', true);
+
   } else if (canHRApprove.value) {
-    selectedLeave.value.remarks ||= "Approved by HR";
-    await saveChanges('Approved', true);  
+    selectedLeave.value.remarks = appendRemarkWithTimestamp(
+      selectedLeave.value.remarks || '',
+      "Approved by HR"
+    );
+    await saveChanges('Approved', true);
   }
 };
 
@@ -236,27 +260,37 @@ const rejectSingle = async () => {
   if (!selectedLeave.value) return;
 
   if (canManagerApprove.value) {
-    selectedLeave.value.remarks ||= "Rejected by Manager";
-    await saveChanges('Rejected by Manager', true); 
+    selectedLeave.value.remarks = appendRemarkWithTimestamp(
+      selectedLeave.value.remarks || '',
+      "Rejected by Manager"
+    );
+    await saveChanges('Rejected by Manager', true);
+
   } else if (canHRApprove.value) {
-    selectedLeave.value.remarks ||= "Rejected by HR";
-    await saveChanges('Rejected by HR', true);  
+    selectedLeave.value.remarks = appendRemarkWithTimestamp(
+      selectedLeave.value.remarks || '',
+      "Rejected by HR"
+    );
+    await saveChanges('Rejected by HR', true);
   }
 };
+
 
 
 const bulkApprove = async () => {
   for (const app of leaveApplications.value) {
     const rawStatus = reverseStatusMap[app.status];
+    const isApplicantHR = app.userRoles?.includes('hr') ?? false;
 
     const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = rawStatus === 'M' && isHR.value;
+    const isHRAction = (rawStatus === 'M' && isHR.value) || (rawStatus === 'P' && isApplicantHR && isHR.value);
 
     if (app.selected && (isManagerAction || isHRAction)) {
-      app.remarks = isManagerAction ? "Approved by Manager" : "Approved by HR";
+      const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
+      app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
       selectedLeave.value = app;
 
-      const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';  // ✅ Correct mapping
+      const newStatus = isManagerAction ? 'Manager Approved' : 'Approved'; 
       await saveChanges(newStatus);
     }
 
@@ -264,26 +298,26 @@ const bulkApprove = async () => {
   }
 };
 
-
 const bulkReject = async () => {
   for (const app of leaveApplications.value) {
     const rawStatus = reverseStatusMap[app.status];
+    const isApplicantHR = app.userRoles?.includes('hr') ?? false;
 
     const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = rawStatus === 'M' && isHR.value;
+    const isHRAction = (rawStatus === 'M' && isHR.value) || (rawStatus === 'P' && isApplicantHR && isHR.value);
 
     if (app.selected && (isManagerAction || isHRAction)) {
-      app.remarks = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
+      const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
+      app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
       selectedLeave.value = app;
 
       const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
-      await saveChanges(newStatus);  // ✅ Will correctly map to R1 or R2
+      await saveChanges(newStatus);
     }
 
     app.selected = false;
   }
 };
-
 
 
 const formatDuration = (code: string) => {
@@ -296,25 +330,6 @@ const formatDuration = (code: string) => {
 };
 
 const leaveDetailsModal = ref<HTMLElement | null>(null);
-
-const openDocument = () => {
-  if (selectedLeave.value) {
-    const documentPath = `localhost8000/${selectedLeave.value.document}`;
-    const fileExtension = selectedLeave.value.document.split('.').pop().toLowerCase();
-    if (fileExtension === 'pdf') {
-      window.open(documentPath, '_blank');
-    } else if (['jpg', 'jpeg', 'png'].includes(fileExtension)) {
-      const imgElement = document.createElement('img');
-      imgElement.src = documentPath;
-      imgElement.style.width = '100%';
-      imgElement.style.height = 'auto';
-      const imgWindow = window.open('', '_blank');
-      imgWindow.document.body.appendChild(imgElement);
-    } else {
-      alert('Unsupported file type');
-    }
-  }
-};
 
 const showLeaveDetails = (application: LeaveApplication) => {
   selectedLeave.value = application;
@@ -329,13 +344,20 @@ const isModalReadOnly = computed(() => {
 
   const rawStatus = reverseStatusMap[selectedLeave.value.status];
 
-  // Manager can only edit if it's still pending
-  if (isManager.value && rawStatus !== 'P') return true;
+  const isApplicantHR = selectedLeave.value.userRoles?.includes('hr') ?? false;
 
-  // HR can edit if status is 'M'
-  if (isHR.value && rawStatus === 'M') return false;
+  // Manager can only edit if it's still Pending
+  if (isManager.value) {
+    return rawStatus !== 'P';
+  }
 
-  return false;
+  // HR can edit if it's Manager Approved (M) OR if applicant is HR and status is still P
+  if (isHR.value) {
+    return !(rawStatus === 'M' || (rawStatus === 'P' && isApplicantHR));
+  }
+
+  // Normal users can never approve
+  return true;
 });
 
 
@@ -555,11 +577,19 @@ onMounted(async () => {
                 </div>
                 <div class="mb-3" v-if="selectedLeave.document">
                   <label class="info-label">Attach Document:</label>
-                  <div class="info-badge document-link" @click="openDocument">
+                  <div class="info-badge document-link">
                     <i class="fas fa-file-pdf me-2"></i>
-                    <a href="#" class="text-decoration-none">{{ selectedLeave.document }}</a>
+                    <a
+                      :href="selectedLeave.document"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-decoration-none"
+                    >
+                      View Document
+                    </a>
                   </div>
                 </div>
+
               </div>
               <div class="col-md-6">
                 <div class="leave-info">

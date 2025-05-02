@@ -5,6 +5,7 @@ export interface LeaveApplication {
   status: string;         // e.g., "Pending"
   statusCode: string;     // e.g., "P"
   appliedOn: string;
+  userRoles: string[];
   selected: boolean;
   department: string;
   reasons: string;
