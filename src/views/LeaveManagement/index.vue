@@ -109,8 +109,8 @@ const fetchLeaveApplications = async () => {
     summaryStats.value = {
       all: summaryRes.data?.data?.count || 0,
       pending: summaryRes.data?.data?.summary?.pending || 0,
-      approved: summaryRes.data?.data?.summary?.hr_approved || 0,
-      rejected: (summaryRes.data?.data?.summary?.manager_rejected || 0) + (summaryRes.data?.data?.summary?.hr_rejected || 0),
+      approved: summaryRes.data?.data?.summary?.approved || 0,
+      rejected: (summaryRes.data?.data?.summary?.rejected || 0) + (summaryRes.data?.data?.summary?.hr_rejected || 0),
     };
 
     leaveApplications.value = rawResults.map(item => {

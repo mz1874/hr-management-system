@@ -16,22 +16,26 @@ export function cancelLeaveRequest(id) {
 export function getLeaveRequests(
   page = 1,
   search = '',
-  options: { hrPage?: boolean; status?: string; departmentId?: number;year?: number; } = {}
+  options: {
+    hrPage?: boolean;
+    applicationPage?: boolean;
+    status?: string;
+    departmentId?: number;
+    year?: number;
+  } = {}
 ) {
   const params = new URLSearchParams({
     page: String(page),
     search,
     ...(options.hrPage ? { hr_page: 'true' } : {}),
+    ...(options.applicationPage ? { application_page: 'true' } : {}),
     ...(options.status ? { status: options.status } : {}),
     ...(options.departmentId ? { department_id: String(options.departmentId) } : {}),
-    ...(options.year ? { year: String(options.year) } : {}) 
+    ...(options.year ? { year: String(options.year) } : {})
   });
-  
 
   return axios.get(`/api/leave-request/?${params}`);
 }
-
-
 // Get a single leave request by ID (for modal reload)
 export function getLeaveRequestById(id: number) {
   return axios.get(`/api/leave-request/${id}/`);

@@ -161,7 +161,9 @@ async function fetchLeaveApplications(page = 1) {
     // 4. Get filtered results (for current page and status)
     const res = await getLeaveRequests(page, '', {
       status: statusParam,
-      year: selectedYear.value
+      year: selectedYear.value,
+      applicationPage: true
+
     });
     const data = res.data?.data;
 
