@@ -572,7 +572,7 @@ watch(searchName, () => {
                 @click="submitEvaluation"
                 :disabled="!selectedStaffForEvaluation || isLoadingStaff"
               >
-                Submit Evaluation for {{ selectedStaffForEvaluation?.username }}
+                Submit Evaluation {{ selectedStaffForEvaluation?.username }}
               </button>
             </div>
           </div>
@@ -580,75 +580,8 @@ watch(searchName, () => {
       </div>
       
 
-      <!-- Results Modal (Placeholder) -->
-      <div class="modal fade" :class="{ show: showResultsModal }" style="display: block" v-if="showResultsModal">
-          <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-              <div class="modal-content">
-                  <div class="modal-header">
-                      <h5 class="modal-title">Submission Details: {{ currentSubmissionData?.name || '...' }}</h5>
-                      <button type="button" class="btn-close" @click="closeResultsModal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                      <div v-if="isLoadingSubmissionDetails" class="text-center">
-                          Loading submission details...
-                      </div>
-                      <div v-else>
-                          <!-- TODO: Display actual fetched answers here -->
-                          <p><strong>Status:</strong> {{ currentSubmissionData?.status }}</p>
-                          <p><strong>Publish Time:</strong> {{ formatDate(currentSubmissionData?.publish_time) }}</p>
-                          <hr/>
-                          <h6 class="mb-3">Your Answers:</h6>
-                          <div class="alert alert-info">
-                              Result display is pending backend implementation.
-                          </div>
-                          <!-- Example structure for when answers are available -->
-                          <!--
-                          <div v-if="detailedSubmissionAnswers.length > 0">
-                              <div v-for="(answer, index) in detailedSubmissionAnswers" :key="answer.id || index" class="mb-3 border-bottom pb-2">
-                                  <p class="mb-1"><strong>Q{{ index + 1 }}:</strong> {{ answer.question?.text }}</p>
-                                  <div class="ps-3">
-                                      <template v-if="answer.question?.question_type === 'RATING'">Rating: {{ answer.rating ?? 'N/A' }}</template>
-                                      <template v-else-if="answer.question?.question_type === 'OPTIONS'">Selected: {{ answer.selected_option?.option_text ?? 'N/A' }}</template>
-                                      <template v-else-if="answer.question?.question_type === 'TEXT'">Response: {{ answer.text_answer || 'N/A' }}</template>
-                                  </div>
-                              </div>
-                          </div>
-                          <div v-else>
-                              Could not load submission details or no answers were recorded.
-                          </div>
-                          -->
-                      </div>
-                  </div>
-                  <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" @click="closeResultsModal">Close</button>
-                  </div>
-              </div>
-          </div>
-      </div>
-      <div class="modal-backdrop fade show" v-if="showResultsModal"></div>
-      <!-- End Results Modal -->
-
-
       <!-- Pagination - Matching SurveyManagement layout -->
-      <div class="d-flex align-items-center gap-3 my-3" v-if="totalForms > 0">
-        <div class="text-muted fs-5"> <!-- Re-added fs-5 -->
-          Total: {{ totalForms }}
-        </div>
-        <nav aria-label="Page navigation"> <!-- Removed ms-3 -->
-          <ul class="pagination mb-0">
-            <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
-            </li>
-            <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-              <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-            </li>
-            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
-            </li>
-          </ul>
-        </nav>
-        <!-- Removed Items per page span -->
-      </div>
+      
   </div> <!-- Close main-content -->
 </template>
 
