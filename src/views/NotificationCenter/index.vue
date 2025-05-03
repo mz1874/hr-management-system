@@ -644,9 +644,12 @@ watch(() => newAnnouncement.value.isScheduled, (isChecked) => {
 // Watch for unchecking the "Available For" checkbox in New Announcement
 watch(() => newAnnouncement.value.hasAvailability, (isChecked) => {
   if (!isChecked) {
-    newAnnouncement.value.department = [];
+    nextTick(() => {
+      newAnnouncement.value.department = [];
+    });
   }
 });
+
 
 // Watch for unchecking the "Schedule Post" checkbox in Edit Announcement
 watch(() => selectedAnnouncement.value.isScheduled, (isChecked) => {
@@ -659,10 +662,12 @@ watch(() => selectedAnnouncement.value.isScheduled, (isChecked) => {
 // Watch for unchecking the "Available For" checkbox in Edit Announcement
 watch(() => selectedAnnouncement.value.hasAvailability, (isChecked) => {
   if (!isChecked) {
-    selectedAnnouncement.value.departments = [];
+    nextTick(() => {
+      selectedAnnouncement.value.departments = []; 
+
+    });
   }
 });
-
 
 </script>
 
@@ -986,6 +991,7 @@ watch(() => selectedAnnouncement.value.hasAvailability, (isChecked) => {
                   </div>
                   <Treeselect
                     v-if="newAnnouncement.hasAvailability"
+                    :key="'tree-new-' + newAnnouncement.hasAvailability"
                     v-model="newAnnouncement.department"
                     :multiple="true"
                     :options="departmentTree"
@@ -1276,7 +1282,7 @@ watch(() => selectedAnnouncement.value.hasAvailability, (isChecked) => {
                   </div>
                   <Treeselect
                     v-if="selectedAnnouncement.hasAvailability"
-                    :key="'dept-select-' + selectedAnnouncement.id"
+                    :key="'dept-select-' + selectedAnnouncement.id + '-' + selectedAnnouncement.hasAvailability"
                     v-model="selectedAnnouncement.departments"
                     :options="departmentTree"
                     :multiple="true"
