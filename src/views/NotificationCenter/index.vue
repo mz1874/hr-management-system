@@ -13,7 +13,6 @@ import Swal from 'sweetalert2'
 import Treeselect from 'vue3-treeselect'
 
 
-
 // ========== Modal State ==========
 const newAnnouncementModal = ref(null)
 const viewModal = ref(null)
@@ -409,7 +408,49 @@ const submitNewAnnouncement = async () => {
     }
     if (isScheduled) {
       const scheduleDate = newAnnouncement.value.scheduleDate;
-      const scheduleTime = newAnnouncement.value.scheduleTime || '00:00';
+      const scheduleTime = newAnnouncement.value.scheduleTime;
+
+      // ✅ Nothing filled
+      if (!scheduleDate && !scheduleTime) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Schedule Required',
+          text: 'You have checked "Schedule Post", but date and time are missing.',
+          position: 'top-end',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        isSubmitting.value = false;
+        return;
+      }
+
+      // ✅ Date filled but no time
+      if (scheduleDate && !scheduleTime) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Time',
+          text: 'Please select a time for your scheduled post.',
+          timer: 2000,
+          position: 'top-end',
+          showConfirmButton: false
+        });
+        isSubmitting.value = false;
+        return;
+      }
+
+      // ✅ Time filled but no date
+      if (!scheduleDate && scheduleTime) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Date',
+          text: 'Please select a date for your scheduled post.',
+          timer: 2000,
+          position: 'top-end',
+          showConfirmButton: false
+        });
+        isSubmitting.value = false;
+        return;
+      }
 
       const scheduleDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
       if (scheduleDateTime < new Date()) {
@@ -497,9 +538,52 @@ const submitAnnouncement = async () => {
       return;
     }
 
+
     if (isScheduled) {
       const scheduleDate = selectedAnnouncement.value.scheduleDate;
-      const scheduleTime = selectedAnnouncement.value.scheduleTime || '00:00';
+      const scheduleTime = selectedAnnouncement.value.scheduleTime;
+
+      // Nothing filled
+      if (!scheduleDate && !scheduleTime) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Schedule Required',
+          text: 'You have checked "Schedule Post", but date and time are missing.',
+          position: 'top-end',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        isEditing.value = false;
+        return;
+      }
+
+      // Date filled but no time
+      if (scheduleDate && !scheduleTime) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Time',
+          text: 'Please select a time for your scheduled post.',
+          timer: 2000,
+          position: 'top-end',
+          showConfirmButton: false
+        });
+        isEditing.value = false;
+        return;
+      }
+
+      // Time filled but no date
+      if (!scheduleDate && scheduleTime) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Missing Date',
+          text: 'Please select a date for your scheduled post.',
+          timer: 2000,
+          position: 'top-end',
+          showConfirmButton: false
+        });
+        isEditing.value = false;
+        return;
+      }
 
       const scheduleDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
       if (scheduleDateTime < new Date()) {
@@ -513,6 +597,11 @@ const submitAnnouncement = async () => {
         return;
       }
     }
+
+    
+
+
+
 
     const payload = {
       title: selectedAnnouncement.value.title,
