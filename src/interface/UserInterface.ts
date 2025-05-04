@@ -1,6 +1,7 @@
 export interface Staff {
     id: number
     username: string,
+    staffName:string,
     password: string,
     date_of_birth: string
     roles: number[]

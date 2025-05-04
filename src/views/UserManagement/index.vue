@@ -72,6 +72,7 @@ const selectedStaff = ref<Staff>({
   password: '123456',
   date_of_birth: '',
   department_name: '',
+  staffName:"",
   roles: [],
   department: 0,
   imgUrl: '',
@@ -236,10 +237,9 @@ function resetPassword(staff: Staff) {
             <tr>
               <th>ID</th>
               <th>Name</th>
-              <th>Date of birth</th>
+              <th>Account</th>
               <th>Department</th>
               <th>Status</th>
-              <th>Employment Date</th>
               <th>No of Leaves</th> <!-- Add new column header -->
               <th>Actions</th>
             </tr>
@@ -247,8 +247,8 @@ function resetPassword(staff: Staff) {
             <tbody>
             <tr v-for="staff in staffData.results" :key="staff.id">
               <td>{{ staff.id }}</td>
-              <td>{{ staff.username }}</td> <!-- Remove the icon div wrapper -->
-              <td>{{ staff.date_of_birth }}</td>
+              <td>{{ staff.staffName }}</td>
+              <td>{{ staff.username }}</td>
               <td>{{ staff.department_name }}</td>
               <td>
                   <span
@@ -260,7 +260,6 @@ function resetPassword(staff: Staff) {
                     {{ staff.status ? "Active" : "Inactive" }}
                   </span>
               </td>
-              <td>{{ staff.employment_time }}</td>
               <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
@@ -360,15 +359,29 @@ function resetPassword(staff: Staff) {
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="staffName" class="form-label">Name</label>
+              <label for="account" class="form-label">Account</label>
               <input
                   v-model="selectedStaff.username"
+                  type="text"
+                  class="form-control"
+                  id="account"
+                  placeholder="Enter account"
+              >
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="staffName" class="form-label">Staff Name</label>
+              <input
+                  v-model="selectedStaff.staffName"
                   type="text"
                   class="form-control"
                   id="staffName"
                   placeholder="Enter name"
               >
             </div>
+
+          </div>
+
+          <div class="row">
             <div class="mb-3 col-md-6">
               <label for="staffImage" class="form-label">Profile Image</label>
               <input
@@ -379,9 +392,6 @@ function resetPassword(staff: Staff) {
                   @change="onImageSelected"
               >
             </div>
-          </div>
-
-          <div class="row">
             <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
               <img
                   :src="selectedStaff.imgUrl"
@@ -662,13 +672,36 @@ function resetPassword(staff: Staff) {
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="editStaffName" class="form-label">Name</label>
+              <label for="editStaffName" class="form-label">Account</label>
               <input
                   v-model="selectedStaff.username"
                   type="text"
                   class="form-control"
                   id="editStaffName"
-                  placeholder="Enter name"
+                  disabled
+                  placeholder="Enter account"
+              >
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="staffName" class="form-label">Staff Name</label>
+              <input
+                  v-model="selectedStaff.staffName"
+                  type="text"
+                  class="form-control"
+                  id="staffName"
+                  placeholder="Enter staff name"
+              >
+            </div>
+
+          </div>
+
+          <div class="row">
+            <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
+              <img
+                  :src="selectedStaff.imgUrl"
+                  alt="Profile Preview"
+                  class="img-thumbnail"
+                  style="max-width: 150px;"
               >
             </div>
             <div class="mb-3 col-md-6">
@@ -679,17 +712,6 @@ function resetPassword(staff: Staff) {
                   id="editStaffImage"
                   accept="image/*"
                   @change="onImageSelected"
-              >
-            </div>
-          </div>
-
-          <div class="row">
-            <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
-              <img
-                  :src="selectedStaff.imgUrl"
-                  alt="Profile Preview"
-                  class="img-thumbnail"
-                  style="max-width: 150px;"
               >
             </div>
           </div>

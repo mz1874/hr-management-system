@@ -35,7 +35,7 @@ onMounted(() => {
       <siderbar></siderbar>
       <div class="col">
         <div v-if="currentUserData?.username">
-          <content-header :user-name="currentUserData?.username" />
+          <content-header :user-name="currentUserData?.staffName" />
         </div>
         <div class="main-content">
           <router-view></router-view>
