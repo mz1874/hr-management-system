@@ -532,7 +532,7 @@ function resetPassword(staff: Staff) {
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label class="form-label">Name</label>
+              <label class="form-label">Account</label>
               <input
                   :value="selectedStaff.username"
                   type="text"
@@ -540,6 +540,19 @@ function resetPassword(staff: Staff) {
                   disabled
               >
             </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Staff name</label>
+              <input
+                  :value="selectedStaff.staffName"
+                  type="text"
+                  class="form-control"
+                  disabled
+              >
+            </div>
+
+          </div>
+
+          <div class="row">
             <div class="mb-3 col-md-6">
               <label class="form-label">Profile Image</label>
               <div v-if="selectedStaff.imgUrl">
