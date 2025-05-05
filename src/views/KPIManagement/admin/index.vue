@@ -254,6 +254,45 @@
 
             <!-- Right Column - Assignment Type and Assign To -->
             <div class="col-md-6">
+              <div class="row mb-3">
+                <label class="form-label">Target reached and point given:</label>
+                <div class="col-md-6 d-flex align-items-center">
+                  <label class="form-label mb-0">Target: 75%</label>
+                </div>
+                <div class="col-md-6 d-flex align-items-center">
+                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressSverntyFive">
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md-6 d-flex align-items-center">
+                  <label class="form-label mb-0">Target: 90%</label>
+                </div>
+                <div class="col-md-6 d-flex align-items-center">
+                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressNinety">
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md-6 d-flex align-items-center">
+                  <label class="form-label mb-0">Target: 100%</label>
+                </div>
+                <div class="col-md-6 d-flex align-items-center">
+                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressHandred">
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md-6 d-flex align-items-center">
+                  <label class="form-label mb-0">Target: 120%</label>
+                </div>
+                <div class="col-md-6 d-flex align-items-center">
+                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressHandredTwenty">
+                </div>
+              </div>
+
+
               <!-- Assignment Type Toggle -->
               <div class="mb-3">
                 <label class="form-label">Assign task to:</label>
@@ -265,7 +304,7 @@
                 </div>
               </div>
 
-              <div class="gap-3 mb-3">
+              <div class="gap-3 mb-3" v-show="assignType === 'department'">
                 <select class="form-select" v-model="selectedDepartment" @change="handleDepartmentChange">
                   <option v-for="dept in departments" :key="dept.id" :value="dept">
                     {{ dept.department_name }}
