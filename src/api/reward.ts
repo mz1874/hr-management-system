@@ -48,11 +48,11 @@ export function createRedemption(data: any) {
     return axios.post(`/api/reward_redemption/`, data)
 }
 
-export function getRewardRedemption(page = 1, rewardName = '', name = '', status = '', startDate = '', endDate = '') {
+export function getRewardRedemption(page = 1, rewardName = '', username = '', status = '', startDate = '', endDate = '') {
     const params = {
         page,
         ...(rewardName ? { reward_title: rewardName } : {}),
-        ...(name ? { username: name } : {}),
+        ...(username ? { username: username } : {}),
         ...(status ? { reward_redemption_status: status } : {}),
         ...(startDate ? { start_date: startDate } : {}),
         ...(endDate ? { end_date: endDate } : {}),

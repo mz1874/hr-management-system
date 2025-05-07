@@ -19,27 +19,36 @@ export interface RewardItem {
 export interface RewardRedemptionItem {
     id: number
     redeemedOn: string
+    rewardId: number
+    rewardTitle: string
+    rewardDescription: string
+    rewardTerms: string
+    rewardEndDateTime: string
+    rewardImageId: number
+    rewardImageUrl: string
     pointsDeducted: number
     status: string
-    reward: RewardItem
     user: Staff
 }
 
 export interface PointEarnedHistory {
     id: number
     user: Staff
-    kpi: Task
-    pointReceivedOn: string
-    pointsEarned: number
+    kpi?: Task  // Optional since it can be null for deductions
+    pointsValue: number
+    pointsReceivedOn: string  // DateTimeField as string in frontend
+    isDeduction: boolean
+    reasonType?: 'Lateness' | 'Credit Notice' | 'Leave Without Notice' | 'KPI Completed'  // Optional, matches your Django choices
+    description?: string  // Optional
 }
 
-export interface PointItem {
-    id: number
-    user: Staff
-    details: {
-        name: string,
-        type: 'KPI' | 'Reward',
-        points: number,
-        ReceivedOn: string
-    }[]
-}
+// export interface PointItem {
+//     id: number
+//     user: Staff
+//     details: {
+//         name: string,
+//         type: 'KPI' | 'Reward',
+//         points: number,
+//         ReceivedOn: string
+//     }[]
+// }

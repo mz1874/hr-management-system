@@ -35,8 +35,8 @@
       <tbody>
         <tr v-for="details in paginatedLogs" :key="details.id">
           <td>{{ details.id}}</td>
-          <td>{{ details.pointReceivedOn}}</td>
-          <td class="text-success">+ {{ details.pointsEarned}}</td>
+          <td>{{ details.pointsReceivedOn}}</td>
+          <td class="text-success">+ {{ details.pointsValue}}</td>
           <td>{{ details.kpi.taskTitle}}</td>
           <td><button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button></td>
         </tr>
@@ -139,8 +139,8 @@ const fetchPointEarned = () => {
         endDate: item.task_completion_date,
         pointsGiven: item.points_earned,
       },
-      pointReceivedOn: item.points_received_on,
-      pointsEarned: item.points_earned
+      pointsReceivedOn: item.points_received_on,
+      pointsValues: item.points_values
     }))
   })
 }
@@ -165,7 +165,7 @@ const filteredLogs = computed(() => {
     const matchesSearch = detail.kpi.taskTitle.toLowerCase().includes(searchQuery.value.toLowerCase());
     
     //custom date range for received date
-    const taskDate = new Date(detail.pointReceivedOn); // Convert string date to Date object
+    const taskDate = new Date(detail.pointsReceivedOn); // Convert string date to Date object
     const start = startDate.value ? new Date(startDate.value) : null;
     const end = endDate.value ? new Date(endDate.value) : null;
 

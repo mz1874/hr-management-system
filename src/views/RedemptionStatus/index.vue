@@ -59,9 +59,9 @@
             <tbody>
                 <tr v-for="item in tableData" :key="item.id">
                     <th>{{ item.id }}</th>
-                    <td>{{ item.user.name }}</td>
+                    <td>{{ item.user.username }}</td>
                     <td>{{ item.redeemedOn }}</td>
-                    <td>{{ item.reward.rewardName }}</td>
+                    <td>{{ item.rewardTitle }}</td>
                     <td :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">{{ item.status }}</td>
                     <td>
                         <button type="button" class="btn-edit" @click="openChangeStatusModel(item)">Change Status</button>
@@ -103,7 +103,15 @@
                     </div>
                 </div>
                 <div class="modal-body">
-                    <div class="radio-group">
+                    <div class="form-group mb-4">
+                                <label class="form-label">Reward Image:</label>
+                                <div id="drop-area" v-if="currentRewardRedemption.rewardImageId">
+                                    <img :src="currentRewardRedemption.rewardImageUrl" :alt="currentRewardRedemption.rewardImageUrl" class="image" disabled>
+                                </div>
+                                <div v-else>
+                                    <span class="text-muted">None</span>
+                                </div>
+                            </div>                      <div class="radio-group">
                         <div class="radio-box form-check">
                             <input class="form-check-input" type="radio" name="status" id="received" value="Received" v-model="changedStatus">
                             <label class="form-check-label" for="received">Received</label>
@@ -183,25 +191,21 @@ const fetchRewardRedemption = (page = 1) => {
     searchStartDate.value,
     searchEndDate.value)
     .then((res) => {
+        console.log(res.data)
         totalCount.value = res.data.data.count;  
         tableData.value = res.data.data.results.map((item: any) => ({
-        id: item.id,
-        redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
-        pointsDeducted: item.points_deducted,
-        status: item.reward_redemption_status,
-        reward: {
-            rewardName: item.reward.reward_title,
-            description: item.reward.reward_description,
-            terms: item.reward.reward_terms_and_conditions,
-            points: item.reward.reward_points_required,
-            image: item.reward?.file?.file_url ?? '',
-            endDateTime: dayjs(item.reward.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
-            quantity: item.reward.reward_quantity,
-            status: item.reward.reward_status,
-            createdOn: item.reward?.reward_created_date,
-        },
+            id: item.id,
+            redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
+            rewardTitle: item.reward_title_stored,
+            rewardDescription: item.reward_description_stored,
+            rewardTerms: item.reward_terms_stored,
+            rewardEndDateTime: item.reward_end_date_time_stored,
+            rewardImageId: item.reward_image_id_stored,
+            rewardImageUrl: item.reward_image_url_stored,
+            pointsDeducted: item.points_deducted,
+            status: item.reward_redemption_status,
         user: {
-            name: item.user.username,
+            username: item.user.username,
         },
     }));
   });
@@ -248,11 +252,11 @@ const endDate = ref('')
 const filteredLogs = computed(() => {
   return tableData.value.filter(detail => {
     //search bar for reward name
-    const matchRewardSearch = detail.reward.rewardName.toLowerCase().includes(searchReward.value.toLowerCase());
+    const matchRewardSearch = detail.rewardTitle.toLowerCase().includes(searchReward.value.toLowerCase());
 
     //search bar for username
     // @ts-ignore
-    const matchNameSearch = detail.user.name.toLowerCase().includes(searchName.value.toLowerCase());
+    const matchNameSearch = detail.user.username.toLowerCase().includes(searchName.value.toLowerCase());
 
     //search for specific status
     const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value
