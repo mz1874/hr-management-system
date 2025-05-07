@@ -158,3 +158,9 @@ export function getEvaluationInstanceById(id: number) {
 export function submitEvaluationAnswers(instanceId: number, submissionData: EvaluationSubmissionPayload) {
     return axios.post(`/api/evaluation-instances/${instanceId}/submit/`, submissionData);
 }
+
+// New function to finalize department evaluation (mark submitted instances as reviewed)
+export function finalizeDepartmentEvaluation(formId: number) {
+    // No payload needed, the backend identifies the manager and department from the request
+    return axios.post(`/api/evaluation-forms/${formId}/finalize_department_evaluation/`);
+}

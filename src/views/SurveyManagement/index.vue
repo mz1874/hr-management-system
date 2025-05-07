@@ -347,8 +347,9 @@ const handleAddEvaluation = async () => {
     }
 
     // Construct the final payload with the correct type (Omit irrelevant fields for creation)
+    // Reverted payload to original structure
     const payload: Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'> = {
-        name: currentEvaluation.value.name,
+        name: currentEvaluation.value.name!,
         description: currentEvaluation.value.description || '', // Include description
         questions: mappedQuestions,
         departments: currentEvaluation.value.departments || [] // Ensure this is an array of IDs
@@ -368,6 +369,7 @@ const handleAddEvaluation = async () => {
 const openEditModal = (evaluation: EvaluationItem) => {
   // Ensure the evaluation object copied matches the expected structure, especially status
   currentEvaluation.value = JSON.parse(JSON.stringify(evaluation)); // Deep copy
+
   // Map questions from EvaluationForm structure back to QuestionItem for UI state
   currentEvaluation.value.questions = evaluation.questions.map(q => ({
       id: q.id,
@@ -415,19 +417,21 @@ const handleSaveEditedEvaluation = async () => {
     }
 
     // Construct the base payload for update
+    // Reverted payload to original structure
     const payload: Partial<Omit<EvaluationForm, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'status' | 'publish_time' | 'department_details'>> & { departments?: number[] } = {
         name: currentEvaluation.value.name,
         description: currentEvaluation.value.description || '', // Include description
         questions: mappedQuestions,
     };
 
-    // Conditionally add departments if the evaluation is PUBLISHED
+    // Conditionally add departments if the evaluation is PUBLISHED (Original logic)
     if (currentEvaluation.value.status === 'PUBLISHED') {
         payload.departments = currentEvaluation.value.departments || [];
     }
 
+
   try {
-    await updateEvaluationForm(currentEvaluation.value.id, payload); // Use correct API function and payload
+    await updateEvaluationForm(currentEvaluation.value.id!, payload); // Use correct API function and payload
     await fetchSurveys(); // Refresh data
     showModal.value = false;
     Swal.fire('Success', 'Evaluation updated successfully!', 'success'); // Show success notification
@@ -777,73 +781,87 @@ const closeDetailsModal = () => {
           <button type="button" class="btn-close" @click="showModal = false" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <!-- Evaluation名称 -->
-          <div class="form-group mb-4">
-            <label class="form-label">Evaluation Name:</label>
-            <input type="text" class="form-control" placeholder="Enter evaluation name" v-model="currentEvaluation.name" :disabled="modalType === 'view'">
-          </div>
-
-          <!-- Department Selection (Edit Modal) - Only show for PUBLISHED status -->
-          <div class="form-group mb-4" v-if="modalType === 'edit' && currentEvaluation.status === 'PUBLISHED'">
-            <label class="form-label">Assigned to:</label> <!-- Changed label -->
-            <div v-if="allDepartments && allDepartments.length > 0" class="border p-3 rounded" style="max-height: 150px; overflow-y: auto;">
-              <div v-for="dept in allDepartments" :key="'edit-' + dept.id" class="form-check mb-2">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  :value="dept.id"
-                  :id="'edit-dept-' + dept.id"
-                  v-model="currentEvaluation.departments"
-                >
-                <label class="form-check-label" :for="'edit-dept-' + dept.id">
-                  {{ dept.department_name }}
-                </label>
+          <!-- Main Row for two-column layout -->
+          <div class="row">
+            <!-- Left Column -->
+            <div class="col-md-6 border-end">
+              <!-- Evaluation Name -->
+              <div class="form-group mb-3">
+                <label class="form-label">Evaluation Name:</label>
+                <input type="text" class="form-control" placeholder="Enter evaluation name" v-model="currentEvaluation.name" :disabled="modalType === 'view'">
               </div>
-            </div>
-            <div v-else class="text-muted mt-2">
-              No departments available to assign.
-            </div>
-          </div>
-
-          <!-- 问题管理 -->
-          <div class="questions-section-container mb-4" v-if="currentEvaluation.questions"> <!-- New container div -->
-            <label class="form-label">Questions:</label>
-            <div v-if="currentEvaluation.questions">
-              <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border p-3 rounded">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <!-- Display based on backend type -->
-                  <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'OPTIONS' ? 'Option Question' : question.question_type === 'TEXT_INPUT' ? 'Text Input Question' : 'Text Question' }} #{{ questionIndex + 1 }}</h6>
-                  <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
+              <!-- Department Selection (Edit Modal) - Only show for PUBLISHED status -->
+              <div class="form-group mb-3" v-if="modalType === 'edit' && currentEvaluation.status === 'PUBLISHED'">
+                <label class="form-label">Assigned Departments:</label>
+                <div v-if="allDepartments && allDepartments.length > 0" class="border p-3 rounded bg-light" style="max-height: 150px; overflow-y: auto;">
+                  <div v-for="dept in allDepartments" :key="'edit-dept-' + dept.id" class="form-check mb-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :value="dept.id"
+                      v-model="currentEvaluation.departments"
+                    >
+                    <label class="form-check-label">
+                      {{ dept.department_name }}
+                    </label>
+                  </div>
                 </div>
-                <!-- Use 'text' field -->
-                <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view'">
-
-                <!-- Option input section for OPTIONS type questions -->
-                <div v-if="question.question_type === 'OPTIONS'" class="option-container ms-3 mt-2">
-                   <label class="option-label mb-1">Options:</label>
-                   <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2 d-flex align-items-center">
-                     <input type="text" class="form-control me-2" placeholder="Enter option text" v-model="option.option_text" :disabled="modalType === 'view'">
-                     <!-- Prevent deleting the last option -->
-                     <button type="button" class="btn btn-outline-danger btn-sm" @click="removeOption(questionIndex, optionIndex)" :disabled="modalType === 'view' || (question.options?.length <= 1)">X</button>
-                   </div>
-                   <button type="button" class="btn btn-success btn-sm" @click="addOption(questionIndex)" :disabled="modalType === 'view'">Add Option</button>
+                <div v-else class="text-muted mt-2">
+                  No departments available or assigned.
                 </div>
               </div>
-              <div v-if="!currentEvaluation.questions || currentEvaluation.questions?.length === 0" class="text-muted mb-3">
-                No questions added yet.
+              <!-- Evaluation Description (Optional, can be uncommented if needed) -->
+              <!-- <div class="form-group mb-3">
+                <label class="form-label">Description:</label>
+                <textarea class="form-control" rows="3" placeholder="Enter description" v-model="currentEvaluation.description" :disabled="modalType === 'view'"></textarea>
+              </div> -->
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-md-6">
+              <!-- 问题管理 (Questions Section) -->
+              <label class="form-label">Questions:</label>
+              <div v-if="currentEvaluation.questions && currentEvaluation.questions.length > 0"> <!-- Check if questions array exists and has items -->
+                <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border-bottom pb-3"> <!-- Modified class for individual question -->
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'OPTIONS' ? 'Option Question' : question.question_type === 'TEXT_INPUT' ? 'Text Input Question' : 'Text Question' }} #{{ questionIndex + 1 }}</h6>
+                    <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
+                  </div>
+                  <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view'">
+
+                  <!-- Option input section for OPTIONS type questions -->
+                  <div v-if="question.question_type === 'OPTIONS'" class="option-container ms-3 mt-2">
+                     <label class="option-label mb-1">Options:</label>
+                     <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2 d-flex align-items-center">
+                       <input type="text" class="form-control me-2" placeholder="Enter option text" v-model="option.option_text" :disabled="modalType === 'view'">
+                       <button type="button" class="btn btn-outline-danger btn-sm" @click="removeOption(questionIndex, optionIndex)" :disabled="modalType === 'view' || (question.options?.length <= 1)">X</button>
+                     </div>
+                     <button type="button" class="btn btn-success btn-sm" @click="addOption(questionIndex)" :disabled="modalType === 'view'">Add Option</button>
+                  </div>
+                </div>
+                <!-- Add Question Buttons (shown when there are questions) -->
+                <div class="mt-3">
+                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Rating Question</button>
+                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
+                  <button type="button" class="btn btn-primary mb-2" @click="addQuestion('text_input')" :disabled="modalType === 'view'">Add Question</button> 
+                </div>
               </div>
-              <div class="mt-3">
-                <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Rating Question</button>
-                <button type="button" class="btn btn-primary btn-control me-2" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
-                <button type="button" class="btn btn-primary btn-control" @click="addQuestion('text_input')" :disabled="modalType === 'view'">Add Question</button> 
+               <!-- Fallback if currentEvaluation.questions is null/undefined or empty -->
+              <div v-else class="text-muted mb-3">
+                No questions added yet. Click buttons below to add.
+                 <div class="mt-3">
+                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Rating Question</button>
+                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
+                  <button type="button" class="btn btn-primary mb-2" @click="addQuestion('text_input')" :disabled="modalType === 'view'">Add Question</button> 
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
-          <button v-if="modalType === 'create'" type="button" class="btn btn-success" @click="handleAddEvaluation">Create</button>
-          <button v-if="modalType === 'edit'" type="button" class="btn btn-primary" @click="handleSaveEditedEvaluation">Save Changes</button>
+          <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button> <!-- Matches grey "Close" button -->
+          <button v-if="modalType === 'create'" type="button" class="btn btn-success" @click="handleAddEvaluation">Create</button> <!-- Matches green "Create" button -->
+          <button v-if="modalType === 'edit'" type="button" class="btn btn-success" @click="handleSaveEditedEvaluation">Save Changes</button> <!-- Changed to green for consistency, or could be btn-primary -->
         </div>
       </div>
     </div>
@@ -855,7 +873,7 @@ const closeDetailsModal = () => {
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">Publish Evaluation: {{ currentEvaluation.name }}</h3>
+          <h5 class="modal-title">Publish Evaluation: {{ currentEvaluation.name }}</h5>
           <button type="button" class="btn-close" @click="showPublishModal = false" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -1247,48 +1265,51 @@ const closeDetailsModal = () => {
 
 /* Filter Container (overrides some announcement-toolbar styles) */
 .filter-container.announcement-toolbar {
-  margin-bottom: 1.5rem; /* Reduced padding */
-  padding: 1rem 1.5rem; /* Adjusted padding */
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.5rem;
   background-color: #f8f9fa;
   border-radius: 0.5rem;
-  /* Align items vertically */
   align-items: center;
-  /* Ensure search and button are on the left */
   justify-content: flex-start;
 }
 
+/* Question Item Styling */
+.question-item {
+  border: 1px solid #dee2e6;
+  background-color: #fff;
+}
+
 .filter-container.announcement-toolbar .d-flex.gap-2 {
-  margin-left: auto; /* Push create button to the right */
+  margin-left: auto;
 }
 
 /* Search Container within Filter Container */
+.filter-container .search-container {
+  min-width: auto;
+  max-width: 300px;
+}
+
 /* Status Filter Specific Styles */
 .status-filter-container {
-  /* Adjust width as needed */
   min-width: 150px;
 }
 
 .status-filter-select {
-  height: 38px; /* Match search input height */
-  border-radius: 0.25rem; /* Match search input radius */
-  border: 1px solid #ced4da; /* Match search input border */
-  padding: 0.375rem 0.75rem; /* Match search input padding */
-  font-size: 1rem; /* Match search input font size */
-  background-color: #fff; /* Match search input background */
-}
-
-.filter-container .search-container {
-  min-width: auto; /* Allow search container to shrink */
-  max-width: 300px; /* Keep max width */
+  height: 38px;
+  border-radius: 0.25rem;
+  border: 1px solid #ced4da;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  background-color: #fff;
 }
 
 /* Pagination alignment */
 .d-flex.align-items-center.gap-3.my-3 {
-  justify-content: flex-start; /* Align total and pagination to the left */
+  justify-content: flex-start;
 }
 
 .d-flex.align-items-center.gap-3.my-3 .text-muted.fs-5 {
-  margin-right: 1rem; /* Add some space between total and pagination */
+  margin-right: 1rem;
 }
 
 /* Remove "Items per page" span */
@@ -1297,9 +1318,9 @@ const closeDetailsModal = () => {
 }
 
 /* Original SurveyManagement styles (keep if still needed) */
-.btn-control {
-  margin: 10px;
-}
+/* .btn-control { */
+  /* margin: 10px; */ /* Replaced with Bootstrap margin classes */
+/* } */
 
 .option-container {
   padding-left: 1.5rem;
@@ -1316,13 +1337,19 @@ const closeDetailsModal = () => {
 
 /* Specific styles for SurveyManagement */
 
-/* Questions Section Container */
-.questions-section-container {
-  background-color: #f8f9fa; /* Light grey background */
-  padding: 1.5rem; /* Add padding */
-  border: 1px solid #dee2e6; /* Add border */
-  border-radius: 0.25rem; /* Add border radius */
+/* General modal content styling to match KPIManagement */
+.modal-content {
+  border-radius: 8px; /* Apply general border-radius */
+  /* background: white; Ensure background is white if not default */
 }
+
+/* Ensure KPIManagement's small screen modal style is preserved or adapted if necessary */
+/* The existing @media (max-width: 576px) for .modal-content might need adjustment
+   if 8px radius is desired on all screen sizes. For now, assuming existing responsive behavior is fine.
+   If .modal-content already has border-radius: 0 for small screens, this new rule will be overridden by that more specific one.
+*/
+
+/* Removed .questions-section-container styles as the container is removed */
 
 /* Delete modal style (from previous task, ensure it's included) */
 #deleteRole .modal-header, #deleteRole .modal-footer {

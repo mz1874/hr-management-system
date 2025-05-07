@@ -9,7 +9,8 @@ import {
   // TODO: Import getEvaluationInstanceById when implementing results view
   // getEvaluationInstanceById,
   startEvaluationInstance, // Import the new function
-  submitEvaluationAnswers // Keep submitEvaluationAnswers
+  submitEvaluationAnswers, // Keep submitEvaluationAnswers
+  finalizeDepartmentEvaluation // Import the new function
 } from '@/api/survey';
 import type {
     EvaluationForm, // Use EvaluationForm
@@ -370,8 +371,8 @@ const submitEvaluation = async () => {
           }
           return finalAns;
       })
-      // Add further filtering if needed, e.g., remove answers where all answer fields are null/undefined
-      .filter(ans => ans.rating !== null || ans.text_answer !== null || ans.selected_option_id !== null);
+      // Removed filtering that was incorrectly removing answers for required questions with empty content
+      // .filter(ans => ans.rating !== null || ans.text_answer !== null || ans.selected_option_id !== null);
 
   // Optional: Check if all required questions have been answered
   const requiredQuestions = currentForm.value.questions;
@@ -388,6 +389,43 @@ const submitEvaluation = async () => {
   const submissionPayload: EvaluationSubmissionPayload = {
     answers: answersArray,
   };
+
+  // --- Add More Specific Frontend Validation ---
+  let contentValidationPassed = true;
+  let validationErrorMessage = '';
+
+  for (const answer of answersArray) {
+      const question = currentForm.value?.questions.find(q => q.id === answer.question_id);
+      if (!question) {
+          // Should not happen if requiredQuestions check passed, but as a safeguard
+          contentValidationPassed = false;
+          validationErrorMessage = `Validation Error: Could not find question details for ID ${answer.question_id}.`;
+          break;
+      }
+
+      if (question.question_type === 'RATING' && (answer.rating === null || answer.rating === undefined)) {
+          contentValidationPassed = false;
+          validationErrorMessage = `Validation Error: Rating is required for question ID ${question.id}.`;
+          break;
+      } else if (question.question_type in ['TEXT', 'TEXT_INPUT'] && (answer.text_answer === null || answer.text_answer.trim() === '')) {
+           contentValidationPassed = false;
+           validationErrorMessage = `Validation Error: Text answer is required for question ID ${question.id}.`;
+           break;
+      } else if (question.question_type === 'OPTIONS' && (answer.selected_option_id === null || answer.selected_option_id === undefined)) {
+           // Optional: Add validation if an option must be selected
+           // contentValidationPassed = false;
+           // validationErrorMessage = `Validation Error: An option must be selected for question ID ${question.id}.`;
+           // break;
+      }
+  }
+
+  if (!contentValidationPassed) {
+      console.error("Frontend content validation failed:", validationErrorMessage);
+      Swal.fire('Validation Error', validationErrorMessage, 'warning');
+      return; // Stop submission if frontend validation fails
+  }
+  // --- End More Specific Frontend Validation ---
+
 
     // 3. Submit the answers using the obtained instance ID
     await submitEvaluationAnswers(instanceId, submissionPayload);
@@ -406,20 +444,69 @@ const submitEvaluation = async () => {
 
   } catch (error: any) { // Single catch block for the entire process
     console.error("Failed to submit evaluation:", error);
-    // Display specific validation errors from backend if available
-    const errorMessage = error.response?.data?.detail || error.message || "An error occurred during submission.";
+    let errorMessage = "An error occurred during submission.";
+
+    if (error.response && error.response.data) {
+      // Attempt to extract detailed error message from backend response
+      if (error.response.data.detail) {
+        errorMessage = `Validation Error: ${error.response.data.detail}`;
+      } else if (typeof error.response.data === 'object') {
+        // Handle cases where validation errors are in an object (e.g., field errors)
+        errorMessage = "Validation Errors:<br>";
+        for (const field in error.response.data) {
+          if (Array.isArray(error.response.data[field])) {
+            errorMessage += `<strong>${field}:</strong> ${error.response.data[field].join(', ')}<br>`;
+          } else {
+             errorMessage += `<strong>${field}:</strong> ${error.response.data[field]}<br>`;
+          }
+        }
+      } else {
+        // Fallback for other unexpected data formats
+        errorMessage = `Backend Error: ${error.response.data}`;
+      }
+    } else {
+      // Handle network errors or other non-response errors
+      errorMessage = `Request Error: ${error.message}`;
+    }
+
     Swal.fire('Error', `Failed to submit evaluation: ${errorMessage}`, 'error');
   }
   // --- End Actual Submission Logic ---
 }
 
-// Placeholder function for the final submit button
-const handleFinalSubmit = () => {
-  console.log("Final Submit button clicked. All evaluations are complete.");
-  // Currently does nothing as requested. 
-  // Future implementation might involve a final API call or just closing the modal.
-  Swal.fire('Ready to Submit', 'All staff evaluations are complete. Final submission logic needs to be implemented.', 'info');
-  // closeFormModal(); // Example: Could close the modal here if needed
+// Handle the final submission of all department evaluations for a form
+const handleFinalSubmit = async () => {
+  if (!currentForm.value || currentForm.value.id === undefined) {
+    console.error("Final Submission Error: No form selected.");
+    Swal.fire('Error', 'No evaluation form selected for final submission.', 'error');
+    return;
+  }
+
+  // Double-check if all staff evaluations are completed locally
+  if (completedStaffCount.value !== departmentStaff.value.length) {
+      console.warn("Attempted final submit before all staff evaluations are completed.");
+      Swal.fire('Warning', 'Please complete all staff evaluations before submitting the department evaluation.', 'warning');
+      return;
+  }
+
+  isLoadingForms.value = true; // Use forms loading state for final submit process
+  try {
+    // Call the new backend API to finalize the department evaluation
+    await finalizeDepartmentEvaluation(currentForm.value.id);
+
+    Swal.fire('Success', 'Department evaluation finalized successfully.', 'success');
+
+    // Close the modal and refresh the forms list
+    closeFormModal();
+    fetchAvailableForms(); // Refresh the list to show updated status if applicable
+
+  } catch (error) {
+    console.error("Failed to finalize department evaluation:", error);
+    const errorMessage = (error as any).response?.data?.detail || (error as any).message || "An error occurred during finalization.";
+    Swal.fire('Error', `Failed to finalize department evaluation: ${errorMessage}`, 'error');
+  } finally {
+    isLoadingForms.value = false; // Stop loading
+  }
 }
 
 
