@@ -15,5 +15,6 @@ export interface Staff {
     medicalLeaves: number
     annualLeaves: number
     totalPoints: number
+    currentPoints: number
     leave_entitlements : []
 }

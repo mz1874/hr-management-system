@@ -194,6 +194,7 @@ function mapStaffData(item: any): Staff {
         password:"",
         imgUrl: "",
         totalPoints: item.total_point,
+        currentPoints: item.current_point,
         leave_entitlements: item.leave_entitlements,
     };
 }
