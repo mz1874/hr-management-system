@@ -10,7 +10,8 @@ import {
   // getEvaluationInstanceById,
   startEvaluationInstance, // Import the new function
   submitEvaluationAnswers, // Keep submitEvaluationAnswers
-  finalizeDepartmentEvaluation // Import the new function
+  finalizeDepartmentEvaluation, // Import the new function
+  sendBackEvaluation // Import sendBackEvaluation
 } from '@/api/survey';
 import type {
     EvaluationForm, // Use EvaluationForm
@@ -18,9 +19,8 @@ import type {
     EvaluationSubmissionPayload,
     EvaluationQuestion, // Keep EvaluationQuestion for nested details
     RowyQuestionOption, // Keep RowyQuestionOption for nested details
-    // TODO: Import EvaluationInstance, EvaluationAnswerView when implementing results view
-    // EvaluationInstance,
-    // EvaluationAnswerView
+    EvaluationInstance // Import EvaluationInstance
+    // EvaluationAnswerView // EvaluationAnswerView is part of EvaluationInstance
 } from '@/api/survey';
 import type { Staff } from '@/interface/UserInterface'; // Import Staff type
 import { getCurrentUser } from '@/api/login';
@@ -61,6 +61,11 @@ const isLoadingStaff = ref(false); // Loading state for staff list in modal
 const staffCompletionStatus = ref<Map<number, string>>(new Map()); // Map staff ID to their evaluation status (e.g., 'SUBMITTED', 'PENDING')
 const completedStaffCount = ref(0); // Count of completed evaluations for the current form
 const isLoadingStatuses = ref(false); // Loading state for statuses
+
+// State for viewing/editing individual submissions
+const staffInstanceDataMap = ref<Map<number, EvaluationInstance>>(new Map());
+const viewingInstance = ref<EvaluationInstance | null>(null);
+const showViewAnswersModal = ref(false);
 
 // Pagination state
 const currentPage = ref(1)
@@ -208,11 +213,13 @@ const openFormModal = async (formItem: EvaluationForm) => {
           if (statusResponse.data && statusResponse.data.data && Array.isArray(statusResponse.data.data.results)) {
             const instances = statusResponse.data.data.results;
             const statusMap = new Map<number, string>();
+            const instanceDataMap = new Map<number, EvaluationInstance>();
             let completedCount = 0;
 
             // Create a map of staff ID -> status from the fetched instances
-            instances.forEach(instance => {
+            instances.forEach((instance: EvaluationInstance) => {
               if (instance.employee?.id && instance.status) {
+                instanceDataMap.set(instance.employee.id, instance); // Store full instance data
                 // Consider SUBMITTED or REVIEWED as completed for this view
                 if (instance.status === 'SUBMITTED' || instance.status === 'REVIEWED') {
                   statusMap.set(instance.employee.id, 'Completed');
@@ -224,8 +231,10 @@ const openFormModal = async (formItem: EvaluationForm) => {
             });
 
             staffCompletionStatus.value = statusMap;
+            staffInstanceDataMap.value = instanceDataMap; // Populate the new map
             completedStaffCount.value = completedCount;
             console.log("Staff completion status map:", staffCompletionStatus.value);
+            console.log("Staff instance data map:", staffInstanceDataMap.value);
             console.log("Completed count:", completedStaffCount.value);
           } else {
             console.warn("No evaluation instances found or unexpected format for status check.");
@@ -262,6 +271,8 @@ const closeFormModal = () => {
   selectedStaffForEvaluation.value = null; // Reset staff selection on close
   departmentStaff.value = [];
   currentAnswers.value = {};
+  viewingInstance.value = null; // Clear viewing instance when main modal closes
+  showViewAnswersModal.value = false; // Ensure view answers modal is also closed
 }
 
 // New method to handle staff selection within the modal
@@ -270,6 +281,64 @@ const selectStaffForEvaluation = (staff: Staff) => {
   initializeAnswers(); // Initialize/reset answers for the selected staff and form
   console.log(`Evaluating staff: ${staff.username} with form: ${currentForm.value?.name}`);
 }
+
+// Method to open the view answers modal
+const openViewModal = (staff: Staff) => {
+  const instance = staffInstanceDataMap.value.get(staff.id);
+  if (instance) {
+    viewingInstance.value = instance;
+    showViewAnswersModal.value = true;
+  } else {
+    Swal.fire('Error', 'Could not find evaluation details for this staff member.', 'error');
+  }
+}
+
+const closeViewAnswersModal = () => {
+  showViewAnswersModal.value = false;
+  viewingInstance.value = null;
+}
+
+// Method to handle editing an evaluation
+const handleEdit = async (staff: Staff) => {
+  const instanceToEdit = staffInstanceDataMap.value.get(staff.id);
+  if (!instanceToEdit) {
+    Swal.fire('Error', 'Could not find evaluation instance to edit.', 'error');
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: 'Edit Evaluation?',
+    text: `Are you sure you want to edit the evaluation for ${staff.username}? Previous answers will be cleared, and you will need to re-submit.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, edit it!'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await sendBackEvaluation(instanceToEdit.id);
+      Swal.fire('Sent Back!', 'The evaluation has been reset for editing.', 'success');
+      
+      // Update local status
+      staffCompletionStatus.value.set(staff.id, 'PENDING'); // Or whatever status backend sets to
+      staffInstanceDataMap.value.delete(staff.id); // Remove stale instance data, it will be re-fetched or re-created
+      
+      // Recalculate completed count
+      completedStaffCount.value = Array.from(staffCompletionStatus.value.values()).filter(status => status === 'Completed').length;
+
+      // Optionally, directly open for evaluation
+      selectStaffForEvaluation(staff); 
+
+    } catch (error: any) {
+      console.error("Failed to send back evaluation:", error);
+      const errorMessage = error.response?.data?.detail || error.message || "An error occurred.";
+      Swal.fire('Error', `Failed to reset evaluation: ${errorMessage}`, 'error');
+    }
+  }
+}
+
 
 // --- Results Modal Logic (Placeholder - likely needs rework for staff-specific results) ---
 // Accept EvaluationForm, as user_status isn't strictly needed inside yet
@@ -360,7 +429,7 @@ const submitEvaluation = async () => {
               if (finalAns.rating !== null && (finalAns.rating < 1 || finalAns.rating > 5)) {
                   throw new Error(`Invalid rating for question ID ${question.id}. Must be between 1 and 5.`);
               }
-          } else if (question?.question_type === 'TEXT') {
+          } else if (['TEXT', 'TEXT_INPUT'].includes(question?.question_type)) {
               finalAns.text_answer = ans?.text_answer || null; // Ensure text is string or null
           } else if (question?.question_type === 'OPTIONS') {
               finalAns.selected_option_id = ans?.selected_option_id !== undefined ? ans.selected_option_id : null; // Ensure selected option ID is number or null
@@ -407,7 +476,7 @@ const submitEvaluation = async () => {
           contentValidationPassed = false;
           validationErrorMessage = `Validation Error: Rating is required for question ID ${question.id}.`;
           break;
-      } else if (question.question_type in ['TEXT', 'TEXT_INPUT'] && (answer.text_answer === null || answer.text_answer.trim() === '')) {
+      } else if (['TEXT', 'TEXT_INPUT'].includes(question.question_type) && (answer.text_answer === null || answer.text_answer.trim() === '')) {
            contentValidationPassed = false;
            validationErrorMessage = `Validation Error: Text answer is required for question ID ${question.id}.`;
            break;
@@ -647,27 +716,37 @@ watch(searchName, () => {
                  Completed: {{ completedStaffCount }} / {{ departmentStaff.length }}
                </p>
                <div class="list-group">
-                 <button
-                   v-for="staff in departmentStaff"
-                   :key="staff.id"
-                   type="button"
-                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                   @click="selectStaffForEvaluation(staff)"
-                   :disabled="staffCompletionStatus.get(staff.id) === 'Completed'"
-                 >
-                   <span>
+                 <!-- Iterate over department staff -->
+                 <div v-for="staff in departmentStaff" :key="staff.id"
+                      class="list-group-item d-flex justify-content-between align-items-center">
+                   
+                   <!-- Staff Name and Status Badge -->
+                   <div>
                      {{ staff.username }}
-                     <!-- Add text indicator -->
-                     <span v-if="staffCompletionStatus.get(staff.id) === 'Completed'"> (Completed)</span>
-                     <!-- Status Badge -->
                      <span v-if="staffCompletionStatus.get(staff.id) === 'Completed'" class="badge bg-success ms-2">Completed</span>
-                     <span v-else-if="staffCompletionStatus.get(staff.id) === 'PENDING'" class="badge bg-warning text-dark ms-2">Not Completed</span>
-                     <!-- Add other statuses if needed, e.g., a default badge if status is unknown -->
-                     <span v-else class="badge bg-secondary ms-2">Not Started</span> 
-                   </span>
-                   <!-- Show arrow only if not completed -->
-                   <i v-if="staffCompletionStatus.get(staff.id) !== 'Completed'" class="fas fa-chevron-right"></i>
-                 </button>
+                     <span v-else-if="staffCompletionStatus.get(staff.id) === 'PENDING'" class="badge bg-warning text-dark ms-2">In Progress</span>
+                     <span v-else class="badge bg-secondary ms-2">Not Started</span>
+                   </div>
+
+                   <!-- Action Buttons -->
+                   <div>
+                     <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
+                             type="button" class="btn btn-sm btn-outline-info me-2"
+                             @click="openViewModal(staff)">
+                       <i class="fas fa-eye me-1"></i> View
+                     </button>
+                     <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
+                             type="button" class="btn btn-sm btn-outline-warning"
+                             @click="handleEdit(staff)">
+                       <i class="fas fa-edit me-1"></i> Edit
+                     </button>
+                     <button v-if="staffCompletionStatus.get(staff.id) !== 'Completed'"
+                             type="button" class="btn btn-sm btn-primary"
+                             @click="selectStaffForEvaluation(staff)">
+                       <i class="fas fa-play me-1"></i> Evaluate
+                     </button>
+                   </div>
+                 </div>
                </div>
              </div>
              <div v-else class="alert alert-warning">
@@ -802,6 +881,72 @@ watch(searchName, () => {
       <!-- Pagination - Matching SurveyManagement layout -->
       
   </div> <!-- Close main-content -->
+
+  <!-- View Answers Modal -->
+  <div class="modal fade" :class="{ show: showViewAnswersModal }" style="display: block;" v-if="showViewAnswersModal" tabindex="-1" aria-labelledby="viewAnswersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewAnswersModalLabel">
+            Evaluation Answers for {{ viewingInstance?.employee?.username }}
+          </h5>
+          <button type="button" class="btn-close" @click="closeViewAnswersModal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div v-if="viewingInstance">
+            <h6>Form: {{ viewingInstance.form?.name }}</h6>
+            <hr>
+            <div v-if="viewingInstance.answers && viewingInstance.answers.length > 0">
+              <div v-for="(answer, index) in viewingInstance.answers" :key="answer.id || index" class="mb-4 border-bottom pb-3">
+                <p><strong>{{ index + 1 }}. {{ answer.question?.text }}</strong></p>
+                
+                <!-- Display Rating -->
+                <div v-if="answer.question?.question_type === 'RATING'">
+                  <p class="mb-1">Answer:</p>
+                  <div v-if="answer.rating !== null && answer.rating !== undefined" class="star-rating mb-1">
+                     <span v-for="star in 5" :key="star" class="star" :class="{ 'filled': star <= answer.rating }">
+                       <i class="fas fa-star"></i>
+                     </span>
+                     <span class="ms-2 text-muted">({{ answer.rating }} - {{ starRatingMeanings[answer.rating] || '' }})</span>
+                  </div>
+                   <p v-else class="text-muted fst-italic">No rating provided.</p>
+                </div>
+
+                <!-- Display Text/Text Input -->
+                <div v-else-if="['TEXT', 'TEXT_INPUT'].includes(answer.question?.question_type)">
+                   <p class="mb-1">Answer:</p>
+                   <p v-if="answer.text_answer" class="form-control bg-light" style="white-space: pre-wrap;">{{ answer.text_answer }}</p>
+                   <p v-else class="text-muted fst-italic">No text answer provided.</p>
+                </div>
+
+                <!-- Display Options -->
+                 <div v-else-if="answer.question?.question_type === 'OPTIONS'">
+                   <p class="mb-1">Answer:</p>
+                   <p v-if="answer.selected_option" class="fw-bold">{{ answer.selected_option.option_text }}</p>
+                   <p v-else class="text-muted fst-italic">No option selected.</p>
+                 </div>
+
+                 <div v-else>
+                    <p class="text-muted fst-italic">Unknown question type or no answer recorded.</p>
+                 </div>
+              </div>
+            </div>
+            <div v-else class="alert alert-info">
+              No answers found for this evaluation instance.
+            </div>
+          </div>
+          <div v-else class="text-center">
+            Loading evaluation details...
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeViewAnswersModal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End View Answers Modal -->
+
 </template>
 
 <style scoped>

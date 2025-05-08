@@ -164,3 +164,8 @@ export function finalizeDepartmentEvaluation(formId: number) {
     // No payload needed, the backend identifies the manager and department from the request
     return axios.post(`/api/evaluation-forms/${formId}/finalize_department_evaluation/`);
 }
+
+// Send back a submitted/reviewed evaluation instance (manager action)
+export function sendBackEvaluation(instanceId: number) {
+    return axios.post(`/api/evaluation-instances/${instanceId}/send_back/`);
+}
