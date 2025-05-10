@@ -1,5 +1,12 @@
 import axios from './axios'
 
+// Generic API Response Wrapper (for single item responses)
+export interface ApiResponse<T> {
+  code: number;
+  data: T;
+  message: string;
+}
+
 // --- Interface Definitions ---
 
 // Represents an option for a multiple-choice question (matches backend model)
@@ -66,17 +73,41 @@ export interface EvaluationInstance {
     answers: EvaluationAnswerView[]; // Array of submitted answers
 }
 
-// Paginated response structure (matches the actual backend response format)
-export interface PaginatedResponse<T> {
+// Standard Paginated response structure (e.g., for getAllEvaluationForms)
+export interface StandardPaginatedData<T> {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: T[]; // Direct array of items
+    finished_count?: number; // Optional, may not be present in all standard paginated responses
+}
+
+export interface StandardPaginatedResponse<T> {
     code: number;
     message: string;
-    data: {
-        count: number;
-        next: string | null;
-        previous: string | null;
-        results: T[];
-        finished_count?: number; // Add finished_count here
-    };
+    data: StandardPaginatedData<T>;
+}
+
+// Nested Paginated response structure (specifically for getEvaluationInstances based on logs)
+export interface NestedResultsData<T> {
+    count: number; // Inner count
+    next: string | null; // Inner next
+    previous: string | null; // Inner previous
+    results: T[]; // The actual array of items
+    finished_count?: number; 
+}
+
+export interface NestedPaginatedData<T> {
+    count: number; // Outer count
+    next: string | null; // Outer next
+    previous: string | null; // Outer previous
+    results: NestedResultsData<T>; // This 'results' field is an object containing the actual items array
+}
+
+export interface NestedPaginatedResponse<T> { // Renamed from PaginatedResponse
+    code: number;
+    message: string;
+    data: NestedPaginatedData<T>;
 }
 
 // --- API Functions ---
@@ -90,8 +121,8 @@ export function getAllEvaluationForms(page: number = 1, searchParams: { search?:
     if (searchParams.status) params.append('status', searchParams.status);
     if (searchParams.page_size) params.append('page_size', String(searchParams.page_size)); // Add page_size if provided
 
-
-    return axios.get<PaginatedResponse<EvaluationForm>>(`/api/evaluation-forms/?${params.toString()}`);
+    // Use StandardPaginatedResponse for getAllEvaluationForms
+    return axios.get<StandardPaginatedResponse<EvaluationForm>>(`/api/evaluation-forms/?${params.toString()}`);
 }
 
 // Get a specific Evaluation Form by ID
@@ -146,12 +177,13 @@ export function getEvaluationInstances(page: number = 1, filters: any = {}) {
     if (filters.status) params.append('status', filters.status);
 
     // Depending on role, backend filters automatically (Staff see own, HR see own created, Admin see all)
-    return axios.get<PaginatedResponse<EvaluationInstance>>(`/api/evaluation-instances/?${params.toString()}`);
+    // Use NestedPaginatedResponse for getEvaluationInstances
+    return axios.get<NestedPaginatedResponse<EvaluationInstance>>(`/api/evaluation-instances/?${params.toString()}`);
 }
 
 // Get a specific Evaluation Instance by ID
 export function getEvaluationInstanceById(id: number) {
-    return axios.get<EvaluationInstance>(`/api/evaluation-instances/${id}/`);
+    return axios.get<ApiResponse<EvaluationInstance>>(`/api/evaluation-instances/${id}/`);
 }
 
 // Submit answers for an Evaluation Instance

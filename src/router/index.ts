@@ -24,6 +24,11 @@ const staticRoutes: RouteRecordRaw[]  = [
         children: [
            // Removed static routes for evaluation center views,
            // assuming they will be handled by dynamic routing
+            {
+                path: 'survey-management', // Path will be /home/survey-management
+                name: 'SurveyManagement',
+                component: SurveyManagement,
+            },
         ]
     },
 ];

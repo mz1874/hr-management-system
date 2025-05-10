@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router'; // Import useRouter
 import Swal from 'sweetalert2'; // Import SweetAlert
 
 import { searchStaff } from '@/api/staff'; // Use searchStaff API
@@ -41,6 +42,7 @@ interface DisplayEvaluationForm extends EvaluationForm {
 }
 
 // --- State ---
+const router = useRouter(); // Initialize router instance
 
 const availableForms = ref<DisplayEvaluationForm[]>([]) // Forms available to the manager
 const totalForms = ref(0) // For pagination
@@ -210,23 +212,36 @@ const openFormModal = async (formItem: EvaluationForm) => {
           const statusResponse = await getEvaluationInstances(1, { formId: currentForm.value.id });
           console.log("Fetched evaluation instances for status check:", statusResponse.data);
 
-          if (statusResponse.data && statusResponse.data.data && Array.isArray(statusResponse.data.data.results)) {
-            const instances = statusResponse.data.data.results;
+          // Adjusting path to the results array based on observed console log
+          if (statusResponse.data && statusResponse.data.data && statusResponse.data.data.results && Array.isArray(statusResponse.data.data.results.results)) {
+            const instances = statusResponse.data.data.results.results; // Access the correctly nested array
             const statusMap = new Map<number, string>();
             const instanceDataMap = new Map<number, EvaluationInstance>();
             let completedCount = 0;
 
             // Create a map of staff ID -> status from the fetched instances
             instances.forEach((instance: EvaluationInstance) => {
+              console.log(`Processing instance for employee ID: ${instance.employee?.id}, Status: ${instance.status}`);
+              if (instance.answers && instance.answers.length > 0) {
+                console.log(`Instance for ${instance.employee?.id} has ${instance.answers.length} answer(s).`);
+                const firstAnswer = instance.answers[0];
+                console.log(`First answer details: question.text: ${firstAnswer.question?.text}, selected_option:`, firstAnswer.selected_option);
+              } else {
+                console.log(`Instance for ${instance.employee?.id} has no answers or answers array is empty.`);
+              }
+
               if (instance.employee?.id && instance.status) {
                 instanceDataMap.set(instance.employee.id, instance); // Store full instance data
-                // Consider SUBMITTED or REVIEWED as completed for this view
                 if (instance.status === 'SUBMITTED' || instance.status === 'REVIEWED') {
                   statusMap.set(instance.employee.id, 'Completed');
                   completedCount++;
-                } else {
-                  statusMap.set(instance.employee.id, instance.status); // Store other statuses like PENDING
+                } else if (instance.status === 'PENDING') {
+                  // Display 'PENDING' from API as 'Not Started' initially.
+                  // 'In Progress' will be set explicitly by handleEdit after a 'Send Back'.
+                  statusMap.set(instance.employee.id, 'Not Started');
                 }
+                // If there are other statuses or no status, it will default to "Not Started" in the template logic
+                // (because the template checks for 'Completed' and 'PENDING' specifically, else 'Not Started')
               }
             });
 
@@ -234,10 +249,10 @@ const openFormModal = async (formItem: EvaluationForm) => {
             staffInstanceDataMap.value = instanceDataMap; // Populate the new map
             completedStaffCount.value = completedCount;
             console.log("Staff completion status map:", staffCompletionStatus.value);
-            console.log("Staff instance data map:", staffInstanceDataMap.value);
+            console.log("Staff instance data map (populated with instances from API):", staffInstanceDataMap.value);
             console.log("Completed count:", completedStaffCount.value);
           } else {
-            console.warn("No evaluation instances found or unexpected format for status check.");
+            console.warn("No evaluation instances found or unexpected format for status check. API response.data.data.results was not an array or was empty.");
           }
         } catch (statusError) {
           console.error("Failed to fetch evaluation statuses:", statusError);
@@ -322,13 +337,11 @@ const handleEdit = async (staff: Staff) => {
       Swal.fire('Sent Back!', 'The evaluation has been reset for editing.', 'success');
       
       // Update local status
-      staffCompletionStatus.value.set(staff.id, 'PENDING'); // Or whatever status backend sets to
-      staffInstanceDataMap.value.delete(staff.id); // Remove stale instance data, it will be re-fetched or re-created
+      staffCompletionStatus.value.set(staff.id, 'PENDING'); 
+      staffInstanceDataMap.value.delete(staff.id); 
       
-      // Recalculate completed count
       completedStaffCount.value = Array.from(staffCompletionStatus.value.values()).filter(status => status === 'Completed').length;
 
-      // Optionally, directly open for evaluation
       selectStaffForEvaluation(staff); 
 
     } catch (error: any) {
@@ -341,40 +354,12 @@ const handleEdit = async (staff: Staff) => {
 
 
 // --- Results Modal Logic (Placeholder - likely needs rework for staff-specific results) ---
-// Accept EvaluationForm, as user_status isn't strictly needed inside yet
 const openResultsModal = async (form: EvaluationForm) => {
   console.log("Opening results for form:", form);
-  // Assign to currentSubmissionData (which expects DisplayEvaluationForm | null)
-  // We know 'form' will have user_status added by the computed prop when rendered,
-  // but for type safety, we can cast or handle potential missing property if needed later.
-  // For now, direct assignment might work if TS allows structural compatibility,
-  // or explicitly add the expected status if needed for internal logic.
-  // Let's assume the computed property handles the display state.
-  currentSubmissionData.value = form as DisplayEvaluationForm; // Cast for assignment safety
+  currentSubmissionData.value = form as DisplayEvaluationForm; 
   showResultsModal.value = true;
   isLoadingSubmissionDetails.value = true;
-  // detailedSubmissionAnswers.value = []; // Clear previous
 
-  // TODO: Implement actual fetching of submission details when backend is ready
-  // try {
-  //   // Assuming we need the instance ID. This needs clarification on how to get it.
-  //   // Maybe fetch instances for this form + current user?
-  //   // const instanceId = ???;
-  //   // const response = await getEvaluationInstanceById(instanceId);
-  //   // if (response.data && Array.isArray(response.data.answers)) {
-  //   //   detailedSubmissionAnswers.value = response.data.answers;
-  //   // } else {
-  //   //   console.error("Unexpected results format");
-  //   //   // Show error in modal
-  //   // }
-  // } catch (error) {
-  //   console.error("Failed to fetch submission details:", error);
-  //   // Show error in modal
-  // } finally {
-  //   isLoadingSubmissionDetails.value = false;
-  // }
-
-  // Simulate loading delay for now
   await new Promise(resolve => setTimeout(resolve, 500));
   isLoadingSubmissionDetails.value = false;
 };
@@ -382,7 +367,6 @@ const openResultsModal = async (form: EvaluationForm) => {
 const closeResultsModal = () => {
   showResultsModal.value = false;
   currentSubmissionData.value = null;
-  // detailedSubmissionAnswers.value = [];
 };
 
 
@@ -397,76 +381,57 @@ const submitEvaluation = async () => {
   const staffId = selectedStaffForEvaluation.value.id;
   const formId = currentForm.value.id;
 
-  // --- Start Actual Submission Logic ---
   try {
-    // 1. Start the evaluation instance for the specific staff member
-    //    *** Backend Modification Needed ***
-    //    The startEvaluationInstance API needs to accept the employee_id
-    //    For now, we might still call the old API if it creates an instance for the manager,
-    //    but ideally, it should create one for the target employee.
-    //    Let's assume for now the backend handles creating the correct instance based on a modified API call (passing staffId).
-    //    The backend API now expects the employee_id to associate the instance correctly.
-
-    // Call API, passing the ID of the staff member being evaluated
     const startResponse = await startEvaluationInstance(formId, staffId); 
     console.log("DEBUG: Received start_evaluation response:", startResponse);
-    const instanceId = startResponse.data.data.instance_id; // Get instance ID (should be for the staff member)
+    const instanceId = startResponse.data.data.instance_id; 
 
     if (!instanceId) {
         throw new Error("Failed to retrieve evaluation instance ID for the selected staff.");
     }
 
-    // 2. Validation
   const answersArray: EvaluationAnswerSubmit[] = Object.values(currentAnswers.value)
-      .filter(ans => ans?.question_id !== undefined) // Ensure question_id exists
-      .map(ans => { // Construct the final answer shape
+      .filter(ans => ans?.question_id !== undefined) 
+      .map(ans => { 
           const finalAns: EvaluationAnswerSubmit = { question_id: ans!.question_id! };
           const question = currentForm.value?.questions.find(q => q.id === ans!.question_id);
 
           if (question?.question_type === 'RATING') {
-              finalAns.rating = ans?.rating !== undefined ? Number(ans.rating) : null; // Ensure rating is number or null
-              // Validate rating is within 1-5 if provided
+              finalAns.rating = ans?.rating !== undefined ? Number(ans.rating) : null; 
               if (finalAns.rating !== null && (finalAns.rating < 1 || finalAns.rating > 5)) {
                   throw new Error(`Invalid rating for question ID ${question.id}. Must be between 1 and 5.`);
               }
           } else if (['TEXT', 'TEXT_INPUT'].includes(question?.question_type)) {
-              finalAns.text_answer = ans?.text_answer || null; // Ensure text is string or null
+              finalAns.text_answer = ans?.text_answer || null; 
           } else if (question?.question_type === 'OPTIONS') {
-              finalAns.selected_option_id = ans?.selected_option_id !== undefined ? ans.selected_option_id : null; // Ensure selected option ID is number or null
-              // Optional: Validate selected_option_id exists in question.options
+              finalAns.selected_option_id = ans?.selected_option_id !== undefined ? ans.selected_option_id : null; 
               if (finalAns.selected_option_id !== null && !question?.options?.some(opt => opt.id === finalAns.selected_option_id)) {
                    throw new Error(`Invalid selected option ID for question ID ${question.id}.`);
               }
           }
           return finalAns;
-      })
-      // Removed filtering that was incorrectly removing answers for required questions with empty content
-      // .filter(ans => ans.rating !== null || ans.text_answer !== null || ans.selected_option_id !== null);
+      });
 
-  // Optional: Check if all required questions have been answered
   const requiredQuestions = currentForm.value.questions;
   const answeredQuestionIds = new Set(answersArray.map(ans => ans.question_id));
   const allRequiredAnswered = requiredQuestions.every(q => answeredQuestionIds.has(q.id!));
 
   if (!allRequiredAnswered) {
       console.error("Validation failed: Please answer all questions.");
-      Swal.fire('Validation Error', 'Please answer all questions before submitting.', 'warning'); // Use Swal
+      Swal.fire('Validation Error', 'Please answer all questions before submitting.', 'warning'); 
       return;
   }
-
 
   const submissionPayload: EvaluationSubmissionPayload = {
     answers: answersArray,
   };
 
-  // --- Add More Specific Frontend Validation ---
   let contentValidationPassed = true;
   let validationErrorMessage = '';
 
   for (const answer of answersArray) {
       const question = currentForm.value?.questions.find(q => q.id === answer.question_id);
       if (!question) {
-          // Should not happen if requiredQuestions check passed, but as a safeguard
           contentValidationPassed = false;
           validationErrorMessage = `Validation Error: Could not find question details for ID ${answer.question_id}.`;
           break;
@@ -482,45 +447,32 @@ const submitEvaluation = async () => {
            break;
       } else if (question.question_type === 'OPTIONS' && (answer.selected_option_id === null || answer.selected_option_id === undefined)) {
            // Optional: Add validation if an option must be selected
-           // contentValidationPassed = false;
-           // validationErrorMessage = `Validation Error: An option must be selected for question ID ${question.id}.`;
-           // break;
       }
   }
 
   if (!contentValidationPassed) {
       console.error("Frontend content validation failed:", validationErrorMessage);
       Swal.fire('Validation Error', validationErrorMessage, 'warning');
-      return; // Stop submission if frontend validation fails
+      return; 
   }
-  // --- End More Specific Frontend Validation ---
 
-
-    // 3. Submit the answers using the obtained instance ID
     await submitEvaluationAnswers(instanceId, submissionPayload);
 
-    // 4. Update local state immediately
     const currentStaffId = selectedStaffForEvaluation.value.id;
     staffCompletionStatus.value.set(currentStaffId, 'Completed');
     completedStaffCount.value = Array.from(staffCompletionStatus.value.values()).filter(status => status === 'Completed').length;
 
-    // 5. Show success message and return to staff list
     Swal.fire('Saved', `Evaluation saved successfully for ${selectedStaffForEvaluation.value.username}.`, 'success');
-    // Return to staff list view within the modal
     selectedStaffForEvaluation.value = null; 
-    // No need to clear answers here, they get re-initialized when selecting next staff
-    // Modal is no longer closed automatically here
 
-  } catch (error: any) { // Single catch block for the entire process
+  } catch (error: any) { 
     console.error("Failed to submit evaluation:", error);
     let errorMessage = "An error occurred during submission.";
 
     if (error.response && error.response.data) {
-      // Attempt to extract detailed error message from backend response
       if (error.response.data.detail) {
         errorMessage = `Validation Error: ${error.response.data.detail}`;
       } else if (typeof error.response.data === 'object') {
-        // Handle cases where validation errors are in an object (e.g., field errors)
         errorMessage = "Validation Errors:<br>";
         for (const field in error.response.data) {
           if (Array.isArray(error.response.data[field])) {
@@ -530,17 +482,13 @@ const submitEvaluation = async () => {
           }
         }
       } else {
-        // Fallback for other unexpected data formats
         errorMessage = `Backend Error: ${error.response.data}`;
       }
     } else {
-      // Handle network errors or other non-response errors
       errorMessage = `Request Error: ${error.message}`;
     }
-
     Swal.fire('Error', `Failed to submit evaluation: ${errorMessage}`, 'error');
   }
-  // --- End Actual Submission Logic ---
 }
 
 // Handle the final submission of all department evaluations for a form
@@ -551,30 +499,35 @@ const handleFinalSubmit = async () => {
     return;
   }
 
-  // Double-check if all staff evaluations are completed locally
   if (completedStaffCount.value !== departmentStaff.value.length) {
       console.warn("Attempted final submit before all staff evaluations are completed.");
       Swal.fire('Warning', 'Please complete all staff evaluations before submitting the department evaluation.', 'warning');
       return;
   }
 
-  isLoadingForms.value = true; // Use forms loading state for final submit process
+  isLoadingForms.value = true; 
   try {
-    // Call the new backend API to finalize the department evaluation
     await finalizeDepartmentEvaluation(currentForm.value.id);
-
     Swal.fire('Success', 'Department evaluation finalized successfully.', 'success');
 
-    // Close the modal and refresh the forms list
-    closeFormModal();
-    fetchAvailableForms(); // Refresh the list to show updated status if applicable
+    // Redirect to SurveyManagement view with query parameters
+    if (currentForm.value && currentForm.value.id !== undefined && currentForm.value.name) {
+      router.push({ 
+        name: 'SurveyManagement', // Ensure this route name is correct in your router config
+        query: { 
+          viewResultsFormId: currentForm.value.id.toString(),
+          formName: currentForm.value.name 
+        } 
+      });
+    }
+    closeFormModal(); // Still close the modal after initiating navigation
 
   } catch (error) {
     console.error("Failed to finalize department evaluation:", error);
     const errorMessage = (error as any).response?.data?.detail || (error as any).message || "An error occurred during finalization.";
     Swal.fire('Error', `Failed to finalize department evaluation: ${errorMessage}`, 'error');
   } finally {
-    isLoadingForms.value = false; // Stop loading
+    isLoadingForms.value = false; 
   }
 }
 
@@ -1174,3 +1127,4 @@ watch(searchName, () => {
 
 
     </style>
+

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router'; // Import useRouter (keep for potential future use or other actions)
+import { useRouter, useRoute } from 'vue-router'; // Import useRouter and useRoute
 import Swal from 'sweetalert2'; // Import SweetAlert2
 import {
   getAllEvaluationForms,
@@ -78,7 +78,8 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10) // Set items per page to 10
 
 // Router instance
-const router = useRouter(); // Keep router instance if needed for other actions
+const router = useRouter(); 
+const route = useRoute(); // Add useRoute
 
 // --- State for Results View ---
 const isViewingResults = ref(false);
@@ -175,6 +176,21 @@ onMounted(async () => {
     console.error("Error fetching departments:", error);
     allDepartments.value = []; // Set to empty on error
     // TODO: Show error message to user
+  }
+
+  // Check for query params to auto-view results after redirect
+  const formIdToView = route.query.viewResultsFormId;
+  const formNameParam = route.query.formName;
+  if (formIdToView && typeof formIdToView === 'string') {
+    const formToView: EvaluationItem = { 
+        id: parseInt(formIdToView, 10), 
+        name: typeof formNameParam === 'string' ? formNameParam : `Form ID ${formIdToView}`,
+        questions: [], // Dummy data, as viewResults primarily uses id and name
+        status: 'PUBLISHED', // Dummy status
+        departments: [], // Dummy
+        // Add other minimal required fields for EvaluationItem if viewResults depends on them
+    };
+    viewResults(formToView); 
   }
 });
 
@@ -520,8 +536,9 @@ const fetchAndShowResults = async (evaluation: EvaluationItem) => {
     // Add pagination to getEvaluationInstances if needed later
     const response = await getEvaluationInstances(1, { formId: resultsFormId.value });
 
-    if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
-      currentResultsData.value = response.data.data.results;
+    // Adjust to handle the nested structure for results from getEvaluationInstances
+    if (response.data && response.data.data && response.data.data.results && Array.isArray(response.data.data.results.results)) {
+      currentResultsData.value = response.data.data.results.results; // Access the nested array
       console.log("Fetched evaluation instances:", currentResultsData.value);
       if (currentResultsData.value.length === 0) {
          // Optionally update form name if fetched data has it and is more accurate
@@ -570,9 +587,9 @@ const fetchAndShowInstanceDetails = async (instance: EvaluationInstance) => {
     // Fetch the full instance details using the existing API function
     const response = await getEvaluationInstanceById(instance.id);
 
-    // Check response structure - assuming response.data contains the EvaluationInstance object
-    if (response.data && Array.isArray(response.data.answers)) {
-      detailedAnswersData.value = response.data.answers; // Store the answers array
+    // Check response structure - API wraps the instance data under response.data.data
+    if (response.data && response.data.data && Array.isArray(response.data.data.answers)) {
+      detailedAnswersData.value = response.data.data.answers; // Access nested answers
       console.log("Fetched detailed answers:", detailedAnswersData.value);
     } else {
       console.error("Failed to fetch instance details: Unexpected response format", response);
@@ -747,7 +764,7 @@ const closeDetailsModal = () => {
                   {{ instance.status }}
                 </span>
               </td>
-              <td>{{ instance.overall_rating_avg?.toFixed(2) ?? 'N/A' }}</td>
+              <td>{{ (typeof instance.overall_rating_avg === 'string' && !isNaN(parseFloat(instance.overall_rating_avg))) ? parseFloat(instance.overall_rating_avg).toFixed(2) : (typeof instance.overall_rating_avg === 'number' ? instance.overall_rating_avg.toFixed(2) : 'N/A') }}</td>
               <td>
                 <!-- Enable button and link to fetchAndShowInstanceDetails -->
                 <button class="btn btn-sm btn-outline-primary" @click="fetchAndShowInstanceDetails(instance)">View Details</button>
