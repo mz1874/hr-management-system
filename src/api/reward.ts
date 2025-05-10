@@ -39,8 +39,8 @@ export function getCurrentUser() {
     return axios.get(`/api/staff/me/`)
 }
 
-export function patchUser() {
-    return axios.patch(`/api/staff/`)
+export function patchUser(id: Number, data: any) {
+    return axios.patch(`/api/staff/${id}/`, data)
 }
 
 // Reward Redemption
@@ -79,6 +79,9 @@ export function patchRewardRedemption(id: Number, data: any) {
 }
 
 // Point History
-export function getPointEarnedHistory() {
+export function getPointHistory() {
     return axios.get(`/api/point_history/`)
+}
+export function createDeductionHistory(data: any) {
+    return axios.post(`/api/point_history/`, data)
 }

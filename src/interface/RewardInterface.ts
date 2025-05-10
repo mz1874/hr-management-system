@@ -31,7 +31,7 @@ export interface RewardRedemptionItem {
     user: Staff
 }
 
-export interface PointEarnedHistory {
+export interface PointHistoryItem {
     id: number
     user: Staff
     kpi?: Task  // Optional since it can be null for deductions
@@ -42,13 +42,14 @@ export interface PointEarnedHistory {
     description?: string  // Optional
 }
 
-// export interface PointItem {
-//     id: number
-//     user: Staff
-//     details: {
-//         name: string,
-//         type: 'KPI' | 'Reward',
-//         points: number,
-//         ReceivedOn: string
-//     }[]
-// }
+export interface PointItem {
+    date: string | number | Date;
+    id: number
+    user: Staff
+    details: {
+        title: string,
+        type: string,
+        points: number,
+        date: string
+    }[]
+}

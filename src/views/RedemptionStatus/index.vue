@@ -103,22 +103,17 @@
                     </div>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group mb-4">
-                                <label class="form-label">Reward Image:</label>
-                                <div id="drop-area" v-if="currentRewardRedemption.rewardImageId">
-                                    <img :src="currentRewardRedemption.rewardImageUrl" :alt="currentRewardRedemption.rewardImageUrl" class="image" disabled>
-                                </div>
-                                <div v-else>
-                                    <span class="text-muted">None</span>
-                                </div>
-                            </div>                      <div class="radio-group">
-                        <div class="radio-box form-check">
-                            <input class="form-check-input" type="radio" name="status" id="received" value="Received" v-model="changedStatus">
-                            <label class="form-check-label" for="received">Received</label>
-                        </div>
-                        <div class="radio-box form-check">
-                            <input class="form-check-input" type="radio" name="status" id="not-received" value="Not Yet Received" v-model="changedStatus">
-                            <label class="form-check-label" for="not-received">Not Yet Received</label>
+                    <div class="form-group mb-2">
+                  
+                        <div class="radio-group">
+                            <div class="radio-box form-check">
+                                <input class="form-check-input" type="radio" name="status" id="received" value="Received" v-model="changedStatus">
+                                <label class="form-check-label" for="received">Received</label>
+                            </div>
+                            <div class="radio-box form-check">
+                                <input class="form-check-input" type="radio" name="status" id="not-received" value="Not Yet Received" v-model="changedStatus">
+                                <label class="form-check-label" for="not-received">Not Yet Received</label>
+                            </div>
                         </div>
                     </div>
                 </div>
