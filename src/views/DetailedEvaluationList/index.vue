@@ -7,8 +7,7 @@ import { searchStaff } from '@/api/staff'; // Use searchStaff API
 import {
   getAllEvaluationForms,
   getEvaluationInstances, // Import getEvaluationInstances
-  // TODO: Import getEvaluationInstanceById when implementing results view
-  // getEvaluationInstanceById,
+  getEvaluationInstanceById, // Import getEvaluationInstanceById
   startEvaluationInstance, // Import the new function
   submitEvaluationAnswers, // Keep submitEvaluationAnswers
   finalizeDepartmentEvaluation, // Import the new function
@@ -35,10 +34,11 @@ const starRatingMeanings: Record<number, string> = {
   5: 'Excellent'
 };
 
-// Interface for forms in the list (may not need user_instance_status anymore)
+// Interface for forms in the list
 interface DisplayEvaluationForm extends EvaluationForm {
-  // user_instance_status might be removed or repurposed later if backend changes
-  user_instance_status: 'PUBLISHED' | 'SUBMITTED' | 'PENDING' | 'REVIEWED' | 'NOT_STARTED' | null;
+  user_instance_status: 'PUBLISHED' | 'SUBMITTED' | 'PENDING' | 'REVIEWED' | 'NOT_STARTED' | null;      // For overall status, similar to SurveyManagement
+  completed_staff_count?: number; // For Progress X/Y (from backend annotation)
+  total_staff_count?: number;     // For Progress X/Y (from backend annotation)
 }
 
 // --- State ---
@@ -112,6 +112,32 @@ const formatDate = (dateString: string | null | undefined): string => {
     return 'Date Error';
   }
 };
+
+// Helper function to get evaluation status for the main table
+const getEvaluationStatus = (form: DisplayEvaluationForm): string => {
+  // This logic assumes 'submission_count' from the backend indicates if any department has finalized.
+  // Or, it could be based on the form's own 'status' if not yet submitted by anyone.
+  // The 'user_instance_status' is more for the manager's interaction with *their* department's part.
+  if (form.submission_count && form.submission_count > 0) {
+    return 'SUBMITTED'; // Or 'Completed' if that's the desired display text
+  }
+  // Fallback to the form's general status if no submissions yet
+  // (e.g., 'PUBLISHED' if it's available for evaluation but no one has submitted)
+  return form.status || 'N/A';
+};
+
+// Helper function to get evaluation progress for the main table
+const getEvaluationProgress = (form: DisplayEvaluationForm): string => {
+  // These counts are expected to be provided by the backend per form for the current manager's context
+  const completed = form.completed_staff_count;
+  const total = form.total_staff_count;
+
+  if (typeof total === 'number' && total >= 0) {
+    return `${completed || 0} / ${total}`;
+  }
+  return 'N/A'; // If data isn't available
+};
+
 
 // Fetch available published evaluation forms
 const fetchAvailableForms = async () => {
@@ -380,13 +406,14 @@ const submitEvaluation = async () => {
 
   const staffId = selectedStaffForEvaluation.value.id;
   const formId = currentForm.value.id;
+  let instanceIdToUse: number;
 
   try {
-    const startResponse = await startEvaluationInstance(formId, staffId); 
+    const startResponse = await startEvaluationInstance(formId, staffId);
     console.log("DEBUG: Received start_evaluation response:", startResponse);
-    const instanceId = startResponse.data.data.instance_id; 
+    instanceIdToUse = startResponse.data.data.instance_id;
 
-    if (!instanceId) {
+    if (!instanceIdToUse) {
         throw new Error("Failed to retrieve evaluation instance ID for the selected staff.");
     }
 
@@ -453,19 +480,33 @@ const submitEvaluation = async () => {
   if (!contentValidationPassed) {
       console.error("Frontend content validation failed:", validationErrorMessage);
       Swal.fire('Validation Error', validationErrorMessage, 'warning');
-      return; 
+      return;
   }
 
-    await submitEvaluationAnswers(instanceId, submissionPayload);
+    await submitEvaluationAnswers(instanceIdToUse, submissionPayload);
+
+    // After successful submission, fetch the updated instance and update the local map.
+    try {
+      const updatedInstanceResponse = await getEvaluationInstanceById(instanceIdToUse);
+      if (updatedInstanceResponse.data && updatedInstanceResponse.data.data) {
+        const newOrUpdatedInstance = updatedInstanceResponse.data.data as EvaluationInstance;
+        staffInstanceDataMap.value.set(staffId, newOrUpdatedInstance);
+        console.log("Successfully updated staffInstanceDataMap with instance:", newOrUpdatedInstance);
+      } else {
+        console.warn(`Could not fetch updated instance details for instance ID ${instanceIdToUse} after submission. Map might be stale.`);
+      }
+    } catch (fetchError) {
+      console.error(`Error fetching instance details (ID: ${instanceIdToUse}) after submission:`, fetchError);
+    }
 
     const currentStaffId = selectedStaffForEvaluation.value.id;
     staffCompletionStatus.value.set(currentStaffId, 'Completed');
     completedStaffCount.value = Array.from(staffCompletionStatus.value.values()).filter(status => status === 'Completed').length;
 
     Swal.fire('Saved', `Evaluation saved successfully for ${selectedStaffForEvaluation.value.username}.`, 'success');
-    selectedStaffForEvaluation.value = null; 
+    selectedStaffForEvaluation.value = null;
 
-  } catch (error: any) { 
+  } catch (error: any) {
     console.error("Failed to submit evaluation:", error);
     let errorMessage = "An error occurred during submission.";
 
@@ -608,22 +649,29 @@ watch(searchName, () => {
         <th scope="col">ID</th>
         <th scope="col">Evaluation Name</th>
         <th scope="col">Published Date</th>
+        <th scope="col">Status</th>
+        <th scope="col">Progress</th>
         <th scope="col">Actions</th>
         </tr>
         </thead>
         <tbody>
         <tr v-if="isLoadingForms">
-            <td colspan="4" class="text-center">Loading evaluation forms...</td> <!-- Corrected colspan -->
+            <td colspan="6" class="text-center">Loading evaluation forms...</td>
         </tr>
         <tr v-else-if="displayForms.length === 0">
-            <td colspan="4" class="text-center">No evaluation forms found matching the criteria.</td> <!-- Adjusted colspan -->
+            <td colspan="6" class="text-center">No evaluation forms found matching the criteria.</td>
         </tr>
         <!-- Iterate over computed displayForms -->
         <tr v-else v-for="form in displayForms" :key="form.id">
           <td>{{ form.id }}</td>
           <td>{{ form.name || 'N/A' }}</td>
           <td>{{ formatDate(form.publish_time) }}</td>
-          <!-- Removed Status Column -->
+          <td>
+            <span :class="['badge', getEvaluationStatus(form) === 'SUBMITTED' ? 'bg-success' : getEvaluationStatus(form) === 'PUBLISHED' ? 'bg-primary' : 'bg-secondary']">
+              {{ getEvaluationStatus(form) }}
+            </span>
+          </td>
+          <td>{{ getEvaluationProgress(form) }}</td>
           <td>
             <!-- Action Button - Always show "Evaluate Staff" -->
             <button type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
@@ -1127,4 +1175,3 @@ watch(searchName, () => {
 
 
     </style>
-
