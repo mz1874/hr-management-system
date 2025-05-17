@@ -1,5 +1,10 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+
+import useKPIDashboard from "@/hooks/useKPIDashboard.ts";
+
+const {tableData} = useKPIDashboard();
+
 
 // 选中的状态
 const selectedStatus = ref<string>('');
@@ -63,24 +68,30 @@ const filteredKpis = computed(() => {
     <table>
       <thead>
         <tr>
-          <th>KPI</th>
+          <th>ID</th>
+          <th>KPI Name</th>
           <th>Target</th>
           <th>Current</th>
+          <th>Start Date</th>
           <th>Due Date</th>
-          <th>Status</th>
+          <th>Unit</th>
+<!--          <th>Status</th>-->
         </tr>
       </thead>
       <tbody>
-        <tr v-for="kpi in filteredKpis" :key="kpi.kpi">
-          <td>{{ kpi.kpi }}</td>
-          <td>{{ kpi.target }}</td>
-          <td>{{ kpi.current }}</td>
-          <td>{{ kpi.dueDate }}</td>
-          <td>
-            <span class="status-badge" :class="'status-' + kpi.status.toLowerCase()">
-              {{ kpi.status }}
-            </span>
-          </td>
+        <tr v-for="kpi in tableData" :key="kpi.id">
+          <td>{{ kpi.id }}</td>
+          <td>{{ kpi.kpi_title }}</td>
+          <td>{{ kpi.target_unit }}</td>
+          <td>{{ kpi.completed_unit }}</td>
+          <td>{{ kpi.task_start_date }}</td>
+          <td>{{ kpi.task_completion_date }}</td>
+          <td>{{ kpi.individual_unit }}</td>
+<!--          <td>-->
+<!--            <span class="status-badge" :class="'status-' + kpi.status.toLowerCase()">-->
+<!--              {{ kpi.status }}-->
+<!--            </span>-->
+<!--          </td>-->
         </tr>
       </tbody>
     </table>
