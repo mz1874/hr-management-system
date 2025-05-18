@@ -1,19 +1,25 @@
-import { selectPersonalKPI } from "@/api/PersonalKPI.ts";
-import { reactive, ref, onMounted } from "vue";
-import type { PersonalKPIInterface } from "@/interface/PersonalKPIInterface.ts";
+import {selectPersonalKPI} from "@/api/PersonalKPI.ts";
+import {reactive, ref, onMounted} from "vue";
+import type {PersonalKPIInterface} from "@/interface/PersonalKPIInterface.ts";
 
 export default function () {
     const tableData = reactive<PersonalKPIInterface[]>([]);
     let count = ref(0);
     let nextPage = ref(null);
     let previous = ref(null);
+    let ongoing = ref(0);
+    let delayed = ref(0);
+    let done = ref(0);
 
-    async function fetchPersonalKPI() {
+    async function fetchPersonalKPI(page: number = 1, search: string = '') {
         try {
-            const res = await selectPersonalKPI();
+            const res = await selectPersonalKPI(page, search);
             count.value = res.data.data.count;
             nextPage.value = res.data.data.nextPage;
             previous.value = res.data.data.previousPage;
+            ongoing.value = res.data.data.summary.ongoing;
+            delayed.value = res.data.data.summary.delayed;
+            done.value = res.data.data.summary.completed;
 
             // 清空现有数据
             tableData.splice(0, tableData.length);
@@ -27,6 +33,7 @@ export default function () {
                     task_start_date: item.kpi.task_start_date,
                     task_completion_date: item.kpi.task_completion_date,
                     individual_unit: item.kpi.individual_unit,
+                    current_status: item.current_status
                 };
             });
 
@@ -35,6 +42,7 @@ export default function () {
             console.error("获取KPI数据失败:", err);
         }
     }
+
 
     onMounted(() => {
         fetchPersonalKPI();
@@ -45,6 +53,9 @@ export default function () {
         count,
         nextPage,
         previous,
-        fetchPersonalKPI
+        fetchPersonalKPI,
+        ongoing,
+        delayed,
+        done,
     };
 }

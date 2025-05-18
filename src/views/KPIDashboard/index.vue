@@ -1,32 +1,47 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 
 import useKPIDashboard from "@/hooks/useKPIDashboard.ts";
 
-const {tableData} = useKPIDashboard();
+const {
+  tableData,
+  ongoing,
+  done,
+  delayed,
+  fetchPersonalKPI
+} = useKPIDashboard();
 
+// 当前页码
+let currentPage = ref<number>(1);
 
-// 选中的状态
+// 当前选中的状态（O: Ongoing, C: Done, D: Delayed）
 const selectedStatus = ref<string>('');
 
-// KPI 数据
-const kpis = ref([
-  { kpi: 'Sales Target', target: 'RM3,000', current: 'RM4,500', dueDate: '2024-10-31', status: 'Done' },
-  { kpi: 'Customer Satisfaction', target: 'above 90%', current: '87%', dueDate: '2024-12-01', status: 'Ongoing' },
-  { kpi: 'New Clients', target: '15', current: '17', dueDate: '2024-10-10', status: 'Delayed' },
-  { kpi: 'Training Hours', target: '40hrs', current: '33hrs', dueDate: '2024-12-31', status: 'Ongoing' }
-]);
-
-// 计算不同状态的任务数量
-const totalTasks = computed(() => kpis.value.length);
-const ongoingCount = computed(() => kpis.value.filter(kpi => kpi.status === 'Ongoing').length);
-const doneCount = computed(() => kpis.value.filter(kpi => kpi.status === 'Done').length);
-const delayedCount = computed(() => kpis.value.filter(kpi => kpi.status === 'Delayed').length);
-
-// 计算筛选后的 KPI 数据
-const filteredKpis = computed(() => {
-  return selectedStatus.value ? kpis.value.filter(kpi => kpi.status === selectedStatus.value) : kpis.value;
+/**
+ * 总页数（注意：这个取决于后端返回的总数量，应该基于 totalCount 而不是 tableData.length）
+ */
+let pages = computed(() => {
+  return Math.ceil(tableData.length / 10); // ✅ 建议改为总数除以10（如 count.value）
 });
+
+/**
+ * 分页跳转逻辑
+ */
+function goToPage(page: number) {
+  if (page < 1) return;
+
+  currentPage.value = page;
+  fetchPersonalKPI(page, selectedStatus.value);
+}
+
+/**
+ * 处理状态筛选变更
+ */
+function handleStatusChange() {
+  currentPage.value = 1;
+  fetchPersonalKPI(1, selectedStatus.value);
+}
+
 </script>
 
 <template>
@@ -35,19 +50,19 @@ const filteredKpis = computed(() => {
   <div class="task-summary">
     <div class="task-card tasks">
       <p>Tasks</p>
-      <h1><b>{{ totalTasks }}</b></h1>
+      <h1><b>{{ tableData.length }}</b></h1>
     </div>
     <div class="task-card ongoing">
       <p>Ongoing</p>
-      <h1><b>{{ ongoingCount }}</b></h1>
+      <h1><b>{{ ongoing }}</b></h1>
     </div>
     <div class="task-card done">
       <p>Done</p>
-      <h1><b>{{ doneCount }}</b></h1>
+      <h1><b>{{ done }}</b></h1>
     </div>
     <div class="task-card delayed">
       <p>Delayed</p>
-      <h1><b>{{ delayedCount }}</b></h1>
+      <h1><b>{{ delayed }}</b></h1>
     </div>
   </div>
 
@@ -56,11 +71,11 @@ const filteredKpis = computed(() => {
   <div class="kpi-table-container">
     <div class="table-header">
       <!-- 状态筛选 -->
-      <select class="status-filter" v-model="selectedStatus">
+      <select class="status-filter" v-model="selectedStatus" @change="handleStatusChange">
         <option value="">All</option>
-        <option value="Done">Done</option>
-        <option value="Ongoing">Ongoing</option>
-        <option value="Delayed">Delayed</option>
+        <option value="C">Done</option>
+        <option value="O">Ongoing</option>
+        <option value="D">Delayed</option>
       </select>
     </div>
 
@@ -70,31 +85,47 @@ const filteredKpis = computed(() => {
         <tr>
           <th>ID</th>
           <th>KPI Name</th>
-          <th>Target</th>
           <th>Current</th>
+          <th>Target</th>
           <th>Start Date</th>
           <th>Due Date</th>
           <th>Unit</th>
-<!--          <th>Status</th>-->
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="kpi in tableData" :key="kpi.id">
           <td>{{ kpi.id }}</td>
           <td>{{ kpi.kpi_title }}</td>
-          <td>{{ kpi.target_unit }}</td>
           <td>{{ kpi.completed_unit }}</td>
+          <td>{{ kpi.target_unit }}</td>
           <td>{{ kpi.task_start_date }}</td>
           <td>{{ kpi.task_completion_date }}</td>
           <td>{{ kpi.individual_unit }}</td>
-<!--          <td>-->
-<!--            <span class="status-badge" :class="'status-' + kpi.status.toLowerCase()">-->
-<!--              {{ kpi.status }}-->
-<!--            </span>-->
-<!--          </td>-->
+          <td>
+            <span class="status-badge" :class="'status-' + kpi.current_status">
+              {{ kpi.current_status }}
+            </span>
+          </td>
         </tr>
       </tbody>
     </table>
+    <div class="d-flex align-items-center mt-3 justify-content-start">
+      <!-- 右侧: 分页按钮也靠左 -->
+      <nav aria-label="Page navigation">
+        <ul class="pagination">
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <button class="page-link" @click="goToPage(currentPage - 1)">Previous</button>
+          </li>
+          <li class="page-item" v-for="page in pages" :key="page" :class="{ active: page === currentPage }">
+            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+          </li>
+          <li class="page-item" :class="{ disabled: currentPage === pages }">
+            <button class="page-link" @click="goToPage(currentPage + 1)">Next</button>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
 </template>
 
@@ -217,15 +248,15 @@ th, td {
 }
 
 /* 状态颜色 */
-.status-done {
+.status-Completed {
   background: #6cc763;
 }
 
-.status-ongoing {
+.status-Ongoing {
   background: #ffc107;
 }
 
-.status-delayed {
+.status-Delayed {
   background: #f2a9a3;
 }
 </style>

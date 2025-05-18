@@ -6,4 +6,5 @@ export interface PersonalKPIInterface{
     task_start_date: string;
     task_completion_date: string;
     individual_unit: string;
+    current_status : string;
 }
