@@ -23,6 +23,9 @@ interface EvaluationItem extends Omit<EvaluationForm, 'questions'> {
 // Interface for questions within the UI state (includes options as RowyQuestionOption)
 interface QuestionItem extends Omit<EvaluationQuestion, 'options'> {
     options?: RowyQuestionOptionItem[]; // Use local RowyQuestionOptionItem interface for UI state
+    isPredefined?: boolean; // Flag for predefined behavioral questions
+    predefinedKey?: string; // Key to link to predefined config
+    // adminSelectedRating is no longer needed here
 }
 
 // Interface for question options within the UI state
@@ -61,6 +64,8 @@ const modalType = ref<'create' | 'edit' | 'view'>('create')
 const showPublishModal = ref(false)
 const selectedDepartmentsForPublish = ref<number[]>([]) // Use numbers for department IDs
 
+const behavioralEvaluationAdded = ref(false); // Track if behavioral evaluation has been added
+
 // Delete confirmation modal state
 const showDeleteConfirmModal = ref(false)
 const evaluationToDelete = ref<EvaluationItem | null>(null)
@@ -96,6 +101,76 @@ const selectedInstanceForDetails = ref<EvaluationInstance | null>(null);
 const detailedAnswersData = ref<EvaluationAnswerView[]>([]);
 const detailsLoading = ref(false);
 const detailsError = ref<string | null>(null);
+
+// --- Configuration for Predefined Behavioral Questions ---
+const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
+  {
+    key: 'be_responsible',
+    text_en: 'Be Responsible',
+    text_cn: '负责任',
+    rating_texts: {
+      1: { en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.", cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a)在期限前自动自发完成任务 (b)有主人翁精神，愿意承担工作 (c)关注，参与和配合公司事务" }
+    }
+  },
+  {
+    key: 'striving_for_excellence',
+    text_en: 'Striving for Excellence',
+    text_cn: '追求卓越', // Assuming translation, please verify
+    rating_texts: {
+      1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a)没有明确的工作计划，结果欠佳 (b)工作草率，马虎 (c)停滞不前，不寻求进步" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a)自行安排时间表和细节，效率高 (b)时刻产出高水准和品质的工作 (c)不断创造更有效率的工作方式" }
+    }
+  },
+  {
+    key: 'morality_and_talent',
+    text_en: 'Morality and Talent',
+    text_cn: '道德与才能', // Assuming translation, please verify
+    rating_texts: {
+      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a)散播谣言扰乱军心 (b)欺骗，作假 (c)愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a)言行一致，向上向善 (b)拥有正面的道德品行，礼貌谦卑 (c)以饱满的热情和精神投入工作，正面应对工作挑战" }
+    }
+  },
+  {
+    key: 'discipline',
+    text_en: 'Discipline',
+    text_cn: '纪律', // Assuming translation, please verify
+    rating_texts: {
+      1: { en: "(a) Arriving late and leaving early, absent from work without excuse and in frequent. (b) Disobey superior's instructions and treat work casually. (c) Failed to comply with company regulations and work procedures.", cn: "(a)迟到早退，无故旷工，频繁缺勤 (b)不听从上司指示，随性对待工作 (c)不遵守公司规定和工作流程" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Arrive on time and have stable attendance. (b) Obey superior's arrangements and take work seriously. (c) Comply with work rules and regulations.", cn: "(a)准时到岗，出勤稳定。 (b)服从管理安排，认真对待工作。 (c)遵守工作规章制度。" }
+    }
+  },
+  {
+    key: 'hardworking_and_proactive',
+    text_en: 'Hardworking and Proactive',
+    text_cn: '勤奋与主动', // Assuming translation, please verify
+    rating_texts: {
+      1: { en: "(a) Lazy work attitude, playing on mobile phones, surfing the Internet, chatting etc. during working hours. (b) Delay in completing a task or work, affecting progress. (c) Unwillingness to learn, explore, or improve work methods.", cn: "(a)懒散的工作态度，在工作时间玩手机，上网，聊天等 (b)延迟完成任务或工作，影响进度 (c)不愿意学习，探索或改进工作方法" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Focused on performing tasks during working hours. (b) Seizing time to complete tasks as quickly as possible. (c) Willing to try new ways of working and techniques.", cn: "(a)办公时间专注于执行任务 (b)把握时间，尽可能快速地完成工作 (c)乐于尝试新的工作方式和技术" }
+    }
+  }
+].map(q => {
+  const texts = q.rating_texts;
+  const combined_rating_texts: { [key: number]: { en: string, cn: string } } = {
+    1: texts[1],
+    2: { 
+      en: `${texts[1].en} / ${texts[3].en}`, 
+      cn: `${texts[1].cn} / ${texts[3].cn}`
+    },
+    3: texts[3],
+    4: { 
+      en: `${texts[3].en} / ${texts[5].en}`, 
+      cn: `${texts[3].cn} / ${texts[5].cn}`
+    },
+    5: texts[5]
+  };
+  return { ...q, rating_texts: combined_rating_texts };
+});
 
 
 // --- Fetching Data ---
@@ -232,6 +307,7 @@ const openEvaluationModal = () => {
     questions: []
   }
   modalType.value = 'create'
+  behavioralEvaluationAdded.value = false; // Reset for new evaluation
   showModal.value = true
 }
 
@@ -385,20 +461,31 @@ const handleAddEvaluation = async () => {
 const openEditModal = (evaluation: EvaluationItem) => {
   // Ensure the evaluation object copied matches the expected structure, especially status
   currentEvaluation.value = JSON.parse(JSON.stringify(evaluation)); // Deep copy
+  behavioralEvaluationAdded.value = false; // Reset for edit, will be set if predefined questions are found
 
   // Map questions from EvaluationForm structure back to QuestionItem for UI state
-  currentEvaluation.value.questions = evaluation.questions.map(q => ({
+  currentEvaluation.value.questions = evaluation.questions.map(q => {
+    const predefinedConfig = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(c => c.text_en === q.text && q.question_type === 'RATING');
+    if (predefinedConfig) {
+      behavioralEvaluationAdded.value = true; // Mark that behavioral eval exists
+    }
+
+    return {
       id: q.id,
       text: q.text,
       question_type: q.question_type,
       order: q.order,
+      isPredefined: !!predefinedConfig,
+      predefinedKey: predefinedConfig?.key,
+      // adminSelectedRating is no longer needed here
       // Map backend options (RowyQuestionOption[]) to local options (RowyQuestionOptionItem[])
       options: q.options?.map(opt => ({
           id: opt.id,
           option_text: opt.option_text,
           order: opt.order
       })) || undefined // Ensure undefined if no options
-  }));
+    };
+  });
   modalType.value = 'edit';
   showModal.value = true;
 }
@@ -456,6 +543,37 @@ const handleSaveEditedEvaluation = async () => {
     Swal.fire('Error', 'Failed to update evaluation.', 'error'); // Show error notification
   }
 }
+
+// --- Add Predefined Behavioral Evaluation Form ---
+const addBehaviouralEvaluationForm = () => {
+  if (behavioralEvaluationAdded.value) {
+    Swal.fire('Info', 'Behavioral Evaluation form has already been added.', 'info');
+    return;
+  }
+  if (!currentEvaluation.value.questions) currentEvaluation.value.questions = [];
+
+  PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.forEach(config => {
+    const newQuestion: QuestionItem = {
+      question_type: 'RATING',
+      text: config.text_en, // Display English text, non-editable
+      order: currentEvaluation.value.questions.length,
+      isPredefined: true,
+      predefinedKey: config.key
+      // adminSelectedRating is no longer needed here
+    };
+    currentEvaluation.value.questions.push(newQuestion);
+  });
+  behavioralEvaluationAdded.value = true;
+};
+
+// --- Remove Predefined Behavioral Evaluation Form ---
+const removeBehaviouralEvaluationForm = () => {
+  if (currentEvaluation.value && currentEvaluation.value.questions) {
+    currentEvaluation.value.questions = currentEvaluation.value.questions.filter(q => !q.isPredefined);
+  }
+  behavioralEvaluationAdded.value = false;
+  Swal.fire('Removed', 'Behavioral Evaluation form has been removed.', 'success');
+};
 
 // --- Computed Properties for Pagination ---
 
@@ -841,13 +959,26 @@ const closeDetailsModal = () => {
               <div v-if="currentEvaluation.questions && currentEvaluation.questions.length > 0"> <!-- Check if questions array exists and has items -->
                 <div v-for="(question, questionIndex) in currentEvaluation.questions" :key="questionIndex" class="mb-3 border-bottom pb-3"> <!-- Modified class for individual question -->
                   <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6>{{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'OPTIONS' ? 'Option Question' : question.question_type === 'TEXT_INPUT' ? 'Text Input Question' : 'Text Question' }} #{{ questionIndex + 1 }}</h6>
-                    <button type="button" class="btn btn-danger btn-sm" @click="removeQuestion(questionIndex)" :disabled="modalType === 'view'">Remove Question</button>
+                    <h6>
+                      {{ question.isPredefined ? 'Behavioral Question (Predefined)' : 
+                         question.question_type === 'RATING' ? 'Rating Question' : 
+                         question.question_type === 'OPTIONS' ? 'Option Question' : 
+                         question.question_type === 'TEXT_INPUT' ? 'Text Input Question' : 'Text Question' }} #{{ questionIndex + 1 }}
+                    </h6>
+                    <!-- Hide individual remove button for predefined questions -->
+                    <button 
+                      v-if="!question.isPredefined"
+                      type="button" 
+                      class="btn btn-danger btn-sm" 
+                      @click="removeQuestion(questionIndex)" 
+                      :disabled="modalType === 'view'">
+                      Remove Question
+                    </button>
                   </div>
-                  <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view'">
-
+                  <input type="text" class="form-control mb-2" placeholder="Enter question text" v-model="question.text" :disabled="modalType === 'view' || question.isPredefined">
+                  
                   <!-- Option input section for OPTIONS type questions -->
-                  <div v-if="question.question_type === 'OPTIONS'" class="option-container ms-3 mt-2">
+                  <div v-if="question.question_type === 'OPTIONS' && !question.isPredefined" class="option-container ms-3 mt-2">
                      <label class="option-label mb-1">Options:</label>
                      <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="mb-2 d-flex align-items-center">
                        <input type="text" class="form-control me-2" placeholder="Enter option text" v-model="option.option_text" :disabled="modalType === 'view'">
@@ -856,20 +987,70 @@ const closeDetailsModal = () => {
                      <button type="button" class="btn btn-success btn-sm" @click="addOption(questionIndex)" :disabled="modalType === 'view'">Add Option</button>
                   </div>
                 </div>
-                <!-- Add Question Buttons (shown when there are questions) -->
+                <!-- Add Question Buttons -->
                 <div class="mt-3">
-                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Rating Question</button>
-                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
-                  <button type="button" class="btn btn-primary mb-2" @click="addQuestion('text_input')" :disabled="modalType === 'view'">Add Question</button> 
+                  <button 
+                    type="button" 
+                    class="btn btn-info me-2 mb-2" 
+                    @click="addBehaviouralEvaluationForm()" 
+                    :disabled="modalType === 'view' || behavioralEvaluationAdded">
+                    Add Behavioral Evaluation
+                  </button>
+                  <button
+                    v-if="behavioralEvaluationAdded && modalType !== 'view'"
+                    type="button"
+                    class="btn btn-warning me-2 mb-2"
+                    @click="removeBehaviouralEvaluationForm()">
+                    Remove Behavioral Evaluation
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-primary me-2 mb-2" 
+                    @click="addQuestion('option')" 
+                    :disabled="modalType === 'view'">
+                    Add Option Question
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-primary mb-2" 
+                    @click="addQuestion('text_input')" 
+                    :disabled="modalType === 'view'">
+                    Add Text Input Question
+                  </button> 
                 </div>
               </div>
-               <!-- Fallback if currentEvaluation.questions is null/undefined or empty -->
+              <!-- Fallback if currentEvaluation.questions is null/undefined or empty -->
               <div v-else class="text-muted mb-3">
                 No questions added yet. Click buttons below to add.
-                 <div class="mt-3">
-                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('grade')" :disabled="modalType === 'view'">Add Rating Question</button>
-                  <button type="button" class="btn btn-primary me-2 mb-2" @click="addQuestion('option')" :disabled="modalType === 'view'">Add Option Question</button>
-                  <button type="button" class="btn btn-primary mb-2" @click="addQuestion('text_input')" :disabled="modalType === 'view'">Add Question</button> 
+                <div class="mt-3">
+                  <button 
+                    type="button" 
+                    class="btn btn-info me-2 mb-2" 
+                    @click="addBehaviouralEvaluationForm()" 
+                    :disabled="modalType === 'view' || behavioralEvaluationAdded">
+                    Add Behavioral Evaluation
+                  </button>
+                  <button
+                    v-if="behavioralEvaluationAdded && modalType !== 'view'"
+                    type="button"
+                    class="btn btn-warning me-2 mb-2"
+                    @click="removeBehaviouralEvaluationForm()">
+                    Remove Behavioral Evaluation
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-primary me-2 mb-2" 
+                    @click="addQuestion('option')" 
+                    :disabled="modalType === 'view'">
+                    Add Option Question
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-primary mb-2" 
+                    @click="addQuestion('text_input')" 
+                    :disabled="modalType === 'view'">
+                    Add Text Input Question
+                  </button> 
                 </div>
               </div>
             </div>

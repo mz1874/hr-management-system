@@ -27,12 +27,83 @@ import { getCurrentUser } from '@/api/login';
 
 // Define star rating meanings
 const starRatingMeanings: Record<number, string> = {
-  1: 'Poor',
+  1: 'Below Expectation',
   2: 'Fair',
-  3: 'Satisfactory',
+  3: 'Meet Expectation',
   4: 'Good',
-  5: 'Excellent'
+  5: 'Role Model'
 };
+
+// --- Configuration for Predefined Behavioral Questions (Copied from SurveyManagement) ---
+// It would be better to move this to a shared utility file if used in more places.
+const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
+  {
+    key: 'be_responsible',
+    text_en: 'Be Responsible',
+    text_cn: '负责任',
+    rating_texts: {
+      1: { en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.", cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a)在期限前自动自发完成任务 (b)有主人翁精神，愿意承担工作 (c)关注，参与和配合公司事务" }
+    }
+  },
+  {
+    key: 'striving_for_excellence',
+    text_en: 'Striving for Excellence',
+    text_cn: '追求卓越',
+    rating_texts: {
+      1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a)没有明确的工作计划，结果欠佳 (b)工作草率，马虎 (c)停滞不前，不寻求进步" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a)自行安排时间表和细节，效率高 (b)时刻产出高水准和品质的工作 (c)不断创造更有效率的工作方式" }
+    }
+  },
+  {
+    key: 'morality_and_talent',
+    text_en: 'Morality and Talent',
+    text_cn: '道德与才能',
+    rating_texts: {
+      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a)散播谣言扰乱军心 (b)欺骗，作假 (c)愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a)言行一致，向上向善 (b)拥有正面的道德品行，礼貌谦卑 (c)以饱满的热情和精神投入工作，正面应对工作挑战" }
+    }
+  },
+  {
+    key: 'discipline',
+    text_en: 'Discipline',
+    text_cn: '纪律',
+    rating_texts: {
+      1: { en: "(a) Arriving late and leaving early, absent from work without excuse and in frequent. (b) Disobey superior's instructions and treat work casually. (c) Failed to comply with company regulations and work procedures.", cn: "(a)迟到早退，无故旷工，频繁缺勤 (b)不听从上司指示，随性对待工作 (c)不遵守公司规定和工作流程" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Arrive on time and have stable attendance. (b) Obey superior's arrangements and take work seriously. (c) Comply with work rules and regulations.", cn: "(a)准时到岗，出勤稳定。 (b)服从管理安排，认真对待工作。 (c)遵守工作规章制度。" }
+    }
+  },
+  {
+    key: 'hardworking_and_proactive',
+    text_en: 'Hardworking and Proactive',
+    text_cn: '勤奋与主动',
+    rating_texts: {
+      1: { en: "(a) Lazy work attitude, playing on mobile phones, surfing the Internet, chatting etc. during working hours. (b) Delay in completing a task or work, affecting progress. (c) Unwillingness to learn, explore, or improve work methods.", cn: "(a)懒散的工作态度，在工作时间玩手机，上网，聊天等 (b)延迟完成任务或工作，影响进度 (c)不愿意学习，探索或改进工作方法" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
+      5: { en: "(a) Focused on performing tasks during working hours. (b) Seizing time to complete tasks as quickly as possible. (c) Willing to try new ways of working and techniques.", cn: "(a)办公时间专注于执行任务 (b)把握时间，尽可能快速地完成工作 (c)乐于尝试新的工作方式和技术" }
+    }
+  }
+].map(q => {
+  const texts = q.rating_texts;
+  const combined_rating_texts: { [key: number]: { en: string, cn: string } } = {
+    1: texts[1],
+    2: { 
+      en: `${texts[1].en} / ${texts[3].en}`, 
+      cn: `${texts[1].cn} / ${texts[3].cn}`
+    },
+    3: texts[3],
+    4: { 
+      en: `${texts[3].en} / ${texts[5].en}`, 
+      cn: `${texts[3].cn} / ${texts[5].cn}`
+    },
+    5: texts[5]
+  };
+  return { ...q, rating_texts: combined_rating_texts };
+});
 
 // Interface for forms in the list
 interface DisplayEvaluationForm extends EvaluationForm {
@@ -96,6 +167,20 @@ const displayForms = computed(() => {
 
 
 // --- Methods ---
+
+// Helper to check if a question is a predefined behavioral question
+const getPredefinedConfigByText = (questionText: string | undefined) => {
+  if (!questionText) return null;
+  return PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(c => c.text_en === questionText);
+};
+
+// Helper to get rating description for predefined questions
+const getRatingDescription = (questionText: string | undefined, rating: number | undefined | null, lang: 'en' | 'cn') => {
+  if (!questionText || rating === undefined || rating === null) return '';
+  const config = getPredefinedConfigByText(questionText);
+  return config?.rating_texts[rating]?.[lang] || '';
+};
+
 
 // Helper function for date formatting (YYYY-MM-DD)
 const formatDate = (dateString: string | null | undefined): string => {
@@ -794,6 +879,13 @@ watch(searchName, () => {
                     <p v-if="currentAnswers[question.id].rating" class="text-muted mt-1 mb-0 small">
                       Selected: {{ currentAnswers[question.id].rating }} Star(s) - {{ starRatingMeanings[currentAnswers[question.id].rating!] }}
                     </p>
+                    <!-- Display EN/CN description if it's a predefined behavioral question and a rating is selected -->
+                    <div v-if="getPredefinedConfigByText(question.text) && currentAnswers[question.id]?.rating" 
+                         class="selected-rating-text-description mt-2 p-2 border rounded bg-light-subtle">
+                        <p class="mb-1"><strong>Description for {{ currentAnswers[question.id].rating }} Star(s):</strong></p>
+                        <div><strong>EN:</strong> {{ getRatingDescription(question.text, currentAnswers[question.id].rating, 'en') }}</div>
+                        <div><strong>CN:</strong> {{ getRatingDescription(question.text, currentAnswers[question.id].rating, 'cn') }}</div>
+                    </div>
                   </div>
 
                   <!-- TEXT question type -->
