@@ -10,7 +10,10 @@ const toggleMenu = (name: string) => {
 };
 
 const buildMenuTree = (routes) => {
-  return routes.map(route => ({
+
+  return routes.filter(route => {
+    return route.hidden != true;
+  }).map(route => ({
     name: route.name,
     code: route.code,
     link: route.path ? '/' + 'home/' + route.path : null,

@@ -10,14 +10,14 @@
     <!-- Search Bar (Left) -->
     <form class="search-container" role="search">
       <i class="fas fa-search search-icon"></i>
-      <input class="form-control" type="search" placeholder="Search Task Name" v-model="searchQuery">
+      <input class="form-control" type="search" placeholder="Search Remarks" v-model="remarksSearch">
     </form>
 
     <!-- Custom Date Range (Right) -->
     <div class="d-flex align-items-center gap-3">
-      <input type="date" class="form-control" id="startDate" placeholder="Start Date" v-model="startDate">
+      <input type="date" class="form-control" id="startDate" placeholder="Start Date" v-model="searchStartDate">
       <span> - </span>
-      <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="endDate">
+      <input type="date" class="form-control" id="endDate" placeholder="End Date" v-model="searchEndDate">
     </div>
   </div>
 
@@ -26,19 +26,43 @@
       <thead>
         <tr>
           <th scope="col">ID</th>
-          <th scope="col">Received</th>
+          <th scope="col">Received On</th>
           <th scope="col">Points</th>
-          <th scope="col">Task Name</th>
+          <th scope="col">Type</th>
+          <th scope="col">Remarks</th>
           <th scope="col">Action</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="details in paginatedLogs" :key="details.id">
+        <tr v-for="details in tableData" :key="details.id">
           <td>{{ details.id}}</td>
-          <td>{{ details.pointReceivedOn}}</td>
-          <td class="text-success">+ {{ details.pointsEarned}}</td>
-          <td>{{ details.kpi.taskTitle}}</td>
-          <td><button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button></td>
+
+          <td>{{ details.pointsReceivedOn}}</td>
+
+          <td :class="details.pointsValues <= 0 ? 'text-danger' : 'text-success'"> 
+            {{ details.pointsValues > 0 ? '+' + details.pointsValues : details.pointsValues }}
+          </td>
+
+          <td>{{ details.pointType }}</td>
+
+          <td>
+            <template v-if="details.pointType === 'Deduction'">
+              {{ details.pointsDeduction?.map((d: any) => d.deductionTypes).join(', ') }}
+            </template>
+            <template v-else-if="details.pointType === 'Addition'">
+              {{ details.pointsAddition?.additionTypes }}
+            </template>
+            <template v-else-if="details.pointType === 'KPI Completed'">
+              {{ details.kpiCompleted?.taskTitleStored }}
+            </template>
+          </td>
+
+          <td>
+            <template v-if="details.pointType === 'Deduction' || details.pointType === 'Addition'"></template>
+            <template v-else-if="details.pointType === 'KPI Completed'">
+              <button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button>
+            </template>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -46,19 +70,20 @@
 
   <!-- pagination -->
   <div class="d-flex align-items-center mt-3 justify-content-start">
-    <span class="me-3">Total: {{ totalLogs }}</span>
-    
-    <nav aria-label="Page navigation">
-      <ul class="pagination">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" @click="prevPage">Previous</button>
+    <span class="me-3">Total: {{ totalCount }}</span>
+    <nav>
+      <ul class="pagination mb-0">
+        <li :class="['page-item', { disabled: currentPage === 1 }]">
+          <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
         </li>
-        <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="nextPage">Next</button>
-          </li>
+
+        <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+          <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+        </li>
+
+        <li :class="['page-item', { disabled: currentPage === totalPages }]">
+          <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+        </li>
       </ul>
     </nav>
   </div>
@@ -115,38 +140,110 @@
 
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import type { PointEarnedHistory } from '@/interface/RewardInterface.ts';
-import { getPointEarnedHistory } from '@/api/reward';
-import type { Point } from 'chart.js';
+import type { PointHistoryItem } from '@/interface/RewardInterface.ts';
+import { getPointHistory } from '@/api/reward';
+import { getCurrentUser } from '@/api/login';
+import dayjs from 'dayjs';
 
 const currentPointEarned = ref<any>({})
 
-const tableData = ref<PointEarnedHistory[]>([])
+const tableData = ref<PointHistoryItem[]>([])
 
-const fetchPointEarned = () => {
-  getPointEarnedHistory().then((res) => {
-    console.log(res.data)
+const remarksSearch = ref('')
+const searchStartDate = ref('')
+const searchEndDate = ref('')
 
-    tableData.value = res.data.data.results.map((item: any) => ({
-      id: item.id,
-      user: item.user,
-      kpi: {
-        taskTitle: item.task_title,
-        taskDescription: item.task_description,
-        startDate: item.task_start_date,
-        endDate: item.task_completion_date,
-        pointsGiven: item.points_earned,
-      },
-      pointReceivedOn: item.points_received_on,
-      pointsEarned: item.points_earned
-    }))
-  })
+const currentPage = ref(1)
+const pageSize = 10
+const totalCount = ref(0)
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) fetchPointHistory(page)
 }
-onMounted(fetchPointEarned);
 
-//View Modal
+// ===================== Fetch User =====================
+let currentUserData = reactive<any>({});
+
+const fetchUserId = async () => {
+  try {
+    const res = await getCurrentUser();
+    Object.assign(currentUserData, res.data.data);
+  } catch (err) {
+    console.error("Error fetching user:", err);
+  }
+};
+
+// ===================== Fetch Point History =====================
+const fetchPointHistory = (page: number) => {
+  currentPage.value = page
+
+  getPointHistory(currentUserData.id, page, remarksSearch.value.trim(), searchStartDate.value, searchEndDate.value).then((res) => {
+    console.log(res.data);
+    totalCount.value = res.data.data.count;  
+    
+    // Map the backend response to match the PointHistoryItem interface
+    tableData.value = res.data.data.results.map((item: any) => {
+        // Create the base item
+        const historyItem: PointHistoryItem = {
+          id: item.id,
+          user: item.user,
+          pointType: item.point_type,
+          pointsReceivedOn: dayjs(item.points_received_on).format("YYYY-MM-DD HH:mm:ss"),
+          pointsValues: item.points_values
+        };
+        
+        // Add point_deductions if they exist
+        if (item.point_deductions && item.point_deductions.length > 0) {
+            historyItem.pointsDeduction = item.point_deductions.map((deduction: any) => ({
+                id: deduction.id,
+                deductionTypes: deduction.deduction_types,
+                pointsDeducted: deduction.points_deducted
+            }));
+        }
+        
+        // Add point_addition if it exists
+        if (item.point_addition) {
+            historyItem.pointsAddition = {
+                id: item.point_addition.id,
+                additionTypes: item.point_addition.addition_types,
+                pointsAddition: item.point_addition.points_addition
+            };
+        }
+        
+        // Add kpi_completed if it exists
+        if (item.kpi_completed) {
+            historyItem.kpiCompleted = {
+                id: item.kpi_completed.id,
+                kpiCompletedTypes: item.kpi_completed.kpi_completed_types,
+                taskTitleStored: item.kpi_completed.task_title_stored,
+                taskDescriptionStored: item.kpi_completed.task_description_stored,
+                taskStartDateStored: item.kpi_completed.task_start_date_stored,
+                taskCompletionDateStored: item.kpi_completed.task_completion_date_stored,
+                pointsEarnedStored: item.kpi_completed.points_earned_stored,
+                targetUnitStored: item.kpi_completed.target_unit_stored,
+                individualUnitStored: item.kpi_completed.individual_unit
+            };
+        }
+        return historyItem;
+    });
+  }).catch(error => {
+      console.error("Error fetching point history:", error);
+  });
+}
+
+onMounted(async () => {
+  await fetchUserId();
+  fetchPointHistory(1);
+});
+
+watch([remarksSearch, searchStartDate, searchEndDate], () => {
+  fetchPointHistory(1);
+});
+
+// ===================== View Modal =====================
 const showModal = ref(false);
 
 const openViewModal = (item: any) => {
@@ -154,51 +251,7 @@ const openViewModal = (item: any) => {
   showModal.value = true;
 };
 
-//search bar and custom date range
-const searchQuery = ref('')
-const startDate = ref('')
-const endDate = ref('')
-
-const filteredLogs = computed(() => {
-  return tableData.value.filter(detail => {
-    //search bar for task name
-    const matchesSearch = detail.kpi.taskTitle.toLowerCase().includes(searchQuery.value.toLowerCase());
-    
-    //custom date range for received date
-    const taskDate = new Date(detail.pointReceivedOn); // Convert string date to Date object
-    const start = startDate.value ? new Date(startDate.value) : null;
-    const end = endDate.value ? new Date(endDate.value) : null;
-
-    const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
-
-    return matchesSearch && matchesDateRange;
-  });
-});
-
-// 分页相关
-const currentPage = ref(1);
-const itemsPerPage = 5;
-
-const totalLogs = computed(() => filteredLogs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
-
-const paginatedLogs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredLogs.value.slice(start, start + itemsPerPage);
-});
-
-// 翻页功能
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
-};
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-};
-const goToPage = (page: number) => {
-  currentPage.value = page;
-};
-
-//navigate back to reward mall page
+// ===================== Navigate back to reward mall =====================
 const router = useRouter()
 function goToRewardMall()
 {

@@ -39,46 +39,66 @@ export function getCurrentUser() {
     return axios.get(`/api/staff/me/`)
 }
 
-export function patchUser() {
-    return axios.patch(`/api/staff/`)
+export function patchUser(id: Number, data: any) {
+    return axios.patch(`/api/staff/${id}/`, data)
 }
+
+export function getUserForLeaderboard(departmentId: number, status: string) {
+    const params = {
+        ...(departmentId ? { departmentId: departmentId } : {}),
+        ...(status ? { status: status } : {}),
+    };
+
+    return axios.get(`/api/staff/search/`, { params })
+}
+
 
 // Reward Redemption
 export function createRedemption(data: any) {
     return axios.post(`/api/reward_redemption/`, data)
 }
 
-export function getRewardRedemption(page = 1, rewardName = '', name = '', status = '', startDate = '', endDate = '') {
+//fetch specific employee reward redemption
+export function getRewardRedemption(id: Number, page = 1, rewardName = '', username = '', status = '', startDate = '', endDate = '') {
     const params = {
         page,
         ...(rewardName ? { reward_title: rewardName } : {}),
-        ...(name ? { username: name } : {}),
+        ...(startDate ? { start_date: startDate } : {}),
+        ...(endDate ? { end_date: endDate } : {}),
+    };
+  
+    return axios.get(`/api/reward_redemption/staff/${id}/`, { params });
+}
+
+//fetch all employee reward redemption
+export function getAllRewardRedemption(page = 1, rewardName = '', username = '', status = '', startDate = '', endDate = '') {
+    const params = {
+        page,
+        ...(rewardName ? { reward_title: rewardName } : {}),
+        ...(username ? { username: username } : {}),
         ...(status ? { reward_redemption_status: status } : {}),
         ...(startDate ? { start_date: startDate } : {}),
         ...(endDate ? { end_date: endDate } : {}),
     };
   
-    return axios.get('/api/reward_redemption/', { params });
+    return axios.get(`/api/reward_redemption/`, { params });
 }
-
-export function getEmployeeRewardRedemption(page = 1, rewardName = '', startDate = '', endDate = '') {
-    const params = {
-        page,
-        ...(rewardName ? { reward_title: rewardName } : {}),
-        ...(startDate ? { start_date: startDate } : {}),
-        ...(endDate ? { end_date: endDate } : {}),
-    };
-  
-    return axios.get('/api/reward_redemption/', { params });
-}
-
-
 
 export function patchRewardRedemption(id: Number, data: any) {
     return axios.patch(`/api/reward_redemption/${id}/`, data)
 }
 
 // Point History
-export function getPointEarnedHistory() {
-    return axios.get(`/api/point_history/`)
+export function getPointHistory(id: Number, page = 1, remarks = '', startDate = '', endDate = '') {
+    const params = {
+        page,
+        ...(remarks ? { remarks } : {}),
+        ...(startDate ? { start_date: startDate } : {}),
+        ...(endDate ? { end_date: endDate } : {}),
+    };
+    return axios.get(`/api/point_history/staff/${id}/`, { params })
+}
+
+export function createDeductionHistory(data: any) {
+    return axios.post(`/api/point_history/`, data)
 }

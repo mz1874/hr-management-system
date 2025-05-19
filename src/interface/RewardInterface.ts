@@ -19,27 +19,55 @@ export interface RewardItem {
 export interface RewardRedemptionItem {
     id: number
     redeemedOn: string
+    rewardId: number
+    rewardTitle: string
+    rewardDescription: string
+    rewardTerms: string
+    rewardEndDateTime: string
+    rewardImageId: number
+    rewardImageUrl: string
     pointsDeducted: number
     status: string
-    reward: RewardItem
     user: Staff
 }
 
-export interface PointEarnedHistory {
+export interface PointHistoryItem {
     id: number
     user: Staff
-    kpi: Task
-    pointReceivedOn: string
-    pointsEarned: number
+    pointType: string
+    pointsReceivedOn: string
+    pointsValues: number
+    pointsDeduction?: {
+        id: number
+        deductionTypes: string
+        pointsDeducted: number
+    }[],
+    pointsAddition?: {
+        id: number
+        additionTypes: string
+        pointsAddition: number
+    },
+    kpiCompleted?: {
+        id: number
+        kpiCompletedTypes: string
+        taskTitleStored: string
+        taskDescriptionStored: string
+        taskStartDateStored: string
+        taskCompletionDateStored: string
+        pointsEarnedStored: number
+        targetUnitStored: number
+        individualUnitStored: string
+    }
 }
 
 export interface PointItem {
+    date: string | number | Date;
     id: number
     user: Staff
     details: {
-        name: string,
-        type: 'KPI' | 'Reward',
+        title: string,
+        type: string,
         points: number,
-        ReceivedOn: string
+        date: string
     }[]
 }

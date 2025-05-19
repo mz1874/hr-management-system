@@ -37,10 +37,10 @@
         <tbody>
             <tr v-for="item in tableData" :key="item.id">
                 <td>{{ item.id }}</td>
-                <td>{{ item.reward.rewardName }}</td>
+                <td>{{ item.rewardTitle }}</td>
                 <td>{{ item.redeemedOn }}</td>
                 <td>- {{ item.pointsDeducted }}</td>
-                <td :class="item.status === 'Not Received' ? 'text-danger' : 'text-success'">
+                <td :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">
                     {{ item.status }}
                 </td>
                 <td><button type="button" class="btn btn-primary" @click="openViewModal(item)">View Details</button></td>
@@ -85,21 +85,24 @@
                         <form>
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Image:</label>
-                                <div id="drop-area">
-                                    <img :src="currentReward.reward.fileDetails.file" :alt="currentReward.reward.fileDetails.filename" class="image" disabled>
+                                <div id="drop-area" v-if="currentReward.rewardImageUrl">
+                                    <img :src="currentReward.rewardImageUrl" :alt="currentReward.rewardImageUrl" class="image" disabled>
                                 </div>
-                            </div>
+                                <div v-else>
+                                    <span class="text-muted">None</span>
+                                </div>
+                            </div>  
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Name:</label>
-                                <input type="text" class="form-control" v-model="currentReward.reward.rewardName" disabled>
+                                <input type="text" class="form-control" v-model="currentReward.rewardTitle" disabled>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Points:</label>
-                                <input type="text" class="form-control" v-model="currentReward.reward.points" disabled>
+                                <input type="text" class="form-control" v-model="currentReward.pointsDeducted" disabled>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">End Date & Time:</label>
-                                <Datepicker v-model="currentReward.reward.endDateTime" :is-24="false" :min-date="new Date()" disabled style="border: 1px solid #000000; border-radius: 0.375rem;"></Datepicker>
+                                <Datepicker v-model="currentReward.rewardEndDateTime" :is-24="false" :min-date="new Date()" disabled style="border: 1px solid #000000; border-radius: 0.375rem;"></Datepicker>
                             </div>
                         </form>
                     </div>
@@ -109,11 +112,11 @@
                         <form>
                             <div class="form-group mb-4">
                                 <label class="form-label">Reward Description:</label>
-                                <textarea class="form-control auto-resize" rows="6" oninput="resizeTextarea(this)" disabled>{{ currentReward.reward.description }}</textarea>
+                                <textarea class="form-control auto-resize" rows="6" oninput="resizeTextarea(this)" disabled>{{ currentReward.rewardDescription }}</textarea>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Terms & Conditions:</label>
-                                <textarea class="form-control auto-resize" rows="15" oninput="resizeTextarea(this)" disabled>{{ currentReward.reward.terms }}</textarea>
+                                <textarea class="form-control auto-resize" rows="15" oninput="resizeTextarea(this)" disabled>{{ currentReward.rewardTerms }}</textarea>
                             </div>
                         </form>
                     </div>
@@ -134,7 +137,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { getCurrentUser, getEmployeeRewardRedemption, getRewardRedemption } from '@/api/reward';
+import { getCurrentUser, getReward, getRewardRedemption } from '@/api/reward';
 import type { RewardRedemptionItem} from '@/interface/RewardInterface.ts'
 import dayjs from 'dayjs';
 import Datepicker from '@vuepic/vue-datepicker';
@@ -143,13 +146,13 @@ import '@vuepic/vue-datepicker/dist/main.css';
 // ===================== Fetch User =====================
 let currentUserData = reactive<any>({});
 
-const fetchUserId = () => {
-  getCurrentUser().then((res) => {
+const fetchUserId = async () => {
+  try {
+    const res = await getCurrentUser();
     Object.assign(currentUserData, res.data.data);
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+  }
 };
 
 // ===================== Fetch Reward Redemption =====================
@@ -171,39 +174,34 @@ const changePage = (page: number) => {
 const fetchRewardRedemption = (page = 1) => {
     currentPage.value = page
 
-    getEmployeeRewardRedemption(
+    getRewardRedemption(
+    currentUserData.id,
     page, 
     rewardSearch.value.trim(), 
     searchStartDate.value,
     searchEndDate.value)
     .then((res) => {
         console.log(res.data)
-        const userId = currentUserData.id;
 
-        tableData.value = res.data.data.results.filter((item: any) => item.user.id === userId).map((item: any) => ({
-            id: item.id,
-            redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
-            pointsDeducted: item.points_deducted,
-            status: item.reward_redemption_status,
-            reward: {
-                rewardName: item.reward.reward_title,
-                description: item.reward.reward_description,
-                terms: item.reward.reward_terms_and_conditions,
-                points: item.reward.reward_points_required,          
-                endDateTime: dayjs(item.reward.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
-                quantity: item.reward.reward_quantity,
-                status: item.reward.reward_status,
-                createdOn: item.reward?.reward_created_date,
-                fileDetails: {
-                    file: item.file?.file_url || '',
-                    filename: item.file?.filename
-                }
-            }
-        }));
+        totalCount.value = res.data.data.count;  
+        tableData.value = res.data.data.results.map((item: any) => {            
+            return {
+                id: item.id,
+                redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
+                rewardTitle: item.reward_title_stored,
+                rewardDescription: item.reward_description_stored,
+                rewardTerms: item.reward_terms_stored,
+                rewardEndDateTime: item.reward_end_date_time_stored,
+                rewardImageId: item.reward_image_id_stored,
+                rewardImageUrl: item.reward_image_url_stored,
+                pointsDeducted: item.points_deducted,
+                status: item.reward_redemption_status,         
+            };
+        });
     })
 }
-onMounted(() => {
-    fetchUserId();
+onMounted(async () => { 
+    await fetchUserId();    
     fetchRewardRedemption();
 })
 watch([rewardSearch, searchStartDate, searchEndDate], () => {
@@ -216,6 +214,8 @@ const currentReward = ref<any>({})
 const showModal = ref(false);
 
 const openViewModal = (item:any) => {
+    console.log("Opening modal with data:", item);
+    console.log("File details:", item.rewardImageUrl);
     currentReward.value = item;
     showModal.value = true;
 };
@@ -228,7 +228,7 @@ const endDate = ref('')
 const filteredLogs = computed(() => {
   return tableData.value.filter(detail => {
     //search bar for reward name
-    const matchesSearch = detail.reward.rewardName.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const matchesSearch = detail.rewardTitle.toLowerCase().includes(searchQuery.value.toLowerCase());
     
     //custom date range for received date
     const taskDate = new Date(detail.redeemedOn); // Convert string date to Date object

@@ -1,6 +1,7 @@
 export interface Staff {
     id: number
     username: string,
+    staffName:string,
     password: string,
     date_of_birth: string
     roles: number[]
@@ -14,5 +15,6 @@ export interface Staff {
     medicalLeaves: number
     annualLeaves: number
     totalPoints: number
+    currentPoints: number
     leave_entitlements : []
 }

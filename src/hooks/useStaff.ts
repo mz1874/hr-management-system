@@ -29,6 +29,7 @@ export default function useStaff() {
         return {
             id: item.id,
             username: item.username,
+            staffName: item.staffName,
             date_of_birth: dayjs(item.date_of_birth).format("YYYY-MM-DD"),
             roles: item.roles,
             department: item.department,

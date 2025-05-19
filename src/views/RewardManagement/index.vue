@@ -320,6 +320,7 @@ const fetchRewards = (page = 1) => {
     .then((res) => {
         console.log(res.data); 
         
+        totalCount.value = res.data.data.count;  
         tableData.value = res.data.data.results.map((item: any) => ({
             id: item.id,
             rewardName: item.reward_title,
@@ -333,18 +334,20 @@ const fetchRewards = (page = 1) => {
             // fileId: item.file,
             fileDetails: item.file || null,
         }));
+
+        
     });
 };
 onMounted(fetchRewards);
 watch([rewardSearch, pointSearch, statusSearch, startDateSearch, endDateSearch], () => {
-    fetchRewards(1) // Reset to page 1 on any search input change
-})
+    fetchRewards(1); // Reset to page 1 on any search input change
+});
 
 
 // ===================== Publish Reward =====================
 const publishReward = async () => {
     try {
-        // First, upload the file if one is selected
+        //   upload the file if one is selected
         let fileId = null;
         
         if (selectedFile.value) {
@@ -530,11 +533,6 @@ const saveEditedReward = async () => {
             file_id: fileId
         };
 
-        // Only add file_id if it's not null (meaning we either have a new file or kept an existing one)
-        // if (fileId !== null) {
-        //     data.file_id = fileId;
-        // }
-
         console.log("Update reward payload:", data);
         
         showModal.value = false;
@@ -600,7 +598,6 @@ const handleFileChange = (event) => {
 };
 
 // ===================== Remove Image =====================
-
 const removeImage = () => {
     // Clear the file from UI
     currentReward.value.fileDetails = null;
@@ -625,8 +622,8 @@ const filteredLogs = computed(() => {
     const matchPointSearch = searchPoint.value === '' || detail.rewardPoints.toString().includes(searchPoint.value);
 
      //search for specific status
-     const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value
-    
+    const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value    
+
     //custom date range for received date
     const taskDate = new Date(detail.createdOn); // Convert string date to Date object
     const start = startDate.value ? new Date(startDate.value) : null;
@@ -660,42 +657,6 @@ const nextPage = () => {
 const goToPage = (page: number) => {
   currentPage.value = page;
 };
-
-
-
-
-// const handleImage = async(event: Event) => {
-//     const target = event.target as HTMLInputElement;
-//     const file = target.files?.[0];
-//     if (!file) return;
-
-//     try {
-//         const response = await uploadFile(file);
-//         const uploadedFile = response.data;
-
-//         // Assuming your API returns a file_url
-//         currentReward.value.image = uploadedFile.file_url;
-
-//         console.log('Uploaded image URL:', uploadedFile.file_url);
-//     } catch (error) {
-//         console.error('Image upload failed:', error);
-//     }
-// }
-
-
-
-// const handleImageChange = (event: Event) => {
-//     const file = (event.target as HTMLInputElement).files?.[0];
-//     if (file) {
-//         const reader = new FileReader();
-//         reader.onload = (e) => {
-//             if (e.target?.result) {
-//                 currentReward.value.image = e.target.result as string;
-//             }
-//         };
-//         reader.readAsDataURL(file);
-//     }
-// };
 
 </script>
 
@@ -784,10 +745,10 @@ const goToPage = (page: number) => {
 .col-md-6:last-child {
     padding-left: 30px;
 }
-.auto-resize {
-    resize: none; /* Prevent manual resizing */
-    overflow: hidden; /* Hide overflow content */
-}
+/* .auto-resize {
+    resize: none; 
+    overflow: hidden; 
+} */
 
 #drop-area {
     width: 100%;  

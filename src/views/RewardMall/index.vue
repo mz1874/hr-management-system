@@ -22,34 +22,62 @@
   <!-- reward item -->
   <div class="container">
     <div class="row row-cols-md-3 g-4" >
-    <div class="col" v-for="item in tableData" :key="item.id">
-      <div class="card shadow-sm mt-4" >
-        <img :src="item.fileDetails.file" :alt="item.fileDetails.filename" class="image">
-        <div class="card-body">
-            <h4 class="rewardTitle"><b>{{ item.rewardName }}</b></h4>
-            <p>{{ item.description }}</p>
-            <p><b>Valid Until: </b>{{ item.endDateTime }}</p>
-            <p><b>Quantity: </b>{{ item.quantity }}</p>
-            <p><b>Terms & Conditions: </b>  
-              <button class="TNCButton" @click="openTermsModal(item)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
-                  <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-                  <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-                </svg>
+      <div class="col" v-for="item in tableData" :key="item.id">
+        <div class="card shadow-sm mt-4" >
+          <div class="image-container">
+            <template v-if="item.fileDetails?.file">
+              <img :src="item.fileDetails.file" :alt="item.fileDetails.filename" class="image">
+            </template>
+            <template v-else>
+              <div class="no-image-placeholder">None</div>
+            </template>
+          </div>          
+          <div class="card-body">
+              <h4 class="rewardTitle"><b>{{ item.rewardName }}</b></h4>
+              <p class="clamp-2-lines">{{ item.description }}</p>
+              <p><b>Valid Until: </b>{{ item.endDateTime }}</p>
+              <p><b>Quantity: </b>{{ item.quantity }}</p>
+              <p><b>Terms & Conditions: </b>  
+                <button class="TNCButton" @click="openTermsModal(item)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
+                    <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
+                    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                  </svg>
+                </button>
+              </p>
+              <button class="rewardButton mx-auto" @click="openSelectedRewardModal(item)" :disabled="hasUserRedeemed(item.id)">
+                <div class="icon-container">
+                  <i class="fa-solid fa-circle border-circle-icon"></i>
+                  <i class="fa-solid fa-circle circle-icon"></i>
+                  <i class="fa-solid fa-star star-icon"></i>
+                </div>
+                <span class="rewardText">{{ hasUserRedeemed(item.id) ? 'Redeemed' : item.rewardPoints }}</span>
               </button>
-            </p>
-            <button class="rewardButton mx-auto" @click="openSelectedRewardModal(item)" :disabled="hasUserRedeemed(item.id)">
-              <div class="icon-container">
-                <i class="fa-solid fa-circle border-circle-icon"></i>
-                <i class="fa-solid fa-circle circle-icon"></i>
-                <i class="fa-solid fa-star star-icon"></i>
-              </div>
-              <span class="rewardText">{{ hasUserRedeemed(item.id) ? 'Redeemed' : item.rewardPoints }}</span>
-            </button>
-          </div>
+            </div>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- pagination -->
+  <div class="d-flex align-items-center mt-3 justify-content-start">
+      <span class="me-3">Total: {{ totalCount }}</span>
+      
+      <nav>
+      <ul class="pagination mb-0">
+        <li :class="['page-item', { disabled: currentPage === 1 }]">
+          <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+        </li>
+
+        <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+          <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+        </li>
+
+        <li :class="['page-item', { disabled: currentPage === totalPages }]">
+          <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+        </li>
+      </ul>
+    </nav>
   </div>
 
   <!-- View T&C Modal -->
@@ -99,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from "vue-router";
 import { createRedemption, getAllRewards, getRewardRedemption, getCurrentUser, patchReward, updateReward } from "@/api/reward.ts";
 import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
@@ -107,6 +135,18 @@ import Swal from "sweetalert2";
 import dayjs from 'dayjs';
 import type { RewardItem} from '@/interface/RewardInterface.ts'
 
+
+// ===================== Pagination =====================
+const currentPage = ref(1)
+const itemsPerPage = 10
+const totalCount = ref(0)
+const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage))
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) fetchRewards(page)
+}
+
+// ==============================================
 const tableData = ref<RewardItem[]>([]);
 const currentReward = ref<any>({});
 
@@ -127,10 +167,13 @@ const openSelectedRewardModal = (reward: RewardItem) => {
 };
 
 // ===================== Fetch Reward =====================
-const fetchRewards = () => {
-  getAllRewards().then((res) => {   
+const fetchRewards = (page = 1) => {
+  currentPage.value = page
+
+  getAllRewards(page, '', '', 'Active').then((res) => {   
     console.log(res.data)
-    tableData.value = res.data.data.results.filter((item: any) => item.reward_status === 'Active').map((item:any) => ({
+    totalCount.value = res.data.data.count;  
+    tableData.value = res.data.data.results.map((item:any) => ({
       id: item.id,
       rewardName: item.reward_title,
       rewardPoints: item.reward_points_required,
@@ -149,21 +192,20 @@ const fetchRewards = () => {
 // ===================== Fetch Current User =====================
 let currentUserData = reactive<any>({});
 
-const fetchPoints = () => {
-  getCurrentUser().then((res) => {
-    console.log("Current User:", currentUserData);
+const fetchPoints = async () => {
+  try {
+    const res = await getCurrentUser();
     Object.assign(currentUserData, res.data.data);
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+  }
 };
 
 // ===================== Fetch Reward Redemption =====================
 let userRedemptions = ref<any[]>([]);
 
 const fetchRewardRedemption = () => {
-  getRewardRedemption().then((res) => {
+  getRewardRedemption(currentUserData.id).then((res) => {
     console.log("User Redemptions:", userRedemptions.value); // DEBUG
     userRedemptions.value = res.data.data.results;
   })
@@ -172,9 +214,9 @@ const fetchRewardRedemption = () => {
   });
 };
 
-onMounted(() => {
+onMounted(async () => {
   fetchRewards();
-  fetchPoints();
+  await fetchPoints();
   fetchRewardRedemption();
 });
 
@@ -183,7 +225,7 @@ onMounted(() => {
 const hasUserRedeemed = (rewardId: any) => {
   // Check if any redemption record matches the current user and the given reward ID
   return userRedemptions.value.some(
-    redemption => redemption.user.id === currentUserData.id && redemption.reward.id === rewardId
+    redemption => redemption.user.id === currentUserData.id && redemption.reward_id_stored === rewardId
   );
 };
 
@@ -191,7 +233,7 @@ const hasUserRedeemed = (rewardId: any) => {
 const confirmedReward = async () => {
   // check whether has redeemed this reward
   const alreadyRedeemed = userRedemptions.value.some(
-    redemption => redemption.user === currentUserData.id && redemption.reward === currentReward.value.id
+    redemption => redemption.user === currentUserData.id && redemption.reward_id_stored === currentReward.value.id
   );
 
   // Check if the user has redeemed the reward
@@ -219,8 +261,7 @@ const confirmedReward = async () => {
     try {
       // Create User reward redemption record
       const redemptionData = {
-        reward: currentReward.value.id,
-        user: currentUserData.id,
+        reward_id: currentReward.value.id, 
         points_deducted: currentReward.value.rewardPoints,
         reward_redeemed_on: dayjs().format("YYYY-MM-DD HH:mm:ss"),
         reward_redemption_status: 'Not Yet Received'
@@ -253,10 +294,11 @@ const confirmedReward = async () => {
       });
 
       // Update user point
-      currentUserData.total_point -= currentReward.value.rewardPoints;
+      currentUserData.current_point -= currentReward.value.rewardPoints;
 
       fetchRewards();
       fetchPoints();
+      fetchRewardRedemption();
 
     } catch (err: any) {
       console.error(err);
@@ -353,17 +395,45 @@ function goToRewardHistory() {
 }
 
 /* Card sytling*/
+.card {
+  max-width: 330px;
+}
+
+.image-container {
+  height: 300px; /* Adjust to your card design */
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
 .image {
+  height: 100%;
   width: 100%;  
-  /* height: 400px; 
-  object-fit: cover;  */
-  margin-bottom: 0.75rem;
   overflow: hidden;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
 }
 
 .rewardTitle {
+  margin-top: 0.75rem;
   margin-bottom: 0.75rem;
 }
+
+.clamp-2-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;     
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  line-clamp: 2;
+  box-orient: vertical;
+}
+
+
 
 .card-body p {
   font-size: 1em;
