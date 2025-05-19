@@ -131,7 +131,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import type { RewardRedemptionItem } from '@/interface/RewardInterface'
-import { getRewardRedemption, patchRewardRedemption } from '@/api/reward';
+import { getAllRewardRedemption, patchRewardRedemption } from '@/api/reward';
 import dayjs from 'dayjs';
 import { isSuccess } from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
@@ -178,7 +178,7 @@ const changePage = (page: number) => {
 const fetchRewardRedemption = (page = 1) => {
     currentPage.value = page
 
-  getRewardRedemption(
+  getAllRewardRedemption(
     page, 
     rewardSearch.value.trim(), 
     userSearch.value.trim(), 

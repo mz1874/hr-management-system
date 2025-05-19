@@ -34,12 +34,30 @@ export interface RewardRedemptionItem {
 export interface PointHistoryItem {
     id: number
     user: Staff
-    kpi?: Task  // Optional since it can be null for deductions
-    pointsValue: number
-    pointsReceivedOn: string  // DateTimeField as string in frontend
-    isDeduction: boolean
-    reasonType?: 'Lateness' | 'Credit Notice' | 'Leave Without Notice' | 'KPI Completed'  // Optional, matches your Django choices
-    description?: string  // Optional
+    pointType: string
+    pointsReceivedOn: string
+    pointsValues: number
+    pointsDeduction?: {
+        id: number
+        deductionTypes: string
+        pointsDeducted: number
+    }[],
+    pointsAddition?: {
+        id: number
+        additionTypes: string
+        pointsAddition: number
+    },
+    kpiCompleted?: {
+        id: number
+        kpiCompletedTypes: string
+        taskTitleStored: string
+        taskDescriptionStored: string
+        taskStartDateStored: string
+        taskCompletionDateStored: string
+        pointsEarnedStored: number
+        targetUnitStored: number
+        individualUnitStored: string
+    }
 }
 
 export interface PointItem {

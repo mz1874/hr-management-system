@@ -137,7 +137,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { getCurrentUser, getEmployeeRewardRedemption, getRewardRedemption } from '@/api/reward';
+import { getCurrentUser, getReward, getRewardRedemption } from '@/api/reward';
 import type { RewardRedemptionItem} from '@/interface/RewardInterface.ts'
 import dayjs from 'dayjs';
 import Datepicker from '@vuepic/vue-datepicker';
@@ -146,13 +146,13 @@ import '@vuepic/vue-datepicker/dist/main.css';
 // ===================== Fetch User =====================
 let currentUserData = reactive<any>({});
 
-const fetchUserId = () => {
-  getCurrentUser().then((res) => {
+const fetchUserId = async () => {
+  try {
+    const res = await getCurrentUser();
     Object.assign(currentUserData, res.data.data);
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+  }
 };
 
 // ===================== Fetch Reward Redemption =====================
@@ -174,17 +174,17 @@ const changePage = (page: number) => {
 const fetchRewardRedemption = (page = 1) => {
     currentPage.value = page
 
-    getEmployeeRewardRedemption(
+    getRewardRedemption(
+    currentUserData.id,
     page, 
     rewardSearch.value.trim(), 
     searchStartDate.value,
     searchEndDate.value)
     .then((res) => {
         console.log(res.data)
-        const userId = currentUserData.id;
 
         totalCount.value = res.data.data.count;  
-        tableData.value = res.data.data.results.filter((item: any) => item.user.id === userId).map((item: any) => {            
+        tableData.value = res.data.data.results.map((item: any) => {            
             return {
                 id: item.id,
                 redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD, HH:mm"),
@@ -200,8 +200,8 @@ const fetchRewardRedemption = (page = 1) => {
         });
     })
 }
-onMounted(() => {
-    fetchUserId();
+onMounted(async () => { 
+    await fetchUserId();    
     fetchRewardRedemption();
 })
 watch([rewardSearch, searchStartDate, searchEndDate], () => {

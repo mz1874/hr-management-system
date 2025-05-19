@@ -44,8 +44,8 @@
                     <td>{{ item.totalPoints }}</td>
                     <td>{{ item.currentPoints }}</td>
                     <td>
-                        <button type="button" class="btn btn-success btn-action" @click="openAdditionModal(item)">+ Add Points</button>
-                        <button type="button" class="btn btn-danger btn-action" @click="openDeductionModal(item)">- Deduct Points</button>
+                        <button type="button" class="btn btn-success btn-action" @click="openAdditionModal(item)">Add Points</button>
+                        <button type="button" class="btn btn-danger btn-action" @click="openDeductionModal(item)">Deduct Points</button>
                         <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">Point Details</button>
                     </td>
                 </tr>
@@ -126,18 +126,18 @@
                     <div class="mt-4 mb-4">
                         <h5>Select Deduction Type</h5>
                         <div class="d-flex flex-wrap gap-2 mb-4">
-                            <button v-for="opt in deductionOptions" :key="opt.type" class="btn btn-primary" 
-                            :disabled="selectedDeductions.some(d => d.type === opt.type)" @click="addDeduction(opt.type, opt.defaultPoints)">
-                                {{ opt.type }} | {{ opt.defaultPoints }} pts
+                            <button v-for="opt in deductionOptions" :key="opt.deductionTypes" class="btn btn-primary" 
+                            :disabled="selectedDeductions.some(d => d.deductionTypes === opt.deductionTypes)" @click="addDeduction(opt.deductionTypes)">
+                                {{ opt.deductionTypes }}
                             </button>
                         </div>
 
                         <!-- Form fields for each selected deduction -->
-                        <div v-for="(item, index) in selectedDeductions" :key="item.type" class="mb-3">
-                            <label><b>Deduction Reason:</b> {{ item.type }}</label>
+                        <div v-for="(item, index) in selectedDeductions" :key="item.deductionTypes" class="mb-3">
+                            <label><b>Deduction Reason:</b> {{ item.deductionTypes }}</label>
                             <div class="input-group">
-                                <input type="number" class="form-control" v-model.number="item.points"placeholder="Enter points to deduct"/>
-                                <button class="btn btn-outline-danger" @click="removeDeduction(item.type)">Remove</button>
+                                <input type="number" class="form-control" v-model.number="item.pointsDeducted" placeholder="Enter points to deduct"/>
+                                <button class="btn btn-outline-danger" @click="removeDeduction(item.deductionTypes)">Remove</button>
                             </div>
                         </div>
                     </div>
@@ -172,13 +172,13 @@
                     <div class="mt-4">
                         <div class="mb-3">
                             <div><b>Addition Reason:</b></div>
-                            <select class="search-container form-select" v-model="additionReason" disabled>
-                                <option value="star" selected> ⭐ Star | +50 points</option>
+                            <select class="search-container form-select" v-model="currentUserPointDetails.additionTypes" disabled>
+                                <option value="Star" selected> ⭐ Star </option>
                             </select>
                             <form>
                                 <div class="form-group">
                                     <label ><b>Points to Add:</b></label>
-                                    <input type="number" class="form-control" placeholder="Enter points to add">
+                                    <input type="number" class="form-control" placeholder="Enter points to add" v-model="currentUserPointDetails.pointsAddition">
                                 </div>
                             </form>                        
                         </div>
@@ -186,7 +186,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="showAdditionModal = false">Close</button>
-                    <button type="button" class="btn btn-success" @click="confirmDeduction">Confirm</button>
+                    <button type="button" class="btn btn-success" @click="confirmAddition">Confirm</button>
                 </div>
             </div>
         </div>
@@ -336,7 +336,7 @@ async function fetchAllStaffs(page = 1): Promise<void> {
 // ===================== Fetch Reward Redemption =====================
 const rewardRedemptionTableData = ref<RewardRedemptionItem[]>([])
 const fetchRewardRedemption = () => {
-    getRewardRedemption().then((res) => {
+    getRewardRedemption(currentUserPointDetails.value.id).then((res) => {
         console.log(res.data)
         rewardRedemptionTableData.value = res.data.data.results.map((item:any) => ({
             redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD HH:mm:ss"),
@@ -357,26 +357,68 @@ const fetchPointHistory = () => {
         return; // Exit early if no valid user ID
     }
 
-    getPointHistory().then((res) => {
-        console.log(res.data)
-        pointSystemTableData.value = res.data.data.results.map((item:any) => ({
-            pointsReceivedOn: item.points_received_on,
-            pointsValue: item.points_values,
-            isDeduction: item.is_deduction,
-            reasonType: item.reason_types,
-            description: item.description,
-            user: {
-                id: item.user.id
+    getPointHistory(currentUserPointDetails.value.id).then((res) => {
+        console.log(res.data);
+        
+        // Map the backend response to match the PointHistoryItem interface
+        pointSystemTableData.value = res.data.data.results.map((item: any) => {
+            // Create the base item
+            const historyItem: PointHistoryItem = {
+                id: item.id,
+                user: item.user, // Assuming this matches the Staff interface
+                pointType: item.point_type,
+                pointsReceivedOn: item.points_received_on,
+                pointsValues: item.points_values
+            };
+            
+            // Add point_deductions if they exist
+            if (item.point_deductions && item.point_deductions.length > 0) {
+                historyItem.pointsDeduction = item.point_deductions.map((deduction: any) => ({
+                    id: deduction.id,
+                    deductionTypes: deduction.deduction_types,
+                    pointsDeducted: deduction.points_deducted
+                }));
             }
-        }))
-    })
+            
+            // Add point_addition if it exists
+            if (item.point_addition) {
+                historyItem.pointsAddition = {
+                    id: item.point_addition.id,
+                    additionTypes: item.point_addition.addition_types,
+                    pointsAddition: item.point_addition.points_addition
+                };
+            }
+            
+            // Add kpi_completed if it exists
+            if (item.kpi_completed) {
+                historyItem.kpiCompleted = {
+                    id: item.kpi_completed.id,
+                    kpiCompletedTypes: item.kpi_completed.kpi_completed_types,
+                    taskTitleStored: item.kpi_completed.task_title_stored,
+                    taskDescriptionStored: item.kpi_completed.task_description_stored,
+                    taskStartDateStored: item.kpi_completed.task_start_date_stored,
+                    taskCompletionDateStored: item.kpi_completed.task_completion_date_stored,
+                    pointsEarnedStored: item.kpi_completed.points_earned_stored,
+                    targetUnitStored: item.kpi_completed.target_unit_stored,
+                    individualUnitStored: item.kpi_completed.individual_unit
+                };
+            }
+            
+            return historyItem;
+        });
+    }).catch(error => {
+        console.error("Error fetching point history:", error);
+    });
 }
 
-onMounted(() => {
-    fetchAllStaffs();
-    fetchRewardRedemption();
-    fetchPointHistory(),
-    departmentStore.fetchDepartments();
+onMounted(async () => {
+    await fetchAllStaffs();
+    // Assuming you select the first staff as default
+    if (staffTableData.results.length > 0) {
+        currentUserPointDetails.value = staffTableData.results[0];
+        fetchRewardRedemption();
+        fetchPointHistory();
+    }    departmentStore.fetchDepartments();
 })
 
 // ===================== Reset All User Points =====================
@@ -388,16 +430,15 @@ const resetReward = () => {
 }
 
 // ===================== Confirm Point deduction =====================
-
 const showDeductionModal = ref(false)
 const deductionOptions = [
-  { type: 'Credit Note', defaultPoints: -200 },
-  { type: 'Lateness', defaultPoints: -100 },
-  { type: 'Absent Without Notice', defaultPoints: -50 }
+  { deductionTypes: 'Credit Notice' },
+  { deductionTypes: 'Lateness' },
+  { deductionTypes: 'Absent Without Notice' }
 ]
 
-// Selected deductions: { type: string, points: number }
-const selectedDeductions = ref<{ type: string, points: number | null }[]>([])
+// Selected deductions
+const selectedDeductions = ref<{ deductionTypes: string, pointsDeducted: number | null }[]>([])
 
 const openDeductionModal = (staff: Staff) => {
   currentUserPointDetails.value = { ...staff }
@@ -406,84 +447,137 @@ const openDeductionModal = (staff: Staff) => {
 }
 
 // Add a new deduction block if not already selected
-const addDeduction = (type: string, defaultPoints: number) => {
-  if (!selectedDeductions.value.some(d => d.type === type)) {
-    selectedDeductions.value.push({ type, points: null })
+const addDeduction = (deductionTypes: string) => {
+  if (!selectedDeductions.value.some(d => d.deductionTypes === deductionTypes)) {
+    selectedDeductions.value.push({ deductionTypes, pointsDeducted: null })
   }
 }
 
-// Remove a deduction row (optional)
-const removeDeduction = (type: string) => {
-  selectedDeductions.value = selectedDeductions.value.filter(d => d.type !== type)
+// Remove a deduction row
+const removeDeduction = (deductionTypes: string) => {
+  selectedDeductions.value = selectedDeductions.value.filter(d => d.deductionTypes !== deductionTypes)
 }
 
-const confirmDeduction = async () => {    
-    // Calculate points value based on reason
-    // let pointsValue = 0;
-    // switch(deductionReason.value) {
-    //     case "Credit Notice":
-    //         pointsValue = 200;
-    //         break;
-    //     case "Lateness":
-    //         pointsValue = 100;
-    //         break;
-    //     case "Leave Without Notice":
-    //         pointsValue = 50;
-    //         break;
-    //     default:
-    //         pointsValue = 0;
-    // }
-    
-    // try {
-    //     const data = {
-    //         user: currentUserPointDetails.value.id,
-    //         points_values: pointsValue,
-    //         is_deduction: true,
-    //         reason_types: deductionReason.value,
-    //         description: deductionReason.value
-    //     };
-        
-    //     const deductionRes = await createDeductionHistory(data);
+//confirm deduction
+const confirmDeduction = () => {    
+    const totalDeductedPoints = selectedDeductions.value.reduce((sum, item) => sum + (item.pointsDeducted ?? 0), 0)
 
-    //    if (isSuccess(deductionRes.status)) {
-    //         Swal.fire({
-    //             position: "top-end",
-    //             icon: "success",
-    //             title: "Points deducted successfully",
-    //             showConfirmButton: false,
-    //             timer: 1500
-    //         });
-            
-    //         // Update the staff's points in the local data before refresh
-    //         const updatedPointsData = {
-    //             total_point: currentUserPointDetails.value.totalPoints -= pointsValue,
-    //             current_point: currentUserPointDetails.value.currentPoints -= pointsValue
-    //         };
-    //         const updateRes = await patchUser(currentUserPointDetails.value.id, updatedPointsData);
-    //         if (!isSuccess(updateRes.status)) {
-    //             throw new Error('Failed to deduct points');
-    //         }
-            
-    //         showDeductionModal.value = false;
-    //         fetchAllStaffs(currentPage.value); // Refresh data
-    //     }
+    const pointHistoryData = {
+        user: currentUserPointDetails.value.id,
+        point_type: "Deduction",
+        points_values: -totalDeductedPoints,
+        point_deductions: selectedDeductions.value.map(item => ({
+            deduction_types: item.deductionTypes,
+            points_deducted: item.pointsDeducted 
+        })),
+    }    
 
-    // } catch (error) {
-    //     console.error("Failed to create deduction:", error);
-    //     Swal.fire({
-    //         icon: "error",
-    //         title: "Failed to deduct points",
-    //         text: "Please try again later"
-    //     });
-    // }
+    showDeductionModal.value = false;
+
+    // First create the deduction history
+    createDeductionHistory(pointHistoryData).then((res) => {
+        console.log("✅ Deduction history created:", res);
+        if (isSuccess(res.status)) {
+            // Then update the user's points in the database
+            const userData = {
+                id: currentUserPointDetails.value.id,
+                total_point: currentUserPointDetails.value.totalPoints - totalDeductedPoints,
+                current_point: currentUserPointDetails.value.currentPoints - totalDeductedPoints
+            }
+            
+            return patchUser(currentUserPointDetails.value.id, userData);
+        }
+    }).then((updateRes) => {
+        if (updateRes && isSuccess(updateRes.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "Deduction recorded successfully",
+                showConfirmButton: false,
+                timer: 1500
+            });
+            
+            // Update local state
+            currentUserPointDetails.value.totalPoints -= totalDeductedPoints;
+            currentUserPointDetails.value.currentPoints -= totalDeductedPoints;
+            
+            // Refresh staff data
+            fetchAllStaffs();
+        }
+    }).catch(error => {
+        console.error("Error updating points:", error);
+        Swal.fire({
+            position: "top-end",
+            icon: "error",
+            title: "Failed to update points",
+            showConfirmButton: false,
+            timer: 1500
+        });
+    });
 }
 
 // ===================== Confirm Point addition =====================
-const additionReason = ref("star")
 const showAdditionModal = ref(false)
 const openAdditionModal = (staff: Staff) => {
-    currentUserPointDetails.value = {...staff};
+    currentUserPointDetails.value = {...staff, additionTypes: "Star" };
     showAdditionModal.value = true
+}
+
+const confirmAddition = () => {  
+    const pointsToAdd = currentUserPointDetails.value.pointsAddition;
+    
+    const pointHistoryData = {
+        user: currentUserPointDetails.value.id,
+        point_type: "Addition",
+        points_values: pointsToAdd,
+        point_addition: {
+            addition_types: currentUserPointDetails.value.additionTypes,
+            points_addition: pointsToAdd 
+        }
+    }   
+
+    showAdditionModal.value = false;
+
+    // First create the addition history
+    createDeductionHistory(pointHistoryData).then((res) => {
+        console.log("✅ Addition history created:", res);
+        if (isSuccess(res.status)) {
+            // Then update the user's points in the database
+            const userData = {
+                id: currentUserPointDetails.value.id,
+                total_point: currentUserPointDetails.value.totalPoints + pointsToAdd,
+                current_point: currentUserPointDetails.value.currentPoints + pointsToAdd
+            }
+            
+            return patchUser(currentUserPointDetails.value.id, userData);
+        }
+    }).then((updateRes) => {
+        if (updateRes && isSuccess(updateRes.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success", 
+                title: "Addition recorded successfully",
+                showConfirmButton: false,
+                timer: 1500
+            });
+            
+            // Update local state
+            currentUserPointDetails.value.totalPoints += pointsToAdd;
+            currentUserPointDetails.value.currentPoints += pointsToAdd;
+            
+            // Refresh staff data
+            fetchAllStaffs();
+        }
+    }).catch(error => {
+        console.error("Error updating points:", error);
+        Swal.fire({
+            position: "top-end",
+            icon: "error",
+            title: "Failed to update points",
+            showConfirmButton: false,
+            timer: 1500
+        });
+    });
 }
 
 
@@ -495,30 +589,46 @@ const openViewModal = async (user: Staff) => {
     
     try {
         const [rewardRes, pointHistoryRes] = await Promise.all([
-            getRewardRedemption(undefined, undefined, user.username), // Pass username to filter
-            getPointHistory()
+            getRewardRedemption(currentUserPointDetails.value.id), // Pass username to filter
+            getPointHistory(currentUserPointDetails.value.id)
         ]);
 
         // Check if we have proper data structures
-        const rewardData = rewardRes.data.data?.results || [];
-        const pointHistoryData = pointHistoryRes.data.data?.results || [];
+        const rewardData = rewardRes.data.data.results || [];
+        const pointHistoryData = pointHistoryRes.data.data.results || [];
         
         // Map rewards to the expected format
         const rewards = rewardData.map((reward: any) => ({
             title: reward.reward_title_stored,
-            points: '- ' + reward.points_deducted, // Negative for redemptions
+            points: '-' + reward.points_deducted, // Negative for redemptions
             type: 'Reward Redemption',
             date: dayjs(reward.reward_redeemed_on).format("YYYY-MM-DD")
         }));
         
-        // Map point history to the expected format
-        const histories = pointHistoryData.map((history: any) => ({
-            title: history.description || history.reason_types,
-            points: history.is_deduction ? '- ' + history.points_values : '+ ' + history.points_values, // Handle deductions
-            type: history.is_deduction ? 'Deduction' : 'KPI Completion',
-            date: dayjs(history.points_received_on).format("YYYY-MM-DD")
-        }));
-        
+        //Map point history to the expected format
+        const histories = pointHistoryData.map((history: any) => {
+            let title = '';
+
+            if (history.point_type === 'Deduction') {
+                if (Array.isArray(history.point_deductions)) {
+                    title = history.point_deductions.map((d: any) => d.deduction_types).join(', ');
+                } else {
+                    title = history.point_deductions?.deduction_types || '';
+                }            
+            } else if (history.point_type === 'Addition') {
+                title = history.point_addition.addition_types;
+            } else if (history.point_type === 'KPI Completed') {
+                title = history.kpi_completed.kpi_completed_types;
+            }
+
+            return {
+                title,
+                points: history.points_values,
+                type: history.point_type,
+                date: dayjs(history.points_received_on).format("YYYY-MM-DD")
+            };
+        });     
+
         // Combine and sort by date (newest first)
         currentUserPointDetails.value = [...rewards, ...histories].sort((a, b) => {
             return new Date(b.date).getTime() - new Date(a.date).getTime();

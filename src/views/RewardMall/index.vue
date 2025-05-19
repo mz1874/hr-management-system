@@ -170,10 +170,10 @@ const openSelectedRewardModal = (reward: RewardItem) => {
 const fetchRewards = (page = 1) => {
   currentPage.value = page
 
-  getAllRewards(page).then((res) => {   
+  getAllRewards(page, '', '', 'Active').then((res) => {   
     console.log(res.data)
     totalCount.value = res.data.data.count;  
-    tableData.value = res.data.data.results.filter((item: any) => item.reward_status === 'Active').map((item:any) => ({
+    tableData.value = res.data.data.results.map((item:any) => ({
       id: item.id,
       rewardName: item.reward_title,
       rewardPoints: item.reward_points_required,
@@ -192,21 +192,20 @@ const fetchRewards = (page = 1) => {
 // ===================== Fetch Current User =====================
 let currentUserData = reactive<any>({});
 
-const fetchPoints = () => {
-  getCurrentUser().then((res) => {
-    console.log("Current User:", currentUserData);
+const fetchPoints = async () => {
+  try {
+    const res = await getCurrentUser();
     Object.assign(currentUserData, res.data.data);
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+  }
 };
 
 // ===================== Fetch Reward Redemption =====================
 let userRedemptions = ref<any[]>([]);
 
 const fetchRewardRedemption = () => {
-  getRewardRedemption().then((res) => {
+  getRewardRedemption(currentUserData.id).then((res) => {
     console.log("User Redemptions:", userRedemptions.value); // DEBUG
     userRedemptions.value = res.data.data.results;
   })
@@ -215,9 +214,9 @@ const fetchRewardRedemption = () => {
   });
 };
 
-onMounted(() => {
+onMounted(async () => {
   fetchRewards();
-  fetchPoints();
+  await fetchPoints();
   fetchRewardRedemption();
 });
 
@@ -295,7 +294,7 @@ const confirmedReward = async () => {
       });
 
       // Update user point
-      currentUserData.total_point -= currentReward.value.rewardPoints;
+      currentUserData.current_point -= currentReward.value.rewardPoints;
 
       fetchRewards();
       fetchPoints();
@@ -415,7 +414,8 @@ function goToRewardHistory() {
   width: 100%;  
   overflow: hidden;
   border-top-left-radius: 5px;
-  border-top-right-radius: 5px;}
+  border-top-right-radius: 5px;
+}
 
 .rewardTitle {
   margin-top: 0.75rem;

@@ -7,8 +7,8 @@
     <div class="podium-block rotate-left">
       <div v-if="tableData[1]">
         <i class="fa-solid fa-crown crown-second"></i>
-        <div><img :src="tableData[1].imgUrl" :alt="tableData[1].name" /></div>
-        <div class="name-size">{{ tableData[1].name }}</div>
+        <div><img :src="tableData[1].imgUrl" :alt="tableData[1].staffName" /></div>
+        <div class="name-size">{{ tableData[1].staffName }}</div>
         <div class="point-container">
           <div class="icon-container">
             <i class="fa-solid fa-circle border-circle-icon"></i>
@@ -28,8 +28,8 @@
     <div class="podium-block">
       <div v-if="tableData[0]">
         <i class="fa-solid fa-crown crown-first"></i>
-        <div><img :src="tableData[0].imgUrl" :alt="tableData[0].name" /></div>
-        <div class="name-size">{{ tableData[0].name }}</div>
+        <div><img :src="tableData[0].imgUrl" :alt="tableData[0].staffName" /></div>
+        <div class="name-size">{{ tableData[0].staffName }}</div>
         <div class="point-container">
           <div class="icon-container">
             <i class="fa-solid fa-circle border-circle-icon"></i>
@@ -49,8 +49,8 @@
     <div class="podium-block rotate-right">
       <div v-if="tableData[2]">
         <i class="fa-solid fa-crown crown-third"></i>
-        <div><img :src="tableData[2].imgUrl" :alt="tableData[2].name" /></div>
-        <div class="name-size">{{ tableData[2].name }}</div>
+        <div><img :src="tableData[2].imgUrl" :alt="tableData[2].staffName" /></div>
+        <div class="name-size">{{ tableData[2].staffName }}</div>
         <div class="point-container">
           <div class="icon-container">
             <i class="fa-solid fa-circle border-circle-icon"></i>
@@ -101,7 +101,7 @@
                       <img :src="user.imgUrl" alt="Pic">                  
                     </div>
                     <div class="username">
-                      {{ index >= tableData.length - 5 ? '********' : user.name }}
+                      {{ index >= tableData.length - 5 ? '********' : user.staffName }}
                     </div> 
                   </div>
                 </td>
@@ -133,7 +133,7 @@ const fetchAllStaffs = () => {
     .filter((staff: { department: any; }) => currentUserData.department_id === staff.department)
     .map((item:any, index: number) => ({
       id: index + 1,
-      name: item.username,
+      staffName: item.staffName,
       totalPoints: item.total_point,
       imgUrl: item.picture_url,
       department: item.department,
@@ -330,16 +330,6 @@ onMounted(() => {
   z-index: 4;
   position: relative;
 }
-.card {
-  border: none;
-}
-
-.container .card {
-  background: linear-gradient(to bottom, #CEE7FF, #F0F9FF);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-  border-radius: 15px;
-}
-
 .card {
   border: none;
 }
