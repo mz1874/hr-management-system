@@ -84,6 +84,11 @@ function markAllAsRead() {
   const unreadIds = announcements.value
     .filter(a => !a.read)
     .map(a => a.id)
+    
+  if (unreadIds.length === 0) {
+    console.log("All announcements are already read. Skipping API call.");
+    return;
+  }
 
   bulkMarkAsRead(unreadIds)
     .then(() => {

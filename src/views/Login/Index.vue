@@ -102,7 +102,7 @@ async function submitData() {
 
       if (homeRoute) {
         dynamicRoutes.forEach(r => {
-          router.addRoute('home', r); // ✅ 正确注册
+          router.addRoute('home', r); // 正确注册
         });
       }
 

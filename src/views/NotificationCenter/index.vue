@@ -296,10 +296,8 @@ const viewAnnouncement = (announcement: any) => {
     }));
   } else {
     selectedAnnouncement.value.attachments = [];
-    console.warn('No linked_files found or not in expected format.');
   }
 
-  console.log('Processed Attachments:', selectedAnnouncement.value.attachments);
 
   modalInstances.view.show();
 };
@@ -410,7 +408,7 @@ const submitNewAnnouncement = async () => {
       const scheduleDate = newAnnouncement.value.scheduleDate;
       const scheduleTime = newAnnouncement.value.scheduleTime;
 
-      // ✅ Nothing filled
+      // Nothing filled
       if (!scheduleDate && !scheduleTime) {
         Swal.fire({
           icon: 'warning',
@@ -424,7 +422,7 @@ const submitNewAnnouncement = async () => {
         return;
       }
 
-      // ✅ Date filled but no time
+      // Date filled but no time
       if (scheduleDate && !scheduleTime) {
         Swal.fire({
           icon: 'warning',
@@ -438,7 +436,7 @@ const submitNewAnnouncement = async () => {
         return;
       }
 
-      // ✅ Time filled but no date
+      // Time filled but no date
       if (!scheduleDate && scheduleTime) {
         Swal.fire({
           icon: 'warning',

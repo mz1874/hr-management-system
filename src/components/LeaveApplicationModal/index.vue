@@ -53,12 +53,21 @@ onMounted(async () => {
 
   try {
     const res = await getCurrentUser();
-    userName.value = res.data.data.first_name || res.data.data.username || 'User';
-    formData.department = res.data.data.department?.id || null;
-    userDeptName.value = res.data.data.department || '-';
+    const data = res.data.data;
+
+    const firstName = data.first_name?.trim();
+    const lastName = data.last_name?.trim();
+    const fullName = `${firstName || ''} ${lastName || ''}`.trim();
+
+    userName.value = fullName !== '' ? fullName : data.username || 'User';
+
+    formData.department = data.department_id || null;
+    userDeptName.value = data.department?.name || '-';
   } catch (e) {
     console.error('Failed to fetch current user:', e);
   }
+
+
 
   try {
     const typeRes = await getLeaveTypes();

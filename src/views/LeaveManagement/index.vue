@@ -129,7 +129,7 @@ const fetchLeaveApplications = async () => {
 
       return {
         id: item.id,
-        employeeName: item.username || '-',
+        employeeName: item.full_name || item.username || '-',
         department: item.department_name || '-',
         userRoles: item.user_roles || [] , // Add this in your mapping
         leaveType: Array.from(new Set(item.leave_dates?.map(d => d.leave_type_display?.name))).join(', '),
