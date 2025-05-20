@@ -88,6 +88,10 @@ export function patchRewardRedemption(id: Number, data: any) {
     return axios.patch(`/api/reward_redemption/${id}/`, data)
 }
 
+export const getDepartmentLeaderboard = (departmentId: number) => {
+  return axios.get(`/api/staff/department-leaderboard/?department_id=${departmentId}`);
+};
+
 // Point History
 export function getPointHistory(id: Number, page = 1, remarks = '', startDate = '', endDate = '') {
     const params = {
