@@ -74,32 +74,137 @@
       </nav>
     </div>
 
-    <!-- Modal for POint Details -->
+    <!-- Modal for Point Details -->
     <div class="modal fade" id="changeRewardStatus" :class="{ show: showModal }" style="display: block" v-if="showModal">
-        <div class="modal-dialog modal-dialog-centered modal-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
                         <h3>Employee Point Details</h3>
-                        <span class="text-muted">View employee points from KPIs and Rewards</span>
+                        <span class="text-muted">{{ currentUserPointDetails?.staffName }} - Point Transactions</span>
                     </div>
                 </div>
                 <div class="modal-body">
+                    <!-- Filter Section -->
+                    <div class="filter-container mb-4">
+                        <div class="row g-3">
+                            <!-- Date Range Filters -->
+                            <div class="col-md-5">
+                                <input type="date" class="form-control" v-model="modalStartDate" @change="applyModalFilters">
+                            </div>
+                            <div class="col-md-5">
+                                <input type="date" class="form-control" v-model="modalEndDate" @change="applyModalFilters">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-secondary" @click="clearDateFilters" :disabled="!modalStartDate && !modalEndDate">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div v-if="isLoadingModal" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading transactions...</p>
+                    </div>
+
                     <!-- No transactions message -->
-                    <div v-if="currentUserPointDetails.length === 0" class="text-center">
-                        <p>No point transactions found.</p>
+                    <div v-else-if="combinedPointTransactions.length === 0" class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No point transactions found.</p>
                     </div>
                     
                     <!-- Transaction List -->
-                    <div class="point-details-item" v-for="(point, index) in currentUserPointDetails" :key="index">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>{{ point.title }}</span>
-                            <span>{{ point.points }} points</span>
+                    <div v-else>
+                        <div class="point-details-item mb-3 p-3 border rounded" 
+                            v-for="transaction in combinedPointTransactions" 
+                            :key="transaction.id">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 fw-bold">{{ transaction.title }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-tag me-1"></i>
+                                        {{ transaction.transaction_type }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span :class="['fs-5 fw-bold', formatTransactionDisplay(transaction).pointsClass]">
+                                        {{ transaction.points }} pts
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ formatTransactionDisplay(transaction).formattedDate }}
+                                </small>
+                            </div>
+
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <span style= "color: gray">{{ point.type }}</span>
-                            <span style= "color: gray">{{ point.date }}</span>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div v-if="modalTotalPages > 1" class="d-flex align-items-center justify-content-between mt-4">
+                        <div>
+                            <small class="text-muted">
+                                Showing {{ combinedPointTransactions.length }} of {{ modalPaginationData.count }} transactions
+                            </small>
                         </div>
+                        
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li :class="['page-item', { disabled: modalCurrentPage === 1 }]">
+                                    <a class="page-link" href="#" @click.prevent="changeModalPage(modalCurrentPage - 1)">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+
+                                <!-- Show page numbers with ellipsis for large page counts -->
+                                <template v-if="modalTotalPages <= 7">
+                                    <li v-for="page in modalTotalPages" :key="page" 
+                                        :class="['page-item', { active: modalCurrentPage === page }]">
+                                        <a class="page-link" href="#" @click.prevent="changeModalPage(page)">{{ page }}</a>
+                                    </li>
+                                </template>
+                                <template>
+                                    <!-- First page -->
+                                    <li :class="['page-item', { active: modalCurrentPage === 1 }]">
+                                        <a class="page-link" href="#" @click.prevent="changeModalPage(1)">1</a>
+                                    </li>
+                                    
+                                    <!-- Previous pages around current -->
+                                    <li v-if="modalCurrentPage > 3" class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    
+                                    <li v-for="page in [modalCurrentPage - 1, modalCurrentPage, modalCurrentPage + 1].filter(p => p > 1 && p < modalTotalPages)" 
+                                        :key="page" 
+                                        :class="['page-item', { active: modalCurrentPage === page }]">
+                                        <a class="page-link" href="#" @click.prevent="changeModalPage(page)">{{ page }}</a>
+                                    </li>
+                                    
+                                    <!-- Next pages -->
+                                    <li v-if="modalCurrentPage < modalTotalPages - 2" class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    
+                                    <!-- Last page -->
+                                    <li :class="['page-item', { active: modalCurrentPage === modalTotalPages }]">
+                                        <a class="page-link" href="#" @click.prevent="changeModalPage(modalTotalPages)">{{ modalTotalPages }}</a>
+                                    </li>
+                                </template>
+
+                                <li :class="['page-item', { disabled: modalCurrentPage === modalTotalPages }]">
+                                    <a class="page-link" href="#" @click.prevent="changeModalPage(modalCurrentPage + 1)">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -107,7 +212,7 @@
                 </div>
             </div>
         </div>
-    </div >
+    </div>
     <div class="modal-backdrop fade show" v-if="showModal"></div>
 
     <!-- Show Deduction Modal -->
@@ -165,9 +270,7 @@
                 </div>
 
                 <div class="modal-body">
-                    <div>
-                        <b>Employee: </b>{{ currentUserPointDetails.staffName }}
-                    </div>
+                    <div><b>Employee: </b>{{ currentUserPointDetails.staffName }}</div>
                     
                     <div class="mt-4">
                         <div class="mb-3">
@@ -196,7 +299,7 @@
 
     <!-- Modal for reset point confirmation -->
     <div class="modal fade" id="deleteReward" :class="{ show: showResetPointModal }" style="display: block" v-if="showResetPointModal">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title" id="deleteRewardLabel">Are you sure?</h3>
@@ -220,7 +323,7 @@ import { ref, computed, onMounted, watch, reactive } from 'vue'
 import type { RewardRedemptionItem, PointHistoryItem, PointItem } from '@/interface/RewardInterface'
 import type { Staff } from '@/interface/UserInterface'
 import { searchStaff as searchStaffAPI, selectAllStaffs } from '@/api/staff';
-import { createDeductionHistory, getPointHistory, getRewardRedemption, patchUser } from '@/api/reward';
+import { createDeductionHistory, getCombinedPointTransactions, getPointHistory, getRewardRedemption, patchUser } from '@/api/reward';
 import dayjs from 'dayjs';
 import type { Department } from '@/interface/DepartmentInterface';
 import { selectAllDepartments } from '@/api/department';
@@ -581,96 +684,117 @@ const confirmAddition = () => {
 }
 
 
-// ===================== Open Point Details modal =====================
+// ===================== Point Details Modal State =====================
 const showModal = ref(false)
+const modalCurrentPage = ref(1)
+const modalItemsPerPage = 10
+const modalStartDate = ref('')
+const modalEndDate = ref('')
+const isLoadingModal = ref(false)
 
-const openViewModal = async (user: Staff) => {
-    currentUserPointDetails.value = user; // Store the user data first
+// Combined point transactions data
+const combinedPointTransactions = ref([])
+const modalPaginationData = ref({
+    count: 0,
+    has_next: false,
+    has_previous: false,
+    total_pages: 1
+})
+
+// ===================== Fetch Combined Point Transactions =====================
+const fetchCombinedPointTransactions = async (page = 1, startDate = '', endDate = '') => {
+    if (!currentUserPointDetails.value?.id) {
+        console.warn("Cannot fetch transactions: No user ID available");
+        return;
+    }
+
+    isLoadingModal.value = true;
     
     try {
-        const [rewardRes, pointHistoryRes] = await Promise.all([
-            getRewardRedemption(currentUserPointDetails.value.id), // Pass username to filter
-            getPointHistory(currentUserPointDetails.value.id)
-        ]);
-
-        // Check if we have proper data structures
-        const rewardData = rewardRes.data.data.results || [];
-        const pointHistoryData = pointHistoryRes.data.data.results || [];
+        const response = await getCombinedPointTransactions(currentUserPointDetails.value.id, page, startDate, endDate,);
         
-        // Map rewards to the expected format
-        const rewards = rewardData.map((reward: any) => ({
-            title: reward.reward_title_stored,
-            points: '-' + reward.points_deducted, // Negative for redemptions
-            type: 'Reward Redemption',
-            date: dayjs(reward.reward_redeemed_on).format("YYYY-MM-DD")
-        }));
-        
-        //Map point history to the expected format
-        const histories = pointHistoryData.map((history: any) => {
-            let title = '';
+        if (isSuccess(response.status)) {
+            const data = response.data.data || response.data;
+            combinedPointTransactions.value = data.data || [];
+            
+            // Handle pagination data
+            if (data.results.data && Array.isArray(data.results.data)) {
+                combinedPointTransactions.value = data.results.data;
+            } 
 
-            if (history.point_type === 'Deduction') {
-                if (Array.isArray(history.point_deductions)) {
-                    title = history.point_deductions.map((d: any) => d.deduction_types).join(', ');
-                } else {
-                    title = history.point_deductions?.deduction_types || '';
-                }            
-            } else if (history.point_type === 'Addition') {
-                title = history.point_addition.addition_types;
-            } else if (history.point_type === 'KPI Completed') {
-                title = history.kpi_completed.kpi_completed_types;
-            }
-
-            return {
-                title,
-                points: history.points_values,
-                type: history.point_type,
-                date: dayjs(history.points_received_on).format("YYYY-MM-DD")
+             modalPaginationData.value = {
+                count: data.count || 0,
+                has_next: !!data.next,
+                has_previous: !!data.previous,
+                total_pages: Math.ceil((data.count || 0) / modalItemsPerPage)
             };
-        });     
-
-        // Combine and sort by date (newest first)
-        currentUserPointDetails.value = [...rewards, ...histories].sort((a, b) => {
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
-        });
-        
-        showModal.value = true;
+            
+            modalCurrentPage.value = page;
+        }
     } catch (error) {
-        console.error("Failed to fetch point details:", error);
+        console.error("Failed to fetch combined point transactions:", error);
         Swal.fire({
             icon: "error",
-            title: "Failed to load point details",
+            title: "Failed to load transactions",
             text: "Please try again later"
         });
+    } finally {
+        isLoadingModal.value = false;
     }
-};
+}
 
-// ===================== Fetch department name for filter =====================
-// const departmentTableData = ref<Department[]>([])
-// const fetchDepartment = () => {
-//     selectAllDepartments().then((res) => {
-//         departmentTableData.value = res.data.data.results.map((item:any) => ({
-//             id: item.id,
-//             department_name: item.department_name
-//         }))
-//     })
-// }
+// ===================== Modal Pagination =====================
+const modalTotalPages = computed(() => {
+    return modalPaginationData.value.total_pages || Math.ceil(modalPaginationData.value.count / modalItemsPerPage)
+})
 
-// ===================== Filter =====================
-// const searchName = ref('')
-// const selectedDepartment = ref(0)
+const changeModalPage = (page: number) => {
+    if (page < 1 || page > modalTotalPages.value) return;
+    
+    fetchCombinedPointTransactions(page, modalStartDate.value, modalEndDate.value);
+}
 
-// const filteredLogs = computed(() => {
-//     return staffTableData.value.filter(detail => {
-//         //search bar for username
-//         const matchNameSearch = detail.username.toLowerCase().includes(searchName.value.toLowerCase()); 
+// ===================== Modal Filtering =====================
+const applyModalFilters = () => {
+    modalCurrentPage.value = 1; // Reset to first page when filtering
+    fetchCombinedPointTransactions(1, modalStartDate.value, modalEndDate.value,
+    );
+}
 
-//         //search for department
-//         const matchDepartmentSearch = !selectedDepartment.value || detail.department === selectedDepartment.value
+// ===================== Open Point Details Modal =====================
+const openViewModal = async (user: Staff) => {
+    currentUserPointDetails.value = user;
+    
+    // Reset modal state
+    modalCurrentPage.value = 1;
+    modalStartDate.value = '';
+    modalEndDate.value = '';
+    combinedPointTransactions.value = [];
+    
+    showModal.value = true;
+    
+    // Fetch initial data
+    await fetchCombinedPointTransactions();
+}
 
-//         return matchNameSearch && matchDepartmentSearch;
-//     })
-// })
+// ===================== Clear Date Filters =====================
+const clearDateFilters = () => {
+    modalStartDate.value = '';
+    modalEndDate.value = '';
+    applyModalFilters();
+}
+
+// ===================== Format Transaction Display =====================
+const formatTransactionDisplay = (transaction: any) => {
+    // Format points with proper sign and color
+    const isAddition = transaction.transaction_type === "Addition";
+    const pointsClass = isAddition ? 'text-success' : 'text-danger';
+    
+    return {
+        pointsClass,
+        formattedDate: dayjs(transaction.date).format("YYYY-MM-DD HH:mm")
+    };
+}
 
 </script>
 
