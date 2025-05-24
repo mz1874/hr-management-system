@@ -16,4 +16,8 @@ export interface AssignedUser {
     assignedUsers: AssignedUser[];
     department?: string;
     createdOn?: string;
+    seventy_percent: number;
+    ninety_percent: number;
+    hundred_percent: number;
+    hundred_twenty_percent: number;
   }

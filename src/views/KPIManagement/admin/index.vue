@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex mb-4">
-    <h2>{{ 'Department' }} KPI Management</h2>
+    <h2>KPI Management</h2>
   </div>
 
   <!-- Search and filter -->
@@ -261,7 +261,7 @@
                 </div>
                 <div class="col-md-6 d-flex align-items-center">
                   <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressSverntyFive">
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.seventy_percent">
                 </div>
               </div>
               <div class="row mb-3">
@@ -270,7 +270,7 @@
                 </div>
                 <div class="col-md-6 d-flex align-items-center">
                   <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressNinety">
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.ninety_percent">
                 </div>
               </div>
               <div class="row mb-3">
@@ -279,7 +279,7 @@
                 </div>
                 <div class="col-md-6 d-flex align-items-center">
                   <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressHandred">
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.hundred_percent">
                 </div>
               </div>
               <div class="row mb-3">
@@ -288,7 +288,7 @@
                 </div>
                 <div class="col-md-6 d-flex align-items-center">
                   <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.progressHandredTwenty">
+                  <input type="text" class="form-control" id="unit" v-model="currentTask.hundred_twenty_percent">
                 </div>
               </div>
 
@@ -652,6 +652,10 @@ const createTask = () => {
     update_by: 'admin',  // 默认值
     // assigned_users: currentTask.value.assignedUsers || [],  // 正确处理已分配用户
     department: selectedDepartment.value.id,
+    seventy_percent : currentTask.value.seventy_percent,
+    ninety_percent : currentTask.value.ninety_percent,
+    hundred_percent : currentTask.value.hundred_percent,
+    hundred_twenty_percent : currentTask.value.hundred_twenty_percent,
   };
 
   // 关闭模态框
@@ -740,6 +744,7 @@ const modalType = ref<'create' | 'edit'>('create')
 const openEditTaskModal = (task: Task) => {
   // 创建一个深拷贝，确保所有属性都被正确复制
   currentTask.value = {...task};
+  console.log(currentTask.value, "SSS");
 
   // 处理已分配用户数据
   // 从 personal_details 中提取用户信息
@@ -833,6 +838,10 @@ const saveEditedTask = () => {
     update_by: 'admin',  // 直接使用字符串而不是数组
     assignedUsers: currentTask.value.assignedUsers || [],  // 确保分配的用户正确
     department: currentTask.value.department_id, // 使用部门ID
+    seventy_percent : currentTask.value.seventy_percent,
+    ninety_percent : currentTask.value.ninety_percent,
+    hundred_percent : currentTask.value.hundred_percent,
+    hundred_twenty_percent : currentTask.value.hundred_twenty_percent,
   };
 
   showModal.value = false;
