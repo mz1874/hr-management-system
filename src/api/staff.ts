@@ -5,6 +5,10 @@ export function selectAllStaffs(page: number = 1) {
     return axios.get('/api/staff/?page=' + page);
 }
 
+export function createStaff(payload: any): any {
+    return axios.post('/api/staff/', payload);
+}
+
 export function searchStaff(
     name: string = '',
     departmentId?: number,

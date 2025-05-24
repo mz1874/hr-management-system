@@ -28,7 +28,7 @@ export default function useStaff() {
     function mapStaffData(item: any): Staff {
         return {
             id: item.id,
-            email:'',
+            email:item.email,
             username: item.username,
             staffName: item.staffName,
             date_of_birth: dayjs(item.date_of_birth).format("YYYY-MM-DD"),
@@ -38,9 +38,6 @@ export default function useStaff() {
             status: item.status,
             employment_time: dayjs(item.employment_time).format("YYYY-MM-DD"),
             resignationDate: undefined,
-            numberOfLeaves: item.number_of_leave,
-            medicalLeaves: item.medicalLeaves,
-            annualLeaves: item.annualLeaves,
             password:"",
             imgUrl: "",
             totalPoints: item.total_points,

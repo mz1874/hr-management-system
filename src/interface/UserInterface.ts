@@ -12,10 +12,17 @@ export interface Staff {
     imgUrl:string
     employment_time: string
     resignationDate?: string
-    numberOfLeaves: number
-    medicalLeaves: number
-    annualLeaves: number
     totalPoints: number
     currentPoints: number
-    leave_entitlements : []
+    leave_entitlements?: {
+        [key: string]: number
+    }
+    leaveBalances?: {
+        type: string
+        code: string
+        year: number
+        totalDays: number
+        usedDays: number
+        remainingDays: number
+    }[];
 }
