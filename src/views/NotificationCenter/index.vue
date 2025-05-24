@@ -1176,7 +1176,10 @@ watch(() => selectedAnnouncement.value.hasAvailability, (isChecked) => {
           </div>
 
           <!-- Attachments Preview -->
-          <div class="mt-4 px-3">
+          <div
+            v-if="selectedAnnouncement.attachments && selectedAnnouncement.attachments.length > 0"
+            class="mt-4 px-3"
+          >
             <h5 class="fw-bold mb-3">📎 Attachments</h5>
             <div
               v-for="file in selectedAnnouncement.attachments"

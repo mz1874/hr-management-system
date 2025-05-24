@@ -2,6 +2,32 @@
 import {ref, computed, onMounted} from 'vue';
 import {Modal} from 'bootstrap';
 import { getAnnouncements, bulkMarkAsRead } from '@/api/announcement'
+import confetti from 'canvas-confetti'
+
+function triggerConfetti() {
+  const duration = 2 * 1000;
+  const animationEnd = Date.now() + duration;
+
+  (function frame() {
+    confetti({
+      particleCount: 3,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+    });
+    confetti({
+      particleCount: 3,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+    });
+
+    if (Date.now() < animationEnd) {
+      requestAnimationFrame(frame);
+    }
+  })();
+}
+
 
 const searchQuery = ref('');
 const announcements = ref([]);
@@ -41,6 +67,12 @@ function fetchAnnouncements(page = 1) {
 }
 
 const selectedAnnouncement = ref<any>({});
+
+const isBirthdayAnnouncement = computed(() => {
+  return selectedAnnouncement.value?.birthday_person !== undefined && selectedAnnouncement.value?.birthday_person !== null;
+});
+
+
 const viewModal = ref(null);
 let modalInstance:any = null;
 
@@ -66,6 +98,11 @@ function viewAnnouncement(announcement) {
 
   markAsRead(announcement);
   modalInstance.show();
+
+  if (isBirthdayAnnouncement.value) {
+    triggerConfetti();
+  }
+
 }
 
 
@@ -205,50 +242,91 @@ onMounted(() => {
             <h5 class="modal-title">{{ selectedAnnouncement.title }}</h5>
             <button type="button" class="btn-close" @click="closeViewModal"></button>
           </div>
-          <div class="modal-body text-center">
-            <p><strong>by {{ selectedAnnouncement.author }} {{ formatDate(selectedAnnouncement.post_time) }}</strong></p>
-            <h6 class="fw-bold">Description</h6>
-            <div class="border p-3 rounded">
+
+          <!-- 🎉 Birthday Announcement Layout -->
+          <div v-if="isBirthdayAnnouncement" class="modal-body text-center birthday-layout">
+            <div class="gift-icon">🎁</div>
+
+            <img
+              :src="selectedAnnouncement.birthday_person?.picture?.url || '/img/default-profile.png'"
+              alt="Profile Picture"
+              class="birthday-profile-img"
+            />
+
+            <h3 class="birthday-title">
+              It's {{ selectedAnnouncement.birthday_person?.staffName || selectedAnnouncement.birthday_person?.username }}'s Birthday
+            </h3>
+
+            <p class="text-muted small">
+              by {{ selectedAnnouncement.author }} at {{ formatDate(selectedAnnouncement.post_time) }}
+            </p>
+
+            <h6 class="fw-bold mt-3">Description</h6>
+
+            <div class="birthday-description-box">
               <p>{{ selectedAnnouncement.description }}</p>
+              <p>🎂 <strong>Birthday:</strong> {{ formatDate(selectedAnnouncement.birthday_person?.date_of_birth) }}</p>
+              <p>🏢 <strong>Department:</strong> {{ selectedAnnouncement.birthday_person?.department?.name || 'N/A' }}</p>
               <p class="text-end">Best Regards<br>HR Team</p>
             </div>
+
             <div v-if="selectedAnnouncement.attachments?.length" class="mt-4 px-3">
               <h5 class="fw-bold mb-3">📎 Attachments</h5>
-
-              <div
-                v-for="(file, index) in selectedAnnouncement.attachments"
-                :key="file.id"
-                class="mb-4"
-              >
+              <div v-for="(file, index) in selectedAnnouncement.attachments" :key="file.id" class="mb-4">
                 <p class="mb-2">📄 {{ file.name }}</p>
-
-                <!-- PDF viewer -->
                 <iframe
                   v-if="file.url?.endsWith('.pdf')"
                   :src="file.url"
                   style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 6px;"
                 ></iframe>
-
-                <!-- Image viewer -->
                 <img
                   v-else-if="/\.(jpg|jpeg|png)$/i.test(file.url)"
                   :src="file.url"
                   class="img-fluid border rounded"
                   style="max-height: 300px;"
                 />
-
-                <!-- Fallback for unsupported files -->
                 <p v-else class="text-muted">Unsupported file type</p>
               </div>
             </div>
-
           </div>
+
+          <!-- 📰 Normal Announcement Layout -->
+          <div v-else class="modal-body text-center">
+            <p><strong>by {{ selectedAnnouncement.author }} {{ formatDate(selectedAnnouncement.post_time) }}</strong></p>
+            <h6 class="fw-bold">Description</h6>
+            <div class="border p-3 rounded">
+              <p>{{ selectedAnnouncement.description }}</p>
+              <p class="text-end">Best Regards<br>HR Team</p>
+            </div>
+
+            <div v-if="selectedAnnouncement.attachments?.length" class="mt-4 px-3">
+              <h5 class="fw-bold mb-3">📎 Attachments</h5>
+              <div v-for="(file, index) in selectedAnnouncement.attachments" :key="file.id" class="mb-4">
+                <p class="mb-2">📄 {{ file.name }}</p>
+                <iframe
+                  v-if="file.url?.endsWith('.pdf')"
+                  :src="file.url"
+                  style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 6px;"
+                ></iframe>
+                <img
+                  v-else-if="/\.(jpg|jpeg|png)$/i.test(file.url)"
+                  :src="file.url"
+                  class="img-fluid border rounded"
+                  style="max-height: 300px;"
+                />
+                <p v-else class="text-muted">Unsupported file type</p>
+              </div>
+            </div>
+          </div>
+
+
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="closeViewModal">Close</button>
           </div>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -377,4 +455,32 @@ onMounted(() => {
     align-self: flex-end; 
   }
 }
+
+.birthday-profile-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #eee;
+  margin-bottom: 12px;
+}
+
+.gift-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+  color: #f67280;
+}
+
+.birthday-description-box {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  margin-top: 16px;
+  font-family: Georgia, serif;
+  line-height: 1.6;
+  text-align: left;
+}
+
+
 </style>
