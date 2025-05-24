@@ -119,46 +119,49 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import type {Staff} from "@/interface/UserInterface.ts";
+import type { Staff } from "@/interface/UserInterface.ts";
 import { selectAllStaffs } from '@/api/staff';
-import { getCurrentUser } from '@/api/reward';
+import { getCurrentUser, getDepartmentLeaderboard } from '@/api/reward';
 
 const tableData = ref<Staff[]>([])
+const currentUserData = reactive<any>({});
 
-const fetchAllStaffs = () => {
-  selectAllStaffs().then((res) => {
-    console.log(res.data)
-    tableData.value = res.data.data.results
-    .sort((a: any, b: any) => b.total_point - a.total_point)
-    .filter((staff: { department: any; }) => currentUserData.department_id === staff.department)
-    .map((item:any, index: number) => ({
-      id: index + 1,
-      staffName: item.staffName,
-      totalPoints: item.total_point,
-      imgUrl: item.picture_url,
-      department: item.department,
-      department_name: item.department_name
-    }))
+const fetchDepartmentLeaderboard = (department_id: number) => {
+  if (!department_id) {
+    console.error("No department ID provided");
+    return;
+  }
+  
+  getDepartmentLeaderboard(department_id).then((res) => {
+    console.log("Department Leaderboard:", res.data);
+    tableData.value = res.data.data.results;
   })
+  .catch((err) => {
+    console.error("Error fetching department leaderboard:", err);
+  });
 }
-
-let currentUserData = reactive<any>({});
 
 const fetchCurrentUser = () => {
   getCurrentUser().then((res) => {
-    console.log("Current User:", currentUserData);
+    console.log("Current User:", res.data.data);
     Object.assign(currentUserData, res.data.data);
+    
+    // Once we have the current user's department ID, fetch the leaderboard
+    if (currentUserData.department_id) {
+      fetchDepartmentLeaderboard(currentUserData.department_id);
+    } else {
+      console.warn("User has no department_id");
+    }
   })
   .catch((err) => {
-    console.error(err);
+    console.error("Error fetching current user:", err);
   });
 };
 
 onMounted(() => {
-  fetchAllStaffs();
+  // Only fetch current user first, which will then fetch the leaderboard once we have the department ID
   fetchCurrentUser();
 })
-
 </script>
 
 <style scoped>

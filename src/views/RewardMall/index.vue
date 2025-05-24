@@ -189,7 +189,7 @@ const fetchRewards = (page = 1) => {
   });
 };
 
-// ===================== Fetch Current User =====================
+// ===================== Fetch Current User Points =====================
 let currentUserData = reactive<any>({});
 
 const fetchPoints = async () => {

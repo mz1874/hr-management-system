@@ -88,6 +88,10 @@ export function patchRewardRedemption(id: Number, data: any) {
     return axios.patch(`/api/reward_redemption/${id}/`, data)
 }
 
+export const getDepartmentLeaderboard = (departmentId: number) => {
+  return axios.get(`/api/staff/department-leaderboard/?department_id=${departmentId}`);
+};
+
 // Point History
 export function getPointHistory(id: Number, page = 1, remarks = '', startDate = '', endDate = '') {
     const params = {
@@ -101,4 +105,19 @@ export function getPointHistory(id: Number, page = 1, remarks = '', startDate = 
 
 export function createDeductionHistory(data: any) {
     return axios.post(`/api/point_history/`, data)
+}
+
+// Combined Point Transactions (point history + redemptions)
+export function getCombinedPointTransactions(
+  id: Number, 
+  page = 1, 
+  startDate = '', 
+  endDate = ''
+) {
+  const params = {
+    page,
+    ...(startDate ? { start_date: startDate } : {}),
+    ...(endDate ? { end_date: endDate } : {}),
+  };
+  return axios.get(`/api/combined-transactions/staff/${id}/`, { params });
 }
