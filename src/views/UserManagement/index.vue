@@ -70,6 +70,7 @@ const selectedStaff = ref<Staff>({
   id: 0,
   username: '',
   password: '123456',
+  email: '',
   date_of_birth: '',
   department_name: '',
   staffName:"",
@@ -103,6 +104,7 @@ const openAddStaffModal = () => {
     password: '123456',
     date_of_birth: '',
     department_name: '',
+    email:'',
     roles: [],
     department: selectedDepartment.value,
     status: false,
@@ -134,6 +136,7 @@ const openDeleteStaffModal = (staff: Staff) => {
 }
 
 const addStaff = () => {
+
   handlerAddStaff(selectedStaff.value)
   showAddStaffModal.value = false
 }
@@ -260,7 +263,7 @@ function resetPassword(staff: Staff) {
                     {{ staff.status ? "Active" : "Inactive" }}
                   </span>
               </td>
-              <td>{{ staff.numberOfLeaves }}</td> <!-- Add new column -->
+              <td>{{ staff.medicalLeaves + staff.annualLeaves }}</td>
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
                 <button @click="resetPassword(staff)" class="btn btn-secondary btn-sm">reset</button>
@@ -347,6 +350,7 @@ function resetPassword(staff: Staff) {
 
     <!-- Add Staff Modal -->
     <div v-if="showAddStaffModal" class="modal-backdrop">
+      <form @submit.prevent="addStaff">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Add New Staff</h5>
@@ -366,6 +370,7 @@ function resetPassword(staff: Staff) {
                   class="form-control"
                   id="account"
                   placeholder="Enter account"
+                  required
               >
             </div>
             <div class="col-md-6 mb-3">
@@ -376,9 +381,50 @@ function resetPassword(staff: Staff) {
                   class="form-control"
                   id="staffName"
                   placeholder="Enter name"
+                  required
               >
             </div>
 
+          </div>
+
+
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input
+                  v-model="selectedStaff.email"
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  placeholder="Enter email"
+                  required
+              >
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="medicalLeaves" class="form-label">Medical Leave days</label>
+              <input
+                  v-model="selectedStaff.medicalLeaves"
+                  type="text"
+                  class="form-control"
+                  id="medicalLeaves"
+                  placeholder="Enter days"
+                  required
+              >
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="annualLeaves" class="form-label">Annual leaves days</label>
+              <input
+                  v-model="selectedStaff.annualLeaves"
+                  type="text"
+                  class="form-control"
+                  id="annualLeaves"
+                  placeholder="Enter days"
+                  required
+              >
+            </div>
           </div>
 
           <div class="row">
@@ -411,6 +457,7 @@ function resetPassword(staff: Staff) {
                   class="form-control"
                   id="staffDateOfBirth"
                   placeholder="Enter date of birth"
+                  required
               >
             </div>
 
@@ -420,6 +467,7 @@ function resetPassword(staff: Staff) {
                   v-model="selectedStaff.department"
                   class="form-select"
                   id="staffDepartment"
+                  required
               >
                 <option
                     v-for="dept in departmentStore.flatDepartmentList"
@@ -439,6 +487,7 @@ function resetPassword(staff: Staff) {
                   v-model="selectedStaff.status"
                   class="form-select"
                   id="staffStatus"
+                  required
               >
                 <option value="true">Active</option>
                 <option value="false">Inactive</option>
@@ -450,6 +499,7 @@ function resetPassword(staff: Staff) {
                   :value="selectedStaff.employment_time"
                   type="date"
                   class="form-control"
+                  required
               >
             </div>
           </div>
@@ -507,15 +557,12 @@ function resetPassword(staff: Staff) {
           >
             Close
           </button>
-          <button
-              type="button"
-              class="btn btn-primary"
-              @click="addStaff"
-          >
+          <button type="submit" class="btn btn-primary">
             Add Staff
           </button>
         </div>
       </div>
+      </form>
     </div>
 
     <!-- View Staff Modal -->

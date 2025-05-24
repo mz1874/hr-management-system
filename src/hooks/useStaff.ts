@@ -28,6 +28,7 @@ export default function useStaff() {
     function mapStaffData(item: any): Staff {
         return {
             id: item.id,
+            email:'',
             username: item.username,
             staffName: item.staffName,
             date_of_birth: dayjs(item.date_of_birth).format("YYYY-MM-DD"),
@@ -38,11 +39,12 @@ export default function useStaff() {
             employment_time: dayjs(item.employment_time).format("YYYY-MM-DD"),
             resignationDate: undefined,
             numberOfLeaves: item.number_of_leave,
-            medicalLeaves: item.medical_leave,
-            annualLeaves: item.annual_leave,
+            medicalLeaves: item.medicalLeaves,
+            annualLeaves: item.annualLeaves,
             password:"",
             imgUrl: "",
             totalPoints: item.total_points,
+            currentPoints: item.current_points,
             leave_entitlements: item.leave_entitlements,
         };
     }
@@ -74,7 +76,13 @@ export default function useStaff() {
         console.log(staff.date_of_birth);
         addStaff(staff).then((res) => {
             if(isSuccess(res.status)) {
-                console.log(res);
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Staff added successfully",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
                 fetchAllStaffs();
             }
         })
