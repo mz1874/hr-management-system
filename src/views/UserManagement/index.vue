@@ -978,7 +978,6 @@ function resetPassword(staff: Staff) {
         </div>
         <div class="modal-body">
           <p>Are you sure you want to delete the staff :"{{ selectedStaff.username }}"?</p>
-          <p>This will set their resignation date to today.</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">

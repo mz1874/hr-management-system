@@ -364,7 +364,7 @@ onMounted(() => {
           ></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to remove <strong>{{ selectedDepartment?.department_name }}</strong>?</p>
+          <p>Are you sure you want to remove the department : <strong>{{ selectedDepartment?.department_name }}</strong>?</p>
           <p class="text-danger">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
