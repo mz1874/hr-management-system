@@ -77,12 +77,20 @@ onMounted(async () => {
   }
 });
 
-const filterDate = (date: Date): boolean => {
+const disabledDates = (date: Date): boolean => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const day = date.getDay();
-  return date >= today && day !== 0 && day !== 6;
+
+  const minValidDate = new Date(today);
+  minValidDate.setDate(today.getDate() + 3);
+
+  const isBeforeMin = date < minValidDate;
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+  return isBeforeMin || isWeekend;
 };
+
+
 
 const handleDateSelect = () => {
   if (!selectedDate.value) return;
@@ -246,11 +254,13 @@ const handleSubmit = async (event?: Event) => {
               <label class="form-label">Select Date</label>
               <Datepicker
                 v-model="selectedDate"
-                :filter="filterDate"
+                :disabled-dates="disabledDates"
                 @update:modelValue="handleDateSelect"
                 :enable-time="false"
                 placeholder="Pick a date"
               />
+
+
             </div>
 
             <div class="mb-3">

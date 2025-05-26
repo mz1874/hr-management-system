@@ -94,7 +94,7 @@ const selectedAnnouncement = ref<any>({})
 watch(
   () => selectedAnnouncement.value.departments,
   (val) => {
-    console.log("✅ Current selectedAnnouncement.departments:", val);
+    console.log("Current selectedAnnouncement.departments:", val);
   },
   { deep: true }
 )
