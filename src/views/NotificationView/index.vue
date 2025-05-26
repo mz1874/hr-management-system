@@ -140,10 +140,12 @@ const closeViewModal = () => {
 
 
 
-function formatDate(datetime: string | null | undefined): string {
+function formatDate(datetime: string | null | undefined, dateOnly = false): string {
   if (!datetime) return 'N/A';
   const date = new Date(datetime);
-  return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
+  if (isNaN(date.getTime())) return 'N/A';
+
+  return dateOnly ? date.toLocaleDateString() : date.toLocaleString();
 }
 
 
@@ -265,8 +267,8 @@ onMounted(() => {
 
             <div class="birthday-description-box">
               <p>{{ selectedAnnouncement.description }}</p>
-              <p>🎂 <strong>Birthday:</strong> {{ formatDate(selectedAnnouncement.birthday_person?.date_of_birth) }}</p>
-              <p>🏢 <strong>Department:</strong> {{ selectedAnnouncement.birthday_person?.department?.name || 'N/A' }}</p>
+              <p>🎂 <strong>Birthday:</strong> {{ formatDate(selectedAnnouncement.birthday_person?.date_of_birth, true) }}</p>
+              <p>🏢 <strong>Department:</strong> {{ selectedAnnouncement.birthday_person?.department_name || 'N/A' }}</p>
               <p class="text-end">Best Regards<br>HR Team</p>
             </div>
 
