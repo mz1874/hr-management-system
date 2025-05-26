@@ -36,10 +36,11 @@ const canManagerApprove = computed(() => selectedLeave.value?.status === 'Pendin
 const canHRApprove = computed(() => {
   const rawStatus = reverseStatusMap[selectedLeave.value?.status || ''];
   const isApplicantHR = selectedLeave.value?.userRoles?.includes('hr') ?? false;
+  const isApplicantManager = selectedLeave.value?.userRoles?.includes('manager') ?? false;
 
   return isHR.value && (
     rawStatus === 'M' ||  // HR can approve manager-approved
-    (isApplicantHR && rawStatus === 'P')  // HR can directly approve P if applicant is HR
+    (rawStatus === 'P' && (isApplicantHR || isApplicantManager))  // Direct P if applicant is HR or Manager
   );
 });
 
@@ -281,9 +282,14 @@ const bulkApprove = async () => {
   for (const app of leaveApplications.value) {
     const rawStatus = reverseStatusMap[app.status];
     const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+    const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
     const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = (rawStatus === 'M' && isHR.value) || (rawStatus === 'P' && isApplicantHR && isHR.value);
+    const isHRAction = (
+      rawStatus === 'M' && isHR.value
+    ) || (
+      rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
+    );
 
     if (app.selected && (isManagerAction || isHRAction)) {
       const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
@@ -302,9 +308,15 @@ const bulkReject = async () => {
   for (const app of leaveApplications.value) {
     const rawStatus = reverseStatusMap[app.status];
     const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+    const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
     const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = (rawStatus === 'M' && isHR.value) || (rawStatus === 'P' && isApplicantHR && isHR.value);
+
+    const isHRAction =
+      isHR.value && (
+        rawStatus === 'M' ||  // Manager approved → HR can reject
+        (rawStatus === 'P' && (isApplicantHR || isApplicantManager)) // HR can reject if requester is HR or Manager
+      );
 
     if (app.selected && (isManagerAction || isHRAction)) {
       const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
@@ -318,6 +330,7 @@ const bulkReject = async () => {
     app.selected = false;
   }
 };
+
 
 
 const formatDuration = (code: string) => {
@@ -343,22 +356,29 @@ const isModalReadOnly = computed(() => {
   if (!selectedLeave.value) return true;
 
   const rawStatus = reverseStatusMap[selectedLeave.value.status];
-
   const isApplicantHR = selectedLeave.value.userRoles?.includes('hr') ?? false;
+  const isApplicantManager = selectedLeave.value.userRoles?.includes('manager') ?? false;
 
   // Manager can only edit if it's still Pending
   if (isManager.value) {
     return rawStatus !== 'P';
   }
 
-  // HR can edit if it's Manager Approved (M) OR if applicant is HR and status is still P
+  // HR can edit if:
+  // - Status is M (Manager Approved)
+  // - OR Applicant is HR and status is P
+  // - OR Applicant is Manager and status is P (new condition)
   if (isHR.value) {
-    return !(rawStatus === 'M' || (rawStatus === 'P' && isApplicantHR));
+    return !(
+      rawStatus === 'M' ||
+      (rawStatus === 'P' && isApplicantHR) ||
+      (rawStatus === 'P' && isApplicantManager)
+    );
   }
 
-  // Normal users can never approve
   return true;
 });
+
 
 
 onMounted(async () => {

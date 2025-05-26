@@ -62,7 +62,7 @@ onMounted(async () => {
     userName.value = fullName !== '' ? fullName : data.username || 'User';
 
     formData.department = data.department_id || null;
-    userDeptName.value = data.department?.name || '-';
+    userDeptName.value = data.department || '-';
   } catch (e) {
     console.error('Failed to fetch current user:', e);
   }
