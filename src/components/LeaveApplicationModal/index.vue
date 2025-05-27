@@ -81,13 +81,9 @@ const disabledDates = (date: Date): boolean => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const minValidDate = new Date(today);
-  minValidDate.setDate(today.getDate() + 3);
-
-  const isBeforeMin = date < minValidDate;
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
-  return isBeforeMin || isWeekend;
+  return isWeekend;
 };
 
 
@@ -135,6 +131,11 @@ const closeModal = () => {
     modalInstance.hide();
   }
 };
+
+const getLeaveTypeById = (id: number | undefined) => {
+  return leaveTypes.value.find(t => t.id === id);
+};
+
 const handleSubmit = async (event?: Event) => {
   if (event) event.preventDefault();
   if (isSubmitting.value) return;
@@ -144,16 +145,36 @@ const handleSubmit = async (event?: Event) => {
     if (!formData.reasons) throw new Error('Please provide a reason.');
     if (formData.selectedDates.length === 0) throw new Error('Please select at least one date.');
 
+    // Validate: Annual Leave must be requested 3 days in advance
+    for (const d of formData.selectedDates) {
+      const leaveTypeObj = getLeaveTypeById(d.leave_type);
+      const isAnnual = leaveTypeObj?.description?.toLowerCase().includes('annual');
+
+      if (isAnnual) {
+        const selectedDate = new Date(d.leave_date);
+        selectedDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const minValidDate = new Date(today);
+        minValidDate.setDate(today.getDate() + 3);
+
+        if (selectedDate < minValidDate) {
+          throw new Error(`Annual leave on ${d.leave_date} must be applied at least 3 days in advance.`);
+        }
+      }
+    }
+
+    // Medical leave file requirement
     const isMedicalLeave = formData.selectedDates.some(
       d => d.leave_type === medicalLeaveId.value
     );
-
     if (isMedicalLeave && !primaryDocument.value) {
       throw new Error('Upload document for Medical Leave.');
     }
 
     let uploadedFileId: number | null = null;
-
     if (primaryDocument.value) {
       const uploadRes = await uploadFile(primaryDocument.value);
       uploadedFileId = uploadRes?.data?.data?.id ?? null;
@@ -217,6 +238,7 @@ const handleSubmit = async (event?: Event) => {
     isSubmitting.value = false;
   }
 };
+
 
 </script>
 
