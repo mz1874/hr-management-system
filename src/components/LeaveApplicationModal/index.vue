@@ -55,12 +55,7 @@ onMounted(async () => {
     const res = await getCurrentUser();
     const data = res.data.data;
 
-    const firstName = data.first_name?.trim();
-    const lastName = data.last_name?.trim();
-    const fullName = `${firstName || ''} ${lastName || ''}`.trim();
-
-    userName.value = fullName !== '' ? fullName : data.username || 'User';
-
+    userName.value = data.staffName?.trim() || data.username || 'User';
     formData.department = data.department_id || null;
     userDeptName.value = data.department || '-';
   } catch (e) {

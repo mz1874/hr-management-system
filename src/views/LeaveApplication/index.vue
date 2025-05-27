@@ -97,13 +97,9 @@ const addNewApplication = (newApplication: LeaveApplication) => {
 const selectedApplication = ref<LeaveApplication | null>(null);
 
 const openApplicationDetails = (application: LeaveApplication) => {
-  selectedApplication.value = application;
-  nextTick(() => {
-    const detailsModalElement = document.getElementById('leaveApplicationDetailsModal');
-    if (detailsModalElement) {
-      const modal = new Modal(detailsModalElement);
-      modal.show();
-    }
+  selectedApplication.value = null;
+   nextTick(() => {
+    selectedApplication.value = application;
   });
 };
 

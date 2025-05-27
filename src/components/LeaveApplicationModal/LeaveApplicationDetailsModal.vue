@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineProps, watch, onMounted } from 'vue';
+import { ref, defineProps, watch, onMounted, nextTick } from 'vue';
 import { Modal } from 'bootstrap';
 import { BASE_URL } from '@/api/axios'
 import type {LeaveApplication } from '@/interface/leaveApplicationInterface';
@@ -23,12 +23,13 @@ const closeModal = () => {
   modalInstance?.hide();
 };
 
-watch(() => props.selectedApplication, (newData) => {
+watch(() => props.selectedApplication, async (newData) => {
   if (newData) {
-    console.log('Selected Application:', newData);
+    await nextTick(); // ensure DOM is updated
     showModal();
   }
 });
+
 
 const formatDateOnly = (dateStr: string): string => {
   if (!dateStr.includes('-') && dateStr.includes('.')) {
@@ -65,11 +66,6 @@ const formatDateOnly = (dateStr: string): string => {
           <div class="mb-3">
             <label class="form-label">Applied On</label>
             <input type="text" class="form-control" :value="formatDateOnly(props.selectedApplication.appliedOn)" disabled>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Leave Type</label>
-            <input type="text" class="form-control" :value="props.selectedApplication.leaveType" disabled>
           </div>
 
           <div class="mb-3">
