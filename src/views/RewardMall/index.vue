@@ -94,8 +94,11 @@
           </div>
         </div>
         <div class="modal-body">
-          <div class="modal-body">
+          <div class="modal-body" v-if="currentReward.terms">
             <div class="terms-text">{{ currentReward.terms }}</div>
+          </div>
+          <div v-else class="text-muted text-center py-4">
+            <div>No Terms And Conditions.</div>
           </div>
         </div>
         <div class="modal-footer">
@@ -129,7 +132,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from "vue-router";
-import { createRedemption, getAllRewards, getRewardRedemption, getCurrentUser, patchReward, updateReward } from "@/api/reward.ts";
+import { createRedemption, getAllRewards, getUserRewardRedemption, patchReward, updateReward } from "@/api/reward.ts";
+import { getCurrentUser } from '@/api/login';
 import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
 import Swal from "sweetalert2";
 import dayjs from 'dayjs';
@@ -178,7 +182,7 @@ const fetchRewards = (page = 1) => {
       rewardName: item.reward_title,
       rewardPoints: item.reward_points_required,
       quantity: item.reward_quantity,
-      endDateTime: dayjs(item.reward_end_date_time).format("YYYY-DD-MM, HH:mm"),
+      endDateTime: dayjs(item.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
       description: item.reward_description,
       terms: item.reward_terms_and_conditions,
       status: item.reward_status,
@@ -205,7 +209,7 @@ const fetchPoints = async () => {
 let userRedemptions = ref<any[]>([]);
 
 const fetchRewardRedemption = () => {
-  getRewardRedemption(currentUserData.id).then((res) => {
+  getUserRewardRedemption(currentUserData.id).then((res) => {
     console.log("User Redemptions:", userRedemptions.value); // DEBUG
     userRedemptions.value = res.data.data.results;
   })
@@ -422,7 +426,7 @@ function goToRewardHistory() {
   margin-bottom: 0.75rem;
 }
 
-.clamp-2-lines {
+/* .clamp-2-lines {
   display: -webkit-box;
   -webkit-line-clamp: 2;     
   -webkit-box-orient: vertical;
@@ -431,7 +435,7 @@ function goToRewardHistory() {
 
   line-clamp: 2;
   box-orient: vertical;
-}
+} */
 
 
 

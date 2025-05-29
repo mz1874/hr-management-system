@@ -62,7 +62,7 @@
                     <td>{{ item.user.username }}</td>
                     <td>{{ item.redeemedOn }}</td>
                     <td>{{ item.rewardTitle }}</td>
-                    <td :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">{{ item.status }}</td>
+                    <td class="fw-bold" :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">{{ item.status }}</td>
                     <td>
                         <button type="button" class="btn-edit" @click="openChangeStatusModel(item)">Change Status</button>
                     </td>
@@ -232,65 +232,8 @@ const saveChangedStatus = () => {
         }
     })
 }
-
-
-
-
-
-// filter
-const searchReward = ref('')
-const searchName = ref('')
-const searchStatus = ref('')
-const startDate = ref('')
-const endDate = ref('')
-
-const filteredLogs = computed(() => {
-  return tableData.value.filter(detail => {
-    //search bar for reward name
-    const matchRewardSearch = detail.rewardTitle.toLowerCase().includes(searchReward.value.toLowerCase());
-
-    //search bar for username
-    // @ts-ignore
-    const matchNameSearch = detail.user.username.toLowerCase().includes(searchName.value.toLowerCase());
-
-    //search for specific status
-    const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value
-    
-    //custom date range for received date
-    const taskDate = new Date(detail.redeemedOn); // Convert string date to Date object
-    const start = startDate.value ? new Date(startDate.value) : null;
-    const end = endDate.value ? new Date(endDate.value) : null;
-
-    const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
-
-    return matchRewardSearch && matchesDateRange && matchNameSearch && matchStatusSearch;
-  });
-});
-
-// pagination
-// const currentPage = ref(1);
-const itemsPerPage = 10;
-
-const totalLogs = computed(() => filteredLogs.value.length);
-// const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
-
-const paginatedLogs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredLogs.value.slice(start, start + itemsPerPage);
-});
-
-// 翻页功能
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
-};
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-};
-const goToPage = (page: number) => {
-  currentPage.value = page;
-};
-
 </script>
+
 
 <style scoped>
 .search-container {

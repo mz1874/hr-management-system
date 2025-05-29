@@ -121,7 +121,8 @@
 import { onMounted, reactive, ref } from 'vue'
 import type { Staff } from "@/interface/UserInterface.ts";
 import { selectAllStaffs } from '@/api/staff';
-import { getCurrentUser, getDepartmentLeaderboard } from '@/api/reward';
+import { getDepartmentLeaderboard } from '@/api/reward';
+import { getCurrentUser } from '@/api/login';
 
 const tableData = ref<Staff[]>([])
 const currentUserData = reactive<any>({});
