@@ -103,7 +103,7 @@ const formatDateOnly = (dateStr: string): string => {
             <label class="form-label">Attached Document</label>
             <div class="pdf-viewer">
               <embed
-                :src="BASE_URL + props.selectedApplication.document"
+                :src="props.selectedApplication.document"
                 type="application/pdf"
                 width="100%"
                 height="400px"

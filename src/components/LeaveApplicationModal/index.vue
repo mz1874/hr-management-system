@@ -221,15 +221,25 @@ const handleSubmit = async (event?: Event) => {
       showConfirmButton: false
     });
 
-  } catch (e: any) {
-    console.error('Submit error:', e);
-    Swal.fire({
-      icon: 'error',
-      title: 'Submission Failed',
-      text: e?.message || 'Submission failed.',
-      confirmButtonText: 'OK',
-    });
-  } finally {
+  } catch (error: any) {
+  console.error('Submit error:', error);
+
+  // Default message
+  let errorMessage = 'Submission failed. Please try again.';
+
+  // If error is a 403 from backend, show the "message" from the response
+  if (error?.response?.status === 403 && error.response.data?.message) {
+    errorMessage = error.response.data.message;
+  }
+
+  // Show SweetAlert with the error
+  Swal.fire({
+    icon: 'error',
+    title: 'Submission Failed',
+    text: errorMessage,
+    confirmButtonText: 'OK',
+  })
+} finally {
     isSubmitting.value = false;
   }
 };
