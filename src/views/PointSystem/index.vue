@@ -1,7 +1,7 @@
 <template>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Point System</h2>
-        <button type="button" class="btn btn-danger" @click="">Reset All User Point</button>
+        <button type="button" class="btn btn-danger" @click="openResetModal()">Reset All User Point</button>
     </div>
 
     <div class="filter-container ">
@@ -322,8 +322,8 @@
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import type { RewardRedemptionItem, PointHistoryItem, PointItem } from '@/interface/RewardInterface'
 import type { Staff } from '@/interface/UserInterface'
-import { searchStaff as searchStaffAPI, selectAllStaffs } from '@/api/staff';
-import { createDeductionHistory, getCombinedPointTransactions, getPointHistory, getRewardRedemption, patchUser } from '@/api/reward';
+import { resetPassword, searchStaff as searchStaffAPI, selectAllStaffs } from '@/api/staff';
+import { createDeductionHistory, getCombinedPointTransactions, getPointHistory, getUserRewardRedemption, patchUser, resetUserPoints } from '@/api/reward';
 import dayjs from 'dayjs';
 import type { Department } from '@/interface/DepartmentInterface';
 import { selectAllDepartments } from '@/api/department';
@@ -353,14 +353,13 @@ function mapStaffData(item: any): Staff {
         status: item.status,
         employment_time: dayjs(item.employment_time).format("YYYY-MM-DD"),
         resignationDate: undefined,
-        numberOfLeaves: item.number_of_leave,
-        medicalLeaves: item.medical_leave,
-        annualLeaves: item.annual_leave,
         password:"",
-        imgUrl: "",
+        imgUrl: "", 
         totalPoints: item.total_point,
         currentPoints: item.current_point,
         leave_entitlements: item.leave_entitlements,
+        leaveBalances: item.leaveBalances,
+        email: item.email
     };
 }
 
@@ -439,7 +438,7 @@ async function fetchAllStaffs(page = 1): Promise<void> {
 // ===================== Fetch Reward Redemption =====================
 const rewardRedemptionTableData = ref<RewardRedemptionItem[]>([])
 const fetchRewardRedemption = () => {
-    getRewardRedemption(currentUserPointDetails.value.id).then((res) => {
+    getUserRewardRedemption(currentUserPointDetails.value.id).then((res) => {
         console.log(res.data)
         rewardRedemptionTableData.value = res.data.data.results.map((item:any) => ({
             redeemedOn: dayjs(item.reward_redeemed_on).format("YYYY-MM-DD HH:mm:ss"),
@@ -526,10 +525,35 @@ onMounted(async () => {
 
 // ===================== Reset All User Points =====================
 const showResetPointModal = ref(false);
-const resetReward = () => {
-    // patchUser().then((res) => {
-        
-    // })
+
+const openResetModal = () => {
+    showResetPointModal.value = true;
+}
+
+const resetReward = async () => {
+    try {
+        const response = await resetUserPoints();
+        if (isSuccess(response.status)) {
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: "All user points reset successfully",
+                showConfirmButton: false,
+                timer: 1500
+            });
+            showResetPointModal.value = false;
+            fetchAllStaffs(); 
+        }
+    } catch (error) {
+        console.error("Failed to reset points:", error);
+        Swal.fire({
+            icon: "error",
+            title: "Reset Failed",
+            text: "Something went wrong while resetting user points.",
+        });
+        showResetPointModal.value = false;
+        fetchAllStaffs(); 
+    }
 }
 
 // ===================== Confirm Point deduction =====================
@@ -757,8 +781,7 @@ const changeModalPage = (page: number) => {
 // ===================== Modal Filtering =====================
 const applyModalFilters = () => {
     modalCurrentPage.value = 1; // Reset to first page when filtering
-    fetchCombinedPointTransactions(1, modalStartDate.value, modalEndDate.value,
-    );
+    fetchCombinedPointTransactions(1, modalStartDate.value, modalEndDate.value);
 }
 
 // ===================== Open Point Details Modal =====================

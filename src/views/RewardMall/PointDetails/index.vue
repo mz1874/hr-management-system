@@ -39,11 +39,20 @@
 
           <td>{{ details.pointsReceivedOn}}</td>
 
-          <td :class="details.pointsValues <= 0 ? 'text-danger' : 'text-success'"> 
+          <td class="fw-bold" :class="details.pointsValues <= 0 ? 'text-danger' : 'text-success'"> 
             {{ details.pointsValues > 0 ? '+' + details.pointsValues : details.pointsValues }}
           </td>
 
-          <td>{{ details.pointType }}</td>
+          <td>                    
+            <span class="badge px-2 py-2 rounded-pill text-white"
+              :class="{
+                  'dark-green': details.pointType === 'Addition',
+                  'light-green': details.pointType === 'KPI Completed',
+                  'bg-danger': details.pointType === 'Deduction',
+              }">
+              {{ details.pointType }}
+            </span>
+          </td>
 
           <td>
             <template v-if="details.pointType === 'Deduction'">
@@ -90,7 +99,7 @@
 
   <!-- View Task Details Modal -->
   <div class="modal fade" id="viewTaskModal" :class="{ show: showModal }" style="display: block" v-if="showModal">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content p-10">
         <div class="modal-header">
           <div class="header-content">
@@ -101,30 +110,30 @@
           <form>
             <div class="form-group mb-4">
               <label class="form-label">Task Name: </label>
-              <input type="text" class="form-control" :value="currentPointEarned.kpi.taskTitle" disabled>
+              <input type="text" class="form-control" :value="currentPointEarned.kpiCompleted.taskTitleStored" disabled>
             </div>
 
             <div class="form-group mb-4">
               <label class="form-label">Task Description:</label>
-              <textarea class="form-control" disabled>{{ currentPointEarned.kpi.taskDescription }}</textarea>
+              <textarea class="form-control" disabled>{{ currentPointEarned.kpiCompleted.taskDescriptionStored }}</textarea>
             </div>
 
             <div class="form-group mb-4">
               <div class="row">
                 <div class="col-md-6 mb-2">
                   <label class="form-label">Start Date:</label>
-                  <input type="date" class="form-control" id="startDate" placeholder="Start Date" :value="currentPointEarned.kpi.startDate" disabled>
+                  <input type="date" class="form-control" id="startDate" placeholder="Start Date" :value="currentPointEarned.kpiCompleted.taskStartDateStored" disabled>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Completion Date:</label>
-                  <input type="date" class="form-control" id="endDate" placeholder="End Date" :value="currentPointEarned.kpi.endDate" disabled>
+                  <input type="date" class="form-control" id="endDate" placeholder="End Date" :value="currentPointEarned.kpiCompleted.taskCompletionDateStored" disabled>
                 </div>
               </div>
             </div>
 
             <div class="form-group mb-4">
               <label class="form-label">Points Given:</label>
-              <input type="number" class="form-control" :value="currentPointEarned.kpi.pointsEarned" disabled>
+              <input type="number" class="form-control" :value="currentPointEarned.kpiCompleted.pointsEarnedStored" disabled>
             </div>
           </form>          
         </div>
@@ -146,6 +155,8 @@ import type { PointHistoryItem } from '@/interface/RewardInterface.ts';
 import { getPointHistory } from '@/api/reward';
 import { getCurrentUser } from '@/api/login';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
 
 const currentPointEarned = ref<any>({})
 
@@ -191,7 +202,7 @@ const fetchPointHistory = (page: number) => {
           id: item.id,
           user: item.user,
           pointType: item.point_type,
-          pointsReceivedOn: dayjs(item.points_received_on).format("YYYY-MM-DD HH:mm:ss"),
+          pointsReceivedOn: dayjs(item.points_received_on).format("YYYY-MM-DD, HH:mm"),
           pointsValues: item.points_values
         };
         
@@ -220,8 +231,8 @@ const fetchPointHistory = (page: number) => {
                 kpiCompletedTypes: item.kpi_completed.kpi_completed_types,
                 taskTitleStored: item.kpi_completed.task_title_stored,
                 taskDescriptionStored: item.kpi_completed.task_description_stored,
-                taskStartDateStored: item.kpi_completed.task_start_date_stored,
-                taskCompletionDateStored: item.kpi_completed.task_completion_date_stored,
+                taskStartDateStored: dayjs(item.kpi_completed.task_start_date_stored, "DD.MM.YYYY HH:mm:ss").format("YYYY-MM-DD"),
+                taskCompletionDateStored: dayjs(item.kpi_completed.task_completion_date_stored, "DD.MM.YYYY HH:mm:ss").format("YYYY-MM-DD"),
                 pointsEarnedStored: item.kpi_completed.points_earned_stored,
                 targetUnitStored: item.kpi_completed.target_unit_stored,
                 individualUnitStored: item.kpi_completed.individual_unit
@@ -319,6 +330,14 @@ function goToRewardMall()
     background-color: #3d95e2;
     color: white;
     border: none;
+}
+
+.light-green {
+  background-color: #41AB5D; /* Light green background */
+}
+
+.dark-green {
+  background-color: #006D2C; /* Light green background */
 }
 
 .page-link {

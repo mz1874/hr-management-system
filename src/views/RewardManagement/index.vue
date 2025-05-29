@@ -171,18 +171,30 @@
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Name:</label>
                                     <input type="text" class="form-control" placeholder="Enter reward name" v-model="currentReward.rewardName" :disabled="modalType === 'view'">
+                                    <div class="invalid-feedback d-block" v-if="validationErrors.rewardName">
+                                        This field is required.
+                                    </div>
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Points:</label>
                                     <input type="number" class="form-control" placeholder="Enter points" v-model="currentReward.rewardPoints" :disabled="modalType === 'view'">
+                                    <div class="invalid-feedback d-block" v-if="validationErrors.rewardPoints">
+                                        This field is required.
+                                    </div>
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Quantity Available:</label>
                                     <input type="number" class="form-control" placeholder="Enter quantity of the reward" v-model="currentReward.quantity" :disabled="modalType === 'view'">
+                                    <div class="invalid-feedback d-block" v-if="validationErrors.quantity">
+                                        This field is required.
+                                    </div>                                
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">End Date & Time:</label>
                                     <Datepicker v-model="currentReward.endDateTime" :is-24="false" :min-date="new Date()" :disabled="modalType === 'view'" style="border: 1px solid #000000; border-radius: 0.375rem;"></Datepicker>
+                                    <div class="invalid-feedback d-block" v-if="validationErrors.endDateTime">
+                                        This field is required.
+                                    </div>                                
                                 </div>
                             </form>
                         </div>
@@ -264,11 +276,12 @@ const showRemoveModal = ref(false)
 const modalType = ref<'create' | 'edit' | 'view'>('create')
 
 const openCreateModal = () => { 
+    resetValidation();
     currentReward.value = {
         rewardName: '',
-        rewardPoints: 0, // Set default points
+        rewardPoints: '', 
         image: "",
-        quantity: 0,
+        quantity:'',
         endDateTime: "",
         description: "",
         terms: "",
@@ -278,11 +291,13 @@ const openCreateModal = () => {
     showModal.value = true;
 }
 const openViewModal = (reward: any) => { 
+    resetValidation();
     currentReward.value = reward; 
     modalType.value = 'view';
     showModal.value = true;
 }
-const openEditModal = (reward: RewardItem) => { 
+const openEditModal = (reward: RewardItem) => {
+    resetValidation(); 
     currentReward.value = { ...reward };
     modalType.value = 'edit';
     showModal.value = true
@@ -343,9 +358,38 @@ watch([rewardSearch, pointSearch, statusSearch, startDateSearch, endDateSearch],
     fetchRewards(1); // Reset to page 1 on any search input change
 });
 
+// ===================== Validation =====================
+const validationErrors = ref({
+  rewardName: false,
+  rewardPoints: false,
+  quantity: false,
+  endDateTime: false,
+});
+
+const validateReward = () => {
+  validationErrors.value = {
+    rewardName: !currentReward.value.rewardName,
+    rewardPoints: !currentReward.value.rewardPoints,
+    quantity: !currentReward.value.quantity,
+    endDateTime: !currentReward.value.endDateTime,
+  };
+
+  return !Object.values(validationErrors.value).some((val) => val === true);
+};
+
+const resetValidation = () => {
+  validationErrors.value = {
+    rewardName: false,
+    rewardPoints: false,
+    quantity: false,
+    endDateTime: false,
+  };
+};
 
 // ===================== Publish Reward =====================
 const publishReward = async () => {
+    if (!validateReward()) return;
+
     try {
         //   upload the file if one is selected
         let fileId = null;
@@ -491,6 +535,8 @@ const saveAsDraft = async() => {
 
 // ===================== Save Reward =====================
 const saveEditedReward = async () => {
+    if (!validateReward()) return;
+
     try {
         // First step: If a new file is selected, upload it first
         let fileId = null;
@@ -606,60 +652,7 @@ const removeImage = () => {
 
 }
 
-// ===================== Filter =====================
-const searchReward = ref('')
-const searchPoint = ref('')
-const searchStatus = ref('')
-const startDate = ref('')
-const endDate = ref('')
-
-const filteredLogs = computed(() => {
-  return tableData.value.filter(detail => {
-    //search bar for reward name
-    const matchRewardSearch = detail.rewardName.toLowerCase().includes(searchReward.value.toLowerCase());
-
-    //search bar for points
-    const matchPointSearch = searchPoint.value === '' || detail.rewardPoints.toString().includes(searchPoint.value);
-
-     //search for specific status
-    const matchStatusSearch = !searchStatus.value || detail.status === searchStatus.value    
-
-    //custom date range for received date
-    const taskDate = new Date(detail.createdOn); // Convert string date to Date object
-    const start = startDate.value ? new Date(startDate.value) : null;
-    const end = endDate.value ? new Date(endDate.value) : null;
-
-    const matchesDateRange = (!start || taskDate >= start) && (!end || taskDate <= end);
-
-    return matchRewardSearch && matchesDateRange && matchPointSearch && matchStatusSearch;
-  });
-});
-
-// ===================== Pagination =====================
-// const currentPage = ref(1);
-const itemsPerPage = 10;
-
-const totalLogs = computed(() => filteredLogs.value.length);
-// const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
-
-const paginatedLogs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage
-  return filteredLogs.value.slice(start, end);});
-
-// ===================== Page Turning =====================
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
-};
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-};
-const goToPage = (page: number) => {
-  currentPage.value = page;
-};
-
 </script>
-
 
 
 <style scoped>

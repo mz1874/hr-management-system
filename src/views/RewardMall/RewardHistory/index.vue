@@ -40,7 +40,7 @@
                 <td>{{ item.rewardTitle }}</td>
                 <td>{{ item.redeemedOn }}</td>
                 <td>- {{ item.pointsDeducted }}</td>
-                <td :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">
+                <td class="fw-bold" :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">
                     {{ item.status }}
                 </td>
                 <td><button type="button" class="btn btn-primary" @click="openViewModal(item)">View Details</button></td>
@@ -137,11 +137,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { getCurrentUser, getReward, getRewardRedemption } from '@/api/reward';
+import { getReward, getUserRewardRedemption } from '@/api/reward';
 import type { RewardRedemptionItem} from '@/interface/RewardInterface.ts'
 import dayjs from 'dayjs';
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';  
+import { getCurrentUser } from '@/api/login';
 
 // ===================== Fetch User =====================
 let currentUserData = reactive<any>({});
@@ -174,7 +175,7 @@ const changePage = (page: number) => {
 const fetchRewardRedemption = (page = 1) => {
     currentPage.value = page
 
-    getRewardRedemption(
+    getUserRewardRedemption(
     currentUserData.id,
     page, 
     rewardSearch.value.trim(), 

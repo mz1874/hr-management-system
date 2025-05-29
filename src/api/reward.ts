@@ -35,12 +35,12 @@ export function deleteReward(id: Number) {
 }
 
 // User
-export function getCurrentUser() {
-    return axios.get(`/api/staff/me/`)
-}
-
 export function patchUser(id: Number, data: any) {
     return axios.patch(`/api/staff/${id}/`, data)
+}
+
+export function resetUserPoints() {
+    return axios.patch(`/api/staff/reset-points/`)
 }
 
 export function getUserForLeaderboard(departmentId: number, status: string) {
@@ -52,14 +52,13 @@ export function getUserForLeaderboard(departmentId: number, status: string) {
     return axios.get(`/api/staff/search/`, { params })
 }
 
-
 // Reward Redemption
 export function createRedemption(data: any) {
     return axios.post(`/api/reward_redemption/`, data)
 }
 
-//fetch specific employee reward redemption
-export function getRewardRedemption(id: Number, page = 1, rewardName = '', username = '', status = '', startDate = '', endDate = '') {
+// Fetch specific employee reward redemption
+export function getUserRewardRedemption(id: Number, page = 1, rewardName = '', startDate = '', endDate = '') {
     const params = {
         page,
         ...(rewardName ? { reward_title: rewardName } : {}),
@@ -70,7 +69,7 @@ export function getRewardRedemption(id: Number, page = 1, rewardName = '', usern
     return axios.get(`/api/reward_redemption/staff/${id}/`, { params });
 }
 
-//fetch all employee reward redemption
+// Fetch all employee reward redemption
 export function getAllRewardRedemption(page = 1, rewardName = '', username = '', status = '', startDate = '', endDate = '') {
     const params = {
         page,
