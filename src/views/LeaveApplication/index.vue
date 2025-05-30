@@ -20,6 +20,7 @@ import type {LeaveApplication} from '@/interface/leaveApplication'
 const currentYear = new Date().getFullYear();
 const selectedYear = ref(currentYear);
 const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
+const leaveModalRef = ref();
 
 const currentPage = ref(1);
 const totalPages = ref(1);
@@ -320,7 +321,7 @@ const pageNumbers = computed(() => {
     <!-- Action Buttons and Filter -->
     <div class="d-flex justify-content-end align-items-center mb-3 gap-2">
       <!-- New Application Button -->
-      <button class="btn custom-approve" data-bs-toggle="modal" data-bs-target="#leaveApplicationModal">
+      <button class="btn custom-approve" @click="leaveModalRef?.showModal()">
         New Application
       </button>
 
@@ -438,7 +439,7 @@ const pageNumbers = computed(() => {
     </div>
 
     <!-- Leave Application Modal -->
-    <LeaveApplicationModal @submit="addNewApplication" />
+    <LeaveApplicationModal ref="leaveModalRef" @submit="addNewApplication" />
 
     <!-- Leave Application Details Modal -->
     <LeaveApplicationDetailsModal 

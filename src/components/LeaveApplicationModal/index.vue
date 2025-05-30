@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, defineEmits, onMounted, computed } from 'vue';
+import { ref, reactive, defineEmits, onMounted, computed, watch } from 'vue';
 import { Modal } from 'bootstrap';
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
@@ -8,6 +8,17 @@ import { getCurrentUser } from '@/api/login';
 import { uploadFile } from '@/api/file_upload';
 import type {ApplicationFormData, LeaveType } from '@/interface/leaveApplicationModal';
 import Swal from 'sweetalert2';
+import { defineExpose } from 'vue';
+
+const showModal = () => {
+  if (!modalInstance && modalRef.value) {
+    modalInstance = new Modal(modalRef.value);
+  }
+  resetForm(); // always reset before opening
+  modalInstance?.show();
+};
+
+defineExpose({ showModal });
 
 const emit = defineEmits(['submit']);
 
@@ -34,8 +45,12 @@ const medicalLeaveId = computed(() => {
 
 onMounted(async () => {
   if (modalRef.value) {
-    modalInstance = new Modal(modalRef.value);
-    
+
+    if (modalInstance) {
+      modalInstance.dispose(); // clean previous instance
+    }
+    modalInstance = new Modal(modalRef.value!);
+      
     // Handle proper modal cleanup when hidden
     modalRef.value.addEventListener('hidden.bs.modal', () => {
       // Clean up any leftover backdrops
@@ -119,10 +134,13 @@ const resetForm = () => {
   scrollModalTop(); // scroll to top
 };
 
-// Fixed closeModal function that properly handles Bootstrap modals
 const closeModal = () => {
   if (modalInstance) {
-    // Only hide the modal and let the hidden.bs.modal event handle cleanup
+    modalRef.value?.addEventListener('hidden.bs.modal', () => {
+      resetForm();
+      // Reinitialize modal if needed
+    }, { once: true });
+
     modalInstance.hide();
   }
 };
@@ -222,27 +240,47 @@ const handleSubmit = async (event?: Event) => {
     });
 
   } catch (error: any) {
-  console.error('Submit error:', error);
+    console.error('Submit error:', error);
 
-  // Default message
-  let errorMessage = 'Submission failed. Please try again.';
+    let errorMessage = 'Submission failed. Please try again.';
 
-  // If error is a 403 from backend, show the "message" from the response
-  if (error?.response?.status === 403 && error.response.data?.message) {
-    errorMessage = error.response.data.message;
-  }
+    if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error instanceof Error && error.message) {
+      errorMessage = error.message;
+    }
 
-  // Show SweetAlert with the error
-  Swal.fire({
-    icon: 'error',
-    title: 'Submission Failed',
-    text: errorMessage,
-    confirmButtonText: 'OK',
-  })
-} finally {
+    if (error?.response?.status === 403 && error.response.data?.message) {
+      errorMessage = error.response.data.message;
+    }
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Submission Failed',
+      text: errorMessage,
+      confirmButtonText: 'OK',
+    });
+
+  } finally {
     isSubmitting.value = false;
   }
 };
+
+
+watch(
+  () => formData.selectedDates.map(d => d.leave_type),
+  (newLeaveTypes) => {
+    const hasMedicalLeave = newLeaveTypes.includes(medicalLeaveId.value);
+    if (!hasMedicalLeave) {
+      // Clear file if no MC selected
+      primaryDocument.value = null;
+      if (primaryDocumentInput.value) {
+        primaryDocumentInput.value.value = '';
+      }
+    }
+  },
+  { deep: true }
+);
 
 
 </script>
