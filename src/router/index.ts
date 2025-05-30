@@ -3,6 +3,9 @@ import Login from '@/views/Login/Index.vue';
 import HomeView from '@/views/HomeView/Index.vue';
 import {getUserRoutes} from "@/api/router.ts";
 import {mapBackendRoutes} from "@/router/asyncRoutes.ts";
+import DetailedEvaluationList from "@/views/DetailedEvaluationList/index.vue";
+import SurveyManagement from "@/views/SurveyManagement/index.vue";
+
 
 const staticRoutes: RouteRecordRaw[]  = [
     {
@@ -18,15 +21,22 @@ const staticRoutes: RouteRecordRaw[]  = [
         path: '/home',
         name: 'home',
         component: HomeView,
-        children: []
-    }
+        children: [
+           // Removed static routes for evaluation center views,
+           // assuming they will be handled by dynamic routing
+            {
+                path: 'survey-management', // Path will be /home/survey-management
+                name: 'SurveyManagement',
+                component: SurveyManagement,
+            },
+        ]
+    },
 ];
 
 const router = createRouter({
     history: createWebHashHistory(),
     routes: staticRoutes,
 });
-
 
 let dynamicRoutesLoaded = false;
 
@@ -52,8 +62,5 @@ router.beforeEach(async (to, from, next) => {
 
     next();
 });
-
-
-
 
 export default router;
