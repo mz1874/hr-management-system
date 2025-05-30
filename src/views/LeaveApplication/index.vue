@@ -149,12 +149,6 @@ async function fetchLeaveApplications(page = 1) {
       }
     }
 
-    //  3. Get summary stats (not filtered)
-    const summaryRes = await getLeaveRequests(1, '', {
-      year: selectedYear.value
-    });
-    allLeaveStats.value.pending = summaryRes.data?.data?.summary?.pending || 0;
-
     // 4. Get filtered results (for current page and status)
     const res = await getLeaveRequests(page, '', {
       status: statusParam,
@@ -168,6 +162,8 @@ async function fetchLeaveApplications(page = 1) {
 
     totalCount.value = data.count;
     totalPages.value = Math.ceil(data.count / 5);
+    leaveApplications.value = data.results;
+    allLeaveStats.value.pending = data.summary?.pending || 0;
 
     leaveApplications.value = data.results.map(item => {
       return {
