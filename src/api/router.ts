@@ -2,7 +2,7 @@ import axios from './axios'
 import type {RouteItem} from "@/interface/RouteInterface.ts";
 
 export function getUserRoutes() {
-    return axios.get('/api/authorization/routes/')
+    return axios.get('/api/authorization/menu/')
 }
 
 /**
