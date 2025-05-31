@@ -250,7 +250,7 @@ export default {
 
   <!-- 分页 -->
   <div class="d-flex align-items-center mt-3 justify-content-start">
-    <span class="me-3">Total: {{ count }}</span>
+    <span class="me-3" style="margin-top: 20px">Total: {{ count }}</span>
 
     <nav aria-label="Page navigation">
       <ul class="pagination mb-0">
