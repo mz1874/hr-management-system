@@ -1014,13 +1014,7 @@ watch(searchName, () => {
                     <p v-if="currentAnswers[question.id!]?.rating" class="text-muted mt-1 mb-0 small">
                       Selected: {{ currentAnswers[question.id!]?.rating }} Star(s) - {{ starRatingMeanings[currentAnswers[question.id!]!.rating!] }}
                     </p>
-                    <!-- Display EN/CN description for the selected rating (Non-Executive) -->
-                    <div v-if="currentAnswers[question.id!]?.rating"
-                         class="selected-rating-text-description mt-2 p-2 border rounded bg-light-subtle">
-                        <p class="mb-1"><strong>Non-Executive Description for {{ currentAnswers[question.id!]?.rating }} Star(s):</strong></p>
-                        <div><strong>EN:</strong> <pre class="description-text">{{ getCombinedRatingDescriptionForStar(currentAnswers[question.id!]?.rating, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) }}</pre></div>
-                        <div><strong>CN:</strong> <pre class="description-text">{{ getCombinedRatingDescriptionForStar(currentAnswers[question.id!]?.rating, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) }}</pre></div>
-                    </div>
+                    <!-- Removed direct description display from here -->
                   </div>
 
                   <!-- TEXT question type -->
