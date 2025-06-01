@@ -105,6 +105,86 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
   return { ...q, rating_texts: combined_rating_texts };
 });
 
+// --- Configuration for Executive Rating Questions ---
+const EXECUTIVE_RATING_CONFIG = [
+  {
+    key: 'be_responsible_executive', // Unique key
+    text_en: 'Be Responsible (Executive)', // Differentiating text if needed, though not directly used for matching
+    text_cn: '负责任 (行政)',
+    rating_texts: {
+      1: { en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.", cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a) 在期间前自动自发完成任务 (b) 有主人翁精神，愿意承担工作 (c) 关注，参与和配合公司事务" }
+    }
+  },
+  {
+    key: 'striving_for_excellence_executive',
+    text_en: 'Striving for Excellence (Executive)',
+    text_cn: '追求卓越 (行政)',
+    rating_texts: {
+      1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a) 没有明确的工作计划，结果欠佳 (b) 工作草率，马虎 (c) 停滞不前，不寻求进步" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a) 自行安排时间表和细节，效率高 (b) 时刻产出高水准和品质的工作 (c) 不断创造更有效率的工作方式" }
+    }
+  },
+  {
+    key: 'morality_and_talent_executive',
+    text_en: 'Morality and Talent (Executive)',
+    text_cn: '道德与才能 (行政)',
+    rating_texts: {
+      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a) 散播谣言扰乱军心 (b) 欺骗，作假 (c) 愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a) 言行一致，向上向善 (b) 拥有正面的道德品行，礼貌谦卑 (c) 以饱满的热情和精神投入工作，正面应对工作挑战" }
+    }
+  },
+  {
+    key: 'problem_solving_skill_executive',
+    text_en: 'Problem Solving Skill (Executive)',
+    text_cn: '解决问题能力 (行政)',
+    rating_texts: {
+      1: { en: "(a) Turn a blind eye to or avoid problems. (b) Failure to provide timely feedback on problems that arise at work and do not proactively look for solutions. (c) Making the same mistakes over and over again.", cn: "(a) 对问题视而不见或逃避问题 (b) 没有及时反馈工作中出现的问题，也没有主动寻找解决方案 (c) 反复犯同样的错误" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Have the courage to face up to problems and be willing to try to solve them. (b) Solve problems in a timely manner, provide preventive measures and share with others as a reference. (c) Able to implement solution and evaluate the results.", cn: "(a) 勇于正视问题，愿意尝试解决问题 (b) 及时解决问题，给予预防措施并分享给大家作为借鉴 (c) 有能力落实具体措施，并对结果进行评估和反思" }
+    }
+  },
+  {
+    key: 'critical_thinking_executive',
+    text_en: 'Critical Thinking (Executive)',
+    text_cn: '批判性思维 (行政)',
+    rating_texts: {
+      1: { en: "(a) Blindly listening to others without considering the authenticity of the information. (b) Unable to analyze problems and evaluate the pros and cons. (c) Lack of ability to challenge conventional practices.", cn: "(a) 盲目听信他人，不考虑信息的真实性 (b) 无法分析问题，不能评估事情的利与弊 (c) 缺乏挑战现状和常规做法的能力" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Analyze and collect required information and evaluate its authenticity. (b) Able to weigh the pro and cons based on analysis and evaluation. (c) Able to propose innovative, feasible, and constructive suggestions.", cn: "(a) 分析及收集所需信息，并评估其真实性 (b) 基于分析和评估，可以权衡事情的利与弊 (c) 能够提出创新性，可行性，有建设性的提议" }
+    }
+  },
+  {
+    key: 'flexibility_executive',
+    text_en: 'Flexibility (Executive)',
+    text_cn: '灵活性 (行政)',
+    rating_texts: {
+      1: { en: "(a) Unable to accept innovations and suggestions. (b) Unable to manage own emotions in response to challenges and stress. (c) Feeling overwhelmed when multitasking.", cn: "(a) 无法接受创新和建议，一成不变 (b) 无法管理自己的情绪以应对挑战和压力 (c) 在处理多项任务时手忙脚乱，无法应付" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Accept change and adapt quickly. (b) Stay calm and optimistic under pressure and challenges. (c) Able to handle multiple tasks effectively and switch flexibly.", cn: "(a) 接受变化并迅速适应 (b) 在压力和挑战下保持冷静和乐观 (c) 能够有效地处理多项任务和项目，灵活切换" }
+    }
+  }
+].map(q => {
+  const texts = q.rating_texts;
+  const combined_rating_texts: { [key: number]: { en: string, cn: string } } = {
+    1: texts[1],
+    2: {
+      en: `${texts[1].en} / ${texts[3].en}`,
+      cn: `${texts[1].cn} / ${texts[3].cn}`
+    },
+    3: texts[3],
+    4: {
+      en: `${texts[3].en} / ${texts[5].en}`,
+      cn: `${texts[3].cn} / ${texts[5].cn}`
+    },
+    5: texts[5]
+  };
+  return { ...q, rating_texts: combined_rating_texts };
+});
+
 // Interface for forms in the list
 interface DisplayEvaluationForm extends EvaluationForm {
   user_instance_status: 'PUBLISHED' | 'SUBMITTED' | 'PENDING' | 'REVIEWED' | 'NOT_STARTED' | null;      // For overall status, similar to SurveyManagement
@@ -126,6 +206,7 @@ const showFormModal = ref(false)
 const currentForm = ref<EvaluationForm | null>(null)
 // Holds answers keyed by questionId for the currently selected staff member
 const currentAnswers = ref<Record<number, Partial<EvaluationAnswerSubmit>>>({})
+const hoverRatings = ref<Record<number, number | null>>({}); // Stores questionId: hoveredStarCount
 
 // New state for staff selection
 const departmentStaff = ref<Staff[]>([]);
@@ -155,6 +236,11 @@ const currentSubmissionData = ref<DisplayEvaluationForm | null>(null); // Store 
 const isLoadingSubmissionDetails = ref(false); // Loading state for results modal
 // const detailedSubmissionAnswers = ref<EvaluationAnswerView[]>([]); // State for actual answers (TODO)
 
+// State for the new Rating Description Modal
+const showRatingDescriptionModal = ref(false);
+const ratingForDescriptionModal = ref<number | null>(null);
+const questionTextForDescriptionModal = ref<string | null>(null); // To pass question context if needed, though current logic uses all categories
+
 // --- Computed Properties ---
 const totalPages = computed(() => Math.ceil(totalForms.value / itemsPerPage.value))
 
@@ -168,17 +254,50 @@ const displayForms = computed(() => {
 
 // --- Methods ---
 
-// Helper to check if a question is a predefined behavioral question
-const getPredefinedConfigByText = (questionText: string | undefined) => {
-  if (!questionText) return null;
-  return PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(c => c.text_en === questionText);
+// Methods for Rating Description Modal
+const openRatingDescriptionModal = (rating: number, questionText?: string) => {
+  ratingForDescriptionModal.value = rating;
+  questionTextForDescriptionModal.value = questionText || null; // Optional: if specific question context is ever needed
+  showRatingDescriptionModal.value = true;
 };
 
-// Helper to get rating description for predefined questions
-const getRatingDescription = (questionText: string | undefined, rating: number | undefined | null, lang: 'en' | 'cn') => {
-  if (!questionText || rating === undefined || rating === null) return '';
-  const config = getPredefinedConfigByText(questionText);
-  return config?.rating_texts[rating]?.[lang] || '';
+const closeRatingDescriptionModal = () => {
+  showRatingDescriptionModal.value = false;
+  ratingForDescriptionModal.value = null;
+  questionTextForDescriptionModal.value = null;
+};
+
+// Star hover methods
+const setHoverRating = (questionId: number, starIndex: number) => {
+  hoverRatings.value[questionId] = starIndex;
+};
+
+const clearHoverRating = (questionId: number) => {
+  hoverRatings.value[questionId] = null;
+};
+
+// Helper to check if a question is a predefined behavioral question
+// This function is now less relevant for the new combined display logic,
+// but kept for potential specific uses or if individual predefined question checks are still needed.
+const getPredefinedConfigByText = (questionText: string | undefined, configSource: any[]) => {
+  if (!questionText) return null;
+  // This matching logic might need adjustment if question.text is not guaranteed to match a config's text_en
+  return configSource.find(c => c.text_en === questionText); 
+};
+
+// Helper to get combined rating description for a given rating and language from a config source
+const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, lang: 'en' | 'cn', configSource: any[]) => {
+  if (rating === undefined || rating === null || rating < 1 || rating > 5) return '';
+  let descriptions: string[] = [];
+  configSource.forEach(config => {
+    // For ratings 2 and 4, the texts are already combined in the config.
+    // For ratings 1, 3, 5, they are direct.
+    const desc = config.rating_texts[rating]?.[lang];
+    if (desc) {
+      descriptions.push(desc);
+    }
+  });
+  return descriptions.join('\n\n'); // Join descriptions from all categories with a double newline
 };
 
 
@@ -864,27 +983,43 @@ watch(searchName, () => {
                   <!-- RATING question type -->
                   <div v-if="question.question_type === 'RATING' && question.id !== undefined" class="form-group">
                     <label class="form-label">Rating (1-5 stars):</label>
-                    <div class="star-rating">
-                      <span
-                        v-for="star in 5"
-                        :key="star"
-                        class="star"
-                        :class="{ 'filled': currentAnswers[question.id].rating !== undefined && star <= currentAnswers[question.id].rating! }"
-                        @click="currentAnswers[question.id].rating = star"
-                      >
-                        <i class="fas fa-star"></i>
-                      </span>
+                    <div class="d-flex align-items-center">
+                      <div class="star-rating" style="position: relative;">
+                        <span
+                          v-for="starIndex in 5"
+                          :key="starIndex"
+                          class="star"
+                          :class="{
+                            'hover-active': hoverRatings[question.id!] !== null && starIndex <= hoverRatings[question.id!]!,
+                            'filled': (hoverRatings[question.id!] === null || hoverRatings[question.id!] === undefined) && currentAnswers[question.id!]?.rating !== undefined && starIndex <= currentAnswers[question.id!]!.rating!
+                          }"
+                          @mouseenter="setHoverRating(question.id!, starIndex)"
+                          @mouseleave="clearHoverRating(question.id!)"
+                          @click="currentAnswers[question.id!].rating = starIndex; clearHoverRating(question.id!)"
+                        >
+                          <i class="fas fa-star"></i>
+                        </span>
+                      </div>
+                      <button 
+                        v-if="currentAnswers[question.id!]?.rating" 
+                        type="button" 
+                        class="btn btn-outline-secondary btn-sm ms-2" 
+                        @click="openRatingDescriptionModal(currentAnswers[question.id!]!.rating!, question.text)"
+                        title="View Rating Descriptions"
+                        style="padding: 0.25rem 0.5rem; line-height: 1;">
+                        <i class="bi bi-file-earmark-text"></i>
+                      </button>
                     </div>
                     <!-- Display meaning of selected rating -->
-                    <p v-if="currentAnswers[question.id].rating" class="text-muted mt-1 mb-0 small">
-                      Selected: {{ currentAnswers[question.id].rating }} Star(s) - {{ starRatingMeanings[currentAnswers[question.id].rating!] }}
+                    <p v-if="currentAnswers[question.id!]?.rating" class="text-muted mt-1 mb-0 small">
+                      Selected: {{ currentAnswers[question.id!]?.rating }} Star(s) - {{ starRatingMeanings[currentAnswers[question.id!]!.rating!] }}
                     </p>
-                    <!-- Display EN/CN description if it's a predefined behavioral question and a rating is selected -->
-                    <div v-if="getPredefinedConfigByText(question.text) && currentAnswers[question.id]?.rating" 
+                    <!-- Display EN/CN description for the selected rating (Non-Executive) -->
+                    <div v-if="currentAnswers[question.id!]?.rating"
                          class="selected-rating-text-description mt-2 p-2 border rounded bg-light-subtle">
-                        <p class="mb-1"><strong>Description for {{ currentAnswers[question.id].rating }} Star(s):</strong></p>
-                        <div><strong>EN:</strong> {{ getRatingDescription(question.text, currentAnswers[question.id].rating, 'en') }}</div>
-                        <div><strong>CN:</strong> {{ getRatingDescription(question.text, currentAnswers[question.id].rating, 'cn') }}</div>
+                        <p class="mb-1"><strong>Non-Executive Description for {{ currentAnswers[question.id!]?.rating }} Star(s):</strong></p>
+                        <div><strong>EN:</strong> <pre class="description-text">{{ getCombinedRatingDescriptionForStar(currentAnswers[question.id!]?.rating, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) }}</pre></div>
+                        <div><strong>CN:</strong> <pre class="description-text">{{ getCombinedRatingDescriptionForStar(currentAnswers[question.id!]?.rating, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) }}</pre></div>
                     </div>
                   </div>
 
@@ -1001,6 +1136,15 @@ watch(searchName, () => {
                        <i class="fas fa-star"></i>
                      </span>
                      <span class="ms-2 text-muted">({{ answer.rating }} - {{ starRatingMeanings[answer.rating] || '' }})</span>
+                     <button 
+                        v-if="answer.rating !== null && answer.rating !== undefined"
+                        type="button" 
+                        class="btn btn-outline-secondary btn-sm ms-2" 
+                        @click="openRatingDescriptionModal(answer.rating!, answer.question?.text)"
+                        title="View Rating Descriptions"
+                        style="padding: 0.25rem 0.5rem; line-height: 1;">
+                        <i class="bi bi-file-earmark-text"></i>
+                      </button>
                   </div>
                    <p v-else class="text-muted fst-italic">No rating provided.</p>
                 </div>
@@ -1039,6 +1183,54 @@ watch(searchName, () => {
     </div>
   </div>
   <!-- End View Answers Modal -->
+
+  <!-- Rating Description Modal -->
+  <div class="modal fade" :class="{ show: showRatingDescriptionModal }" style="display: block;" v-if="showRatingDescriptionModal" tabindex="-1" aria-labelledby="ratingDescriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="ratingDescriptionModalLabel">
+            Rating Descriptions for {{ ratingForDescriptionModal }} Star(s)
+          </h5>
+          <button type="button" class="btn-close" @click="closeRatingDescriptionModal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div v-if="ratingForDescriptionModal !== null">
+            <!-- Non-Executive Descriptions -->
+            <div class="mb-4">
+              <h6>Non-Executive Staff Descriptions:</h6>
+              <div class="p-2 border rounded bg-light-subtle">
+                <p class="mb-1"><strong>EN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
+                <hr>
+                <p class="mb-1"><strong>CN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
+              </div>
+            </div>
+
+            <!-- Executive Descriptions -->
+            <div>
+              <h6>Executive Staff Descriptions:</h6>
+              <div class="p-2 border rounded bg-light-subtle">
+                <p class="mb-1"><strong>EN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'en', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
+                <hr>
+                <p class="mb-1"><strong>CN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'cn', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center text-muted">
+            No rating selected to display descriptions.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeRatingDescriptionModal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End Rating Description Modal -->
 
 </template>
 
@@ -1260,10 +1452,14 @@ watch(searchName, () => {
     }
 
     .star:hover,
-    .star:hover ~ .star { /* Make stars light up on hover */
-      /* Optional: Add a hover effect if desired */
-       color: #ffdd7a; 
+    .star.hover-active { /* Apply hover to current and preceding stars */
+       color: #ffdd7a;
     }
 
+    .description-text {
+      white-space: pre-wrap; /* Ensures newlines are respected */
+      font-family: inherit; /* Inherit font from parent */
+      margin: 0; /* Remove default pre margins */
+    }
 
     </style>
