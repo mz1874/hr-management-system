@@ -199,14 +199,15 @@
           </button>
         </div>
         <div class="modal-body">
-          <div class="row">
-            <!-- Left Column - Task Details -->
-            <div class="col-md-6 border-end">
-              <form>
+          <form @submit.prevent="createTask">
+            <div class="row">
+              <!-- Left Column - Task Details -->
+              <div class="col-md-6 border-end">
                 <!-- Task Name -->
                 <div class="mb-3">
                   <label for="taskName" class="form-label">Task Name:</label>
                   <input type="text" class="form-control" id="taskName" placeholder="Enter task name"
+                         required
                          v-model="currentTask.taskTitle">
                 </div>
 
@@ -214,6 +215,7 @@
                 <div class="mb-3">
                   <label for="taskDescription" class="form-label">Task Description:</label>
                   <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description"
+                            required
                             v-model="currentTask.taskDescription"></textarea>
                 </div>
 
@@ -221,11 +223,11 @@
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="startDate" class="form-label">Start Date:</label>
-                    <input type="date" class="form-control" id="startDate" v-model="currentTask.startDate">
+                    <input type="date" class="form-control" id="startDate" required v-model="currentTask.startDate">
                   </div>
                   <div class="col-md-6">
                     <label for="completionDate" class="form-label">Completion Date:</label>
-                    <input type="date" class="form-control" id="completionDate" v-model="currentTask.endDate">
+                    <input type="date" class="form-control" id="completionDate" required v-model="currentTask.endDate">
                   </div>
                 </div>
 
@@ -233,7 +235,7 @@
                 <!-- Points Given -->
                 <div class="mb-3">
                   <label for="pointsGiven" class="form-label">Points Given For Each Individual:</label>
-                  <input type="number" class="form-control" id="pointsGiven" placeholder="Enter points"
+                  <input type="number" class="form-control" id="pointsGiven" required placeholder="Enter points"
                          v-model="currentTask.pointsGiven">
                 </div>
 
@@ -241,108 +243,108 @@
                 <div class="row mb-3">
                   <label for="target" class="form-label">Target For Each Individual:</label>
                   <div class="col-md-6">
-                    <input type="number" class="form-control" id="target" placeholder="Enter target"
+                    <input type="number" class="form-control" id="target" required placeholder="Enter target"
                            v-model="currentTask.totalTarget">
                   </div>
                   <div class="col-md-6">
-                    <input type="text" class="form-control" id="unit" placeholder="Enter unit"
+                    <input type="text" class="form-control" id="unit" required placeholder="Enter unit"
                            v-model="currentTask.individualUnit">
                   </div>
                 </div>
-              </form>
-            </div>
-
-            <!-- Right Column - Assignment Type and Assign To -->
-            <div class="col-md-6">
-              <div class="row mb-3">
-                <label class="form-label">Target reached and point given:</label>
-                <div class="col-md-6 d-flex align-items-center">
-                  <label class="form-label mb-0">Target: 75%</label>
-                </div>
-                <div class="col-md-6 d-flex align-items-center">
-                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.seventy_percent">
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md-6 d-flex align-items-center">
-                  <label class="form-label mb-0">Target: 90%</label>
-                </div>
-                <div class="col-md-6 d-flex align-items-center">
-                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.ninety_percent">
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md-6 d-flex align-items-center">
-                  <label class="form-label mb-0">Target: 100%</label>
-                </div>
-                <div class="col-md-6 d-flex align-items-center">
-                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.hundred_percent">
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md-6 d-flex align-items-center">
-                  <label class="form-label mb-0">Target: 120%</label>
-                </div>
-                <div class="col-md-6 d-flex align-items-center">
-                  <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                  <input type="text" class="form-control" id="unit" v-model="currentTask.hundred_twenty_percent">
-                </div>
-              </div>
 
 
-              <!-- Assignment Type Toggle -->
-              <div class="mb-3">
-                <label class="form-label">Assign task to:</label>
-                <div>
-                  <input type="radio" id="assignUser" value="user" v-model="assignType">
-                  <label for="assignUser">Employee</label>
-                  <input type="radio" id="assignDept" value="department" v-model="assignType" class="ms-3">
-                  <label for="assignDept">Whole department</label>
-                </div>
               </div>
-
-              <div class="gap-3 mb-3" v-show="assignType === 'department'">
-                <select class="form-select" v-model="selectedDepartment" @change="handleDepartmentChange">
-                  <option v-for="dept in departments" :key="dept.id" :value="dept">
-                    {{ dept.department_name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Conditionally show the assign input for Employee -->
-              <div v-if="assignType === 'user'" class="mb-3">
-                <label for="assignTo" class="form-label">Assign to employees:</label>
-                <div class="input-group mb-2">
-                  <input
-                      type="text"
-                      class="form-control"
-                      placeholder="Search employees..."
-                      v-model="staffSearchKeyword"
-                  />
-                  <button class="btn btn-outline-secondary" type="button" @click="searchStaffMembers">
-                    <i class="fas fa-search"></i>
-                  </button>
+              <!-- Right Column - Assignment Type and Assign To -->
+              <div class="col-md-6">
+                <div class="row mb-3">
+                  <label class="form-label">Target reached and point given:</label>
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label class="form-label mb-0">Target: 75%</label>
+                  </div>
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                    <input type="number" class="form-control" id="unit"  min="0" required v-model="currentTask.seventy_percent">
+                  </div>
                 </div>
-
-                <!-- 搜索结果下拉列表 -->
-                <div v-if="staffSearchResults && staffSearchResults.length > 0"
-                     class="search-results border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;">
-                  <div
-                      v-for="staff in staffSearchResults"
-                      :key="staff.id"
-                      class="search-result-item p-2 hover-bg-light cursor-pointer"
-                      @click="selectStaffMember(staff)"
-                  >
-                    {{ staff.username }} ({{ staff.department_name }})
+                <div class="row mb-3">
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label class="form-label mb-0">Target: 90%</label>
+                  </div>
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                    <input type="number" class="form-control" id="unit" required min="0" v-model="currentTask.ninety_percent">
+                  </div>
+                </div>
+                <div class="row mb-3">
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label class="form-label mb-0">Target: 100%</label>
+                  </div>
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                    <input type="number" class="form-control" id="unit" required min="0" v-model="currentTask.hundred_percent">
+                  </div>
+                </div>
+                <div class="row mb-3">
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label class="form-label mb-0">Target: 120%</label>
+                  </div>
+                  <div class="col-md-6 d-flex align-items-center">
+                    <label for="unit" class="form-label me-2 mb-0">Points:</label>
+                    <input type="number" class="form-control" id="unit" min="0" required v-model="currentTask.hundred_twenty_percent">
                   </div>
                 </div>
 
-                <!-- 已选择的员工标签 -->
-                <div class="mt-2">
-                  <div class="d-flex flex-wrap gap-2">
+
+                <!-- Assignment Type Toggle -->
+                <div class="mb-3">
+                  <label class="form-label">Assign task to:</label>
+                  <div>
+                    <input type="radio" id="assignUser" value="user" v-model="assignType">
+                    <label for="assignUser">Employee</label>
+                    <input type="radio" id="assignDept" value="department" v-model="assignType" class="ms-3">
+                    <label for="assignDept">Whole department</label>
+                  </div>
+                </div>
+
+                <div class="gap-3 mb-3" v-show="assignType === 'department'">
+                  <select class="form-select" v-model="selectedDepartment" @change="handleDepartmentChange">
+                    <option v-for="dept in departments" :key="dept.id" :value="dept">
+                      {{ dept.department_name }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Conditionally show the assign input for Employee -->
+                <div v-if="assignType === 'user'" class="mb-3">
+                  <label for="assignTo" class="form-label">Assign to employees:</label>
+                  <div class="input-group mb-2">
+                    <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Search employees..."
+                        v-model="staffSearchKeyword"
+                    />
+                    <button class="btn btn-outline-secondary" type="button" @click="searchStaffMembers">
+                      <i class="fas fa-search"></i>
+                    </button>
+                  </div>
+
+                  <!-- 搜索结果下拉列表 -->
+                  <div v-if="staffSearchResults && staffSearchResults.length > 0"
+                       class="search-results border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;">
+                    <div
+                        v-for="staff in staffSearchResults"
+                        :key="staff.id"
+                        class="search-result-item p-2 hover-bg-light cursor-pointer"
+                        @click="selectStaffMember(staff)"
+                    >
+                      {{ staff.username }} ({{ staff.department_name }})
+                    </div>
+                  </div>
+
+                  <!-- 已选择的员工标签 -->
+                  <div class="mt-2">
+                    <div class="d-flex flex-wrap gap-2">
                     <span v-for="(user, index) in (currentTask.assignedUsers || [])" :key="index"
                           class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
                       <i class="fas fa-user-circle me-2"></i>
@@ -350,34 +352,38 @@
                       <button type="button" class="btn-close ms-2" aria-label="Remove"
                               @click="removeAssignedUser(index)"></button>
                     </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 部门分配选项 -->
+                <div v-if="assignType === 'department'" class="mb-3">
+                  <p>Assign to all employees in the <strong>{{ selectedDepartment.department_name }}</strong>
+                    department.
+                  </p>
+
+                  <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" v-model="assignToAllMembers"
+                           id="assignToAllMembers">
+                    <label class="form-check-label" for="assignToAllMembers">
+                      Confirm assignment to all members
+                    </label>
                   </div>
                 </div>
               </div>
-
-              <!-- 部门分配选项 -->
-              <div v-if="assignType === 'department'" class="mb-3">
-                <p>Assign to all employees in the <strong>{{ selectedDepartment.department_name }}</strong> department.
-                </p>
-
-                <div class="form-check mt-2">
-                  <input class="form-check-input" type="checkbox" v-model="assignToAllMembers" id="assignToAllMembers">
-                  <label class="form-check-label" for="assignToAllMembers">
-                    Confirm assignment to all members
-                  </label>
-                </div>
-              </div>
             </div>
-          </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
+              <button v-if="modalType === 'create'" type="submit" class="btn"
+                      style="background-color: #6CBD6C; color: white;">Create
+              </button>
+              <button v-if="modalType === 'edit'" type="button" class="btn" style="background-color: #6CBD6C; color: white;"
+                      @click="saveEditedTask">Save
+              </button>
+            </div>
+          </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
-          <button v-if="modalType === 'create'" type="button" class="btn"
-                  style="background-color: #6CBD6C; color: white;" @click="createTask">Create
-          </button>
-          <button v-if="modalType === 'edit'" type="button" class="btn" style="background-color: #6CBD6C; color: white;"
-                  @click="saveEditedTask">Save
-          </button>
-        </div>
+
       </div>
     </div>
   </div>
@@ -652,10 +658,10 @@ const createTask = () => {
     update_by: 'admin',  // 默认值
     // assigned_users: currentTask.value.assignedUsers || [],  // 正确处理已分配用户
     department: selectedDepartment.value.id,
-    seventy_percent : currentTask.value.seventy_percent,
-    ninety_percent : currentTask.value.ninety_percent,
-    hundred_percent : currentTask.value.hundred_percent,
-    hundred_twenty_percent : currentTask.value.hundred_twenty_percent,
+    seventy_percent: currentTask.value.seventy_percent,
+    ninety_percent: currentTask.value.ninety_percent,
+    hundred_percent: currentTask.value.hundred_percent,
+    hundred_twenty_percent: currentTask.value.hundred_twenty_percent,
   };
 
   // 关闭模态框
@@ -838,10 +844,10 @@ const saveEditedTask = () => {
     update_by: 'admin',  // 直接使用字符串而不是数组
     assignedUsers: currentTask.value.assignedUsers || [],  // 确保分配的用户正确
     department: currentTask.value.department_id, // 使用部门ID
-    seventy_percent : currentTask.value.seventy_percent,
-    ninety_percent : currentTask.value.ninety_percent,
-    hundred_percent : currentTask.value.hundred_percent,
-    hundred_twenty_percent : currentTask.value.hundred_twenty_percent,
+    seventy_percent: currentTask.value.seventy_percent,
+    ninety_percent: currentTask.value.ninety_percent,
+    hundred_percent: currentTask.value.hundred_percent,
+    hundred_twenty_percent: currentTask.value.hundred_twenty_percent,
   };
 
   showModal.value = false;
