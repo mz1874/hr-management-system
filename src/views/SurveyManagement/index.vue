@@ -64,8 +64,6 @@ const modalType = ref<'create' | 'edit' | 'view'>('create')
 const showPublishModal = ref(false)
 const selectedDepartmentsForPublish = ref<number[]>([]) // Use numbers for department IDs
 
-const behavioralEvaluationAdded = ref(false); // Track if behavioral evaluation has been added
-
 // Delete confirmation modal state
 const showDeleteConfirmModal = ref(false)
 const evaluationToDelete = ref<EvaluationItem | null>(null)
@@ -101,6 +99,11 @@ const selectedInstanceForDetails = ref<EvaluationInstance | null>(null);
 const detailedAnswersData = ref<EvaluationAnswerView[]>([]);
 const detailsLoading = ref(false);
 const detailsError = ref<string | null>(null);
+
+// State for Admin Rating Description Modal
+const showAdminRatingDescriptionModal = ref(false);
+const adminRatingForDescriptionModal = ref<number | null>(null);
+// We will also need EXECUTIVE_RATING_CONFIG and getCombinedRatingDescriptionForStar here
 
 // --- Configuration for Predefined Behavioral Questions ---
 const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
@@ -172,6 +175,98 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
   return { ...q, rating_texts: combined_rating_texts };
 });
 
+// --- Configuration for Executive Rating Questions (Copied from DetailedEvaluationList) ---
+const EXECUTIVE_RATING_CONFIG = [
+  {
+    key: 'be_responsible_executive',
+    text_en: 'Be Responsible (Executive)',
+    text_cn: '负责任 (行政)',
+    rating_texts: {
+      1: { en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.", cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a) 在期间前自动自发完成任务 (b) 有主人翁精神，愿意承担工作 (c) 关注，参与和配合公司事务" }
+    }
+  },
+  {
+    key: 'striving_for_excellence_executive',
+    text_en: 'Striving for Excellence (Executive)',
+    text_cn: '追求卓越 (行政)',
+    rating_texts: {
+      1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a) 没有明确的工作计划，结果欠佳 (b) 工作草率，马虎 (c) 停滞不前，不寻求进步" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a) 自行安排时间表和细节，效率高 (b) 时刻产出高水准和品质的工作 (c) 不断创造更有效率的工作方式" }
+    }
+  },
+  {
+    key: 'morality_and_talent_executive',
+    text_en: 'Morality and Talent (Executive)',
+    text_cn: '道德与才能 (行政)',
+    rating_texts: {
+      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a) 散播谣言扰乱军心 (b) 欺骗，作假 (c) 愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a) 言行一致，向上向善 (b) 拥有正面的道德品行，礼貌谦卑 (c) 以饱满的热情和精神投入工作，正面应对工作挑战" }
+    }
+  },
+  {
+    key: 'problem_solving_skill_executive',
+    text_en: 'Problem Solving Skill (Executive)',
+    text_cn: '解决问题能力 (行政)',
+    rating_texts: {
+      1: { en: "(a) Turn a blind eye to or avoid problems. (b) Failure to provide timely feedback on problems that arise at work and do not proactively look for solutions. (c) Making the same mistakes over and over again.", cn: "(a) 对问题视而不见或逃避问题 (b) 没有及时反馈工作中出现的问题，也没有主动寻找解决方案 (c) 反复犯同样的错误" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Have the courage to face up to problems and be willing to try to solve them. (b) Solve problems in a timely manner, provide preventive measures and share with others as a reference. (c) Able to implement solution and evaluate the results.", cn: "(a) 勇于正视问题，愿意尝试解决问题 (b) 及时解决问题，给予预防措施并分享给大家作为借鉴 (c) 有能力落实具体措施，并对结果进行评估和反思" }
+    }
+  },
+  {
+    key: 'critical_thinking_executive',
+    text_en: 'Critical Thinking (Executive)',
+    text_cn: '批判性思维 (行政)',
+    rating_texts: {
+      1: { en: "(a) Blindly listening to others without considering the authenticity of the information. (b) Unable to analyze problems and evaluate the pros and cons. (c) Lack of ability to challenge conventional practices.", cn: "(a) 盲目听信他人，不考虑信息的真实性 (b) 无法分析问题，不能评估事情的利与弊 (c) 缺乏挑战现状和常规做法的能力" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Analyze and collect required information and evaluate its authenticity. (b) Able to weigh the pro and cons based on analysis and evaluation. (c) Able to propose innovative, feasible, and constructive suggestions.", cn: "(a) 分析及收集所需信息，并评估其真实性 (b) 基于分析和评估，可以权衡事情的利与弊 (c) 能够提出创新性，可行性，有建设性的提议" }
+    }
+  },
+  {
+    key: 'flexibility_executive',
+    text_en: 'Flexibility (Executive)',
+    text_cn: '灵活性 (行政)',
+    rating_texts: {
+      1: { en: "(a) Unable to accept innovations and suggestions. (b) Unable to manage own emotions in response to challenges and stress. (c) Feeling overwhelmed when multitasking.", cn: "(a) 无法接受创新和建议，一成不变 (b) 无法管理自己的情绪以应对挑战和压力 (c) 在处理多项任务时手忙脚乱，无法应付" },
+      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
+      5: { en: "(a) Accept change and adapt quickly. (b) Stay calm and optimistic under pressure and challenges. (c) Able to handle multiple tasks effectively and switch flexibly.", cn: "(a) 接受变化并迅速适应 (b) 在压力和挑战下保持冷静和乐观 (c) 能够有效地处理多项任务和项目，灵活切换" }
+    }
+  }
+].map(q => {
+  const texts = q.rating_texts;
+  const combined_rating_texts: { [key: number]: { en: string, cn: string } } = {
+    1: texts[1],
+    2: {
+      en: `${texts[1].en} / ${texts[3].en}`,
+      cn: `${texts[1].cn} / ${texts[3].cn}`
+    },
+    3: texts[3],
+    4: {
+      en: `${texts[3].en} / ${texts[5].en}`,
+      cn: `${texts[3].cn} / ${texts[5].cn}`
+    },
+    5: texts[5]
+  };
+  return { ...q, rating_texts: combined_rating_texts };
+});
+
+// Helper to get combined rating description for a given rating and language from a config source (Copied from DetailedEvaluationList)
+const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, lang: 'en' | 'cn', configSource: any[]) => {
+  if (rating === undefined || rating === null || rating < 1 || rating > 5) return '';
+  let descriptions: string[] = [];
+  configSource.forEach(config => {
+    const desc = config.rating_texts[rating]?.[lang];
+    if (desc) {
+      descriptions.push(desc);
+    }
+  });
+  return descriptions.join('\n\n');
+};
 
 // --- Fetching Data ---
 const fetchSurveys = async () => {
@@ -307,7 +402,7 @@ const openEvaluationModal = () => {
     questions: []
   }
   modalType.value = 'create'
-  behavioralEvaluationAdded.value = false; // Reset for new evaluation
+  // behavioralEvaluationAdded.value = false; // Reset for new evaluation - Removed
   showModal.value = true
 }
 
@@ -461,14 +556,14 @@ const handleAddEvaluation = async () => {
 const openEditModal = (evaluation: EvaluationItem) => {
   // Ensure the evaluation object copied matches the expected structure, especially status
   currentEvaluation.value = JSON.parse(JSON.stringify(evaluation)); // Deep copy
-  behavioralEvaluationAdded.value = false; // Reset for edit, will be set if predefined questions are found
+  // behavioralEvaluationAdded.value = false; // Reset for edit, will be set if predefined questions are found - Removed
 
   // Map questions from EvaluationForm structure back to QuestionItem for UI state
   currentEvaluation.value.questions = evaluation.questions.map(q => {
     const predefinedConfig = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(c => c.text_en === q.text && q.question_type === 'RATING');
-    if (predefinedConfig) {
-      behavioralEvaluationAdded.value = true; // Mark that behavioral eval exists
-    }
+    // if (predefinedConfig) { // Removed as behavioralEvaluationAdded is removed
+      // behavioralEvaluationAdded.value = true; 
+    // }
 
     return {
       id: q.id,
@@ -543,37 +638,6 @@ const handleSaveEditedEvaluation = async () => {
     Swal.fire('Error', 'Failed to update evaluation.', 'error'); // Show error notification
   }
 }
-
-// --- Add Predefined Behavioral Evaluation Form ---
-const addBehaviouralEvaluationForm = () => {
-  if (behavioralEvaluationAdded.value) {
-    Swal.fire('Info', 'Behavioral Evaluation form has already been added.', 'info');
-    return;
-  }
-  if (!currentEvaluation.value.questions) currentEvaluation.value.questions = [];
-
-  PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.forEach(config => {
-    const newQuestion: QuestionItem = {
-      question_type: 'RATING',
-      text: config.text_en, // Display English text, non-editable
-      order: currentEvaluation.value.questions.length,
-      isPredefined: true,
-      predefinedKey: config.key
-      // adminSelectedRating is no longer needed here
-    };
-    currentEvaluation.value.questions.push(newQuestion);
-  });
-  behavioralEvaluationAdded.value = true;
-};
-
-// --- Remove Predefined Behavioral Evaluation Form ---
-const removeBehaviouralEvaluationForm = () => {
-  if (currentEvaluation.value && currentEvaluation.value.questions) {
-    currentEvaluation.value.questions = currentEvaluation.value.questions.filter(q => !q.isPredefined);
-  }
-  behavioralEvaluationAdded.value = false;
-  Swal.fire('Removed', 'Behavioral Evaluation form has been removed.', 'success');
-};
 
 // --- Computed Properties for Pagination ---
 
@@ -731,6 +795,16 @@ const closeDetailsModal = () => {
   detailsLoading.value = false; // Reset loading state
 };
 
+// Methods for Admin Rating Description Modal
+const openAdminRatingDescriptionModal = (rating: number) => {
+  adminRatingForDescriptionModal.value = rating;
+  showAdminRatingDescriptionModal.value = true;
+};
+
+const closeAdminRatingDescriptionModal = () => {
+  showAdminRatingDescriptionModal.value = false;
+  adminRatingForDescriptionModal.value = null;
+};
 
 </script>
 
@@ -991,17 +1065,10 @@ const closeDetailsModal = () => {
                 <div class="mt-3">
                   <button 
                     type="button" 
-                    class="btn btn-info me-2 mb-2" 
-                    @click="addBehaviouralEvaluationForm()" 
-                    :disabled="modalType === 'view' || behavioralEvaluationAdded">
-                    Add Behavioral Evaluation
-                  </button>
-                  <button
-                    v-if="behavioralEvaluationAdded && modalType !== 'view'"
-                    type="button"
-                    class="btn btn-warning me-2 mb-2"
-                    @click="removeBehaviouralEvaluationForm()">
-                    Remove Behavioral Evaluation
+                    class="btn btn-success me-2 mb-2" 
+                    @click="addQuestion('grade')" 
+                    :disabled="modalType === 'view'">
+                    Add Grade Question
                   </button>
                   <button 
                     type="button" 
@@ -1016,7 +1083,7 @@ const closeDetailsModal = () => {
                     @click="addQuestion('text_input')" 
                     :disabled="modalType === 'view'">
                     Add Text Input Question
-                  </button> 
+                  </button>
                 </div>
               </div>
               <!-- Fallback if currentEvaluation.questions is null/undefined or empty -->
@@ -1025,17 +1092,10 @@ const closeDetailsModal = () => {
                 <div class="mt-3">
                   <button 
                     type="button" 
-                    class="btn btn-info me-2 mb-2" 
-                    @click="addBehaviouralEvaluationForm()" 
-                    :disabled="modalType === 'view' || behavioralEvaluationAdded">
-                    Add Behavioral Evaluation
-                  </button>
-                  <button
-                    v-if="behavioralEvaluationAdded && modalType !== 'view'"
-                    type="button"
-                    class="btn btn-warning me-2 mb-2"
-                    @click="removeBehaviouralEvaluationForm()">
-                    Remove Behavioral Evaluation
+                    class="btn btn-success me-2 mb-2" 
+                    @click="addQuestion('grade')" 
+                    :disabled="modalType === 'view'">
+                    Add Grade Question
                   </button>
                   <button 
                     type="button" 
@@ -1050,7 +1110,7 @@ const closeDetailsModal = () => {
                     @click="addQuestion('text_input')" 
                     :disabled="modalType === 'view'">
                     Add Text Input Question
-                  </button> 
+                  </button>
                 </div>
               </div>
             </div>
@@ -1158,6 +1218,15 @@ const closeDetailsModal = () => {
                 <!-- Display answer based on question type -->
                 <template v-if="answer.question?.question_type === 'RATING'">
                   <span class="badge bg-info">{{ answer.rating ?? 'N/A' }} / 5</span>
+                  <button 
+                    v-if="answer.rating !== null && answer.rating !== undefined"
+                    type="button" 
+                    class="btn btn-outline-secondary btn-sm ms-2" 
+                    @click="openAdminRatingDescriptionModal(answer.rating!)"
+                    title="View Rating Descriptions"
+                    style="padding: 0.25rem 0.5rem; line-height: 1;">
+                    <i class="bi bi-file-earmark-text"></i>
+                  </button>
                 </template>
                 <template v-else-if="answer.question?.question_type === 'OPTIONS'">
                   <span>{{ answer.selected_option?.option_text ?? 'N/A' }}</span>
@@ -1185,6 +1254,55 @@ const closeDetailsModal = () => {
   </div>
   <div class="modal-backdrop fade show" v-if="showDetailsModal"></div>
   <!-- End Detailed Results Modal -->
+
+  <!-- Admin Rating Description Modal -->
+  <div class="modal fade" :class="{ show: showAdminRatingDescriptionModal }" style="display: block;" v-if="showAdminRatingDescriptionModal" tabindex="-1" aria-labelledby="adminRatingDescriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="adminRatingDescriptionModalLabel">
+            Rating Descriptions for {{ adminRatingForDescriptionModal }} Star(s)
+          </h5>
+          <button type="button" class="btn-close" @click="closeAdminRatingDescriptionModal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div v-if="adminRatingForDescriptionModal !== null">
+            <!-- Non-Executive Descriptions -->
+            <div class="mb-4">
+              <h6>Non-Executive Staff Descriptions:</h6>
+              <div class="p-2 border rounded bg-light-subtle">
+                <p class="mb-1"><strong>EN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
+                <hr>
+                <p class="mb-1"><strong>CN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
+              </div>
+            </div>
+
+            <!-- Executive Descriptions -->
+            <div>
+              <h6>Executive Staff Descriptions:</h6>
+              <div class="p-2 border rounded bg-light-subtle">
+                <p class="mb-1"><strong>EN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'en', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
+                <hr>
+                <p class="mb-1"><strong>CN:</strong></p>
+                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'cn', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center text-muted">
+            No rating selected to display descriptions.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeAdminRatingDescriptionModal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" v-if="showAdminRatingDescriptionModal"></div>
+  <!-- End Admin Rating Description Modal -->
 
 </template>
 
@@ -1552,5 +1670,13 @@ const closeDetailsModal = () => {
 /* Delete modal style (from previous task, ensure it's included) */
 #deleteRole .modal-header, #deleteRole .modal-footer {
   border: none;
+}
+
+/* Ensure description-text style is available if not globally defined */
+.description-text {
+  white-space: pre-wrap; /* Ensures newlines are respected */
+  font-family: inherit; /* Inherit font from parent */
+  margin: 0; /* Remove default pre margins */
+  font-size: 0.875rem; /* Adjust as needed */
 }
 </style>
