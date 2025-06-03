@@ -76,8 +76,8 @@ export default function () {
     })
 
     function departmentAdd(department: Department) {
-        addDepartment(department).then((res) => {
-            if (isSuccess(res.status)) {
+        addDepartment(department)
+            .then((res) => {
                 Swal.fire({
                     position: "top-end",
                     icon: "success",
@@ -86,8 +86,16 @@ export default function () {
                     timer: 1500,
                 });
                 fetchDepartments();
-            }
-        })
+            })
+            .catch((error) => {
+                Swal.fire({
+                    position: "top-end",
+                    icon: "error",
+                    title: "Operation Failed, department name should be unique!",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
+            });
     }
 
     function departmentDelete(id: number) {
