@@ -2,7 +2,7 @@
 import {computed, onMounted, ref} from 'vue'
 import {useDepartmentStore} from '@/stores/department.ts'
 import type {Department} from "@/interface/DepartmentInterface.ts";
-
+import Swal from "sweetalert2";
 
 const departmentStore = useDepartmentStore()
 
@@ -88,6 +88,16 @@ const openEditDepartmentModal = (department: Department) => {
  */
 const saveEditedDepartment = () => {
   enableBodyScroll();
+  if(selectedDepartment.value.department_name.trim() === '') {
+    Swal.fire({
+      position: "top-end",
+      icon: "error",
+      title: "Department name can not be empty.",
+      showConfirmButton: false,
+      timer: 1500,
+    });
+    departmentStore.fetchDepartments()
+  }
   if (selectedDepartment.value) {
     showEditDepartmentModal.value = false
     departmentStore.patchDepartment(selectedDepartment.value.id, selectedDepartment.value)
@@ -316,6 +326,7 @@ onMounted(() => {
             <input
                 v-model="selectedDepartment.department_name"
                 type="text"
+                required
                 class="form-control"
                 id="editDepartmentName"
                 placeholder="Enter department name"
