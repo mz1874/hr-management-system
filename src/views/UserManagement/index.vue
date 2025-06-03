@@ -10,6 +10,8 @@ import {pageRoles} from "@/api/role.ts"
 import type {RoleItem} from "@/interface/RoleInterface.ts";
 import dayjs from "dayjs";
 import {getLeaveTypes, getLeaveBalance} from '@/api/leave.ts';
+import { uploadFile } from '@/api/file_upload';
+import {BASE_URL} from "@/api/axios.ts";
 
 const departmentStore = useDepartmentStore();
 const tableData = ref<RoleItem[]>([]);
@@ -84,6 +86,7 @@ const selectedStaff = ref<Staff>({
   staffName: "",
   roles: [],
   department: 0,
+  picture : null,
   imgUrl: '',
   status: false,
   employment_time: new Date().toISOString().split('T')[0], // Set default to current date
@@ -111,6 +114,7 @@ const openAddStaffModal = () => {
     email: '',
     roles: [],
     department: selectedDepartment.value,
+    picture : null,
     status: false,
     imgUrl: '',
     employment_time: new Date().toISOString().split('T')[0], // Will be set automatically
@@ -219,8 +223,16 @@ function hasAdminRole(roleIds: number[]): boolean {
 function onImageSelected(event) {
   const file = event.target.files[0];
   if (file) {
-    // selectedStaff.imgFile = file;
     selectedStaff.value.imgUrl = URL.createObjectURL(file);
+    uploadFile(file).then(msg=>{
+        const res = msg.data.data;
+        selectedStaff.value.imgUrl = res.file_url;
+        selectedStaff.value.picture = res.id;
+        console.log(selectedStaff.value)
+    }).catch(err=>{
+
+    })
+
   }
 }
 
@@ -660,7 +672,7 @@ function resetPassword(staff: Staff) {
               <label class="form-label">Profile Image</label>
               <div v-if="selectedStaff.imgUrl">
                 <img
-                    :src="selectedStaff.imgUrl"
+                    :src="BASE_URL + selectedStaff.imgUrl"
                     alt="Profile Preview"
                     class="img-thumbnail"
                     style="max-width: 150px;"
@@ -816,7 +828,7 @@ function resetPassword(staff: Staff) {
           <div class="row">
             <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
               <img
-                  :src="selectedStaff.imgUrl"
+                  :src="BASE_URL + selectedStaff.imgUrl"
                   alt="Profile Preview"
                   class="img-thumbnail"
                   style="max-width: 150px;"

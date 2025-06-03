@@ -24,7 +24,6 @@ export default function useStaff() {
     const searchDepartmentId = ref<number | null>(null);
     const isSearching = ref(false);
 
-    // 👉 数据映射
     function mapStaffData(item: any): Staff {
         return {
             id: item.id,
@@ -39,7 +38,8 @@ export default function useStaff() {
             employment_time: dayjs(item.employment_time).format("YYYY-MM-DD"),
             resignationDate: undefined,
             password:"",
-            imgUrl: "",
+            picture : item.picture_id,
+            imgUrl: item.picture_url,
             totalPoints: item.total_points,
             currentPoints: item.current_points,
             leave_entitlements: item.leave_entitlements,
@@ -70,7 +70,6 @@ export default function useStaff() {
     }
 
     function handlerAddStaff(staff: Staff) {
-        console.log(staff.date_of_birth);
         addStaff(staff).then((res) => {
             if(isSuccess(res.status)) {
                 Swal.fire({
