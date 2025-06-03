@@ -9,7 +9,6 @@ const departmentStore = useDepartmentStore()
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 20
-const totalItems = computed(() => departmentStore.departments.length)
 
 
 // Modals
@@ -214,6 +213,7 @@ onMounted(() => {
     <!-- Add Department Modal -->
     <div v-if="showAddDepartmentModal" class="modal-backdrop">
       <div class="modal-content">
+        <form @submit.prevent="addDepartment">
         <div class="modal-header">
           <h5 class="modal-title">Add Department</h5>
           <button
@@ -230,6 +230,7 @@ onMounted(() => {
                 type="text"
                 class="form-control"
                 id="departmentName"
+                required
                 placeholder="Enter department name"
             >
           </div>
@@ -238,6 +239,7 @@ onMounted(() => {
             <input
                 v-model.number="newDepartmentSorting"
                 type="number"
+                min="0"
                 class="form-control"
                 id="departmentSorting"
                 placeholder="Enter sorting number"
@@ -270,13 +272,13 @@ onMounted(() => {
             Close
           </button>
           <button
-              type="button"
+              type="submit"
               class="btn btn-primary"
-              @click="addDepartment"
           >
             Add Department
           </button>
         </div>
+        </form>
       </div>
     </div>
 
