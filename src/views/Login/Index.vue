@@ -90,23 +90,15 @@ async function submitData() {
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
       const routeRes = await getUserRoutes();
-
       const backendRoutes = routeRes.data?.data;
       const dynamicRoutes = mapBackendRoutes(backendRoutes);
-
-
       const homeRoute = router.getRoutes().find(r => r.name === 'home');
-      console.log(homeRoute, "Home 路由");
-      console.log(dynamicRoutes, "后端响应的路由");
-      // 注册动态路由到 home 下
-
       if (homeRoute) {
         dynamicRoutes.forEach(r => {
           router.addRoute('home', r); // 正确注册
         });
       }
 
-      console.log(router.getRoutes(), "注册进系统的所有路由");
       Swal.fire({
         position: "top-end",
         icon: "success",
@@ -120,11 +112,11 @@ async function submitData() {
       throw new Error("Invalid token structure");
     }
   } catch (err) {
-    console.log(err);
     if (err.response?.status === 401) {
+      const jsonErrorCode = JSON.parse(err.request.response)
       Swal.fire({
         title: "Login failed!",
-        text: err.message,
+        text: jsonErrorCode.message,
         icon: "error"
       });
     } else {
