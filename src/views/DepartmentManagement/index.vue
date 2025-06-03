@@ -31,6 +31,16 @@ const filteredDepartments = computed(() => {
   })
 })
 
+function disableBodyScroll() {
+  document.body.style.overflow = 'hidden';
+  document.body.style.paddingRight = '15px';
+}
+
+function enableBodyScroll() {
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+}
+
 const totalPages = computed(() => Math.ceil(filteredDepartments.value.length / itemsPerPage))
 
 const paginatedDepartments = computed(() => {
@@ -41,6 +51,7 @@ const paginatedDepartments = computed(() => {
 })
 
 const addDepartment = () => {
+
   if (newDepartmentName.value.trim() === '') {
     alert('Please enter a department name')
     return
@@ -58,6 +69,7 @@ const addDepartment = () => {
   newDepartmentName.value = ''
   newDepartmentSorting.value = 1
   newDepartmentParentId.value = null
+  enableBodyScroll();
   departmentStore.departmentAdd(newDepartment);
 }
 
@@ -66,6 +78,7 @@ const addDepartment = () => {
  * @param department
  */
 const openEditDepartmentModal = (department: Department) => {
+  disableBodyScroll();
   selectedDepartment.value = department
   showEditDepartmentModal.value = true
 }
@@ -74,6 +87,7 @@ const openEditDepartmentModal = (department: Department) => {
  * 保存修改
  */
 const saveEditedDepartment = () => {
+  enableBodyScroll();
   if (selectedDepartment.value) {
     showEditDepartmentModal.value = false
     departmentStore.patchDepartment(selectedDepartment.value.id, selectedDepartment.value)
@@ -82,11 +96,13 @@ const saveEditedDepartment = () => {
 }
 
 const openRemoveDepartmentModal = (department: Department) => {
+  disableBodyScroll();
   selectedDepartment.value = department
   showRemoveDepartmentModal.value = true
 }
 
 const confirmRemoveDepartment = () => {
+  enableBodyScroll();
   if (selectedDepartment.value) {
     departmentStore.departmentDelete(selectedDepartment.value.id);
   }
@@ -139,7 +155,7 @@ onMounted(() => {
     <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-end mb-3">
-          <button @click="showAddDepartmentModal = true" class="btn btn-success">Add Department</button>
+          <button @click="showAddDepartmentModal = true; disableBodyScroll()" class="btn btn-success">Add Department</button>
         </div>
 
         <div class="table-responsive">
@@ -267,7 +283,7 @@ onMounted(() => {
           <button
               type="button"
               class="btn btn-secondary"
-              @click="showAddDepartmentModal = false"
+              @click="showAddDepartmentModal = false; enableBodyScroll()"
           >
             Close
           </button>
@@ -338,7 +354,7 @@ onMounted(() => {
           <button
               type="button"
               class="btn btn-secondary"
-              @click="showEditDepartmentModal = false"
+              @click="showEditDepartmentModal = false; enableBodyScroll()"
           >
             Cancel
           </button>
@@ -373,7 +389,7 @@ onMounted(() => {
           <button
               type="button"
               class="btn btn-secondary"
-              @click="showRemoveDepartmentModal = false"
+              @click="showRemoveDepartmentModal = false; enableBodyScroll()"
           >
             Cancel
           </button>
