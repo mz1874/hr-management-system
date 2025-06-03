@@ -81,6 +81,16 @@ export default function useStaff() {
                 });
                 fetchAllStaffs();
             }
+        }).catch(error => {
+            const res = error.response.data.data.error;
+            Swal.fire({
+                position: "top-end",
+                icon: "error",
+                title: res,
+                showConfirmButton: false,
+                timer: 1500,
+            });
+            fetchAllStaffs();
         })
     }
 
