@@ -655,19 +655,22 @@ const submitAnnouncement = async () => {
 
 // ========== Delete ==========
 const deleteAnnouncement = () => {
-  deleteAnnouncementAPI(selectedAnnouncement.value.id)
+  const deletedId = selectedAnnouncement.value.id;
+
+  deleteAnnouncementAPI(deletedId)
     .then(() => {
-      fetchAnnouncements()
-      closeDeleteModal()
+      // Remove from selectedIds if present
+      selectedIds.value = selectedIds.value.filter(id => id !== deletedId);
+
+      fetchAnnouncements();
+      closeDeleteModal();
       Swal.fire({
         icon: 'success',
         title: 'Deleted!',
         text: 'The announcement has been deleted successfully.',
         showConfirmButton: false,
         position: "top-end",
-
       });
-
     })
     .catch((err) => {
       console.error('Failed to delete announcement:', err.response?.data || err.message);
@@ -679,7 +682,7 @@ const deleteAnnouncement = () => {
         position: "top-end",
       });
     });
-}
+};
 
 const isBulkDelete = ref(false);
 const isDeleteModalOpen = ref(false); //for logic clarity
@@ -692,6 +695,11 @@ const confirmBulkDelete = () => {
 
 
 const handleBulkDelete = () => {
+  // Filter out IDs that are no longer in announcements
+  selectedIds.value = selectedIds.value.filter(id =>
+    announcements.value.some(a => a.id === id)
+  );
+
   Promise.all(selectedIds.value.map(id => deleteAnnouncementAPI(id)))
     .then(() => {
       fetchAnnouncements();
@@ -719,6 +727,7 @@ const handleBulkDelete = () => {
       });
     });
 };
+
 
 // Watch for unchecking the "Schedule Post" checkbox in New Announcement
 watch(() => newAnnouncement.value.isScheduled, (isChecked) => {

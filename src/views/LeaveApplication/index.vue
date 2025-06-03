@@ -161,7 +161,7 @@ async function fetchLeaveApplications(page = 1) {
     if (!Array.isArray(data?.results)) throw new Error('Invalid API response');
 
     totalCount.value = data.count;
-    totalPages.value = Math.ceil(data.count / 5);
+    totalPages.value = Math.ceil(data.count / 10);
     leaveApplications.value = data.results;
     allLeaveStats.value.pending = data.summary?.pending || 0;
 
@@ -368,7 +368,15 @@ const pageNumbers = computed(() => {
 
 
 
-            <td>{{ application.reasons }}</td>
+            <td>
+              <span
+                :title="application.reasons"
+                class="text-truncate d-inline-block"
+                style="max-width: 250px;"
+              >
+                {{ application.reasons }}
+              </span>
+            </td>
             <td>
               <button class="btn btn-light btn-sm" @click="openApplicationDetails(application)">
                 <i class="bi bi-info-circle"></i>
@@ -453,6 +461,7 @@ const pageNumbers = computed(() => {
 
 /* Existing styles for table, cards, buttons, etc. remain unchanged */
 .table {
+  table-layout: fixed;
   border-radius: 10px;
   overflow: hidden;
   border-collapse: separate;
@@ -738,6 +747,20 @@ const pageNumbers = computed(() => {
 .badge-secondary {
   background-color: #adb5bd; /* Fallback gray */
   color: white;
+}
+.table td {
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.table td:nth-child(3) {
+  max-width: 300px;
+}
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 </style>
