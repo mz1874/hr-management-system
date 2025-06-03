@@ -103,8 +103,18 @@ const searchStaff = (searchData: string) => {
   search(searchData, departmentId);
 }
 
+function disableBodyScroll() {
+  document.body.style.overflow = 'hidden';
+  document.body.style.paddingRight = '15px';
+}
+
+function enableBodyScroll() {
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+}
 
 const openAddStaffModal = () => {
+  disableBodyScroll();
   selectedStaff.value = {
     id: 1,
     username: '',
@@ -129,13 +139,13 @@ const openAddStaffModal = () => {
   } else {
     console.warn("leaveTypes.value is not ready:", leaveTypes.value);
   }
-
   showAddStaffModal.value = true
 }
 
-const openViewStaffModal = async (staff: Staff) => {
-  selectedStaff.value = {...staff};
 
+const openViewStaffModal = async (staff: Staff) => {
+  disableBodyScroll();
+  selectedStaff.value = {...staff};
   try {
     const res = await getLeaveBalance({userId: staff.id});
     if (res.status === 200) {
@@ -151,15 +161,14 @@ const openViewStaffModal = async (staff: Staff) => {
   } catch (err) {
     console.error("Failed to load leave balance", err);
   }
-
   console.log('Opening View Staff modal for:', staff);
   showViewStaffModal.value = true;
 };
 
 
 const openEditStaffModal = async (staff: Staff) => {
+  disableBodyScroll();
   selectedStaff.value = {...staff};
-
   try {
     const res = await getLeaveBalance({userId: staff.id});
     if (res.status === 200) {
@@ -181,8 +190,8 @@ const openEditStaffModal = async (staff: Staff) => {
 
 
 const openDeleteStaffModal = (staff: Staff) => {
+  disableBodyScroll();
   selectedStaff.value = staff
-
   showDeleteStaffModal.value = true
 }
 
@@ -192,17 +201,20 @@ const addStaff = () => {
     days
   }));
   handlerAddStaff(selectedStaff.value)
+  enableBodyScroll();
   showAddStaffModal.value = false
 }
 
 const saveEditedStaff = () => {
   handlerEditStaff(selectedStaff.value)
   showEditStaffModal.value = false
+  enableBodyScroll();
 }
 
 const confirmDeleteStaff = () => {
   deleteStaff(selectedStaff.value.id)
   showDeleteStaffModal.value = false
+  enableBodyScroll();
 }
 
 const changePage = (page: number) => {
@@ -420,7 +432,7 @@ function resetPassword(staff: Staff) {
             <button
                 type="button"
                 class="btn-close"
-                @click="showAddStaffModal = false"
+                @click="showAddStaffModal = false; enableBodyScroll()"
             ></button>
           </div>
           <div class="modal-body">
@@ -628,7 +640,7 @@ function resetPassword(staff: Staff) {
           <button
               type="button"
               class="btn-close"
-              @click="showViewStaffModal = false"
+              @click="showViewStaffModal = false; enableBodyScroll()"
           ></button>
         </div>
         <div class="modal-body">
@@ -766,7 +778,7 @@ function resetPassword(staff: Staff) {
           <button
               type="button"
               class="btn btn-secondary"
-              @click="showViewStaffModal = false"
+              @click="showViewStaffModal = false;enableBodyScroll()"
           >
             Close
           </button>
@@ -782,7 +794,7 @@ function resetPassword(staff: Staff) {
           <button
               type="button"
               class="btn-close"
-              @click="showEditStaffModal = false"
+              @click="showEditStaffModal = false; enableBodyScroll()"
           ></button>
         </div>
         <div class="modal-body">
@@ -962,7 +974,7 @@ function resetPassword(staff: Staff) {
           <button
               type="button"
               class="btn btn-secondary"
-              @click="showEditStaffModal = false"
+              @click="showEditStaffModal = false; enableBodyScroll()"
           >
             Cancel
           </button>
@@ -996,7 +1008,7 @@ function resetPassword(staff: Staff) {
           <button
               type="button"
               class="btn btn-secondary"
-              @click="showDeleteStaffModal = false"
+              @click="showDeleteStaffModal = false; enableBodyScroll()"
           >
             Cancel
           </button>
@@ -1077,7 +1089,9 @@ function resetPassword(staff: Staff) {
   border-radius: 10px;
   border: 1px solid #eee;
 }
-
+.no-scroll {
+  overflow: hidden;
+}
 
 .modal-header {
   padding: 1rem;
