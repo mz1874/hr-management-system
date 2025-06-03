@@ -87,8 +87,7 @@ export default function () {
             }
         } catch (error: any) {
             console.error('Error adding role:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
-            showAlert(`Role Add failed: ${errorMessage}`, "error");
+            showAlert("Role creation failed: The role name already exists.", "error");
         }
     };
 
