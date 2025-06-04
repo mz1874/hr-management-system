@@ -12,7 +12,7 @@
       <i class="fa-solid fa-star star-icon"></i>
     </div>
     <button type="button" class="iconButton"  @click="goToPointDetails()"> 
-      <span class="buttonText">{{ currentUserData.total_point }}</span>
+      <span class="buttonText">{{ currentUserData.current_point }}</span>
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
         <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671"/>
       </svg>
@@ -21,7 +21,7 @@
 
   <!-- reward item -->
   <div class="container">
-    <div class="row row-cols-md-3 g-4" >
+    <div class="row row-cols-md-4 g-3" >
       <div class="col" v-for="item in tableData" :key="item.id">
         <div class="card shadow-sm mt-4" >
           <div class="image-container">
@@ -33,18 +33,29 @@
             </template>
           </div>          
           <div class="card-body">
-              <h4 class="rewardTitle"><b>{{ item.rewardName }}</b></h4>
-              <p class="clamp-2-lines">{{ item.description }}</p>
-              <p><b>Valid Until: </b>{{ item.endDateTime }}</p>
-              <p><b>Quantity: </b>{{ item.quantity }}</p>
-              <p><b>Terms & Conditions: </b>  
+              <h4 class="mt-1 mb-3"><b>{{ item.rewardName }}</b></h4>
+              <div class="mb-3 text-muted">
+                <div :class="['description-wrapper', { 'clamp-1-line': !expandedRewards[item.id] }]" 
+                  @click="toggleDescription(item.id)"
+                  ref="descriptionRefs"
+                >
+                  {{ item.description }}
+                  <div v-if="shouldShowToggle(item.id)">
+                    <!-- Replace FontAwesome icons with Bootstrap icons -->
+                    <i class="bi bi-chevron-down ms-2" v-if="!expandedRewards[item.id]"></i>
+                    <i class="bi bi-chevron-up ms-2" v-else></i>    </div>
+                  </div>
+              </div>            
+              <div class="mb-3 text-muted"><b>Valid Until: </b>{{ item.endDateTime }}</div>
+              <div class="mb-3 text-muted"><b>Quantity Left: </b>{{ item.quantity }}</div>
+              <div class="text-muted"><b>Terms & Conditions: </b>  
                 <button class="TNCButton" @click="openTermsModal(item)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
                     <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
                     <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
                   </svg>
                 </button>
-              </p>
+              </div>
               <button class="rewardButton mx-auto" @click="openSelectedRewardModal(item)" :disabled="hasUserRedeemed(item.id)">
                 <div class="icon-container">
                   <i class="fa-solid fa-circle border-circle-icon"></i>
@@ -71,7 +82,7 @@
 
         <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
           <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-        </li>
+        </li> 
 
         <li :class="['page-item', { disabled: currentPage === totalPages }]">
           <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
@@ -130,15 +141,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, nextTick, watch } from 'vue';
 import { useRouter } from "vue-router";
 import { createRedemption, getAllRewards, getUserRewardRedemption, patchReward, updateReward } from "@/api/reward.ts";
 import { getCurrentUser } from '@/api/login';
 import { isSuccess, isCreated, isNoContent } from "@/utils/httpStatus.ts"
 import Swal from "sweetalert2";
 import dayjs from 'dayjs';
-import type { RewardItem} from '@/interface/RewardInterface.ts'
+import type { RewardItem} from '@/interface/RewardInterface.ts';
 
+const expandedRewards = ref<Record<number, boolean>>({})
+const descriptionRefs = ref<Record<number, HTMLElement>>({})
+
+// Toggle open/close
+const toggleDescription = (id: number) => {
+  expandedRewards.value[id] = !expandedRewards.value[id]
+}
+
+// Decide if "Read More" is needed - simplified approach
+const shouldShowToggle = (id: number): boolean => {
+  // Find the item by id
+  const item = tableData.value.find(item => item.id === id)
+  if (!item) return false
+  
+  // Simple text length check (approximate)
+  const shouldShow = item.description && item.description.length > 100
+  return shouldShow
+}
 
 // ===================== Pagination =====================
 const currentPage = ref(1)
@@ -169,6 +198,15 @@ const openSelectedRewardModal = (reward: RewardItem) => {
   currentReward.value = reward;
   showSelectedRewardModal.value = true;
 };
+
+// ===================== Manage background scrolling =====================
+watch([showTermsModal, showSelectedRewardModal], ([terms, reward]) => {
+  if (terms || reward) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
 
 // ===================== Fetch Reward =====================
 const fetchRewards = (page = 1) => {
@@ -251,8 +289,19 @@ const confirmedReward = async () => {
     return;
   } 
   else {
+    // Check if reward quantity is available
+    if (currentReward.value.quantity <= 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Out of Stock',
+        text: 'This reward is currently out of stock and cannot be redeemed.',
+      });
+      showSelectedRewardModal.value = false;
+      return;
+    }
+    
     // Check if the user has enough point
-    if (currentUserData.total_point < currentReward.value.rewardPoints) {
+    if (currentUserData.current_point < currentReward.value.rewardPoints) {
       Swal.fire({
         icon: 'error',
         title: 'Not enough points',
@@ -404,7 +453,7 @@ function goToRewardHistory() {
 }
 
 .image-container {
-  height: 300px; /* Adjust to your card design */
+  height: 260px; /* Adjust to your card design */
   background-color: #f0f0f0;
   display: flex;
   align-items: center;
@@ -421,23 +470,16 @@ function goToRewardHistory() {
   border-top-right-radius: 5px;
 }
 
-.rewardTitle {
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-/* .clamp-2-lines {
+.clamp-1-line {
   display: -webkit-box;
-  -webkit-line-clamp: 2;     
+  -webkit-line-clamp: 1;     
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  line-clamp: 2;
+  cursor: pointer;
+  line-clamp: 1;
   box-orient: vertical;
-} */
-
-
+}
 
 .card-body p {
   font-size: 1em;
@@ -465,7 +507,7 @@ function goToRewardHistory() {
 /* Confirmation button in card */
 .rewardButton{
   background-color: #ABD3AB;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   margin-bottom: 0.75rem;
   width: 70%;
   border: none;

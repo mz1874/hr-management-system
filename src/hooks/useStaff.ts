@@ -40,8 +40,8 @@ export default function useStaff() {
             password:"",
             picture : item.picture_id,
             imgUrl: item.picture_url,
-            totalPoints: item.total_points,
-            currentPoints: item.current_points,
+            totalPoints: item.total_point,
+            currentPoints: item.current_point,
             leave_entitlements: item.leave_entitlements,
         };
     }
@@ -70,6 +70,7 @@ export default function useStaff() {
     }
 
     function handlerAddStaff(staff: Staff) {
+        console.log(staff.date_of_birth);
         addStaff(staff).then((res) => {
             if(isSuccess(res.status)) {
                 Swal.fire({
@@ -81,16 +82,6 @@ export default function useStaff() {
                 });
                 fetchAllStaffs();
             }
-        }).catch(error => {
-            const res = error.response.data.data.error;
-            Swal.fire({
-                position: "top-end",
-                icon: "error",
-                title: res,
-                showConfirmButton: false,
-                timer: 1500,
-            });
-            fetchAllStaffs();
         })
     }
 

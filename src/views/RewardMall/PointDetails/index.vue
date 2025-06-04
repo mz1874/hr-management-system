@@ -21,80 +21,84 @@
     </div>
   </div>
 
-  <div class="table-card">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Received On</th>
-          <th scope="col">Points</th>
-          <th scope="col">Type</th>
-          <th scope="col">Remarks</th>
-          <th scope="col">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="details in tableData" :key="details.id">
-          <td>{{ details.id}}</td>
+  <div class="card">
+    <div class="card-body">
+      <!-- table -->
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Received On</th>
+              <th scope="col">Points</th>
+              <th scope="col">Type</th>
+              <th scope="col">Remarks</th>
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="details in tableData" :key="details.id">
+              <td>{{ details.id}}</td>
 
-          <td>{{ details.pointsReceivedOn}}</td>
+              <td>{{ details.pointsReceivedOn}}</td>
 
-          <td class="fw-bold" :class="details.pointsValues <= 0 ? 'text-danger' : 'text-success'"> 
-            {{ details.pointsValues > 0 ? '+' + details.pointsValues : details.pointsValues }}
-          </td>
+              <td class="fw-bold" :class="details.pointsValues <= 0 ? 'text-danger' : 'text-success'"> 
+                {{ details.pointsValues > 0 ? '+' + details.pointsValues : details.pointsValues }}
+              </td>
 
-          <td>                    
-            <span class="badge px-2 py-2 rounded-pill text-white"
-              :class="{
-                  'dark-green': details.pointType === 'Addition',
-                  'light-green': details.pointType === 'KPI Completed',
-                  'bg-danger': details.pointType === 'Deduction',
-              }">
-              {{ details.pointType }}
-            </span>
-          </td>
+              <td>                    
+                <span class="badge px-2 py-2 rounded-pill text-white"
+                  :class="{
+                      'dark-green': details.pointType === 'Addition',
+                      'light-green': details.pointType === 'KPI Completed',
+                      'bg-danger': details.pointType === 'Deduction',
+                  }">
+                  {{ details.pointType }}
+                </span>
+              </td>
 
-          <td>
-            <template v-if="details.pointType === 'Deduction'">
-              {{ details.pointsDeduction?.map((d: any) => d.deductionTypes).join(', ') }}
-            </template>
-            <template v-else-if="details.pointType === 'Addition'">
-              {{ details.pointsAddition?.additionTypes }}
-            </template>
-            <template v-else-if="details.pointType === 'KPI Completed'">
-              {{ details.kpiCompleted?.taskTitleStored }}
-            </template>
-          </td>
+              <td>
+                <template v-if="details.pointType === 'Deduction'">
+                  {{ details.pointsDeduction?.map((d: any) => d.deductionTypes).join(', ') }}
+                </template>
+                <template v-else-if="details.pointType === 'Addition'">
+                  {{ details.pointsAddition?.additionTypes }}
+                </template>
+                <template v-else-if="details.pointType === 'KPI Completed'">
+                  {{ details.kpiCompleted?.taskTitleStored }}
+                </template>
+              </td>
 
-          <td>
-            <template v-if="details.pointType === 'Deduction' || details.pointType === 'Addition'"></template>
-            <template v-else-if="details.pointType === 'KPI Completed'">
-              <button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button>
-            </template>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+              <td>
+                <template v-if="details.pointType === 'Deduction' || details.pointType === 'Addition'"></template>
+                <template v-else-if="details.pointType === 'KPI Completed'">
+                  <button type="button" class="btn btn-primary" @click="openViewModal(details)">View Details</button>
+                </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- pagination -->
+      <div class="d-flex align-items-center mt-3 justify-content-start">
+        <span class="me-3">Total: {{ totalCount }}</span>
+        <nav>
+          <ul class="pagination mb-0">
+            <li :class="['page-item', { disabled: currentPage === 1 }]">
+              <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+            </li>
 
-  <!-- pagination -->
-  <div class="d-flex align-items-center mt-3 justify-content-start">
-    <span class="me-3">Total: {{ totalCount }}</span>
-    <nav>
-      <ul class="pagination mb-0">
-        <li :class="['page-item', { disabled: currentPage === 1 }]">
-          <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
-        </li>
+            <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+              <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+            </li>
 
-        <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
-          <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-        </li>
-
-        <li :class="['page-item', { disabled: currentPage === totalPages }]">
-          <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
-        </li>
-      </ul>
-    </nav>
+            <li :class="['page-item', { disabled: currentPage === totalPages }]">
+              <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
   </div>
 
   <!-- View Task Details Modal -->
@@ -262,6 +266,15 @@ const openViewModal = (item: any) => {
   showModal.value = true;
 };
 
+// ===================== Manage background scrolling =====================
+watch(showModal, (newVal) => {
+  if (newVal) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
+
 // ===================== Navigate back to reward mall =====================
 const router = useRouter()
 function goToRewardMall()
@@ -274,9 +287,9 @@ function goToRewardMall()
 
 <style scoped>
 .title-page {
-    display: flex;
-    align-items: center;
-    gap: 20px; /* Adjust spacing between the icon and the text */
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Adjust spacing between the icon and the text */
 }
 
 .title-page svg:hover {
@@ -284,92 +297,78 @@ function goToRewardMall()
 }
 
 .title-page h2 {
-    margin-bottom: 0; 
+  margin-bottom: 0; 
 }
 
 .search-container {
   width: 100%; /* Ensure form controls take up available width */
-    max-width: 350px; /* Set a fixed maximum width */
-    display: flex;
-    align-items: center;
-    position: relative;
+  max-width: 350px; /* Set a fixed maximum width */
+  display: flex;
+  align-items: center;
+  position: relative;
 }
 .filter-container {
     margin-bottom: 2rem;
 }
 .search-icon {
-    position: absolute;
-    left: 10px;  /* Adjust left padding */
-    top: 50%;
-    transform: translateY(-50%);
-    color: gray; /* Icon color */
+  position: absolute;
+  left: 10px;  /* Adjust left padding */
+  top: 50%;
+  transform: translateY(-50%);
+  color: gray; /* Icon color */
 }
 .filter-container .form-control {
-    padding-left: 35px; /* Ensure text doesn't overlap the icon */
+  padding-left: 35px; /* Ensure text doesn't overlap the icon */
 }
 
 .table-card {
-    border: 1px solid #707070;
-    padding: 2rem;
-    margin-bottom: 1rem;
-    border-radius: 20px;
+  border: 1px solid #707070;
+  padding: 2rem;
+  margin-bottom: 1rem;
+  border-radius: 20px;
+}
+
+.table th {
+  font-weight: normal;
+  color: #666;
 }
 
 .table th, .table td {
-  padding: 1rem;
   vertical-align: middle;
-  border-bottom: 1px solid #707070;
-}
-
-.btn-primary {
-    border: none;
-    background-color: #4EA5EF;
-    color: white;
-}
-.btn-primary:hover {
-    background-color: #3d95e2;
-    color: white;
-    border: none;
 }
 
 .light-green {
-  background-color: #41AB5D; /* Light green background */
+  background-color: #41AB5D; 
 }
 
 .dark-green {
-  background-color: #006D2C; /* Light green background */
+  background-color: #006D2C; 
 }
 
 .page-link {
-    border: 1px solid #cccccc;
+  border: 1px solid #cccccc;
 }
 .page-item .page-link {
-    color: #008080;
+  color: #008080;
 }
 .page-item.active .page-link {
-    color: #fff;
-    background-color: #008080;
-    border-color: #008080;
+  color: #fff;
+  background-color: #008080;
+  border-color: #008080;
 }
-.pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 15px;
-}
-
 
 /* styling for modal */
 .modal {
-    display: none;
+  display: none;
 }
 .modal-content {
-    padding: 15px;
+  padding: 15px;
 }
 .form-label {
-    font-weight: bold;
+  font-weight: bold;
 }
 .form-control {
-    border-color: #000000;
+  border-color: #ababab;
 }
 .textarea {
   height: auto;

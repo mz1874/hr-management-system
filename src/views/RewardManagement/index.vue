@@ -8,12 +8,10 @@
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
                 <input class="form-control" type="search" placeholder="Search Reward Name" v-model="rewardSearch">
-                <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
                 <input class="form-control" type="number" placeholder="Search Points" v-model="pointSearch">
-                <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <select class="search-container form-select" v-model="statusSearch">
                 <option value="">All Status</option>
@@ -26,7 +24,7 @@
         <!-- filter -->
         <div class="row align-items-center">
             <div class="col-md-auto">
-                <p class="mb-0">End Date Range:</p>
+                <p class="mb-0">End Date Filter:</p>
             </div>
             <div class="col-md-auto">
                 <div class="input-group">
@@ -34,7 +32,7 @@
                 </div>
             </div>
             <div class="col-auto">
-                <p class="mb-0"> - </p>
+                <span class="mb-0">-</span>
             </div>
             <div class="col-md-auto">
                 <div class="input-group">
@@ -45,66 +43,70 @@
     </div>  
 
     <!-- table -->
-    <div class="table-card">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <div></div>
-            <button type="button" class="btn btn-success" @click="openCreateModal">Create A New Reward</button>
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <div></div>
+                <button type="button" class="btn btn-success" @click="openCreateModal">Create A New Reward</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table">   
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Reward Name</th>
+                            <th scope="col">Points</th>
+                            <th scope="col">Created On</th>
+                            <th scope="col">End Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in tableData" :key="item.id">
+                            <td>{{ item.id}}</td>
+                            <td class="reward-name">{{ item.rewardName}}</td>
+                            <td>{{ item.rewardPoints}}</td>
+                            <td>{{ item.createdOn}}</td>
+                            <td>{{ item.endDateTime}}</td>
+                            <td class="fw-bold" :class="{
+                                'text-success': item.status === 'Active',
+                                'text-danger': item.status === 'Expired',
+                                'text-primary': item.status === 'Draft'}">
+                                {{ item.status }}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">View</button>
+                                <button type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
+                                <button type="button" class="btn btn-danger btn-action" @click="openDeleteModal(item)">Delete</button>                    
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- pagination -->
+            <div class="d-flex align-items-center mt-3 justify-content-start">
+                <span class="me-3">Total: {{ totalCount }}</span>
+                
+                <nav>
+                    <ul class="pagination mb-0">
+                    <li :class="['page-item', { disabled: currentPage === 1 }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+                    </li>
+
+                    <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+                    </li>
+
+                    <li :class="['page-item', { disabled: currentPage === totalPages }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
-        <table class="table">   
-            <thead>
-                <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Reward Name</th>
-                    <th scope="col">Points</th>
-                    <th scope="col">Created On</th>
-                    <th scope="col">End Date</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="item in tableData" :key="item.id">
-                    <td>{{ item.id}}</td>
-                    <td>{{ item.rewardName}}</td>
-                    <td>{{ item.rewardPoints}}</td>
-                    <td>{{ item.createdOn}}</td>
-                    <td>{{ item.endDateTime}}</td>
-                    <td :class="{
-                        'text-success': item.status === 'Active',
-                        'text-danger': item.status === 'Expired',
-                        'text-primary': item.status === 'Draft'}">
-                        {{ item.status }}
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">View</button>
-                        <button type="button" class="btn btn-warning btn-action" @click="openEditModal(item)">Edit</button>
-                        <button type="button" class="btn btn-danger btn-action" @click="openDeleteModal(item)">Delete</button>                    
-                    </td>
-                </tr>
-            </tbody>
-        </table>
     </div>
 
-    <!-- pagination -->
-    <div class="d-flex align-items-center mt-3 justify-content-start">
-        <span class="me-3">Total: {{ totalCount }}</span>
-        
-        <nav>
-        <ul class="pagination mb-0">
-          <li :class="['page-item', { disabled: currentPage === 1 }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
-          </li>
-
-          <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
-            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-          </li>
-
-          <li :class="['page-item', { disabled: currentPage === totalPages }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
-          </li>
-        </ul>
-      </nav>
-    </div>
 
     <!-- Reward Modal -->
     <div class="modal fade" id="showModal" :class="{ show: showModal }" style="display: block" v-if="showModal">
@@ -129,17 +131,17 @@
                                     <!-- VIEW MODAL -->
                                     <div v-if="modalType === 'view'">
                                         <!-- If image exists -->
-                                        <div v-if="currentReward.fileDetails">
-                                            <label for="input-file" id="drop-area" class="me-2 flex-grow-1">
-                                                <div id="img-view" v-if="currentReward.fileDetails">
-                                                    <img :src="currentReward.fileDetails.file_url" :alt="currentReward.fileDetails.filename" class="img-fluid">
-                                                </div>        
-                                            </label>
-                                        </div>
-                                        <!-- If no image -->
-                                        <div v-else>
-                                            <span class="text-muted">None</span>
-                                        </div>
+                                            <div v-if="currentReward.fileDetails">
+                                                <label for="input-file" id="drop-area" class="me-2 flex-grow-1">
+                                                    <div id="img-view" v-if="currentReward.fileDetails">
+                                                        <img :src="currentReward.fileDetails.file_url" :alt="currentReward.fileDetails.filename" class="img-fluid">
+                                                    </div>        
+                                                </label>
+                                            </div>
+                                            <!-- If no image -->
+                                            <div v-else>
+                                                <span class="text-muted">None</span>
+                                            </div>
                                     </div>
 
                                     <!-- EDIT / CREATE MODAL -->
@@ -171,29 +173,29 @@
                                 <div class="form-group mb-4">
                                     <label class="form-label">Reward Name:</label>
                                     <input type="text" class="form-control" placeholder="Enter reward name" v-model="currentReward.rewardName" :disabled="modalType === 'view'">
-                                    <div class="invalid-feedback d-block" v-if="validationErrors.rewardName">
-                                        This field is required.
+                                    <div class="invalid-feedback d-block" v-if="validation.rewardName">
+                                        {{ validation.rewardName }}
                                     </div>
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Points:</label>
-                                    <input type="number" class="form-control" placeholder="Enter points" v-model="currentReward.rewardPoints" :disabled="modalType === 'view'">
-                                    <div class="invalid-feedback d-block" v-if="validationErrors.rewardPoints">
-                                        This field is required.
+                                    <input type="number" class="form-control" placeholder="Enter points" v-model="currentReward.rewardPoints" :disabled="modalType === 'view'" min="0">
+                                    <div class="invalid-feedback d-block" v-if="validation.rewardPoints">
+                                        {{ validation.rewardPoints }}
                                     </div>
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">Quantity Available:</label>
-                                    <input type="number" class="form-control" placeholder="Enter quantity of the reward" v-model="currentReward.quantity" :disabled="modalType === 'view'">
-                                    <div class="invalid-feedback d-block" v-if="validationErrors.quantity">
-                                        This field is required.
+                                    <input type="number" class="form-control" placeholder="Enter quantity of the reward" v-model="currentReward.quantity" :disabled="modalType === 'view'" min="0">
+                                    <div class="invalid-feedback d-block" v-if="validation.quantity">
+                                        {{ validation.quantity }}
                                     </div>                                
                                 </div>
                                 <div class="form-group mb-4">
                                     <label class="form-label">End Date & Time:</label>
-                                    <Datepicker v-model="currentReward.endDateTime" :is-24="false" :min-date="new Date()" :disabled="modalType === 'view'" style="border: 1px solid #000000; border-radius: 0.375rem;"></Datepicker>
-                                    <div class="invalid-feedback d-block" v-if="validationErrors.endDateTime">
-                                        This field is required.
+                                    <Datepicker class="custom-datepicker" v-model="currentReward.endDateTime" :is-24="false" :min-date="new Date()" :disabled="modalType === 'view'" ></Datepicker>
+                                    <div class="invalid-feedback d-block" v-if="validation.endDateTime">
+                                        {{ validation.endDateTime }}
                                     </div>                                
                                 </div>
                             </form>
@@ -201,16 +203,28 @@
 
                         <!-- Right Side -->
                         <div class="col-md-6">
-                            <form>
-                                <div class="form-group mb-4">
-                                    <label class="form-label">Reward Description:</label>
-                                    <textarea class="form-control auto-resize" placeholder="Enter reward description" rows="6" v-model="currentReward.description" :disabled="modalType === 'view'"></textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label class="form-label">Terms & Conditions:</label>
-                                    <textarea class="form-control auto-resize" placeholder="Enter terms & conditions" rows="15" v-model="currentReward.terms" :disabled="modalType === 'view'"></textarea>
-                                </div>
-                            </form>
+                            <div class="form-group mb-4">
+                                <label class="form-label">Reward Description:</label>
+                                <textarea class="form-control" 
+                                    :placeholder="modalType === 'view' && !currentReward.description?.trim() ? 'None' : 'Enter reward description'" 
+                                    rows="6" 
+                                    v-model="currentReward.description" 
+                                    :disabled="modalType === 'view'">
+                                </textarea>
+                                <div class="invalid-feedback d-block" v-if="validation.description">
+                                    {{ validation.description }}
+                                </div>  
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Terms & Conditions:</label>
+                                <textarea class="form-control" 
+                                    :placeholder="modalType === 'view' && !currentReward.terms?.trim() ? 'None' : 'Enter terms & conditions'" 
+                                    rows="15" 
+                                    v-model="currentReward.terms" 
+                                    :disabled="modalType === 'view'">
+                                </textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -299,6 +313,10 @@ const openViewModal = (reward: any) => {
 const openEditModal = (reward: RewardItem) => {
     resetValidation(); 
     currentReward.value = { ...reward };
+        // Ensure endDateTime is properly handled
+    if (!reward.endDateTime || reward.endDateTime === 'N/A') {
+        currentReward.value.endDateTime = null;
+    }
     modalType.value = 'edit';
     showModal.value = true
 }
@@ -306,6 +324,15 @@ const openDeleteModal = (reward: RewardItem) => {
     currentReward.value = reward;
     showRemoveModal.value = true
 }
+
+// ===================== Manage background scrolling =====================
+watch([showModal, showRemoveModal], ([modal, removeModal]) => {
+  if (modal || removeModal) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
 
 // ===================== Fetch Rewards =====================
 const rewardSearch = ref('')
@@ -342,7 +369,7 @@ const fetchRewards = (page = 1) => {
             rewardPoints: item.reward_points_required,
             createdOn: dayjs(item.reward_created_date).format("YYYY-MM-DD, HH:mm"),
             quantity: item.reward_quantity, 
-            endDateTime: dayjs(item.reward_end_date_time).format("YYYY-MM-DD, HH:mm"),
+            endDateTime: item.reward_end_date_time ? dayjs(item.reward_end_date_time).format("YYYY-MM-DD, HH:mm") : "N/A",
             description: item.reward_description,
             terms: item.reward_terms_and_conditions,
             status: item.reward_status,
@@ -358,37 +385,101 @@ watch([rewardSearch, pointSearch, statusSearch, startDateSearch, endDateSearch],
     fetchRewards(1); // Reset to page 1 on any search input change
 });
 
+
 // ===================== Validation =====================
-const validationErrors = ref({
-  rewardName: false,
-  rewardPoints: false,
-  quantity: false,
-  endDateTime: false,
+const validation = ref({
+  rewardName: '',
+  rewardPoints: '',
+  quantity: '',
+  endDateTime: '',
+  description: '',
 });
 
-const validateReward = () => {
-  validationErrors.value = {
-    rewardName: !currentReward.value.rewardName,
-    rewardPoints: !currentReward.value.rewardPoints,
-    quantity: !currentReward.value.quantity,
-    endDateTime: !currentReward.value.endDateTime,
-  };
+const validateReward = (mode = 'full') => {
+    // Reset all validations
+    Object.keys(validation.value).forEach(key => {
+        validation.value[key] = '';
+    });
 
-  return !Object.values(validationErrors.value).some((val) => val === true);
+    let isValid = true;
+
+    // Validate reward name (both mode needed)
+    if (!currentReward.value.rewardName?.trim()) {
+        validation.value.rewardName = 'Reward name is required.';
+        isValid = false;
+    }
+
+    if (mode === 'full') {
+        // Validate points
+        if (!currentReward.value.rewardPoints && currentReward.value.rewardPoints !== 0) {
+            validation.value.rewardPoints = 'Points field is required.';
+            isValid = false;
+        } else if (Number(currentReward.value.rewardPoints) < 0) {
+            validation.value.rewardPoints = 'Points cannot be less than 0.';
+            isValid = false;
+        }
+
+        // Validate quantity
+        if (!currentReward.value.quantity && currentReward.value.quantity !== 0) {
+            validation.value.quantity = 'Quantity field is required.';
+            isValid = false;
+        } else if (Number(currentReward.value.quantity) < 0) {
+            validation.value.quantity = 'Quantity cannot be less than 0.';
+            isValid = false;
+        }
+
+        // Validate end date
+        if (!currentReward.value.endDateTime) {
+            validation.value.endDateTime = 'End date & time is required.';
+            isValid = false;
+        } else {
+            // Check if end date is in the future
+            const endDate = new Date(currentReward.value.endDateTime);
+            const now = new Date();
+            if (endDate < now) {
+                validation.value.endDateTime = 'End date & time must be in the future.';
+                isValid = false;
+            }
+        }
+
+        // Validate description (optional field with character limit)
+        if (currentReward.value.description && currentReward.value.description.length > 255) {
+            validation.value.description = `Description cannot exceed 255 characters. Current: ${currentReward.value.description.length}/255`;
+            isValid = false;
+        }
+    }
+
+    if (mode === 'draft') {
+        if (!currentReward.value.rewardPoints) {
+            if (Number(currentReward.value.rewardPoints) < 0) {
+                validation.value.rewardPoints = 'Points cannot be less than 0.';
+                isValid = false;
+            }
+        }
+        if (!currentReward.value.quantity) {
+            if (Number(currentReward.value.quantity) < 0) {
+                validation.value.quantity = 'Quantity cannot be less than 0.';
+                isValid = false;
+            }
+        }
+    }
+
+    return isValid;
 };
 
 const resetValidation = () => {
-  validationErrors.value = {
-    rewardName: false,
-    rewardPoints: false,
-    quantity: false,
-    endDateTime: false,
-  };
+    validation.value = {
+        rewardName: '',
+        rewardPoints: '',
+        quantity: '',
+        endDateTime: '',
+        description: '',
+    };
 };
 
 // ===================== Publish Reward =====================
 const publishReward = async () => {
-    if (!validateReward()) return;
+    if (!validateReward('full')) return;
 
     try {
         //   upload the file if one is selected
@@ -463,6 +554,8 @@ const publishReward = async () => {
 
 // ===================== Save as Draft =====================
 const saveAsDraft = async() => {
+    if (!validateReward('draft')) return;
+
     try {
         let fileId = null;
 
@@ -488,15 +581,18 @@ const saveAsDraft = async() => {
             fileId = currentReward.value.fileDetails.id;
         }
 
-        const data = {
+        const data: any = {
             reward_title: currentReward.value.rewardName || "",
             reward_points_required: currentReward.value.rewardPoints || 0,
             reward_quantity: currentReward.value.quantity || 0,
-            reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss") || "",
             reward_description: currentReward.value.description || "",
             reward_terms_and_conditions: currentReward.value.terms || "",
             reward_status: "Draft",
             file_id: fileId
+        }
+
+        if (currentReward.value.endDateTime) {
+            data.reward_end_date_time = dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss");
         }
 
         console.log("Update reward payload:", data);
@@ -527,15 +623,16 @@ const saveAsDraft = async() => {
         showModal.value = false;
         Swal.fire({
             icon: "error",
-            title: "Error publishing reward",
+            title: "Error saving as draft",
             text: "Please check your form and try again",
         });
     }
 };
 
+
 // ===================== Save Reward =====================
 const saveEditedReward = async () => {
-    if (!validateReward()) return;
+    if (!validateReward('full')) return;
 
     try {
         // First step: If a new file is selected, upload it first
@@ -566,15 +663,20 @@ const saveEditedReward = async () => {
             fileId = currentReward.value.fileDetails.id;
         }
         
+        // Calculate the correct status based on the new end date
+        const endDateTime = dayjs(currentReward.value.endDateTime);
+        const now = dayjs();
+        const calculatedStatus = endDateTime.isAfter(now) ? 'Active' : 'Expired';
+        
         // Second step: Update the reward with the file ID reference 
         const data = {
             reward_title: currentReward.value.rewardName,
             reward_points_required: currentReward.value.rewardPoints,
             reward_quantity: currentReward.value.quantity,
-            reward_end_date_time: dayjs(currentReward.value.endDateTime).format("YYYY-MM-DD HH:mm:ss"),
+            reward_end_date_time: endDateTime.format("YYYY-MM-DD HH:mm:ss"),
             reward_description: currentReward.value.description,
             reward_terms_and_conditions: currentReward.value.terms,
-            reward_status: currentReward.value.status,
+            reward_status: calculatedStatus, // Use calculated status instead of current status
             // Send the file ID in the file_id field instead of the file object
             file_id: fileId
         };
@@ -649,7 +751,11 @@ const removeImage = () => {
     currentReward.value.fileDetails = null;
     // Clear any selected file that might be pending upload
     selectedFile.value = null;
-
+    // Clear the file input value to allow selecting the same file again
+    const fileInput = document.getElementById('input-file') as HTMLInputElement;
+    if (fileInput) {
+        fileInput.value = '';
+    }
 }
 
 </script>
@@ -684,10 +790,26 @@ const removeImage = () => {
     margin-bottom: 1rem;
     border-radius: 20px;
 }
+.table-card {
+    border: 1px solid #707070;
+    padding: 2rem;
+    margin-bottom: 1rem;
+    border-radius: 20px;
+}
+.table th {
+  font-weight: normal;
+  color: #666;
+}
+
 .table th, .table td {
-  padding: 1rem;
-  vertical-align: middle;
-  border-bottom: 1px solid #707070;
+    vertical-align: middle;
+}
+
+.reward-name {
+  max-width: 200px; /* or adjust based on your table layout */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-action {
@@ -707,13 +829,6 @@ const removeImage = () => {
     border-color: #008080;
 }
 
-.pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 15px;
-}
-
-
 /* Styling for modal */
 .modal {
     display: none;
@@ -725,41 +840,39 @@ const removeImage = () => {
     font-weight: bold;
 }
 .form-control, .form-select {
-    border-color: #000000;
+    border-color: #ababab;
 }
 .row {
     display: flex;
     align-items: stretch; /* Ensures columns and dividing line stretch to match tallest content */
 }
 .col-md-6:not(:last-child) {
-    border-right: 1px solid #707070; /* Vertical line between columns */
+    border-right: 1px solid #ababab; /* Vertical line between columns */
     padding-right: 30px;
 }
 .col-md-6:last-child {
     padding-left: 30px;
 }
-/* .auto-resize {
-    resize: none; 
-    overflow: hidden; 
-} */
 
 #drop-area {
-    width: 100%;  
-    max-width: 500px;
-    height: 300px;
-    text-align: center;
-    border-radius: 20px;
-    border: 2px dashed #000000;
-    position: relative;
-    cursor: pointer;
+    min-height: 300px;
+    max-height: 400px; /* Add maximum height constraint */
+    background: white;
+    border-radius: 16px;
+    padding: 15px;
+    border: 1px solid #ababab;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
+    position: relative;
+    cursor: pointer;
 }
+
 #img-view {
     width: 100%; 
     height: 100%;
+    max-height: 300px; /* Constrain the image container height */
     border-radius: 15px;
     display: flex;
     justify-content: center;
@@ -767,6 +880,18 @@ const removeImage = () => {
     flex-direction: column;
     overflow: hidden;
 }
+
+/* Key fix: Constrain the actual image size */
+#img-view img {
+    max-width: 100%;
+    max-height: 250px; /* Maximum height for images */
+    width: auto;
+    height: auto;
+    object-fit: contain; /* Maintain aspect ratio and fit within bounds */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
 #img-view svg {
     width: 40px;
     height: 40px;
@@ -777,6 +902,20 @@ const removeImage = () => {
     font-size: 16px;
     color: #bbb;
     text-align: center;
+}
+
+.custom-datepicker :deep(.dp__input) {
+  border-color: #ababab !important;
+  border-radius: 0.375rem !important;
+}
+
+.custom-datepicker :deep(.dp__main) {
+  border-color: #ababab !important;
+}
+
+.custom-datepicker :deep(.dp__input:disabled) {
+  background-color: transparent !important;
+  border-color: #ababab !important;
 }
 
 input:disabled, textarea:disabled {

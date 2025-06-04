@@ -9,69 +9,78 @@
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
                 <input class="form-control form-control-padding" type="search" placeholder="Search Employee Name" v-model="searchQuery">
-                <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <select v-model.number="selectedDepartment" class="form-select search-container">
                 <option value="0" selected>All departments</option>
                 <option v-for="dept in departmentStore.flatDepartmentList" :key="dept.id":value="dept.id">
-                {{ dept.department_name }}
+                    {{ dept.department_name }}
                 </option>
             </select>
             <button @click="searchStaff(searchQuery)" class="btn btn-primary">Search</button>
         </div>
     </div>  
     
-    <!-- table -->
-    <div class="table-card">
-        <table class="table">   
-            <thead>
-                <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Staff Name</th>
-                    <th scope="col">Username</th>
-                    <th scope="col">Department</th>
-                    <th scope="col">Total Points</th>
-                    <th scope="col">Current Points</th>
-                    <th scope="col">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="item in staffTableData.results" :key="item.id">
-                    <th>{{ item.id }}</th>
-                    <td>{{ item.staffName }}</td>
-                    <td>{{ item.username }}</td>
-                    <td>{{ item.department_name }}</td>
-                    <td>{{ item.totalPoints }}</td>
-                    <td>{{ item.currentPoints }}</td>
-                    <td>
-                        <button type="button" class="btn btn-success btn-action" @click="openAdditionModal(item)">Add Points</button>
-                        <button type="button" class="btn btn-danger btn-action" @click="openDeductionModal(item)">Deduct Points</button>
-                        <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">Point Details</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- pagination -->
-    <div class="d-flex align-items-center mt-3 justify-content-start">
-            <!-- <span class="me-3">Total: {{ totalCount }}</span> -->
+    <div class="card">
+        <div class="card-body">
+            <!-- table -->
+            <div class="table-responsive">
+                <table class="table"> 
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Account</th>
+                            <th scope="col">Department</th>
+                            <th scope="col">Total Points</th>
+                            <th scope="col">Current Points</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="!staffTableData.results || staffTableData.results.length === 0">
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                No records found.
+                            </td>
+                        </tr>
+                        <tr v-else v-for="item in staffTableData.results" :key="item.id">
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.staffName }}</td>
+                            <td>{{ item.username }}</td>
+                            <td>{{ item.department_name }}</td>
+                            <td>{{ item.totalPoints }}</td>
+                            <td>{{ item.currentPoints }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-action" @click="openAdditionModal(item)">Add Points</button>
+                                <button type="button" class="btn btn-danger btn-action" @click="openDeductionModal(item)">Deduct Points</button>
+                                <button type="button" class="btn btn-primary btn-action" @click="openViewModal(item)">Point Details</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             
-        <nav>
-        <ul class="pagination mb-0">
-          <li :class="['page-item', { disabled: currentPage === 1 }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
-          </li>
 
-          <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
-            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-          </li>
+            <!-- pagination -->
+            <div class="d-flex align-items-center mt-3 justify-content-start">
+                <span class="me-3">Total: {{ staffTableData.summary?.total_users || staffTableData.count || 0 }}</span>
+                    
+                <nav>
+                    <ul class="pagination mb-0">
+                    <li :class="['page-item', { disabled: currentPage === 1 }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+                    </li>
 
-          <li :class="['page-item', { disabled: currentPage === totalPages }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
-          </li>
-        </ul>
-      </nav>
+                    <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+                    </li>
+
+                    <li :class="['page-item', { disabled: currentPage === totalPages }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
     </div>
 
     <!-- Modal for Point Details -->
@@ -96,7 +105,7 @@
                                 <input type="date" class="form-control" v-model="modalEndDate" @change="applyModalFilters">
                             </div>
                             <div class="col-md-2">
-                                <button type="button" class="btn btn-outline-secondary" @click="clearDateFilters" :disabled="!modalStartDate && !modalEndDate">
+                                <button type="button" class="btn btn-outline-danger" @click="clearDateFilters" :disabled="!modalStartDate && !modalEndDate">
                                     Clear
                                 </button>
                             </div>
@@ -132,7 +141,7 @@
                                 </div>
                                 <div class="text-end">
                                     <span :class="['fs-5 fw-bold', formatTransactionDisplay(transaction).pointsClass]">
-                                        {{ transaction.points }} pts
+                                        {{ formatTransactionDisplay(transaction).formattedPoints }} pts
                                     </span>
                                 </div>
                             </div>
@@ -217,17 +226,18 @@
 
     <!-- Show Deduction Modal -->
     <div v-if="showDeductionModal" class="modal fade show" style="display: block;">
-    <div class="modal-dialog modal-dialog-centered modal-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h3>Point Deduction</h3>
-                    <span class="text-muted">Deduct points for employee</span>
-                </div>            
-            </div>
+        <div class="modal-dialog modal-dialog-centered modal-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h3>Point Deduction</h3>
+                        <span class="text-muted">Deduct points for employee</span>
+                    </div>            
+                </div>
 
-            <div class="modal-body">
-                <div><b>Employee:</b> {{ currentUserPointDetails.staffName }}</div>
+                <div class="modal-body">
+                    <div><b>Employee:</b> {{ currentUserPointDetails.staffName }}</div>
+                    
                     <div class="mt-4 mb-4">
                         <h5>Select Deduction Type</h5>
                         <div class="d-flex flex-wrap gap-2 mb-4">
@@ -241,8 +251,14 @@
                         <div v-for="(item, index) in selectedDeductions" :key="item.deductionTypes" class="mb-3">
                             <label><b>Deduction Reason:</b> {{ item.deductionTypes }}</label>
                             <div class="input-group">
-                                <input type="number" class="form-control" v-model.number="item.pointsDeducted" placeholder="Enter points to deduct"/>
+                                <input type="number" class="form-control" 
+                                    :class="{ 'is-invalid': getDeductionValidation(item.deductionTypes) }"
+                                    v-model.number="item.pointsDeducted" placeholder="Enter points to deduct" min="0"
+                                    @input="clearDeductionValidation(item.deductionTypes)"/>
                                 <button class="btn btn-outline-danger" @click="removeDeduction(item.deductionTypes)">Remove</button>
+                            </div>
+                            <div v-if="getDeductionValidation(item.deductionTypes)" class="invalid-feedback d-block">
+                                {{ getDeductionValidation(item.deductionTypes) }}
                             </div>
                         </div>
                     </div>
@@ -250,13 +266,14 @@
 
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="showDeductionModal = false">Close</button>
-                    <button class="btn btn-danger" @click="confirmDeduction">Confirm</button>
+                    <button class="btn btn-danger" :disabled="selectedDeductions.length === 0" @click="confirmDeduction">
+                        Confirm Deduction
+                    </button>
                 </div>
             </div>
         </div>
     </div>
     <div class="modal-backdrop fade show" v-if="showDeductionModal"></div>
-
 
     <!-- Modal for Addition -->
     <div class="modal fade" id="deleteReward" :class="{ show: showAdditionModal }" style="display: block" v-if="showAdditionModal">
@@ -278,24 +295,30 @@
                             <select class="search-container form-select" v-model="currentUserPointDetails.additionTypes" disabled>
                                 <option value="Star" selected> ⭐ Star </option>
                             </select>
-                            <form>
-                                <div class="form-group">
-                                    <label ><b>Points to Add:</b></label>
-                                    <input type="number" class="form-control" placeholder="Enter points to add" v-model="currentUserPointDetails.pointsAddition">
+                            
+                            <div class="form-group mt-3">
+                                <label><b>Points to Add:</b></label>
+                                <input type="number" class="form-control" placeholder="Enter points to add" 
+                                    :class="{ 'is-invalid': getAdditionValidation() }" v-model.number="currentUserPointDetails.pointsAddition" 
+                                    min="1" @input="clearAdditionValidation()"
+                                >
+                                <div class="invalid-feedback d-block" v-if="getAdditionValidation()">
+                                    {{ getAdditionValidation() }}
                                 </div>
-                            </form>                        
+                            </div>                      
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="showAdditionModal = false">Close</button>
-                    <button type="button" class="btn btn-success" @click="confirmAddition">Confirm</button>
+                    <button type="button" class="btn btn-success" :disabled="!currentUserPointDetails.pointsAddition" @click="confirmAddition">
+                        Confirm Addition
+                    </button>
                 </div>
             </div>
         </div>
     </div>
     <div class="modal-backdrop fade show" v-if="showAdditionModal"></div>
-
 
     <!-- Modal for reset point confirmation -->
     <div class="modal fade" id="deleteReward" :class="{ show: showResetPointModal }" style="display: block" v-if="showResetPointModal">
@@ -556,37 +579,128 @@ const resetReward = async () => {
     }
 }
 
+// ===================== Validation =====================
+const validation = ref({
+    pointsDeducted: '',
+    pointsAddition: '',
+    deductions: {},
+});
+
+const validateDeductionPoints = () => {
+    // Reset deduction validations
+    validation.value.deductions = {};
+
+    let isValid = true;
+
+    selectedDeductions.value.forEach((deduction, index) => {
+        const key = deduction.deductionTypes;
+        // Check if points are entered
+        if (!deduction.pointsDeducted) {
+            validation.value.deductions[key] = 'Please enter points to deduct.';
+            isValid = false;
+        }
+
+        // Check if points are negative
+        if (Number(deduction.pointsDeducted) < 0) {
+            validation.value.deductions[key] = 'Points cannot be less than 0.';
+            isValid = false;
+        }
+    });
+
+    return isValid;
+};
+
+const validateAdditionPoints = () => {
+    // Reset addition validation
+    validation.value.pointsAddition = '';
+
+    let isValid = true;
+
+    // Check if points are entered
+    if (!currentUserPointDetails.value.pointsAddition || currentUserPointDetails.value.pointsAddition === '') {
+        validation.value.pointsAddition = 'Please enter points to add.';
+        isValid = false;
+    }
+    // Check if points are negative
+    else if (Number(currentUserPointDetails.value.pointsAddition) < 0) {
+        validation.value.pointsAddition = 'Points cannot be less than 0.';
+        isValid = false;
+    }
+
+    return isValid;
+};
+
+const resetValidation = () => {
+    validation.value = {
+        pointsDeducted: '',
+        pointsAddition: '',
+        deductions: {},
+    };
+};
+
+// Helper function to get validation message for specific deduction
+const getDeductionValidation = (deductionType) => {
+    return validation.value.deductions[deductionType] || '';
+};
+
+// Helper function to get validation message for specific deduction
+const getAdditionValidation = () => {
+    return validation.value.pointsAddition || '';
+};
+
+// Clear validation for specific deduction when user starts typing
+const clearDeductionValidation = (deductionType) => {
+    if (validation.value.deductions[deductionType]) {
+        delete validation.value.deductions[deductionType];
+    }
+};
+
+// Clear validation for specific deduction when user starts typing
+const clearAdditionValidation = () => {
+    if (validation.value.pointsAddition) {
+        delete validation.value.pointsAddition;
+    }
+};
+
 // ===================== Confirm Point deduction =====================
 const showDeductionModal = ref(false)
 const deductionOptions = [
-  { deductionTypes: 'Credit Notice' },
-  { deductionTypes: 'Lateness' },
-  { deductionTypes: 'Absent Without Notice' }
+    { deductionTypes: 'Credit Notice' },
+    { deductionTypes: 'Lateness' },
+    { deductionTypes: 'Absent Without Notice' }
 ]
 
 // Selected deductions
 const selectedDeductions = ref<{ deductionTypes: string, pointsDeducted: number | null }[]>([])
 
 const openDeductionModal = (staff: Staff) => {
-  currentUserPointDetails.value = { ...staff }
-  selectedDeductions.value = []
-  showDeductionModal.value = true
+    resetValidation();
+    currentUserPointDetails.value = { ...staff }
+    selectedDeductions.value = []
+    showDeductionModal.value = true
 }
 
 // Add a new deduction block if not already selected
 const addDeduction = (deductionTypes: string) => {
-  if (!selectedDeductions.value.some(d => d.deductionTypes === deductionTypes)) {
-    selectedDeductions.value.push({ deductionTypes, pointsDeducted: null })
-  }
+    if (!selectedDeductions.value.some(d => d.deductionTypes === deductionTypes)) {
+        selectedDeductions.value.push({ deductionTypes, pointsDeducted: null })
+    }
 }
 
 // Remove a deduction row
 const removeDeduction = (deductionTypes: string) => {
-  selectedDeductions.value = selectedDeductions.value.filter(d => d.deductionTypes !== deductionTypes)
+    selectedDeductions.value = selectedDeductions.value.filter(d => d.deductionTypes !== deductionTypes)
+    
+    // Clear validation for the removed deduction type
+    if (validation.value.deductions[deductionTypes]) {
+        delete validation.value.deductions[deductionTypes]
+    }
 }
 
 //confirm deduction
-const confirmDeduction = () => {    
+const confirmDeduction = () => { 
+    if (!validateDeductionPoints()) return;
+
     const totalDeductedPoints = selectedDeductions.value.reduce((sum, item) => sum + (item.pointsDeducted ?? 0), 0)
 
     const pointHistoryData = {
@@ -646,11 +760,14 @@ const confirmDeduction = () => {
 // ===================== Confirm Point addition =====================
 const showAdditionModal = ref(false)
 const openAdditionModal = (staff: Staff) => {
+    resetValidation();
     currentUserPointDetails.value = {...staff, additionTypes: "Star" };
     showAdditionModal.value = true
 }
 
 const confirmAddition = () => {  
+    if (!validateAdditionPoints()) return;
+
     const pointsToAdd = currentUserPointDetails.value.pointsAddition;
     
     const pointHistoryData = {
@@ -810,43 +927,50 @@ const clearDateFilters = () => {
 // ===================== Format Transaction Display =====================
 const formatTransactionDisplay = (transaction: any) => {
     // Format points with proper sign and color
-    const isAddition = transaction.transaction_type === "Addition";
+    const isAddition = transaction.transaction_type === "Addition" || transaction.transaction_type === "KPI Completed";
     const pointsClass = isAddition ? 'text-success' : 'text-danger';
-    
+
+    const formattedPoints = `${isAddition ? '+' : ''}${transaction.points}`;
     return {
         pointsClass,
-        formattedDate: dayjs(transaction.date).format("YYYY-MM-DD HH:mm")
+        formattedPoints,
+        formattedDate: dayjs(transaction.date).format("YYYY-MM-DD, HH:mm")
     };
 }
+
+// ===================== Manage background scrolling =====================
+watch([showModal, showAdditionModal, showDeductionModal, showResetPointModal], ([modal, additionModal, deductionModal, resetModal]) => {
+  if (modal || additionModal || deductionModal || resetModal) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
 
 </script>
 
 
 <style scoped>
 .search-container {
-    margin-bottom: 1rem;
-    width: 100%; /* Ensure form controls take up available width */
-    /* Set a fixed maximum width */
+
+    width: 100%; 
     display: flex;
     align-items: center;
     position: relative;
 }
+
 .filter-container {
     margin-bottom: 2rem;
 }
 .search-icon {
     position: absolute;
-    left: 10px;  /* Adjust left padding */
+    left: 10px; 
     top: 50%;
     transform: translateY(-50%);
     color: gray; /* Icon color */
 }
 .form-control-padding {
-    padding-left: 35px; /* Ensure text doesn't overlap the icon */
-}
-
-.form-control, .form-select {
-    border-color: #000000;
+    padding-left: 35px; 
 }
 
 .table-card {
@@ -855,10 +979,13 @@ const formatTransactionDisplay = (transaction: any) => {
     margin-bottom: 1rem;
     border-radius: 20px;
 }
+.table th {
+    font-weight: normal;
+    color: #666;
+}
+
 .table th, .table td {
-  padding: 1rem;
-  vertical-align: middle;
-  border-bottom: 1px solid #707070;
+    vertical-align: middle;
 }
 
 .btn-action {
@@ -876,12 +1003,6 @@ const formatTransactionDisplay = (transaction: any) => {
     color: #fff;
     background-color: #008080;
     border-color: #008080;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 15px;
 }
 
 /* Styling for Modal */
