@@ -216,7 +216,7 @@
                   <label for="taskDescription" class="form-label">Task Description:</label>
                   <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description"
                             required
-                            v-model="currentTask.taskDescription"></textarea>
+                            v-model="currentTask.taskDescription" maxlength="250"></textarea>
                 </div>
 
                 <!-- Dates Row -->
