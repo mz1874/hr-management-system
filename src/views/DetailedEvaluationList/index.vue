@@ -197,8 +197,9 @@ interface DisplayEvaluationForm extends EvaluationForm {
 // --- State ---
 const router = useRouter(); // Initialize router instance
 
-const availableForms = ref<DisplayEvaluationForm[]>([]) // Forms available to the manager
-const totalForms = ref(0) // For pagination
+const rawApiResults = ref<DisplayEvaluationForm[]>([]); // Stores all forms fetched from API based on broad filters
+// const availableForms = ref<DisplayEvaluationForm[]>([]) // Forms available to the manager - REPLACED by formsForCurrentPage logic
+// const totalForms = ref(0) // For pagination - REPLACED by computed length of clientFilteredResults
 const isLoadingForms = ref(false)
 const isLoadingDetails = ref(false) // Keep for potential future use loading form questions if separated
 const finishedCount = ref(0); // TODO: Revisit if this count is needed and how to calculate it
@@ -247,13 +248,26 @@ const ratingForDescriptionModal = ref<number | null>(null);
 const questionTextForDescriptionModal = ref<string | null>(null); // To pass question context if needed, though current logic uses all categories
 
 // --- Computed Properties ---
-const totalPages = computed(() => Math.ceil(totalForms.value / itemsPerPage.value))
+// Computed property for client-side filtering of all fetched API results
+const clientFilteredResults = computed(() => {
+  const baseForms = rawApiResults.value.filter(form => form.status !== 'DRAFT'); // Ensure DRAFT are always filtered out first
 
-// Computed property returns the forms fetched from the backend
-// We might filter out forms the manager can't act on later if needed
-const displayForms = computed(() => {
-  // Filter out DRAFT forms as they shouldn't be evaluated
-  return availableForms.value.filter(form => form.status !== 'DRAFT');
+  if (selectedStatus.value === 'PUBLISHED') {
+    return baseForms.filter(form => getEvaluationStatus(form) === 'PUBLISHED');
+  } else if (selectedStatus.value === 'SUBMITTED') {
+    return baseForms.filter(form => getEvaluationStatus(form) === 'SUBMITTED');
+  }
+  // If 'All Status' (selectedStatus.value is null) or any other case, return all non-DRAFT forms from rawApiResults
+  return baseForms;
+});
+
+const totalPages = computed(() => Math.ceil(clientFilteredResults.value.length / itemsPerPage.value));
+
+// Computed property for the forms to display on the current page (paginated from clientFilteredResults)
+const formsForCurrentPage = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return clientFilteredResults.value.slice(start, end);
 });
 
 
@@ -341,15 +355,15 @@ const formatDate = (dateString: string | null | undefined): string => {
 
 // Helper function to get evaluation status for the main table
 const getEvaluationStatus = (form: DisplayEvaluationForm): string => {
-  // This logic assumes 'submission_count' from the backend indicates if any department has finalized.
-  // Or, it could be based on the form's own 'status' if not yet submitted by anyone.
-  // The 'user_instance_status' is more for the manager's interaction with *their* department's part.
-  if (form.submission_count && form.submission_count > 0) {
-    return 'SUBMITTED'; // Or 'Completed' if that's the desired display text
+  // The status is 'SUBMITTED' if the current manager's department has finalized their evaluation for this form.
+  // This is determined by 'user_instance_status' being 'SUBMITTED' or 'REVIEWED'.
+  if (form.user_instance_status === 'SUBMITTED' || form.user_instance_status === 'REVIEWED') {
+    return 'SUBMITTED';
   }
-  // Fallback to the form's general status if no submissions yet
-  // (e.g., 'PUBLISHED' if it's available for evaluation but no one has submitted)
-  return form.status || 'N/A';
+  // Otherwise, the status displayed reflects the form's general status (e.g., 'PUBLISHED', 'CLOSED').
+  // If the department hasn't submitted and the form is globally 'PUBLISHED', it will show 'PUBLISHED'.
+  // If the form is globally 'CLOSED' and the department hasn't submitted, it will show 'CLOSED'.
+  return form.status || 'N/A'; // Fallback to 'N/A' if form.status is null/undefined
 };
 
 // Helper function to get evaluation progress for the main table
@@ -369,41 +383,49 @@ const getEvaluationProgress = (form: DisplayEvaluationForm): string => {
 const fetchAvailableForms = async () => {
   isLoadingForms.value = true;
   try {
-    // Use getAllEvaluationForms API call
-    // Pass page_size, status, and search parameters
-    const params: { page_size: number; status?: string | null; search?: string } = {
-        page_size: itemsPerPage.value,
-        status: selectedStatus.value, // Pass selected status (can be null)
-        search: searchName.value || undefined // Pass search term if not empty
-    };
-    // When 'All Status' is selected (null), don't send status param to backend.
-    // Backend should return all accessible forms (likely PUBLISHED based on typical permissions).
-    // We will filter locally in the computed property if 'All Status' is selected.
-    if (params.status === null) {
-        delete params.status;
+    // Determine the status parameter for the API call.
+    // If the user filters for "SUBMITTED" (department status), we still query for globally "PUBLISHED" forms
+    // from the API, because a department can submit their part while the form is still open/published globally.
+    // The actual filtering for department-submitted forms happens client-side in `clientFilteredResults`.
+    // If the user filters for "PUBLISHED" (department status), we also query for globally "PUBLISHED" forms.
+    // If "All Status" is selected, we don't send a status filter to the API.
+    let apiQueryStatus: string | null = null;
+    if (selectedStatus.value === 'PUBLISHED' || selectedStatus.value === 'SUBMITTED') {
+      apiQueryStatus = 'PUBLISHED'; // For both PUBLISHED and SUBMITTED dropdown, fetch PUBLISHED from API
+    } else if (selectedStatus.value === null) {
+      apiQueryStatus = null; // For "All Status"
     }
-    const response = await getAllEvaluationForms(currentPage.value, params);
+
+    // Fetch ALL forms matching the API query. Using a large page_size.
+    // The page parameter is set to 1 as we want all results starting from the first page.
+    const params: { page_size: number; status?: string | null; search?: string; page: number } = {
+        page_size: 10000, // Assuming a large number to fetch all, or API needs specific param for "all"
+        page: 1,
+        search: searchName.value || undefined
+    };
+
+    if (apiQueryStatus !== null) {
+        params.status = apiQueryStatus;
+    }
+
+    const response = await getAllEvaluationForms(params.page, params); // Pass page and params separately if API expects that
 
     // Add checks for response.data and nested data structure
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
-        // Assign fetched forms (casting might still be needed depending on API definition)
-        // Filter DRAFT status here as a safeguard
-        availableForms.value = response.data.data.results
-            .map((form: any) => form as DisplayEvaluationForm) // Keep cast for safety
-            .filter((form: DisplayEvaluationForm) => form.status !== 'DRAFT');
-
-        totalForms.value = response.data.data.count; // Use total count from backend for pagination
-        console.log("Fetched forms based on status:", selectedStatus.value, availableForms.value);
+        // Store all fetched results. DRAFT filtering is handled by clientFilteredResults.
+        rawApiResults.value = response.data.data.results
+            .map((form: any) => form as DisplayEvaluationForm); // Keep cast for safety
+        
+        // totalForms.value is now derived from clientFilteredResults.value.length, so no need to set it from response.data.data.count
+        console.log("Fetched all raw forms for API status:", apiQueryStatus, rawApiResults.value.length);
     } else {
         console.error("Failed to fetch evaluation forms: Unexpected response format", response);
-        availableForms.value = [];
-        totalForms.value = 0;
+        rawApiResults.value = [];
         // TODO: Show a user-friendly error message
     }
   } catch (error) {
     console.error("Failed to fetch available forms:", error);
-    availableForms.value = [];
-    totalForms.value = 0;
+    rawApiResults.value = [];
     // TODO: Show error message to user
   } finally {
     isLoadingForms.value = false;
@@ -885,8 +907,8 @@ onMounted(async () => {
   fetchAvailableForms(); // Fetch forms on mount
 });
 
-// Refetch data when page changes
-watch(currentPage, fetchAvailableForms);
+// Refetch data when page changes - REMOVED, pagination is now client-side from full list
+// watch(currentPage, fetchAvailableForms);
 
 // Refetch data when status filter changes
 watch(selectedStatus, () => {
@@ -952,11 +974,11 @@ watch(searchName, () => {
         <tr v-if="isLoadingForms">
             <td colspan="6" class="text-center">Loading evaluation forms...</td>
         </tr>
-        <tr v-else-if="displayForms.length === 0">
+        <tr v-else-if="formsForCurrentPage.length === 0">
             <td colspan="6" class="text-center">No evaluation forms found matching the criteria.</td>
         </tr>
-        <!-- Iterate over computed displayForms -->
-        <tr v-else v-for="form in displayForms" :key="form.id">
+        <!-- Iterate over computed formsForCurrentPage -->
+        <tr v-else v-for="form in formsForCurrentPage" :key="form.id">
           <td>{{ form.id }}</td>
           <td>{{ form.name || 'N/A' }}</td>
           <td>{{ formatDate(form.publish_time) }}</td>
@@ -982,9 +1004,9 @@ watch(searchName, () => {
   </div>
 
     <!-- Pagination for Main Table -->
-    <div class="d-flex align-items-center gap-3 my-3" v-if="totalForms > 0">
+    <div class="d-flex align-items-center gap-3 my-3" v-if="clientFilteredResults.length > 0">
       <div class="text-muted fs-5">
-        Total Evaluations: {{ totalForms }}
+      Displaying {{ formsForCurrentPage.length }} of {{ clientFilteredResults.length }} evaluation(s)
       </div>
       <nav aria-label="Page navigation">
         <ul class="pagination mb-0">
@@ -994,13 +1016,13 @@ watch(searchName, () => {
           <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
             <button class="page-link" @click="goToPage(page)">{{ page }}</button>
           </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
+          <li class="page-item" :class="{ disabled: currentPage === totalPages || totalPages === 0 }">
+            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages || totalPages === 0">Next</button>
           </li>
         </ul>
       </nav>
     </div>
-    <div v-else-if="!isLoadingForms && displayForms.length === 0" class="text-center text-muted mt-3">
+    <div v-else-if="!isLoadingForms && formsForCurrentPage.length === 0" class="text-center text-muted mt-3">
       <!-- This message is already handled inside the table, but kept here as a fallback if table is not rendered -->
     </div>
   </div>
