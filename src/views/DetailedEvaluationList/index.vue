@@ -13,6 +13,8 @@ import {
   finalizeDepartmentEvaluation, // Import the new function
   sendBackEvaluation // Import sendBackEvaluation
 } from '@/api/survey';
+import { selectAllDepartments } from '@/api/department'; // Import for department lookup
+import type { Department as DeptInterface } from '@/interface/DepartmentInterface'; // Interface for all departments
 import type {
     EvaluationForm, // Use EvaluationForm
     EvaluationAnswerSubmit,
@@ -236,6 +238,9 @@ const currentSubmissionData = ref<DisplayEvaluationForm | null>(null); // Store 
 const isLoadingSubmissionDetails = ref(false); // Loading state for results modal
 // const detailedSubmissionAnswers = ref<EvaluationAnswerView[]>([]); // State for actual answers (TODO)
 
+const currentUser = ref<Staff | null>(null); // To store current user data
+const allSystemDepartments = ref<DeptInterface[]>([]); // To store all departments for ID lookup
+
 // State for the new Rating Description Modal
 const showRatingDescriptionModal = ref(false);
 const ratingForDescriptionModal = ref<number | null>(null);
@@ -302,6 +307,23 @@ const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, 
 
 
 // Helper function for date formatting (YYYY-MM-DD)
+
+const fetchCurrentUser = async () => {
+  try {
+    const response = await getCurrentUser();
+    if (response.data && response.data.data) {
+      currentUser.value = response.data.data;
+      console.log("Current user data fetched:", currentUser.value);
+    } else {
+      console.error("Failed to fetch current user data: No data in response");
+      Swal.fire('Error', 'Could not load your user details. Please try again.', 'error');
+    }
+  } catch (error) {
+    console.error("Failed to fetch current user:", error);
+    Swal.fire('Error', 'Could not load your user details. Please try again.', 'error');
+  }
+};
+
 const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return 'N/A'; // Changed from 'NOT PUBLISHED' to 'N/A' for consistency
   try {
@@ -422,13 +444,68 @@ const openFormModal = async (formItem: EvaluationForm) => {
   showFormModal.value = true; // Show the modal
 
   try {
-    const departmentId = 1; // Get manager's department ID
-    if (!departmentId) {
-      throw new Error("Manager's department ID not found.");
+    if (!currentUser.value) {
+      await fetchCurrentUser(); // Ensure current user is fetched if not already
     }
+    if (!currentUser.value) {
+      Swal.fire('Error', 'Could not load your user details. Cannot load staff.', 'error');
+      isLoadingStaff.value = false;
+      isLoadingStatuses.value = false;
+      showFormModal.value = false;
+      return;
+    }
+
+    let departmentIdToUse: number | null = null;
+
+    if (typeof currentUser.value.department === 'number') {
+      departmentIdToUse = currentUser.value.department;
+    } else if (typeof currentUser.value.department === 'string') {
+      // department field might be the name, try to find ID from allSystemDepartments
+      if (allSystemDepartments.value.length === 0) {
+        // Attempt to fetch all departments if not already fetched (e.g. if onMounted failed or was skipped)
+        try {
+          const deptsResponse = await selectAllDepartments();
+          if (deptsResponse.data && deptsResponse.data.code === 200 && Array.isArray(deptsResponse.data.data.results)) {
+            allSystemDepartments.value = deptsResponse.data.data.results;
+          } else {
+            console.error("Failed to fetch all departments for ID lookup.");
+          }
+        } catch (deptError) {
+          console.error("Error fetching all departments:", deptError);
+        }
+      }
+      
+      const departmentNameFromUser = currentUser.value.department as string; // It's a string here
+      const foundDept = allSystemDepartments.value.find(d => d.department_name === departmentNameFromUser);
+      if (foundDept) {
+        departmentIdToUse = foundDept.id;
+      } else {
+        // Fallback: check if department_name field in currentUser matches anything
+        const foundDeptByNameField = allSystemDepartments.value.find(d => d.department_name === currentUser.value?.department_name);
+        if (foundDeptByNameField) {
+            departmentIdToUse = foundDeptByNameField.id;
+        } else {
+            Swal.fire('Error', `Could not find a numeric ID for your department ('${departmentNameFromUser}'). Please contact support.`, 'error');
+            isLoadingStaff.value = false;
+            isLoadingStatuses.value = false;
+            showFormModal.value = false;
+            return;
+        }
+      }
+    }
+
+    if (departmentIdToUse === null || departmentIdToUse === undefined) {
+      Swal.fire('Error', 'Your department information is missing or invalid. Cannot load staff.', 'error');
+      isLoadingStaff.value = false;
+      isLoadingStatuses.value = false;
+      showFormModal.value = false;
+      return;
+    }
+    
+    console.log("Fetching staff for department ID:", departmentIdToUse);
+
     // Fetch staff for the manager's department using searchStaff
-    // Pass empty string for name, department ID, and page 1
-    const response = await searchStaff('', departmentId, 1);
+    const response = await searchStaff('', departmentIdToUse, 1); // Page 1, no specific name search initially
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
       // Assuming searchStaff returns paginated results, store only results for now
       // TODO: Handle pagination if needed for staff list within modal
@@ -791,7 +868,19 @@ const goToPage = (page: number) => {
 }
 
 // --- Lifecycle Hooks ---
-onMounted(() => {
+onMounted(async () => {
+  await fetchCurrentUser(); // Fetch current user details on mount
+  try {
+    const response = await selectAllDepartments();
+    if (response.data && response.data.code === 200 && Array.isArray(response.data.data.results)) {
+      allSystemDepartments.value = response.data.data.results;
+      console.log("All departments fetched:", allSystemDepartments.value.length);
+    } else {
+      console.error("Failed to fetch all departments on mount:", response);
+    }
+  } catch (error) {
+    console.error("Error fetching all departments on mount:", error);
+  }
   fetchAvailableForms(); // Fetch forms on mount
 });
 
