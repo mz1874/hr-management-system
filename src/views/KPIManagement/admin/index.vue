@@ -4,12 +4,14 @@
   </div>
 
   <!-- Search and filter -->
+  <!-- 仅当当前角色不包含 'manager' 时显示 -->
   <div class="d-flex gap-3 mb-4 mt-3">
     <!-- search task name -->
     <div class="input-group w-25">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
       <input v-model="searchTaskName" type="text" class="form-control" placeholder="Search Task Name">
     </div>
+
     <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">All Status</option>
@@ -20,19 +22,21 @@
       <option>Terminated</option>
     </select>
 
-    <select class="form-select w-25" v-model="searchDepartment">
+    <select class="form-select w-25" v-model="searchDepartment" v-if="!isManager">
       <option v-for="dept in departments" :key="dept.id" :value="dept.id">
         {{ dept.department_name }}
       </option>
     </select>
+
     <button class="btn btn-primary" @click="searchKPI">Search</button>
     <button class="btn btn-primary" @click="cleanSearchCondition">Clean</button>
   </div>
 
+
   <!-- Table section -->
   <div class="card">
     <div class="card-body">
-      <div class="d-flex justify-content-end mb-3">
+      <div class="d-flex justify-content-end mb-3" v-if="!isManager">
         <button @click="openCreateTaskModal" class="btn btn-success">Create A New Task</button>
       </div>
 
@@ -435,9 +439,12 @@
 
 <script setup lang="ts">
 import router from '@/router'
-import {ref, computed, onMounted, nextTick} from 'vue'
+import {ref, computed, onMounted, reactive} from 'vue'
 import type {Task} from "@/interface/KpiInterface.ts";
 import {searchStaff, assignKpiToDepartment} from "@/api/staff.ts";
+import {isSuccess} from '@/utils/httpStatus';
+import Swal from 'sweetalert2';
+import useKPI from "@/hooks/useKPI.ts";
 import {
   updateKpi,
   createKpi,
@@ -451,9 +458,7 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 
 dayjs.extend(isBetween);
-import {isSuccess} from '@/utils/httpStatus';
-import Swal from 'sweetalert2';
-import useKPI from "@/hooks/useKPI.ts";
+
 
 
 const {
@@ -463,6 +468,14 @@ const {
   count,
 } = useKPI();
 
+let currentUserDepartment = ref("")
+let currentUserDepartmentId = ref(0)
+let currentRoles = reactive([])
+
+
+let isManager = computed(()=>{
+  return currentRoles.includes('manager');
+})
 
 // 员工搜索相关
 const staffSearchKeyword = ref('');
@@ -526,8 +539,6 @@ const selectStaffMember = (staff: any) => {
   }
 };
 
-const tasks = ref<Task[]>([])
-
 const currentTask = ref<any>({});
 
 const departments = ref<any[]>([]);
@@ -539,7 +550,6 @@ const fetchDepartments = () => {
       // 默认选择第一个部门
       if (departments.value.length > 0) {
         selectedDepartment.value = departments.value[0];
-        handlerFetchKpis({page: 1});
       }
     } else {
       console.error('Failed to fetch department list:', res);
@@ -551,44 +561,29 @@ const fetchDepartments = () => {
 
 
 onMounted(() => {
-//   // handlerFetchKpis()
-//   // tasks.value.forEach(updateTaskStatus);
-//   // console.log("Component has been mounted");
-//   // try {
   fetchDepartments();
-//   //   console.log("API calls have been initiated");
-//   // } catch (error) {
-//   //   console.error("Error during component mount:", error);
-//   // }
-});
+  const currentUserInStorage = localStorage.getItem("currentUser");
+   if(currentUserInStorage != null)
+   {
+     let jsonObj = JSON.parse(currentUserInStorage);
+     console.log(jsonObj);
+     currentUserDepartment.value = jsonObj.department;
+     currentRoles.splice(0, currentRoles.length, ...jsonObj.roles);
+     currentUserDepartmentId.value = jsonObj.department_id;
+   }
 
-// 添加用户的函数
-const addAssignedUser = () => {
-  if (!currentTask.value.assignedTo) return;
-
-  // 检查是否已经添加过该用户
-  const isDuplicate = currentTask.value.assignedUsers?.some(
-      user => user.username === currentTask.value.assignedTo
-  );
-
-  if (!isDuplicate) {
-    if (!currentTask.value.assignedUsers) {
-      currentTask.value.assignedUsers = [];
-    }
-
-    currentTask.value.assignedUsers.push({
-      username: currentTask.value.assignedTo
-    });
-
-    currentTask.value.assignedTo = ''; // 清空输入框
-  } else {
-    Swal.fire({
-      icon: "warning",
-      title: "Duplicate User",
-      text: "This user has already been added to the task"
-    });
+  // 包含manager的情况下按照manager处理
+  if(isManager.value){
+    const queryParams = {
+      page: 1,
+      department_id: currentUserDepartmentId.value,
+    };
+    handlerFetchKpis(queryParams);
+  }else {
+    handlerFetchKpis({page: 1});
   }
-}
+
+});
 
 // 移除用户的函数
 const removeAssignedUser = (index: number) => {
@@ -1071,19 +1066,6 @@ const selectedStatus = ref('')
 const searchDepartment = ref('')
 
 const selectedDepartment = ref('Sales Department')
-const itemsPerPage = 10
-
-// 添加KPI数据过滤计算属性
-const filteredKpiData = computed(() => {
-
-});
-
-
-const paginatedTasks = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filteredKpiData.value.slice(start, end)
-})
 
 // pagination
 const totalPages = computed(() => {
@@ -1099,11 +1081,17 @@ const changePage = (page: number) => {
  * 根据状态或者KPI的名称查询KPI信息
  */
 function searchKPI() {
+  let searchDepartmentValue =0
+  if (isManager){
+    searchDepartmentValue = currentUserDepartmentId.value;
+  }else {
+    searchDepartmentValue = searchDepartment.value || undefined
+  }
   const queryParams = {
     page: 1,
     task_title: searchTaskName.value || undefined,
     status: selectedStatus.value || undefined,
-    department_id: searchDepartment.value || undefined,
+    department_id: searchDepartmentValue,
   };
   handlerFetchKpis(queryParams);
 }
@@ -1124,20 +1112,6 @@ const delayedTasks = 0;
 
 const handleDepartmentChange = () => {
 
-};
-
-const updateTaskStatus = (task: Task) => {
-  const currentDate = new Date();
-  const startDate = new Date(`${task.startDate}`);
-  const endDate = new Date(`${task.completionDate}`);
-
-  if (currentDate < startDate) {
-    task.status = 'Not Yet Started';
-  } else if (currentDate >= startDate && currentDate <= endDate) {
-    task.status = 'Ongoing';
-  } else {
-    task.status = 'Delayed';
-  }
 };
 
 

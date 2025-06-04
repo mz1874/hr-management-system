@@ -10,13 +10,14 @@ import siderbar from "@/components/siderbar/index.vue";
 import pageFooter from "@/components/footer/index.vue";
 import contentHeader from "@/components/header/index.vue";
 import { getCurrentUser } from "@/api/login.ts";
-import {onMounted, reactive, ref} from "vue";
+import {onMounted, reactive} from "vue";
 
 let currentUserData = reactive<any>({});
 
 const currentUser = () => {
     getCurrentUser().then((res) => {
           Object.assign(currentUserData, res.data.data);
+          localStorage.setItem("currentUser", JSON.stringify(currentUserData));
         })
         .catch((err) => {
           console.error(err);

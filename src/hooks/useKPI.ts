@@ -44,9 +44,6 @@ export default function () {
         }
     }
 
-    onMounted(() => {
-        handlerFetchKpis({page: 1});
-    });
 
     return {
         currentPage,
