@@ -236,6 +236,7 @@
                 <div class="mb-3">
                   <label for="pointsGiven" class="form-label">Points Given For Each Individual:</label>
                   <input type="number" class="form-control" id="pointsGiven" required placeholder="Enter points"
+                         min="0"
                          v-model="currentTask.pointsGiven">
                 </div>
 
@@ -244,6 +245,7 @@
                   <label for="target" class="form-label">Target For Each Individual:</label>
                   <div class="col-md-6">
                     <input type="number" class="form-control" id="target" required placeholder="Enter target"
+                           min="0"
                            v-model="currentTask.totalTarget">
                   </div>
                   <div class="col-md-6">
@@ -636,13 +638,29 @@ const createTask = () => {
 
   let taskStatus = 'Not Yet Started';  // 默认状态
 
+  if (dayjs(startDate).isAfter(dayjs(endDate))) {
+    Swal.fire({
+      icon: "error",
+      title: "Invalid Date",
+      text: "End date can not early then start day"
+    });
+    return;
+  }
+
+  if (dayjs(currentDate).isAfter(dayjs(endDate))) {
+    Swal.fire({
+      icon: "error",
+      title: "Invalid Date",
+      text: "End date can not early then current day"
+    });
+    return;
+  }
+
   // 日期状态检查
   if (dayjs(currentDate).isBefore(dayjs(startDate))) {
     taskStatus = 'Not Yet Started';  // 当前日期早于任务开始日期
   } else if (dayjs(currentDate).isBetween(dayjs(startDate), dayjs(endDate), null, '[]')) {
     taskStatus = 'Ongoing';  // 当前日期在开始日期和结束日期之间
-  } else if (dayjs(currentDate).isAfter(dayjs(endDate))) {
-    taskStatus = 'Delayed';  // 当前日期晚于任务结束日期
   }
 
   // 确保任务数据正确设置，使用处理过的日期
@@ -1084,7 +1102,7 @@ function searchKPI() {
   const queryParams = {
     page: 1,
     task_title: searchTaskName.value || undefined,
-    kpi_status: selectedStatus.value || undefined,
+    status: selectedStatus.value || undefined,
     department_id: searchDepartment.value || undefined,
   };
   handlerFetchKpis(queryParams);
