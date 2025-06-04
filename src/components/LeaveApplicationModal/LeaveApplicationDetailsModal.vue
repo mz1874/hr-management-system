@@ -32,13 +32,30 @@ watch(() => props.selectedApplication, async (newData) => {
 
 
 const formatDateOnly = (dateStr: string): string => {
-  if (!dateStr.includes('-') && dateStr.includes('.')) {
-    const [day, month, year] = dateStr.split('.')
+  if (!dateStr) return '-';
+
+  // Handle format: "01.06.2025 00:00:00"
+  if (dateStr.includes('.') && dateStr.includes(' ')) {
+    const [datePart] = dateStr.split(' ');
+    const [day, month, year] = datePart.split('.');
     if (!day || !month || !year) return '-';
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
-  return dateStr.split('T')[0];
+
+  // Handle ISO format: "2025-06-01T19:49:17.417555"
+  if (dateStr.includes('T')) {
+    return dateStr.split('T')[0];
+  }
+
+  // Handle already formatted YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    return dateStr.slice(0, 10);
+  }
+
+  // Fallback
+  return dateStr;
 };
+
 </script>
 
 <template>

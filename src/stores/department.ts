@@ -73,18 +73,39 @@ export const useDepartmentStore = defineStore('department', () => {
     }
 
     const departmentAdd = async (department: Department) => {
-        const res = await addDepartment(department)
-        if (isSuccess(res.status)) {
+        try {
+            const res = await addDepartment(department);
+
+            if (isSuccess(res.status)) {
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Department successfully added',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                fetchDepartments();
+            } else {
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Failed to add department',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }
+        } catch (error) {
+            console.error('Error adding department:', error);
             Swal.fire({
                 position: 'top-end',
-                icon: 'success',
-                title: 'Department successfully added',
+                icon: 'error',
+                title: 'Operation Failed, department name should be unique!',
                 showConfirmButton: false,
                 timer: 1500
-            })
-            fetchDepartments()
+            });
         }
-    }
+    };
+
 
     const departmentDelete = async (id: number) => {
         const res = await deleteDepartment(id)

@@ -8,12 +8,10 @@
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
                 <input class="form-control" type="search" placeholder="Search Employee Name" v-model="userSearch">
-                <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <form class="search-container" role="search"> 
                 <i class="fas fa-search search-icon"></i>
                 <input class="form-control" type="search" placeholder="Search Reward Name" v-model="rewardSearch">
-                <!-- <button class="btn btn-success" type="submit">Search</button> -->
             </form>
             <select class="search-container form-select" v-model="statusSearch">
                 <option value="">All Status</option>
@@ -25,7 +23,7 @@
         <!-- filter -->
         <div class="row align-items-center">
             <div class="col-md-auto">
-                <p class="mb-0">Custom Date Range:</p>
+                <p class="mb-0">Redeemed On Filter:</p>
             </div>
             <div class="col-md-auto">
                 <div class="input-group">
@@ -43,53 +41,58 @@
         </div>
     </div>  
     
-    <!-- table -->
-    <div class="table-card">
-        <table class="table">   
-            <thead>
-                <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Username</th>
-                    <th scope="col">Redeemed On</th>
-                    <th scope="col">Reward Name</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="item in tableData" :key="item.id">
-                    <th>{{ item.id }}</th>
-                    <td>{{ item.user.username }}</td>
-                    <td>{{ item.redeemedOn }}</td>
-                    <td>{{ item.rewardTitle }}</td>
-                    <td class="fw-bold" :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">{{ item.status }}</td>
-                    <td>
-                        <button type="button" class="btn-edit" @click="openChangeStatusModel(item)">Change Status</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+    <div class="card">
+        <div class="card-body">
+            <!-- table -->
+            <div class="table-responsive">
+                <table class="table">   
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Account</th>
+                            <th scope="col">Redeemed On</th>
+                            <th scope="col">Reward Name</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in tableData" :key="item.id">
+                            <th>{{ item.id }}</th>
+                            <td>{{ item.user.staffName }}</td>
+                            <td>{{ item.user.username }}</td>
+                            <td>{{ item.redeemedOn }}</td>
+                            <td class="reward-name">{{ item.rewardTitle }}</td>
+                            <td class="fw-bold" :class="item.status === 'Not Yet Received' ? 'text-danger' : 'text-success'">{{ item.status }}</td>
+                            <td>
+                                <button type="button" class="btn-edit" @click="openChangeStatusModel(item)">Change Status</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- pagination -->
+            <div class="d-flex align-items-center mt-3 justify-content-start">
+                <span class="me-3">Total: {{ totalCount }}</span>
+                
+                <nav>
+                    <ul class="pagination mb-0">
+                    <li :class="['page-item', { disabled: currentPage === 1 }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+                    </li>
 
-    <!-- pagination -->
-    <div class="d-flex align-items-center mt-3 justify-content-start">
-        <span class="me-3">Total: {{ totalCount }}</span>
-        
-        <nav>
-        <ul class="pagination mb-0">
-          <li :class="['page-item', { disabled: currentPage === 1 }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
-          </li>
+                    <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+                    </li>
 
-          <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
-            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-          </li>
-
-          <li :class="['page-item', { disabled: currentPage === totalPages }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
-          </li>
-        </ul>
-      </nav>
+                    <li :class="['page-item', { disabled: currentPage === totalPages }]">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
     </div>
 
     <!-- Modal for Change Status -->
@@ -140,12 +143,12 @@ import Swal from 'sweetalert2';
 const tableData = ref<RewardRedemptionItem[]>([])
 const currentRewardRedemption = ref<any>({});
 
-// model
+// ===================== Modal =====================
 const showModal = ref(false)
 const originalStatus = ref<'Received' | 'Not Yet Received'>('Not Yet Received'); // Holds the selected status value
 const changedStatus = ref<'Received' | 'Not Yet Received'>('Not Yet Received');
 
-// Click on "Change Status" button
+// ===================== Open Status modal =====================
 const openChangeStatusModel = (item: any) => {
     currentRewardRedemption.value = item;
     const status = item.status === 'Received' ? 'Received' : 'Not Yet Received';
@@ -154,12 +157,21 @@ const openChangeStatusModel = (item: any) => {
     showModal.value = true;
 };
 
-// Disabled "Save" button unless the admin selects a different status
+// ===================== Manage background scrolling =====================
+watch(showModal, (newVal) => {
+  if (newVal) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
+
+// ===================== Disabled "Save" button unless the admin selects a different status =====================
 const isSaveDisabled = computed(() => {
     return changedStatus.value === originalStatus.value;
 });
 
-//fetch reward redemption information
+// ===================== Search and Pagination =====================
 const rewardSearch = ref('')
 const userSearch = ref('')
 const statusSearch = ref('')
@@ -175,6 +187,7 @@ const changePage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) fetchRewardRedemption(page)
 }
 
+// ===================== Fetch reward redemption information =====================
 const fetchRewardRedemption = (page = 1) => {
     currentPage.value = page
 
@@ -211,7 +224,7 @@ watch([rewardSearch, userSearch, statusSearch, searchStartDate, searchEndDate], 
   fetchRewardRedemption(1) // Reset to page 1 on any search input change
 })
 
-// Saved changed redemption status of the reward
+// ===================== Saved changed redemption status of the reward =====================
 const saveChangedStatus = () => {
     const data = {
         reward_redemption_status: changedStatus.value
@@ -259,7 +272,7 @@ const saveChangedStatus = () => {
 }
 
 .form-control, .form-select {
-    border-color: #000000;
+    border-color: #ababab;
 }
 
 .table-card {
@@ -268,10 +281,19 @@ const saveChangedStatus = () => {
     margin-bottom: 1rem;
     border-radius: 20px;
 }
+.table th {
+  font-weight: normal;
+  color: #666;
+}
 .table th, .table td {
-  padding: 1rem;
-  vertical-align: middle;
-  border-bottom: 1px solid #707070;
+    vertical-align: middle;
+}
+
+.reward-name {
+  max-width: 200px; 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-edit {
@@ -281,7 +303,7 @@ const saveChangedStatus = () => {
     border-radius: 0.25rem;
 }
 .btn-edit {
-    background-color: #FFC107;
+    background-color: #ffc308;
 }
 .btn-edit:hover {
     background-color: #e4ac03;
@@ -297,12 +319,6 @@ const saveChangedStatus = () => {
     color: #fff;
     background-color: #008080;
     border-color: #008080;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 15px;
 }
 
 /* Styling for Modal */
@@ -325,7 +341,7 @@ const saveChangedStatus = () => {
     gap: 20px; 
 }
 .radio-box {
-    border: 1px solid #000000; 
+    border: 1px solid #ababab; 
     border-radius: 12px; 
     padding: 10px;
     display: flex; 

@@ -73,8 +73,19 @@ const showRemoveModal = ref(false);
 const modalRemoveType = ref<'delete' | 'reset'>('delete');
 
 
+function disableBodyScroll() {
+  document.body.style.overflow = 'hidden';
+  document.body.style.paddingRight = '15px';
+}
+
+function enableBodyScroll() {
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+}
+
 // 打开创建模态框
 const openRoleModal = () => {
+  disableBodyScroll();
   currentRole.value = {
     id: 0,
     name: '',
@@ -85,15 +96,10 @@ const openRoleModal = () => {
   showModal.value = true;
 };
 
-// 查看角色
-const openViewModal = (role: RoleItem) => {
-  currentRole.value = { ...role };
-  modalType.value = 'view';
-  showModal.value = true;
-};
 
 // 编辑角色
 const openEditModal = (role: RoleItem) => {
+  disableBodyScroll();
   currentRole.value = { ...role };
   selectedPermissions.value = [...role.permissions]; // 添加这行
   modalType.value = 'edit';
@@ -102,6 +108,7 @@ const openEditModal = (role: RoleItem) => {
 
 // 删除角色确认
 const openDeleteModal = (role: RoleItem) => {
+  disableBodyScroll();
   currentRole.value = role;
   modalRemoveType.value = 'delete';
   showRemoveModal.value = true;
@@ -109,6 +116,7 @@ const openDeleteModal = (role: RoleItem) => {
 
 // 保存编辑
 const saveEditedRole = () => {
+  enableBodyScroll();
   if(currentRole.value.name === '') {
     Swal.fire({
       icon: "error",
@@ -134,6 +142,7 @@ const saveEditedRole = () => {
 
 // 添加角色
 const addRole = () => {
+  enableBodyScroll();
   if (!currentRole.value.name) {
     Swal.fire({
       icon: "error",
@@ -164,6 +173,7 @@ const addRole = () => {
 
 // 确认删除角色
 const roleDelete = () => {
+  enableBodyScroll();
   handleDeleteRole(currentRole.value.id);
   showRemoveModal.value = false;
 };
@@ -309,8 +319,7 @@ export default {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
-
+          <button type="button" class="btn btn-secondary" @click="showModal = false; enableBodyScroll()">Close</button>
           <!-- 创建按钮 -->
           <button v-if="modalType === 'create'" type="button" class="btn btn-success" @click="addRole">Create</button>
           <!-- 保存按钮 -->
@@ -334,7 +343,7 @@ export default {
           <span class="text-muted">This action cannot be undone. This will permanently delete the role, <b>{{currentRole.name}}</b>.</span>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showRemoveModal = false">Close</button>
+          <button type="button" class="btn btn-secondary" @click="showRemoveModal = false; enableBodyScroll()">Close</button>
           <button type="button" class="btn btn-danger" @click="roleDelete">Confirm</button>
         </div>
       </div>

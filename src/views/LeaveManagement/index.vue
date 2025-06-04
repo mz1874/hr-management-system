@@ -111,8 +111,14 @@ const fetchLeaveApplications = async () => {
 
     const filteredRes = await getLeaveRequests(currentPage.value, '', params);
     const rawResults = filteredRes.data?.data?.results || [];
-    totalPages.value = Math.ceil(filteredRes.data?.data?.count / 10);
-    totalCount.value = filteredRes.data?.data?.count;
+    const count = filteredRes.data?.data?.count || 0;
+    const pageSize = 10;
+    totalCount.value = count;
+    totalPages.value = Math.max(1, Math.ceil(count / pageSize));
+
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = totalPages.value;
+    }
 
     const summaryRes = await getLeaveRequests(1, '', { hrPage: isHR.value });
     summaryStats.value = {
@@ -279,7 +285,17 @@ const rejectSingle = async () => {
 
 
 const bulkApprove = async () => {
-  for (const app of leaveApplications.value) {
+  const selectedApps = leaveApplications.value.filter(app => app.selected);
+  if (selectedApps.length === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'No Applications Selected',
+      text: 'Please select at least one application to approve.',
+    });
+    return;
+  }
+
+  for (const app of selectedApps) {
     const rawStatus = reverseStatusMap[app.status];
     const isApplicantHR = app.userRoles?.includes('hr') ?? false;
     const isApplicantManager = app.userRoles?.includes('manager') ?? false;
@@ -291,34 +307,51 @@ const bulkApprove = async () => {
       rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
     );
 
-    if (app.selected && (isManagerAction || isHRAction)) {
+    if (isManagerAction || isHRAction) {
       const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
       app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
       selectedLeave.value = app;
 
-      const newStatus = isManagerAction ? 'Manager Approved' : 'Approved'; 
+      const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';
       await saveChanges(newStatus);
     }
 
     app.selected = false;
   }
+
+  Swal.fire({
+    icon: 'success',
+    title: 'Success',
+    text: 'Selected applications approved successfully.',
+    timer: 2000,
+    showConfirmButton: false,
+  });
 };
 
+
 const bulkReject = async () => {
-  for (const app of leaveApplications.value) {
+  const selectedApps = leaveApplications.value.filter(app => app.selected);
+  if (selectedApps.length === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'No Applications Selected',
+      text: 'Please select at least one application to reject.',
+    });
+    return;
+  }
+
+  for (const app of selectedApps) {
     const rawStatus = reverseStatusMap[app.status];
     const isApplicantHR = app.userRoles?.includes('hr') ?? false;
     const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
     const isManagerAction = rawStatus === 'P' && isManager.value;
+    const isHRAction = isHR.value && (
+      rawStatus === 'M' ||
+      (rawStatus === 'P' && (isApplicantHR || isApplicantManager))
+    );
 
-    const isHRAction =
-      isHR.value && (
-        rawStatus === 'M' ||  // Manager approved → HR can reject
-        (rawStatus === 'P' && (isApplicantHR || isApplicantManager)) // HR can reject if requester is HR or Manager
-      );
-
-    if (app.selected && (isManagerAction || isHRAction)) {
+    if (isManagerAction || isHRAction) {
       const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
       app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
       selectedLeave.value = app;
@@ -329,6 +362,14 @@ const bulkReject = async () => {
 
     app.selected = false;
   }
+
+  Swal.fire({
+    icon: 'success',
+    title: 'Success',
+    text: 'Selected applications rejected successfully.',
+    timer: 2000,
+    showConfirmButton: false,
+  });
 };
 
 
