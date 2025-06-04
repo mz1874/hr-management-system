@@ -824,6 +824,8 @@ const saveEditedTask = () => {
   let startDate;
   let endDate;
 
+
+
   try {
     // 尝试解析日期并确保格式正确
     startDate = dayjs(currentTask.value.startDate);
@@ -837,6 +839,26 @@ const saveEditedTask = () => {
       throw new Error("Invalid end date");
     }
     endDate = endDate.format("YYYY-MM-DD");
+
+
+    if (dayjs(startDate).isAfter(dayjs(endDate))) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date",
+        text: "End date can not early then start day"
+      });
+      return;
+    }
+
+    if (dayjs(currentDate).isAfter(dayjs(endDate))) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date",
+        text: "End date can not early then current day"
+      });
+      return;
+    }
+
   } catch (e) {
     Swal.fire({
       icon: "error",
