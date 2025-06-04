@@ -832,17 +832,18 @@ const handleFinalSubmit = async () => {
     await finalizeDepartmentEvaluation(currentForm.value.id);
     Swal.fire('Success', 'Department evaluation finalized successfully.', 'success');
 
-    // Redirect to SurveyManagement view with query parameters
-    if (currentForm.value && currentForm.value.id !== undefined && currentForm.value.name) {
-      router.push({ 
-        name: 'SurveyManagement', // Ensure this route name is correct in your router config
-        query: { 
-          viewResultsFormId: currentForm.value.id.toString(),
-          formName: currentForm.value.name 
-        } 
-      });
-    }
-    closeFormModal(); // Still close the modal after initiating navigation
+    // Removed redirection to SurveyManagement
+    // if (currentForm.value && currentForm.value.id !== undefined && currentForm.value.name) {
+    //   router.push({ 
+    //     name: 'SurveyManagement', // Ensure this route name is correct in your router config
+    //     query: { 
+    //       viewResultsFormId: currentForm.value.id.toString(),
+    //       formName: currentForm.value.name 
+    //     } 
+    //   });
+    // }
+    closeFormModal(); // Close the modal
+    fetchAvailableForms(); // Refresh the list of forms on the current page
 
   } catch (error) {
     console.error("Failed to finalize department evaluation:", error);
@@ -979,6 +980,29 @@ watch(searchName, () => {
       </tbody>
     </table>
   </div>
+
+    <!-- Pagination for Main Table -->
+    <div class="d-flex align-items-center gap-3 my-3" v-if="totalForms > 0">
+      <div class="text-muted fs-5">
+        Total Evaluations: {{ totalForms }}
+      </div>
+      <nav aria-label="Page navigation">
+        <ul class="pagination mb-0">
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
+          </li>
+          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+          </li>
+          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">Next</button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div v-else-if="!isLoadingForms && displayForms.length === 0" class="text-center text-muted mt-3">
+      <!-- This message is already handled inside the table, but kept here as a fallback if table is not rendered -->
+    </div>
   </div>
 
   <!-- Evaluation Form Modal -->

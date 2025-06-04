@@ -1055,9 +1055,9 @@ const confirmTerminate = () => {
 
 // New total target calculation based on assigned users count
 const calculateTotalTarget = (task: any): number => {
-  const count = Array.isArray(task.assignedUsers) ? task.assignedUsers.length : 0
-  const perUnit = Number(task.totalTarget) || 0
-  return count * perUnit
+  const total = task.totalTarget;
+  const users = task.personal_details.length;
+  return total * users;
 }
 
 // filter
