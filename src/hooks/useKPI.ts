@@ -32,6 +32,7 @@ export default function () {
                     seventy_percent: item.seventy_percent,
                     ninety_percent: item.ninety_percent,
                     hundred_percent: item.hundred_percent,
+                    personal_details: item.personal_details,
                     hundred_twenty_percent: item.hundred_twenty_percent,
                 }));
                 count.value = res.data.data.count;
@@ -44,9 +45,6 @@ export default function () {
         }
     }
 
-    onMounted(() => {
-        handlerFetchKpis({page: 1});
-    });
 
     return {
         currentPage,
