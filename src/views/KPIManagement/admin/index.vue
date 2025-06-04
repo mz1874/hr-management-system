@@ -203,8 +203,8 @@
           </button>
         </div>
         <div class="modal-body">
-          <form @submit.prevent="createTask">
-            <div class="row">
+          <form @submit.prevent="handleSubmit">
+          <div class="row">
               <!-- Left Column - Task Details -->
               <div class="col-md-6 border-end">
                 <!-- Task Name -->
@@ -380,11 +380,21 @@
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
-              <button v-if="modalType === 'create'" type="submit" class="btn"
-                      style="background-color: #6CBD6C; color: white;">Create
+              <button
+                  v-if="modalType === 'create'"
+                  type="submit"
+                  class="btn"
+                  style="background-color: #6CBD6C; color: white;"
+              >
+                Create
               </button>
-              <button v-if="modalType === 'edit'" type="button" class="btn" style="background-color: #6CBD6C; color: white;"
-                      @click="saveEditedTask">Save
+              <button
+                  v-if="modalType === 'edit'"
+                  type="submit"
+                  class="btn"
+                  style="background-color: #6CBD6C; color: white;"
+              >
+                Save
               </button>
             </div>
           </form>
@@ -1052,6 +1062,16 @@ const confirmTerminate = () => {
   });
 }
 
+/**
+ * 判断当前的表单提交类型
+ */
+const handleSubmit = () => {
+  if (modalType.value === 'create') {
+    createTask();
+  } else if (modalType.value === 'edit') {
+    saveEditedTask();
+  }
+};
 
 // New total target calculation based on assigned users count
 const calculateTotalTarget = (task: any): number => {
