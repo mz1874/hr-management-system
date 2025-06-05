@@ -346,7 +346,7 @@ function resetPassword(staff: Staff) {
               <td>{{ staff.medicalLeaves + staff.annualLeaves }}</td>
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
-                <button @click="resetPassword(staff)" class="btn btn-secondary btn-sm">reset</button>
+<!--                <button @click="resetPassword(staff)" class="btn btn-secondary btn-sm">reset</button>-->
                 <button @click="openEditStaffModal(staff)" class="btn btn-warning btn-sm">Edit</button>
                 <button @click="openDeleteStaffModal(staff)" class="btn btn-danger btn-sm">Delete</button>
               </td>
@@ -861,7 +861,6 @@ function resetPassword(staff: Staff) {
                     type="text"
                     class="form-control"
                     id="password"
-                    required
                 >
               </div>
             </div>
