@@ -93,6 +93,11 @@ const selectedStaff = ref<Staff>({
   leave_entitlements: []
 })
 
+const imageUrl = computed(() => {
+  const url = selectedStaff.value.imgUrl;
+  if (!url) return '';
+  return url.startsWith('http') ? url : BASE_URL + url;
+})
 
 const totalPages = computed(() => {
   return Math.ceil(staffData.count / itemsPerPage)
@@ -788,6 +793,7 @@ function resetPassword(staff: Staff) {
 
     <!-- Edit Staff Modal -->
     <div v-if="showEditStaffModal" class="modal-backdrop">
+      <form @submit.prevent="saveEditedStaff">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Edit Staff</h5>
@@ -807,6 +813,7 @@ function resetPassword(staff: Staff) {
                   class="form-control"
                   id="editStaffName"
                   disabled
+                  required
                   placeholder="Enter account"
               >
             </div>
@@ -817,6 +824,7 @@ function resetPassword(staff: Staff) {
                   type="text"
                   class="form-control"
                   id="staffName"
+                  required
                   placeholder="Enter staff name"
               >
             </div>
@@ -839,12 +847,14 @@ function resetPassword(staff: Staff) {
 
           <div class="row">
             <div v-if="selectedStaff.imgUrl" class="mb-3 col-md-6">
-              <img
-                  :src="BASE_URL + selectedStaff.imgUrl"
-                  alt="Profile Preview"
-                  class="img-thumbnail"
-                  style="max-width: 150px;"
-              >
+              <div v-if="imageUrl" class="mb-3 col-md-6">
+                <img
+                    :src="imageUrl"
+                    alt="Profile Preview"
+                    class="img-thumbnail"
+                    style="max-width: 150px;"
+                >
+              </div>
             </div>
             <div class="mb-3 col-md-6">
               <label for="editStaffImage" class="form-label">Profile Image</label>
@@ -864,6 +874,7 @@ function resetPassword(staff: Staff) {
               <input
                   v-model="selectedStaff.date_of_birth"
                   type="date"
+                  required
                   class="form-control"
                   id="editStaffDateOfBirth"
                   placeholder="Enter date of birth"
@@ -875,6 +886,7 @@ function resetPassword(staff: Staff) {
               <select
                   v-model="selectedStaff.department"
                   class="form-select"
+                  required
                   id="editStaffDepartment"
                   :disabled="hasAdminRole(selectedStaff.roles)"
               >
@@ -895,6 +907,7 @@ function resetPassword(staff: Staff) {
               <select
                   v-model="selectedStaff.status"
                   class="form-select"
+                  required
                   id="editStaffStatus"
               >
                 <option :value="true">Active</option>
@@ -905,6 +918,7 @@ function resetPassword(staff: Staff) {
               <label class="form-label">Employment Date</label>
               <input
                   :value="selectedStaff.employment_time"
+                  required
                   type="date"
                   class="form-control"
                   disabled
@@ -964,6 +978,7 @@ function resetPassword(staff: Staff) {
                   type="number"
                   class="form-control"
                   v-model.number="leave.totalDays"
+                  required
                   :min="0"
                   :placeholder="`e.g. 10`"
               />
@@ -979,14 +994,15 @@ function resetPassword(staff: Staff) {
             Cancel
           </button>
           <button
-              type="button"
+              type="submit"
               class="btn btn-primary"
-              @click="saveEditedStaff"
           >
             Save Changes
           </button>
         </div>
       </div>
+      </form>
+
     </div>
 
     <!-- Delete Staff Modal -->

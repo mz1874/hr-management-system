@@ -44,7 +44,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="form-floating">
-                    <input type="date" class="form-control" v-model="userInfo.dateOfBirth" id="dateOfBirth" required>
+                    <input type="date" class="form-control" v-model="userInfo.dateOfBirthday" id="dateOfBirth" required>
                     <label for="dateOfBirth">Date of Birthday</label>
                   </div>
                 </div>
@@ -81,13 +81,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref,reactive } from 'vue';
+import { ref,reactive, onMounted} from 'vue';
 
-const userInfo = reactive({
+interface currentUserInfo {
+  id: number;
+  username: string;
+  staffName: string;
+  email: string;
+  department: string;
+  account: string;
+  position: string | null;
+  dateOfBirthday: string;
+}
+
+const userInfo = reactive<currentUserInfo>({
+  id: 0,
+  username: '',
+  staffName: '',
   email: '',
-  dateOfBirth: '',
-  avatarUrl: ''
+  department: '',
+  account: '',
+  position: '',
+  dateOfBirthday: ''
+});
+
+
+onMounted(()=>{
+  //When user access to this page , check if currentUser is existed
+ const storage =  localStorage.getItem("currentUser");
+  if(storage != null)
+  {
+    let jsonObj = JSON.parse(storage);
+    userInfo.id = jsonObj.id;
+    userInfo.username = jsonObj.id;
+    userInfo.email = jsonObj.email;
+    userInfo.department = jsonObj.department;
+    userInfo.account = jsonObj.username;
+    userInfo.position = jsonObj.position || ''
+    userInfo.dateOfBirthday = jsonObj.date_of_birth
+  }
 })
+
 
 const previewImage = ref(null)
 
