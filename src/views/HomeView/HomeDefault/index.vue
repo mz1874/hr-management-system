@@ -34,7 +34,7 @@
     <!-- Department & Month Filters -->
     <h2>{{ selectedDepartment.department_name || 'Department' }} KPI Management</h2>
     <div class="chart-section my-4">
-      <h4 class="text-center">Number of finished jobs in {{ selectedDepartment.department_name }} department</h4>
+      <h4 class="text-center">Task Status Distribution in {{ selectedDepartment.department_name }} Department</h4>
 
       <!-- Department Filter -->
       <div class="d-flex justify-content-center my-3">
@@ -55,7 +55,7 @@
 
       <!-- Chart Section -->
       <div class="text-center">
-        <canvas ref="chartCanvas" style="max-width: 600px; margin: auto;"></canvas>
+        <canvas ref="chartCanvas" style="max-width: 600px; height: 380px; margin: auto;"></canvas>
       </div>
     </div>
   </main>
@@ -68,13 +68,14 @@ import { selectAllDepartments } from "@/api/department.ts";
 import { selectAllKpis } from "@/api/kpiAdmin.ts";
 import { isSuccess } from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
+import dayjs from 'dayjs';
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let chartInstance: Chart | null = null;
 
 const departments = ref<any[]>([]);
 const selectedDepartment = ref<any>({});
-const selectedMonth = ref<number>(1);
+const selectedMonth = ref<number>(dayjs().month() + 1);
 const selectedStatus = ref('');
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -166,6 +167,10 @@ onMounted(() => {
             borderWidth: 3
           }
         ]
+      },
+      options: {
+      responsive: true,
+      maintainAspectRatio: false, 
       }
     });
   }

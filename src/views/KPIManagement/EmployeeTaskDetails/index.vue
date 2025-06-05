@@ -40,7 +40,7 @@
             </svg>
           </div>
           <div class="task-overall ms-3">
-            <span class="task-text">Total Tasks</span>
+            <span class="task-text">Total Employee</span>
             <span class="task-num">{{ totalTasks }}</span>
           </div>
         </div>

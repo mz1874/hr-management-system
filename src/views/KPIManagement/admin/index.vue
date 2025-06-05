@@ -23,10 +23,11 @@
     </select>
 
     <select class="form-select w-25" v-model="searchDepartment" v-if="!isManager">
-      <option v-for="dept in departments" :key="dept.id" :value="dept.id">
-        {{ dept.department_name }}
-      </option>
-    </select>
+  <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+    {{ dept.department_name }}
+  </option>
+</select>
+
 
     <button class="btn btn-primary" @click="searchKPI">Search</button>
     <button class="btn btn-primary" @click="cleanSearchCondition">Clean</button>
@@ -76,8 +77,10 @@
                 </span>
             </td>
             <td>
+               <template v-if="task.status !== 'Terminated'">
               <button @click="goToEmployeeDetailsPage(task.id)" class="btn btn-primary btn-sm">Employee Details</button>
               <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
+              </template>
               <button @click="openDeleteModal(task)" class="btn btn-danger btn-sm">Delete</button>
             </td>
           </tr>
@@ -417,7 +420,7 @@
           <p>Are you sure you want to terminate this task, <b>{{ currentTask.taskTitle }}</b>?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showTerminateModal = false">Cancel</button>
+          <button type="button" class="btn btn-secondary" @click="handleCancelTerminate()">Cancel</button>
           <button type="button" class="btn btn-danger" @click="confirmTerminate()">Terminate</button>
         </div>
       </div>
@@ -555,13 +558,16 @@ const departments = ref<any[]>([]);
 
 const fetchDepartments = () => {
   selectAllDepartments().then((res) => {
+    
     if (isSuccess(res.status) && res.data.code === 200) {
-      departments.value = res.data.data.results;
+       const fetchedDepartments = res.data.data.results;
       // 默认选择第一个部门
-      if (departments.value.length > 0) {
-        selectedDepartment.value = departments.value[0];
-      }
-    } else {
+        const allDepartmentsOption = { id: 'all', department_name: 'All Departments' };
+        departments.value = [allDepartmentsOption, ...fetchedDepartments];
+
+        // 默认选择“全部部门”
+        selectedDepartment.value = 'all';
+      }  else {
       console.error('Failed to fetch department list:', res);
     }
   }).catch((error) => {
@@ -1055,9 +1061,14 @@ const showTerminateModal = ref(false)
 // Function to open Terminate Task modal
 const openTerminateModal = (task: any) => {
   console.log("Opening terminate modal for task:", task);
+  showModal.value = false;  
   currentTask.value = task;
   showTerminateModal.value = true; // Show Terminate confirmation modal
 }
+const handleCancelTerminate = () => {
+  showTerminateModal.value = false;
+  showModal.value = true; // 重新打开 Edit Modal
+};
 
 // Function to confirm Terminate and close both modals
 const confirmTerminate = () => {
@@ -1105,9 +1116,21 @@ const calculateTotalTarget = (task: any): number => {
 // filter
 const searchTaskName = ref('')
 const selectedStatus = ref('')
-const searchDepartment = ref('')
+const searchDepartment = ref('all')
 
-const selectedDepartment = ref('Sales Department')
+const selectedDepartment = ref('all')
+
+const completedTasks = computed(() => {
+  return kpiData.value.filter((task: any) => task.status === 'Completed').length;
+});
+
+const ongoingTasks = computed(() => {
+  return kpiData.value.filter((task: any) => task.status === 'Ongoing').length;
+});
+
+const delayedTasks = computed(() => {
+  return kpiData.value.filter((task: any) => task.status === 'Delayed').length;
+});
 
 // pagination
 const totalPages = computed(() => {
@@ -1123,11 +1146,11 @@ const changePage = (page: number) => {
  * 根据状态或者KPI的名称查询KPI信息
  */
 function searchKPI() {
-  let searchDepartmentValue =0
-  if (isManager){
+  let searchDepartmentValue = 0;
+  if (isManager.value) {
     searchDepartmentValue = currentUserDepartmentId.value;
-  }else {
-    searchDepartmentValue = searchDepartment.value || undefined
+  } else {
+    searchDepartmentValue = searchDepartment.value === 'all' ? undefined : searchDepartment.value;
   }
   const queryParams = {
     page: 1,
@@ -1139,17 +1162,12 @@ function searchKPI() {
 }
 
 
+
 function cleanSearchCondition() {
   selectedStatus.value = '';
   searchDepartment.value = '';
   searchTaskName.value = '';
 }
-
-// Statistics
-const totalTasks = 0;
-const completedTasks = 0;
-const ongoingTasks = 0;
-const delayedTasks = 0;
 
 
 const handleDepartmentChange = () => {
