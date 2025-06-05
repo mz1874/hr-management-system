@@ -58,7 +58,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in tableData" :key="item.id">
+                        <tr v-if="tableData.length === 0">
+                            <td colspan="6" class="text-center text-muted py-5">
+                                No history found.
+                            </td>
+                        </tr>
+                        <tr v-else v-for="item in tableData" :key="item.id">
                             <th>{{ item.id }}</th>
                             <td>{{ item.user.staffName }}</td>
                             <td>{{ item.user.username }}</td>

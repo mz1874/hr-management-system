@@ -1,70 +1,116 @@
 <template>
   <div class="d-flex justify-content-between align-items-center mb-2">
-      <h2>Reward Mall</h2>
-      <button class="view-history-button" @click="goToRewardHistory()">View History</button>
-  </div>
-
-<!-- point -->
-  <div class="point-container mb-3"> 
-    <div class="icon-container" style="margin-top: 10px; margin-right: -20px; transform: scale(0.9);">
-      <i class="fa-solid fa-circle border-circle-icon"></i>
-      <i class="fa-solid fa-circle circle-icon"></i>
-      <i class="fa-solid fa-star star-icon"></i>
-    </div>
-    <button type="button" class="iconButton"  @click="goToPointDetails()"> 
-      <span class="buttonText">{{ currentUserData.current_point }}</span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
-        <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671"/>
-      </svg>
+    <h1>Reward Mall</h1>
+    <button class="view-history-button" @click="goToRewardHistory()">
+      <span>Reward History</span>
+      <i class="bi bi-chevron-right"></i>
     </button>
   </div>
 
-  <!-- reward item -->
-  <div class="container">
-    <div class="row row-cols-md-4 g-3" >
-      <div class="col" v-for="item in tableData" :key="item.id">
-        <div class="card shadow-sm mt-4" >
-          <div class="image-container">
-            <template v-if="item.fileDetails?.file">
-              <img :src="item.fileDetails.file" :alt="item.fileDetails.filename" class="image">
-            </template>
-            <template v-else>
-              <div class="no-image-placeholder">None</div>
-            </template>
-          </div>          
-          <div class="card-body">
-              <h4 class="mt-1 mb-3"><b>{{ item.rewardName }}</b></h4>
-              <div class="mb-3 text-muted">
-                <div :class="['description-wrapper', { 'clamp-1-line': !expandedRewards[item.id] }]" 
-                  @click="toggleDescription(item.id)"
-                  ref="descriptionRefs"
-                >
-                  {{ item.description }}
-                  <div v-if="shouldShowToggle(item.id)">
-                    <!-- Replace FontAwesome icons with Bootstrap icons -->
-                    <i class="bi bi-chevron-down ms-2" v-if="!expandedRewards[item.id]"></i>
-                    <i class="bi bi-chevron-up ms-2" v-else></i>    </div>
-                  </div>
-              </div>            
-              <div class="mb-3 text-muted"><b>Valid Until: </b>{{ item.endDateTime }}</div>
-              <div class="mb-3 text-muted"><b>Quantity Left: </b>{{ item.quantity }}</div>
-              <div class="text-muted"><b>Terms & Conditions: </b>  
-                <button class="TNCButton" @click="openTermsModal(item)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
-                    <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-                    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-                  </svg>
-                </button>
-              </div>
-              <button class="rewardButton mx-auto" @click="openSelectedRewardModal(item)" :disabled="hasUserRedeemed(item.id)">
-                <div class="icon-container">
-                  <i class="fa-solid fa-circle border-circle-icon"></i>
-                  <i class="fa-solid fa-circle circle-icon"></i>
-                  <i class="fa-solid fa-star star-icon"></i>
-                </div>
-                <span class="rewardText">{{ hasUserRedeemed(item.id) ? 'Redeemed' : item.rewardPoints }}</span>
+  <!-- Points Section -->
+  <div class="point-container"> 
+    <div class="points-content">
+      <div class="icon-container" style="margin-right: -30px; transform: scale(0.9);">
+        <i class="fa-solid fa-circle border-circle-icon"></i>
+        <i class="fa-solid fa-circle circle-icon"></i>
+        <i class="fa-solid fa-star star-icon"></i>
+      </div>
+      <div class="points-info">
+        <button type="button" class="points-button" @click="goToPointDetails()"> 
+          <div class="row ">
+            <span class="points-label text-muted">Your Current Points</span>
+            <span class="points-value">{{ currentUserData.current_point }}</span>
+          </div>
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reward Item -->
+  <div class="rewards-section mt-5">
+    <div v-if="tableData.length === 0" class="text-center text-muted my-5">
+        No rewards found.
+      </div>
+    <div v-else class="rewards-grid">
+      <div class="reward-card" v-for="item in tableData" :key="item.id">
+        <!-- Image Section -->
+        <div class="reward-image-container">
+          <template v-if="item.fileDetails?.file">
+            <img :src="item.fileDetails.file" :alt="item.fileDetails.filename" class="reward-image">
+          </template>
+          <template v-else>
+            <div class="no-image-placeholder">
+              <i class="bi bi-image"></i>
+              <span>No Image</span>
+            </div>
+          </template>
+        </div>
+        
+        <!-- Content Section -->
+        <div class="reward-content">
+          <!-- Updated reward title with read more functionality -->
+          <div class="reward-title-container">
+            <h4 :class="['reward-title', { 'expanded': expandedTitles[item.id] }]" @click="toggleTitle(item.id)">
+              {{ item.rewardName }}
+            </h4>
+            <button v-if="shouldShowTitleToggle(item.id)" class="expand-button" @click="toggleTitle(item.id)">
+              <span v-if="!expandedTitles[item.id]">Read more</span>
+              <span v-else>Read less</span>
+              <i class="bi bi-chevron-down" v-if="!expandedTitles[item.id]"></i>
+              <i class="bi bi-chevron-up" v-else></i>
+            </button>
+          </div>
+          
+          <!-- Description -->
+          <div class="reward-description">
+            <div :class="['description-text', { 'expanded': expandedRewards[item.id] }]" @click="toggleDescription(item.id)">
+              {{ item.description }}
+            </div>
+
+              <button v-if="shouldShowToggle(item.id)" class="expand-button" @click="toggleDescription(item.id)">
+                <span v-if="!expandedRewards[item.id]">Read more</span>
+                <span v-else>Read less</span>
+                <i class="bi bi-chevron-down" v-if="!expandedRewards[item.id]"></i>
+                <i class="bi bi-chevron-up" v-else></i>
+              </button>
+          </div>
+          
+          <!-- Details -->
+          <div class="reward-details">
+            <div class="detail-item">
+              <i class="bi bi-calendar-event"></i>
+              <span class="detail-label">Valid Until:</span>
+              <span class="detail-value">{{ item.endDateTime }}</span>
+            </div>
+            <div class="detail-item">
+              <i class="bi bi-box"></i>
+              <span class="detail-label">Available:</span>
+              <span class="detail-value">{{ item.quantity }}</span>
+            </div>
+            <div class="detail-item terms-item">
+              <i class="bi bi-file-text"></i>
+              <span class="detail-label">Terms & Conditions:</span>
+              <button class="terms-button text-muted" @click="openTermsModal(item)">
+                <i class="bi bi-eye"></i>
+                View
               </button>
             </div>
+          </div>
+          
+          <!-- Redeem Button -->
+          <button class="redeem-button" @click="openSelectedRewardModal(item)" :disabled="hasUserRedeemed(item.id)" :class="{ 'redeemed': hasUserRedeemed(item.id) }">
+            <div class="redeem-icon-container" v-if="!hasUserRedeemed(item.id)">
+              <i class="fa-solid fa-circle border-circle-icon"></i>
+              <i class="fa-solid fa-circle circle-icon"></i>
+              <i class="fa-solid fa-star star-icon"></i>
+            </div>
+            
+            <i class="bi bi-check-circle-fill redeemed-icon" v-else></i>
+            <span class="redeemed-text">
+              {{ hasUserRedeemed(item.id) ? 'Redeemed' : `${item.rewardPoints} Points` }}
+            </span>
+          </button>
         </div>
       </div>
     </div>
@@ -73,7 +119,6 @@
   <!-- pagination -->
   <div class="d-flex align-items-center mt-3 justify-content-start">
       <span class="me-3">Total: {{ totalCount }}</span>
-      
       <nav>
       <ul class="pagination mb-0">
         <li :class="['page-item', { disabled: currentPage === 1 }]">
@@ -97,10 +142,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <div class="header-content">
-            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
-                <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-                <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-            </svg>
+            <i class="bi bi-file-text" style="font-size: 30px;"></i>
             <h3>Terms & Conditions</h3>
           </div>
         </div>
@@ -150,6 +192,28 @@ import Swal from "sweetalert2";
 import dayjs from 'dayjs';
 import type { RewardItem} from '@/interface/RewardInterface.ts';
 
+// ===================== Toggle Reward Title =====================
+// reactive references
+const expandedTitles = ref<Record<number, boolean>>({})
+const titleRefs = ref<Record<number, HTMLElement>>({})
+
+// Toggling title
+const toggleTitle = (id: number) => {
+  expandedTitles.value[id] = !expandedTitles.value[id]
+}
+
+// Check if title needs toggle button
+const shouldShowTitleToggle = (id: number): boolean => {
+  // Find the item by id
+  const item = tableData.value.find(item => item.id === id)
+  if (!item) return false
+  
+  // Text length check
+  const shouldShow = item.rewardName && item.rewardName.length > 30
+  return shouldShow
+}
+
+// ===================== Toggle Description =====================
 const expandedRewards = ref<Record<number, boolean>>({})
 const descriptionRefs = ref<Record<number, HTMLElement>>({})
 
@@ -158,13 +222,13 @@ const toggleDescription = (id: number) => {
   expandedRewards.value[id] = !expandedRewards.value[id]
 }
 
-// Decide if "Read More" is needed - simplified approach
+// Decide if "Read More" is needed
 const shouldShowToggle = (id: number): boolean => {
   // Find the item by id
   const item = tableData.value.find(item => item.id === id)
   if (!item) return false
   
-  // Simple text length check (approximate)
+  // Text length check 
   const shouldShow = item.description && item.description.length > 100
   return shouldShow
 }
@@ -378,10 +442,37 @@ function goToRewardHistory() {
 </script>
 
 <style scoped>
-/* point icon */
+/* view history button */
+.view-history-button {
+  background-color: #ABD3AB;
+  padding: 10px 16px;
+  width: auto;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.view-history-button:hover {
+  background-color: #95c395; 
+}
+
+/* Points Section */
 .point-container {
   display: flex;
   align-items: center;
+  margin-top: 1.6rem;
+  margin-bottom: 2.5rem;
+}
+
+.points-content {
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 4px 8px rgba(218, 218, 218, 0.3));
 }
 
 .icon-container {
@@ -394,140 +485,285 @@ function goToRewardHistory() {
 }
 
 .border-circle-icon {
-  font-size: 4em;
+  font-size: 4.6em;
   color: #FFDE59;
   position: absolute;
-  text-shadow: 0px 2px 5px rgba(176, 176, 176, 0.5);
+  filter: drop-shadow(0 4px 8px rgba(255, 222, 89, 0.3));
 }
 
 .circle-icon {
-  font-size: 3em;
+  font-size: 3.6em;
   color: #FDC14B;
   position: absolute;
 }
 
 .star-icon {
-  font-size: 1.6em;
+  font-size: 2em;
   color: white;
   position: absolute;
 }
 
-.iconButton {
-  background-color: white;
-  margin-top: 1.5rem;
-  margin-bottom: 15px;
-  padding: 7px;
-  width: auto;
-  border-radius: 5px;
-  border: 1px solid #707070;
-  display: flex;             
-  justify-content: space-between;   
-  align-items: center;        
-}
-.iconButton:hover {
-  background-color: rgb(236, 236, 236); 
-}
-
-.buttonText {
-  font-size: 18px;      
-  margin-left: 2rem;
-  margin-right: 1rem;
-}
-
-/* view history button */
-.view-history-button {
-  background-color: #ABD3AB;
-  padding: 8px; 
-  width: 11%;
-  border: none;
-  border-radius: 30px; 
+.points-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(79, 76, 76, 0.3);
+  border-radius: 15px;
+  padding: 3px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   cursor: pointer;
-}
-.view-history-button:hover {
-  background-color: #95c395; 
+  transition: all 0.3s ease;
 }
 
-/* Card sytling*/
-.card {
-  max-width: 330px;
+.points-button:hover {
+  background-color: rgb(242, 242, 242);
+} 
+
+.points-button i {
+  margin-left: 0.2rem;
 }
 
-.image-container {
-  height: 260px; /* Adjust to your card design */
-  background-color: #f0f0f0;
+.points-label {
+  margin-left: 0.8rem;
+}
+
+.points-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #8b4513;
+  margin-bottom: 0;
+  margin-left: 0.8rem;
+}
+
+/* Rewards Grid */
+.rewards-section {
+  margin-bottom: 3rem;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Reduced from 300px */
+  gap: 1.5rem; /* Reduced from 2rem */
+}
+
+.reward-card {
+  background: #ffffff;
+  border-radius: 15px; /* Reduced from 20px */
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08); /* Slightly smaller shadow */
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Make image container smaller */
+.reward-image-container {
+  height: 260px; /* Reduced from 250px */
+  background: #f5f7fa;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-}
-
-.image {
-  height: 100%;
-  width: 100%;  
+  position: relative;
   overflow: hidden;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
 }
 
-.clamp-1-line {
+.reward-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.no-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.no-image-placeholder i {
+  font-size: 2.5rem;
+}
+
+.reward-content {
+  padding: 1rem;
+}
+
+.reward-title-container {
+  margin-bottom: 1rem;
+}
+
+.reward-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 0;
+  word-wrap: break-word;
+  cursor: pointer;
+  position: relative;
   display: -webkit-box;
-  -webkit-line-clamp: 1;     
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  transition: all 0.3s ease;
+  line-height: 1.5;
+}
+
+.reward-title.expanded {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.reward-description {
+  margin-bottom: 1rem;
+}
+
+.description-text {
+  color: #6b7280;
   cursor: pointer;
-  line-clamp: 1;
-  box-orient: vertical;
+  position: relative;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.card-body p {
-  font-size: 1em;
-  color: #666;
-  line-height: 1.6;
+.description-text.expanded {
+  -webkit-line-clamp: unset;
+  overflow: visible;
 }
 
-.TNCButton {
-  background-color: #B8D8F1;
+.expand-button {
+  background: none;
   border: none;
-  border-radius: 5px;
-  padding: 5px; 
+  color: #667eea;
   cursor: pointer;
-  display: inline-flex; /* Inline-flex for better SVG alignment */
+  padding: 0;
+  font-size: 0.9rem;
 }
-.TNCButton:hover {
-  background-color: #adcce6; 
+
+.expand-button:hover {
+  color: #5a67d8;
+}
+
+.reward-details {
+  margin-bottom: 2rem;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.detail-item i {
+  color: #6b7280;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.detail-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.terms-button {
+  background: #B8D8F1;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  gap: 0.25rem;
+}
+
+.terms-button:hover {
+  background-color: #adcce6;  
+  box-shadow: 0 4px 12px rgba(168, 237, 234, 0.3);
+}
+
+/* Redeem Button */
+.redeem-button {
+  width: 100%;
+  background: #ABD3AB;
+  border: none;
+  border-radius: 15px;
+  padding: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(168, 230, 207, 0.3);
+}
+
+.redeem-button:hover:not(:disabled) {
+  background-color: #a5cda5;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(168, 230, 207, 0.4);
+}
+
+.redeem-button:disabled, .redeem-button.redeemed {
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.redeem-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 30px;
+  height: 30px;
+}
+
+.redeem-icon-container .border-circle-icon {
+  font-size: 2em;
+  filter: drop-shadow(0 2px 4px rgba(255, 222, 89, 0.3));
+}
+
+.redeem-icon-container .circle-icon {
+  font-size: 1.5em;
+}
+
+.redeem-icon-container .star-icon {
+  font-size: 0.8em;
+}
+
+.redeemed-icon {
+  font-size: 1.8em;
+  color: #10b981;
+  display: flex;
+}
+
+/* Pagination */
+.page-link {
+    border: 1px solid #cccccc;
+}
+.page-item .page-link {
+    color: #008080;
+}
+.page-item.active .page-link {
+    color: #fff;
+    background-color: #008080;
+    border-color: #008080;
 }
 
 /* modal TNC */
 .terms-text {
   white-space: pre-line;
-}
-
-/* Confirmation button in card */
-.rewardButton{
-  background-color: #ABD3AB;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  width: 70%;
-  border: none;
-  border-radius: 15px; 
-  display: flex;
-  align-items: center; 
-  justify-content: center;
-  text-align: center;
-  height: 45px; /* Adjust the height as needed */
-}
-
-.rewardButton:hover {
-  background-color: #95c395; 
-}
-
-.rewardButton .icon-container {
-  width: 40px;
-  height: 40px;
-  transform: scale(0.5);
-  text-shadow: none;
 }
 
 /* modal styling */
