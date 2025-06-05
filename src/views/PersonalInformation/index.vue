@@ -147,12 +147,15 @@ const userInfo = reactive<currentUserInfo>({
 onMounted(() => {
   //When user access to this page , check if currentUser is existed
   const storage = localStorage.getItem("currentUser");
+
   if (storage != null) {
     let jsonObj = JSON.parse(storage);
     userInfo.id = jsonObj.id;
+    //姓名
     userInfo.username = jsonObj.staffName;
     userInfo.email = jsonObj.email;
     userInfo.department = jsonObj.department;
+    //账号
     userInfo.account = jsonObj.username;
     userInfo.position = jsonObj.position || ''
     userInfo.dateOfBirthday = jsonObj.date_of_birth
@@ -165,7 +168,7 @@ const saveChanges = async () => {
   try {
     await updateCurrentUser({
       id: userInfo.id,
-      username: userInfo.username,
+      username: userInfo.account,
       email: userInfo.email,
       date_of_birth: userInfo.dateOfBirthday,
       picture: pictureId.value,
@@ -175,7 +178,7 @@ const saveChanges = async () => {
 
     Object.assign(userInfo, {
       id: res.data.data.id,
-      username: res.data.data.username,
+      username: res.data.data.staffName,
       email: res.data.data.email,
       department: res.data.data.department,
       account: res.data.data.username,
