@@ -219,6 +219,7 @@ const fetchRewardRedemption = (page = 1) => {
             status: item.reward_redemption_status,
         user: {
             username: item.user.username,
+            staffName: item.user.staffName
         },
     }));
   });

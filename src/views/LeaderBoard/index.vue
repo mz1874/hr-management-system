@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-4">
+  <div class="mb-2">
     <h1 >Leaderboard for {{ currentUserData.department }}</h1>
     <p class="text-muted" style="font-size:18px;">Ranking is based on total accumulated points</p>
   </div>
@@ -401,8 +401,8 @@ td:last-child {
 }
 
 .profile-pic img{
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   object-fit: cover;
   margin-right: 10px;

@@ -47,8 +47,11 @@
 
               <td>{{ details.pointsReceivedOn}}</td>
 
-              <td class="fw-bold" :class="details.pointsValues <= 0 ? 'text-danger' : 'text-success'"> 
-                {{ details.pointsValues > 0 ? '+' + details.pointsValues : details.pointsValues }}
+              <td :class="{
+                    'text-success fw-bold': details.pointType === 'Addition' || details.pointType === 'KPI Completed',
+                    'text-danger fw-bold': details.pointType === 'Deduction'
+                  }">
+                {{ details.pointsValues }}
               </td>
 
               <td>                    
