@@ -270,7 +270,7 @@ onMounted(() => {
               />
 
             <h3 class="birthday-title">
-              It's {{ selectedAnnouncement.birthday_person?.staffName || selectedAnnouncement.birthday_person?.username }}'s Birthday
+              It's {{ selectedAnnouncement.birthday_person?.staffName }}'s Birthday
             </h3>
 
             <p class="text-muted small">
