@@ -138,6 +138,7 @@ const fetchLeaveApplications = async () => {
         id: item.id,
         employeeName: item.full_name || item.username || '-',
         department: item.department_name || '-',
+        submitted_by_department_name: item.submitted_by_department_name,
         userRoles: item.user_roles || [] , // Add this in your mapping
         leaveType: Array.from(new Set(item.leave_dates?.map(d => d.leave_type_display?.name))).join(', '),
         status: mapStatus(item.status),
@@ -386,6 +387,8 @@ const formatDuration = (code: string) => {
 const leaveDetailsModal = ref<HTMLElement | null>(null);
 
 const showLeaveDetails = (application: LeaveApplication) => {
+    console.log('application:', application); // 🔍 Inspect this in browser devtools
+
   selectedLeave.value = application;
   if (leaveDetailsModal.value) {
     const modal = new Modal(leaveDetailsModal.value);
@@ -628,10 +631,19 @@ onMounted(async () => {
                   <label class="info-label">Name:</label>
                   <div class="info-badge">{{ selectedLeave.employeeName }}</div>
                 </div>
-                <div class="mb-3">
+               <div class="mb-3">
                   <label class="info-label">Department:</label>
-                  <div class="info-badge">{{ selectedLeave.department }}</div>
+                  <div class="info-badge">
+                    <template v-if="selectedLeave.submitted_by_department_name  !== selectedLeave.department ">
+                      {{ selectedLeave.submitted_by_department_name  }} → {{ selectedLeave.department  }}
+                    </template>
+                    <template v-else>
+                      {{ selectedLeave.department  }}
+                    </template>
+                  </div>
+
                 </div>
+
                 <div class="mb-3">
                   <label class="info-label">Reasons:</label>
                   <div class="info-badge">{{ selectedLeave.reasons }}</div>

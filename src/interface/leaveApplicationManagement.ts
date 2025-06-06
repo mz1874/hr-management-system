@@ -8,6 +8,7 @@ export interface LeaveApplication {
   userRoles: string[];
   selected: boolean;
   department: string;
+  submitted_by_department_name : string;  // <-- Add this line
   reasons: string;
   document: string;
   remainingAnnualLeave: number;
