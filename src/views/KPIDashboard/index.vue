@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import {ref, computed} from 'vue';
 
 import useKPIDashboard from "@/hooks/useKPIDashboard.ts";
 
@@ -8,6 +8,7 @@ const {
   ongoing,
   done,
   delayed,
+  count,
   fetchPersonalKPI
 } = useKPIDashboard();
 
@@ -21,7 +22,7 @@ const selectedStatus = ref<string>('');
  * 总页数（注意：这个取决于后端返回的总数量，应该基于 totalCount 而不是 tableData.length）
  */
 let pages = computed(() => {
-  return Math.ceil(tableData.length / 10); // ✅ 建议改为总数除以10（如 count.value）
+  return Math.ceil(count.value / 10); // ✅ 建议改为总数除以10（如 count.value）
 });
 
 /**
@@ -66,7 +67,7 @@ function handleStatusChange() {
     </div>
   </div>
 
-  <br />
+  <br/>
 
   <div class="kpi-table-container">
     <div class="table-header">
@@ -82,32 +83,32 @@ function handleStatusChange() {
     <!-- KPI 数据表 -->
     <table>
       <thead>
-        <tr>
-          <th>ID</th>
-          <th>KPI Name</th>
-          <th>Current</th>
-          <th>Target</th>
-          <th>Start Date</th>
-          <th>Due Date</th>
-          <th>Unit</th>
-          <th>Status</th>
-        </tr>
+      <tr>
+        <th>ID</th>
+        <th>KPI Name</th>
+        <th>Current</th>
+        <th>Target</th>
+        <th>Start Date</th>
+        <th>Due Date</th>
+        <th>Unit</th>
+        <th>Status</th>
+      </tr>
       </thead>
       <tbody>
-        <tr v-for="kpi in tableData" :key="kpi.id">
-          <td>{{ kpi.id }}</td>
-          <td>{{ kpi.kpi_title }}</td>
-          <td>{{ kpi.completed_unit }}</td>
-          <td>{{ kpi.target_unit }}</td>
-          <td>{{ kpi.task_start_date }}</td>
-          <td>{{ kpi.task_completion_date }}</td>
-          <td>{{ kpi.individual_unit }}</td>
-          <td>
+      <tr v-for="kpi in tableData" :key="kpi.id">
+        <td>{{ kpi.id }}</td>
+        <td>{{ kpi.kpi_title }}</td>
+        <td>{{ kpi.completed_unit }}</td>
+        <td>{{ kpi.target_unit }}</td>
+        <td>{{ kpi.task_start_date }}</td>
+        <td>{{ kpi.task_completion_date }}</td>
+        <td>{{ kpi.individual_unit }}</td>
+        <td>
             <span class="status-badge" :class="'status-' + kpi.current_status">
               {{ kpi.current_status }}
             </span>
-          </td>
-        </tr>
+        </td>
+      </tr>
       </tbody>
     </table>
     <div class="d-flex align-items-center mt-3 justify-content-start">
@@ -162,49 +163,53 @@ function handleStatusChange() {
 }
 
 /* 颜色设置 */
-.tasks { 
-  background: #5D9FD6; 
+.tasks {
+  background: #5D9FD6;
   border: 5px solid #B3CFE6;
   border-radius: 25px;
-  padding:80px 60px;
-} 
-  .tasks p {
-    font-size: 27px;
-    padding-bottom: 15px;
-  }
+  padding: 80px 60px;
+}
 
-.ongoing { 
-  background: #FFC107; 
+.tasks p {
+  font-size: 27px;
+  padding-bottom: 15px;
+}
+
+.ongoing {
+  background: #FFC107;
   border: 5px solid #FDD853;
   border-radius: 25px;
-  padding:80px 60px;
-} 
-  .ongoing p{
-    font-size: 27px;
-    padding-bottom: 15px;
-  }
+  padding: 80px 60px;
+}
 
-.done { 
-  background: #6CC763; 
+.ongoing p {
+  font-size: 27px;
+  padding-bottom: 15px;
+}
+
+.done {
+  background: #6CC763;
   border: 5px solid #ABE3A5;
   border-radius: 25px;
-  padding:80px 60px;
-} 
-  .done p{
-    font-size: 27px;
-    padding-bottom: 15px;
-  }
+  padding: 80px 60px;
+}
 
-.delayed { 
-  background: #F2A9A3; 
+.done p {
+  font-size: 27px;
+  padding-bottom: 15px;
+}
+
+.delayed {
+  background: #F2A9A3;
   border: 5px solid #F3C5C1;
   border-radius: 25px;
-  padding:80px 60px;
-} 
-  .delayed p{
-    font-size: 27px;
-    padding-bottom: 15px;
-  }
+  padding: 80px 60px;
+}
+
+.delayed p {
+  font-size: 27px;
+  padding-bottom: 15px;
+}
 
 /* KPI Table */
 .kpi-table-container {
