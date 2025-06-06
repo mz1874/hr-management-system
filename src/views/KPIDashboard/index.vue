@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import {ref, computed} from 'vue';
 
 import useKPIDashboard from "@/hooks/useKPIDashboard.ts";
 
@@ -8,6 +8,7 @@ const {
   ongoing,
   done,
   delayed,
+  count,
   fetchPersonalKPI
 } = useKPIDashboard();
 
@@ -21,7 +22,7 @@ const selectedStatus = ref<string>('');
  * 总页数（注意：这个取决于后端返回的总数量，应该基于 totalCount 而不是 tableData.length）
  */
 let pages = computed(() => {
-  return Math.ceil(tableData.length / 10); // ✅ 建议改为总数除以10（如 count.value）
+  return Math.ceil(count.value / 10); // ✅ 建议改为总数除以10（如 count.value）
 });
 
 /**

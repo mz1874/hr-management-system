@@ -230,7 +230,7 @@
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="startDate" class="form-label">Start Date:</label>
-                    <input type="date" class="form-control" id="startDate" required v-model="currentTask.startDate">
+                    <input type="date" class="form-control" id="startDate" required :min="today" v-model="currentTask.startDate">
                   </div>
                   <div class="col-md-6">
                     <label for="completionDate" class="form-label">Completion Date:</label>
@@ -649,6 +649,15 @@ const createTask = () => {
 
   let taskStatus = 'Not Yet Started';  // 默认状态
 
+  if (dayjs(currentDate).isAfter(dayjs(startDate))) {
+    Swal.fire({
+      icon: "error",
+      title: "Invalid Date",
+      text: "Current day can not ahead of startDate "
+    });
+    return;
+  }
+
   if (dayjs(startDate).isAfter(dayjs(endDate))) {
     Swal.fire({
       icon: "error",
@@ -846,6 +855,15 @@ const saveEditedTask = () => {
     }
     endDate = endDate.format("YYYY-MM-DD");
 
+
+    if (dayjs(currentDate).isAfter(dayjs(startDate))) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date",
+        text: "Current day can not ahead of startDate "
+      });
+      return;
+    }
 
     if (dayjs(startDate).isAfter(dayjs(endDate))) {
       Swal.fire({

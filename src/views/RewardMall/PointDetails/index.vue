@@ -37,13 +37,21 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="details in tableData" :key="details.id">
+            <tr v-if="tableData.length === 0">
+              <td colspan="6" class="text-center text-muted py-5">
+                  No history found.
+              </td>
+            </tr>
+            <tr v-else v-for="details in tableData" :key="details.id">
               <td>{{ details.id}}</td>
 
               <td>{{ details.pointsReceivedOn}}</td>
 
-              <td class="fw-bold" :class="details.pointsValues <= 0 ? 'text-danger' : 'text-success'"> 
-                {{ details.pointsValues > 0 ? '+' + details.pointsValues : details.pointsValues }}
+              <td :class="{
+                    'text-success fw-bold': details.pointType === 'Addition' || details.pointType === 'KPI Completed',
+                    'text-danger fw-bold': details.pointType === 'Deduction'
+                  }">
+                {{ details.pointsValues }}
               </td>
 
               <td>                    

@@ -102,6 +102,16 @@ function viewAnnouncement(announcement) {
   if (isBirthdayAnnouncement.value) {
     triggerConfetti();
   }
+console.log(
+  "🎯 Full birthday image URL:",
+  announcement.birthday_person?.picture_url
+    ? `http://localhost:8000${announcement.birthday_person.picture_url}`
+    : '/img/default-profile.png'
+)
+const resolvedProfileUrl = computed(() => {
+  const path = selectedAnnouncement.value.birthday_person?.picture_url;
+  return path ? `http://localhost:8000${path}` : '/img/default-profile.png';
+});
 
 }
 
@@ -160,6 +170,8 @@ onMounted(() => {
   export default {
     name: 'NotificationView',
   }
+
+
 </script>
 
 
@@ -249,11 +261,13 @@ onMounted(() => {
           <div v-if="isBirthdayAnnouncement" class="modal-body text-center birthday-layout">
             <div class="gift-icon">🎁</div>
 
-            <img
-              :src="selectedAnnouncement.birthday_person?.picture?.url || '/img/default-profile.png'"
-              alt="Profile Picture"
-              class="birthday-profile-img"
-            />
+             <img
+                :src="selectedAnnouncement.birthday_person?.picture_url 
+                  ? `http://localhost:8000${selectedAnnouncement.birthday_person.picture_url}` 
+                  : '/img/default-profile.png'"
+                alt="Profile Picture"
+                class="birthday-profile-img"
+              />
 
             <h3 class="birthday-title">
               It's {{ selectedAnnouncement.birthday_person?.staffName || selectedAnnouncement.birthday_person?.username }}'s Birthday
@@ -281,13 +295,10 @@ onMounted(() => {
                   :src="file.url"
                   style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 6px;"
                 ></iframe>
-                <img
-                  v-else-if="/\.(jpg|jpeg|png)$/i.test(file.url)"
-                  :src="file.url"
-                  class="img-fluid border rounded"
-                  style="max-height: 300px;"
-                />
-                <p v-else class="text-muted">Unsupported file type</p>
+            
+
+
+                <!-- <p v-else class="text-muted">Unsupported file type</p> -->
               </div>
             </div>
           </div>

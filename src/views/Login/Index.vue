@@ -73,12 +73,12 @@ function togglePasswordVisibility() {
 
 async function submitData() {
   if (!username.value.trim()) {
-    Swal.fire("Please, enter username !");
+    Swal.fire("Username is required");
     return;
   }
 
   if (!password.value.trim()) {
-    Swal.fire("Please, enter password !");
+    Swal.fire("Password is required");
     return;
   }
 
@@ -106,6 +106,8 @@ async function submitData() {
         showConfirmButton: false,
         timer: 1500
       }).then(() => {
+        //TODO Admin -> home-default
+        //TODO STAFF -> KPI dashboard
         router.push({name: 'home-default'});
       });
     } else {
