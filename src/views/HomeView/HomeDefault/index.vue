@@ -697,26 +697,6 @@ watch([selectedDepartment, selectedMonth, selectedStatus], fetchKpis);
   font-weight: 500;
 }
 
-.card-trend {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  background: rgba(16, 185, 129, 0.1);
-  color: #065f46;
-}
-
-.delayed-trend {
-  background: rgba(239, 68, 68, 0.1);
-  color: #991b1b;
-}
-
-.trend-icon {
-  font-size: 1rem;
-}
 
 /* Chart Section */
 .chart-section {

@@ -492,16 +492,16 @@ onMounted(() => {
 }
 
 .circle-total-task {
-  background-color: #B3CFE6;
+  background: linear-gradient(to bottom, #a3bfe9, #4957f0);
 }
 .circle-completed {
-  background-color: #ABE3A5;
+  background: linear-gradient(to bottom, #85dda5, #1b9f4b);
 }
 .circle-ongoing {
-  background-color: #F9E394;
+  background: linear-gradient(to bottom, #facc15, #f59e0b);
 }
 .circle-delayed {
-  background-color: #F3C5C1;
+  background: linear-gradient(to bottom, #fbb3ae, #fa5959);
 }
 
 .table th {
@@ -559,4 +559,73 @@ onMounted(() => {
 .ms-3 {
   margin-left: 10px;
 }
+
+.badge {
+  display: inline-block;
+  padding: 0.55rem 1rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+  border-radius: 30px;
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+    0 4px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+/* 状态色 */
+.badge-primary {
+  background: linear-gradient(to bottom, #3ba1ff, #006eff);
+}
+.badge-success {
+  background: linear-gradient(to bottom, #44d278, #1b9f4b);
+}
+.badge-warning {
+  background: linear-gradient(to bottom, #facc15, #f59e0b);
+}
+.badge-danger {
+  background: linear-gradient(to bottom, #f87171, #ef4444);
+}
+.badge-secondary {
+  background: linear-gradient(to bottom, #a3a3a3, #6e6e6e);
+}
+
+.btn-info {
+  background: linear-gradient(to bottom, #64c3e6, #1e90ff);
+  border-color: #1e90ff;
+  color: white;
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+    0 4px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-info:hover {
+  background: linear-gradient(to bottom, #5db0e6, #187bcd);
+}
+
+.btn-success {
+  background: linear-gradient(to bottom, #55d986, #27924e);
+  color: white;
+  font-weight: bold;
+  border-radius: 30px;
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+    0 4px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background: linear-gradient(to bottom, #22c55e, #0f642e);
+}
+
+
 </style>
