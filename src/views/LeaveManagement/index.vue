@@ -205,7 +205,7 @@ function appendRemarkWithTimestamp(existing: string, label: string): string {
 }
 
 
-const saveChanges = async (newStatus?: string, closeModal = false) => {
+const saveChanges = async (newStatus?: string, closeModal = false,  silent = false) => {
   if (!selectedLeave.value) return;
 
   const leaveTypeIdMap = leaveTypeOptions.value.reduce((map, type) => {
@@ -227,7 +227,11 @@ const saveChanges = async (newStatus?: string, closeModal = false) => {
 
   try {
     await reviewLeaveRequest(selectedLeave.value.id, updated);
-    toastSuccess("Leave request updated successfully!");
+
+    if (!silent) {
+      toastSuccess("Leave request updated successfully!");
+    }
+    
     await fetchLeaveApplications();
 
     if (closeModal && leaveDetailsModal.value) {
@@ -296,29 +300,33 @@ const bulkApprove = async () => {
     return;
   }
 
-  for (const app of selectedApps) {
-    const rawStatus = reverseStatusMap[app.status];
-    const isApplicantHR = app.userRoles?.includes('hr') ?? false;
-    const isApplicantManager = app.userRoles?.includes('manager') ?? false;
+  await Promise.all(
+    selectedApps.map(async (app) => {
+      const rawStatus = reverseStatusMap[app.status];
+      const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+      const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
-    const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = (
-      rawStatus === 'M' && isHR.value
-    ) || (
-      rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
-    );
+      const isManagerAction = rawStatus === 'P' && isManager.value;
+      const isHRAction = (
+        rawStatus === 'M' && isHR.value
+      ) || (
+        rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
+      );
 
-    if (isManagerAction || isHRAction) {
-      const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
-      app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
-      selectedLeave.value = app;
+      if (isManagerAction || isHRAction) {
+        const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
+        app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
+        selectedLeave.value = app;
 
-      const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';
-      await saveChanges(newStatus);
-    }
+        const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';
+        await saveChanges(newStatus, false, true);  // silent toast
+      }
 
-    app.selected = false;
-  }
+      app.selected = false;
+    })
+  );
+
+  await fetchLeaveApplications();
 
   Swal.fire({
     icon: 'success',
@@ -328,7 +336,6 @@ const bulkApprove = async () => {
     showConfirmButton: false,
   });
 };
-
 
 const bulkReject = async () => {
   const selectedApps = leaveApplications.value.filter(app => app.selected);
@@ -341,28 +348,32 @@ const bulkReject = async () => {
     return;
   }
 
-  for (const app of selectedApps) {
-    const rawStatus = reverseStatusMap[app.status];
-    const isApplicantHR = app.userRoles?.includes('hr') ?? false;
-    const isApplicantManager = app.userRoles?.includes('manager') ?? false;
+  await Promise.all(
+    selectedApps.map(async (app) => {
+      const rawStatus = reverseStatusMap[app.status];
+      const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+      const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
-    const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = isHR.value && (
-      rawStatus === 'M' ||
-      (rawStatus === 'P' && (isApplicantHR || isApplicantManager))
-    );
+      const isManagerAction = rawStatus === 'P' && isManager.value;
+      const isHRAction = isHR.value && (
+        rawStatus === 'M' ||
+        (rawStatus === 'P' && (isApplicantHR || isApplicantManager))
+      );
 
-    if (isManagerAction || isHRAction) {
-      const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
-      app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
-      selectedLeave.value = app;
+      if (isManagerAction || isHRAction) {
+        const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
+        app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
+        selectedLeave.value = app;
 
-      const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
-      await saveChanges(newStatus);
-    }
+        const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
+        await saveChanges(newStatus, false, true);  // silent toast
+      }
 
-    app.selected = false;
-  }
+      app.selected = false;
+    })
+  );
+
+  await fetchLeaveApplications();
 
   Swal.fire({
     icon: 'success',
@@ -372,7 +383,6 @@ const bulkReject = async () => {
     showConfirmButton: false,
   });
 };
-
 
 
 const formatDuration = (code: string) => {
