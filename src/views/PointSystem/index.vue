@@ -377,6 +377,7 @@ function mapStaffData(item: any): Staff {
         employment_time: dayjs(item.employment_time).format("YYYY-MM-DD"),
         resignationDate: undefined,
         password:"",
+        picture : item.picture,
         imgUrl: "", 
         totalPoints: item.total_point,
         currentPoints: item.current_point,
@@ -952,7 +953,6 @@ watch([showModal, showAdditionModal, showDeductionModal, showResetPointModal], (
 
 <style scoped>
 .search-container {
-
     width: 100%; 
     display: flex;
     align-items: center;

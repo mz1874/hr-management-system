@@ -1,8 +1,8 @@
 <template>
-  <!-- 筛选条件 -->
+  <!-- Filter section -->
   <div class="row align-items-center nav">
     <div class="col-6">
-      <h5>System log</h5>
+      <h5>System Log</h5>
     </div>
 
     <div class="col-md-2">
@@ -18,22 +18,28 @@
     </div>
   </div>
 
-  <!-- 日志表格 -->
+  <!-- Log table -->
   <div class="table-card mt-4">
     <table class="table">
       <thead>
       <tr>
         <th scope="col">ID</th>
-        <th scope="col">User Name</th>
-        <th scope="col">Operation Time</th>
-        <th scope="col">Action</th>
+        <th scope="col">User</th>
+        <th scope="col" @click="toggleSort('operation_time')">
+          Operation Time
+          <span v-if="ordering === 'operation_time'">↑</span>
+          <span v-else-if="ordering === '-operation_time'">↓</span>
+        </th>
+        <th scope="col">Operation Type</th>
+        <th scope="col">Actions</th>
       </tr>
       </thead>
       <tbody>
-      <tr v-for="log in paginatedLogs" :key="log.id">
+      <tr v-for="log in logs" :key="log.id">
         <td>{{ log.id }}</td>
-        <td>{{ log.user }}</td>
-        <td>{{ log.time }}</td>
+        <td>{{ log.staff_name }}</td>
+        <td>{{ formatDateTime(log.operation_time) }}</td>
+        <td>{{ log.operation_type }}</td>
         <td>
           <button class="btn btn-sm btn-info btn-action" @click="viewDetails(log)">View</button>
         </td>
@@ -42,12 +48,12 @@
     </table>
   </div>
 
-  <!-- 分页 & 总条数 -->
+  <!-- Pagination & total count -->
   <div class="d-flex align-items-center mt-3 justify-content-start">
-    <!-- 左侧: 总条数 -->
+    <!-- Left: Total count -->
     <span class="me-3">Total Logs: {{ totalLogs }}</span>
 
-    <!-- 右侧: 分页按钮也靠左 -->
+    <!-- Right: Pagination -->
     <nav aria-label="Page navigation">
       <ul class="pagination">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
@@ -63,7 +69,7 @@
     </nav>
   </div>
 
-  <!-- 模态框 -->
+  <!-- Modal -->
   <div class="modal fade" id="logDetailsModal" ref="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -73,10 +79,10 @@
         </div>
         <div class="modal-body">
           <p><strong>ID:</strong> {{ selectedLog.id }}</p>
-          <p><strong>User:</strong> {{ selectedLog.user }}</p>
-          <p><strong>Time:</strong> {{ selectedLog.time }}</p>
-          <p><strong>Action:</strong> {{ selectedLog.action }}</p>
-          <!-- 你可以在这里添加更多的日志详细信息 -->
+          <p><strong>User:</strong> {{ selectedLog.staff_name }}</p>
+          <p><strong>Time:</strong> {{ formatDateTime(selectedLog.operation_time) }}</p>
+          <p><strong>Type:</strong> {{ selectedLog.operation_type }}</p>
+          <p><strong>Details:</strong> {{ selectedLog.operation_details }}</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -90,12 +96,34 @@
 import { onMounted, ref, computed, nextTick } from 'vue';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import {Modal} from "bootstrap";
+import { Modal } from "bootstrap";
+import { getSystemLogs } from "@/api/systemLog.ts";
+import type {SystemLogInterface} from "@/interface/SystemLogInterface.ts";
 
-// 日期选择器
+// Date pickers
 const datepickerStart = ref(null);
 const datepickerEnd = ref(null);
 
+// Log data
+const logs = ref<SystemLogInterface[]>([]);
+const totalLogs = ref(0);
+const currentPage = ref(1);
+const itemsPerPage = 10;
+const ordering = ref('-operation_time'); // Default: newest first
+
+// Selected log for modal
+const selectedLog = ref({
+  id: null,
+  user_name: '',
+  operation_time: '',
+  operation_type: '',
+  operation_details: ''
+});
+
+// Computed properties
+const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
+
+// Initialize date pickers
 onMounted(async () => {
   await nextTick();
   if (datepickerStart.value) {
@@ -104,60 +132,71 @@ onMounted(async () => {
   if (datepickerEnd.value) {
     flatpickr(datepickerEnd.value, { dateFormat: 'Y-m-d', enableTime: false });
   }
+  fetchLogs();
 });
 
-// 日志数据 (模拟 API 返回)
-const logs = ref([
-  { id: 1, user: "Alice", time: "2024-02-10 10:00", action: "Login" },
-  { id: 2, user: "Bob", time: "2024-02-10 10:30", action: "Logout" },
-  { id: 3, user: "Charlie", time: "2024-02-10 11:00", action: "Create User" },
-  { id: 4, user: "David", time: "2024-02-10 11:30", action: "Delete User" },
-  { id: 5, user: "Eve", time: "2024-02-10 12:00", action: "Update Profile" },
-  { id: 6, user: "Frank", time: "2024-02-10 12:30", action: "Change Password" },
-  { id: 7, user: "Grace", time: "2024-02-10 13:00", action: "Login" },
-  { id: 8, user: "Hank", time: "2024-02-10 13:30", action: "Logout" },
-  { id: 9, user: "Ivy", time: "2024-02-10 14:00", action: "Create User" },
-  { id: 10, user: "Jack", time: "2024-02-10 14:30", action: "Delete User" },
-  { id: 11, user: "Kate", time: "2024-02-10 15:00", action: "Update Profile" },
-  { id: 12, user: "Leo", time: "2024-02-10 15:30", action: "Change Password" },
-  { id: 13, user: "Mona", time: "2024-02-10 16:00", action: "Login" },
-  { id: 14, user: "Nick", time: "2024-02-10 16:30", action: "Logout" },
-  { id: 15, user: "Olivia", time: "2024-02-10 17:00", action: "Create User" },
-]);
+// Format date time for display
+const formatDateTime = (dateString: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleString();
+};
 
-// 分页相关
-const currentPage = ref(1);
-const itemsPerPage = 10; // 每页显示 10 条
+// Toggle sort order
+const toggleSort = (field: string) => {
+  if (ordering.value === field) {
+    ordering.value = `-${field}`;
+  } else if (ordering.value === `-${field}`) {
+    ordering.value = field;
+  } else {
+    ordering.value = `-${field}`;
+  }
+  fetchLogs();
+};
 
-const totalLogs = computed(() => logs.value.length);
-const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage));
-
-const paginatedLogs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return logs.value.slice(start, start + itemsPerPage);
-});
-
-// 翻页功能
+// Pagination functions
 const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    fetchLogs();
+  }
 };
+
 const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    fetchLogs();
+  }
 };
+
 const goToPage = (page: number) => {
   currentPage.value = page;
+  fetchLogs();
 };
 
-// 搜索功能 (模拟 API 调用)
-const fetchLogs = () => {
-  console.log("Fetching logs for selected date range...");
+// Fetch logs from API
+const fetchLogs = async () => {
+  try {
+    const params = {
+      page: currentPage.value,
+      page_size: itemsPerPage,
+      ordering: ordering.value,
+      start_date: datepickerStart.value?.value || '',
+      end_date: datepickerEnd.value?.value || ''
+    };
+    const response = await getSystemLogs(params);
+    console.log(response.data.data.results);
+    logs.value = response.data.data.results;
+    console.log(logs.value);
+    totalLogs.value = response.data.data.count;
+  } catch (error) {
+    console.error('Error fetching logs:', error);
+  }
 };
 
+// View details modal
 const logDetailsModal = ref();
-// 查看详情
-const selectedLog = ref({ id: null, user: '', time: '', action: '' });
-
-const viewDetails = (log:any) => {
+const viewDetails = (log: SystemLogInterface) => {
   selectedLog.value = log;
   const modal = new Modal(logDetailsModal.value);
   modal.show();
@@ -165,12 +204,11 @@ const viewDetails = (log:any) => {
 </script>
 
 <style scoped>
-/* 导航栏样式 */
+/* Your existing styles remain unchanged */
 .nav {
   margin-top: 40px;
 }
 
-/* 表格卡片样式 */
 .table-card {
   border: 1px solid #707070;
   padding: 2rem;
@@ -178,7 +216,6 @@ const viewDetails = (log:any) => {
   border-radius: 20px;
 }
 
-/* 表格样式 */
 .table {
   width: 100%;
   border-collapse: separate;
@@ -196,19 +233,22 @@ const viewDetails = (log:any) => {
   background-color: #f8f9fa;
   font-weight: bold;
   text-align: center;
+  cursor: pointer;
+}
+
+.table th:hover {
+  background-color: #e9ecef;
 }
 
 .table td {
   text-align: center;
 }
 
-/* 按钮样式 */
 .btn-action {
   padding: 0.25rem 1rem;
   margin-left: 0.5rem;
 }
 
-/* 分页样式 */
 .pagination {
   display: flex;
   justify-content: center;
@@ -229,7 +269,6 @@ const viewDetails = (log:any) => {
   border-color: #008080;
 }
 
-/* 模态框样式 */
 .modal {
   margin-top: 200px;
 }

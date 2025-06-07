@@ -14,19 +14,20 @@
 
     <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
-      <option value="">All Status</option>
-      <option>Not Yet Started</option>
-      <option>Completed</option>
-      <option>Ongoing</option>
-      <option>Delayed</option>
-      <option>Terminated</option>
+      <option value="">🔍 All Status</option>
+      <option>🔒 Not Yet Started</option>
+      <option>✅ Completed</option>
+      <option>⏳ Ongoing</option>
+      <option>⚠️ Delayed</option>
+      <option>✖️ Terminated</option>
     </select>
 
     <select class="form-select w-25" v-model="searchDepartment" v-if="!isManager">
-      <option v-for="dept in departments" :key="dept.id" :value="dept.id">
-        {{ dept.department_name }}
-      </option>
-    </select>
+  <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+    {{ dept.department_name }}
+  </option>
+</select>
+
 
     <button class="btn btn-primary" @click="searchKPI">Search</button>
     <button class="btn btn-primary" @click="cleanSearchCondition">Clean</button>
@@ -35,7 +36,7 @@
 
   <!-- Table section -->
   <div class="card">
-    <div class="card-body">
+    <div class="card-body ">
       <div class="d-flex justify-content-end mb-3" v-if="!isManager">
         <button @click="openCreateTaskModal" class="btn btn-success">Create A New Task</button>
       </div>
@@ -76,8 +77,10 @@
                 </span>
             </td>
             <td>
+               <template v-if="task.status !== 'Terminated'">
               <button @click="goToEmployeeDetailsPage(task.id)" class="btn btn-primary btn-sm">Employee Details</button>
               <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
+              </template>
               <button @click="openDeleteModal(task)" class="btn btn-danger btn-sm">Delete</button>
             </td>
           </tr>
@@ -227,7 +230,7 @@
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="startDate" class="form-label">Start Date:</label>
-                    <input type="date" class="form-control" id="startDate" required v-model="currentTask.startDate">
+                    <input type="date" class="form-control" id="startDate" required :min="today" v-model="currentTask.startDate">
                   </div>
                   <div class="col-md-6">
                     <label for="completionDate" class="form-label">Completion Date:</label>
@@ -417,7 +420,7 @@
           <p>Are you sure you want to terminate this task, <b>{{ currentTask.taskTitle }}</b>?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="showTerminateModal = false">Cancel</button>
+          <button type="button" class="btn btn-secondary" @click="handleCancelTerminate()">Cancel</button>
           <button type="button" class="btn btn-danger" @click="confirmTerminate()">Terminate</button>
         </div>
       </div>
@@ -555,13 +558,16 @@ const departments = ref<any[]>([]);
 
 const fetchDepartments = () => {
   selectAllDepartments().then((res) => {
+    
     if (isSuccess(res.status) && res.data.code === 200) {
-      departments.value = res.data.data.results;
+       const fetchedDepartments = res.data.data.results;
       // 默认选择第一个部门
-      if (departments.value.length > 0) {
-        selectedDepartment.value = departments.value[0];
-      }
-    } else {
+        const allDepartmentsOption = { id: 'all', department_name: 'All Departments' };
+        departments.value = [allDepartmentsOption, ...fetchedDepartments];
+
+        // 默认选择“全部部门”
+        selectedDepartment.value = 'all';
+      }  else {
       console.error('Failed to fetch department list:', res);
     }
   }).catch((error) => {
@@ -642,6 +648,15 @@ const createTask = () => {
   }
 
   let taskStatus = 'Not Yet Started';  // 默认状态
+
+  if (dayjs(currentDate).isAfter(dayjs(startDate))) {
+    Swal.fire({
+      icon: "error",
+      title: "Invalid Date",
+      text: "Current day can not ahead of startDate "
+    });
+    return;
+  }
 
   if (dayjs(startDate).isAfter(dayjs(endDate))) {
     Swal.fire({
@@ -840,6 +855,15 @@ const saveEditedTask = () => {
     }
     endDate = endDate.format("YYYY-MM-DD");
 
+
+    if (dayjs(currentDate).isAfter(dayjs(startDate))) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date",
+        text: "Current day can not ahead of startDate "
+      });
+      return;
+    }
 
     if (dayjs(startDate).isAfter(dayjs(endDate))) {
       Swal.fire({
@@ -1055,9 +1079,14 @@ const showTerminateModal = ref(false)
 // Function to open Terminate Task modal
 const openTerminateModal = (task: any) => {
   console.log("Opening terminate modal for task:", task);
+  showModal.value = false;  
   currentTask.value = task;
   showTerminateModal.value = true; // Show Terminate confirmation modal
 }
+const handleCancelTerminate = () => {
+  showTerminateModal.value = false;
+  showModal.value = true; // 重新打开 Edit Modal
+};
 
 // Function to confirm Terminate and close both modals
 const confirmTerminate = () => {
@@ -1105,9 +1134,21 @@ const calculateTotalTarget = (task: any): number => {
 // filter
 const searchTaskName = ref('')
 const selectedStatus = ref('')
-const searchDepartment = ref('')
+const searchDepartment = ref('all')
 
-const selectedDepartment = ref('Sales Department')
+const selectedDepartment = ref('all')
+
+const completedTasks = computed(() => {
+  return kpiData.value.filter((task: any) => task.status === 'Completed').length;
+});
+
+const ongoingTasks = computed(() => {
+  return kpiData.value.filter((task: any) => task.status === 'Ongoing').length;
+});
+
+const delayedTasks = computed(() => {
+  return kpiData.value.filter((task: any) => task.status === 'Delayed').length;
+});
 
 // pagination
 const totalPages = computed(() => {
@@ -1123,11 +1164,11 @@ const changePage = (page: number) => {
  * 根据状态或者KPI的名称查询KPI信息
  */
 function searchKPI() {
-  let searchDepartmentValue =0
-  if (isManager){
+  let searchDepartmentValue = 0;
+  if (isManager.value) {
     searchDepartmentValue = currentUserDepartmentId.value;
-  }else {
-    searchDepartmentValue = searchDepartment.value || undefined
+  } else {
+    searchDepartmentValue = searchDepartment.value === 'all' ? undefined : searchDepartment.value;
   }
   const queryParams = {
     page: 1,
@@ -1139,17 +1180,12 @@ function searchKPI() {
 }
 
 
+
 function cleanSearchCondition() {
   selectedStatus.value = '';
   searchDepartment.value = '';
   searchTaskName.value = '';
 }
-
-// Statistics
-const totalTasks = 0;
-const completedTasks = 0;
-const ongoingTasks = 0;
-const delayedTasks = 0;
 
 
 const handleDepartmentChange = () => {
@@ -1215,8 +1251,77 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   margin: 0 0.2rem;
 }
 
+.btn {
+  display: inline-block;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #3ba1ff, #006eff);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #3390e0, #005ecf);
+}
+
+.btn-warning {
+  background: linear-gradient(90deg, #facc15, #f59e0b);
+  color: white;
+}
+
+.btn-warning:hover {
+  background: linear-gradient(90deg, #e0b800, #e07d00);
+}
+
+.btn-danger {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(90deg, #e53e3e, #c53030);
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+}
+
+.btn-success {
+  margin-top: 0.7rem;
+  margin-right: 0.5rem;
+  background: linear-gradient(90deg, #44d278, #1b9f4b);
+  color: white;
+}
+.btn-success:hover {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
 .badge {
+  display: inline-block;
   padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  text-transform: uppercase;
+  vertical-align: middle;
+  border-radius: 999px;
+  cursor: default;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.2), 
+              0 4px 6px rgba(0, 0, 0, 0.2);
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
 }
 
 .rounded-circle {
@@ -1227,20 +1332,43 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   justify-content: center;
 }
 
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
 .table th {
   font-weight: normal;
-  color: #666;
+  
+}
+.table thead th {
+  background-color:  #ffffff !important;
+  color: #333;
+  font-weight: 600;
+  padding: 0.75rem;
+  border-bottom: 1px solid #f9fafb;
+  
+}
+
+.table tbody td {
+  background-color:  #ffffff !important;
 }
 
 .line {
   border: 1px solid #e9e9e9;
+  
 }
 
 /* statistic card */
 .card {
-  border-radius: 10px;
-  border: 1px solid #e9e9e9;
+  border-radius: 15px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+
 
 .circle {
   width: 70px;
@@ -1252,29 +1380,32 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 }
 
 .circle-total-task {
-  background-color: #B3CFE6;
+  background: linear-gradient(to bottom, #a3bfe9, #4957f0);
 }
 
 .circle-completed {
-  background-color: #ABE3A5;
+  background: linear-gradient(to bottom, #85dda5, #1b9f4b);
+  border-color: #16a34a;
 }
 
 .circle-ongoing {
-  background-color: #F9E394;
+  background: linear-gradient(to bottom, #facc15, #f59e0b);
+  border-color: #d97706;
 }
 
 .circle-delayed {
-  background-color: #F3C5C1;
+  background: linear-gradient(to bottom, #fbb3ae, #fa5959);
 }
 
 .circle svg {
-  width: 30px;
+  width: 28px;
   height: 30px;
 }
 
 .task-overall {
   display: flex;
   flex-direction: column;
+  
 }
 
 .task-text {
@@ -1289,6 +1420,7 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .pagination {
   margin-bottom: 0;
+  
 }
 
 .modal-content {
@@ -1300,19 +1432,19 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .modal-header {
   padding: 1rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #f9fafb;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-body {
-  padding: 1rem;
+  padding: 0.5rem;
 }
 
 .modal-footer {
   padding: 1rem;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid #f9fafb;
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -1325,5 +1457,34 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .cursor-pointer {
   cursor: pointer;
+}
+.pagination .page-link {
+  border-radius: 8px !important;
+  margin: 0 5px;
+  margin-bottom: 5px;
+  border: 1px solid #ddd;
+  background-color: #ffffff;
+  color: #333;
+  padding: 13px 20px;  
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.pagination .page-link:hover {
+  background-color: #e0e0e0;
+  color: #000;
+}
+
+.pagination .page-item.active .page-link {
+  background: linear-gradient(90deg, #9ba1a7, #acb7c6);
+  color: white;
+  border-color: #ffffff;
+}
+
+.pagination .page-item.disabled .page-link {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 </style>

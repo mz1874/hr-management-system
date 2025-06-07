@@ -1,5 +1,6 @@
 import axios from './axios'
 import type {Staff} from "@/interface/UserInterface.ts";
+import type {PartialStaffUpdate} from "@/interface/PartialStaffUpdate.ts";
 
 export function selectAllStaffs(page: number = 1) {
     return axios.get('/api/staff/?page=' + page);
@@ -48,4 +49,17 @@ export function assignKpiToDepartment(kpiId: number, departmentId: number, targe
 
 export function editStaff(staff: Staff): any {
     return axios.patch(`/api/staff/${staff.id}/`, staff);
+}
+
+/**
+ * 更新当前用户的部分信息
+ * @param staff 用户对象，需包含 id 和要更新的字段
+ */
+export function updateCurrentUser(staff: PartialStaffUpdate): any {
+    return axios.patch(`/api/staff/${staff.id}/`, {
+        username: staff.username,
+        email: staff.email,
+        date_of_birth: staff.date_of_birth,
+        picture: staff.picture ?? null,
+    });
 }

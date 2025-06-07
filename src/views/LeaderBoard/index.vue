@@ -1,5 +1,8 @@
 <template>
-  <h1 class="mb-5">Leaderboard for {{ currentUserData.department }}</h1>
+  <div class="mb-2">
+    <h1 >Leaderboard for {{ currentUserData.department }}</h1>
+    <p class="text-muted" style="font-size:18px;">Ranking is based on total accumulated points</p>
+  </div>
   
   <!-- Podium -->
   <div class="podium">
@@ -7,7 +10,10 @@
     <div class="podium-block rotate-left">
       <div v-if="tableData[1]">
         <i class="fa-solid fa-crown crown-second"></i>
-        <div><img :src="tableData[1].imgUrl" :alt="tableData[1].staffName" /></div>
+        <div>
+          <img v-if="tableData[1].imgUrl" :src="BASE_URL + tableData[1].imgUrl" :alt="tableData[1].staffName" />
+          <i v-else class="fa-solid fa-user-circle fa-4x text-secondary"></i>
+        </div>
         <div class="name-size">{{ tableData[1].staffName }}</div>
         <div class="point-container">
           <div class="icon-container">
@@ -28,7 +34,10 @@
     <div class="podium-block">
       <div v-if="tableData[0]">
         <i class="fa-solid fa-crown crown-first"></i>
-        <div><img :src="tableData[0].imgUrl" :alt="tableData[0].staffName" /></div>
+        <div>
+          <img v-if="tableData[0].imgUrl" :src="BASE_URL + tableData[0].imgUrl" :alt="tableData[0].staffName" />
+          <i v-else class="fa-solid fa-user-circle fa-4x text-secondary"></i>
+        </div>
         <div class="name-size">{{ tableData[0].staffName }}</div>
         <div class="point-container">
           <div class="icon-container">
@@ -49,7 +58,10 @@
     <div class="podium-block rotate-right">
       <div v-if="tableData[2]">
         <i class="fa-solid fa-crown crown-third"></i>
-        <div><img :src="tableData[2].imgUrl" :alt="tableData[2].staffName" /></div>
+        <div>
+          <img v-if="tableData[2].imgUrl" :src="BASE_URL + tableData[2].imgUrl" :alt="tableData[2].staffName" />
+          <i v-else class="fa-solid fa-user-circle fa-4x text-secondary"></i>
+        </div>
         <div class="name-size">{{ tableData[2].staffName }}</div>
         <div class="point-container">
           <div class="icon-container">
@@ -98,7 +110,8 @@
                 <td class="username">
                   <div class="d-flex align-items-center">
                     <div class="profile-pic" v-if="index < tableData.length - 5">
-                      <img :src="user.imgUrl" alt="Pic">                  
+                        <img v-if="user.imgUrl" :src="BASE_URL + user.imgUrl" :alt="user.staffName"> 
+                        <i v-else class="fa-solid fa-user-circle fa-2x text-secondary"></i>
                     </div>
                     <div class="username">
                       {{ index >= tableData.length - 5 ? '********' : user.staffName }}
@@ -123,6 +136,7 @@ import type { Staff } from "@/interface/UserInterface.ts";
 import { selectAllStaffs } from '@/api/staff';
 import { getDepartmentLeaderboard } from '@/api/reward';
 import { getCurrentUser } from '@/api/login';
+import { BASE_URL } from "@/api/axios.ts";
 
 const tableData = ref<Staff[]>([])
 const currentUserData = reactive<any>({});
@@ -387,10 +401,14 @@ td:last-child {
 }
 
 .profile-pic img{
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   object-fit: cover;
+  margin-right: 10px;
+}
+
+.profile-pic i {
   margin-right: 10px;
 }
 </style>

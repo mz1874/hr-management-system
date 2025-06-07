@@ -138,6 +138,7 @@ const fetchLeaveApplications = async () => {
         id: item.id,
         employeeName: item.full_name || item.username || '-',
         department: item.department_name || '-',
+        submitted_by_department_name: item.submitted_by_department_name,
         userRoles: item.user_roles || [] , // Add this in your mapping
         leaveType: Array.from(new Set(item.leave_dates?.map(d => d.leave_type_display?.name))).join(', '),
         status: mapStatus(item.status),
@@ -204,7 +205,7 @@ function appendRemarkWithTimestamp(existing: string, label: string): string {
 }
 
 
-const saveChanges = async (newStatus?: string, closeModal = false) => {
+const saveChanges = async (newStatus?: string, closeModal = false,  silent = false) => {
   if (!selectedLeave.value) return;
 
   const leaveTypeIdMap = leaveTypeOptions.value.reduce((map, type) => {
@@ -226,7 +227,11 @@ const saveChanges = async (newStatus?: string, closeModal = false) => {
 
   try {
     await reviewLeaveRequest(selectedLeave.value.id, updated);
-    toastSuccess("Leave request updated successfully!");
+
+    if (!silent) {
+      toastSuccess("Leave request updated successfully!");
+    }
+    
     await fetchLeaveApplications();
 
     if (closeModal && leaveDetailsModal.value) {
@@ -295,29 +300,33 @@ const bulkApprove = async () => {
     return;
   }
 
-  for (const app of selectedApps) {
-    const rawStatus = reverseStatusMap[app.status];
-    const isApplicantHR = app.userRoles?.includes('hr') ?? false;
-    const isApplicantManager = app.userRoles?.includes('manager') ?? false;
+  await Promise.all(
+    selectedApps.map(async (app) => {
+      const rawStatus = reverseStatusMap[app.status];
+      const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+      const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
-    const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = (
-      rawStatus === 'M' && isHR.value
-    ) || (
-      rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
-    );
+      const isManagerAction = rawStatus === 'P' && isManager.value;
+      const isHRAction = (
+        rawStatus === 'M' && isHR.value
+      ) || (
+        rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
+      );
 
-    if (isManagerAction || isHRAction) {
-      const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
-      app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
-      selectedLeave.value = app;
+      if (isManagerAction || isHRAction) {
+        const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
+        app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
+        selectedLeave.value = app;
 
-      const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';
-      await saveChanges(newStatus);
-    }
+        const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';
+        await saveChanges(newStatus, false, true);  // silent toast
+      }
 
-    app.selected = false;
-  }
+      app.selected = false;
+    })
+  );
+
+  await fetchLeaveApplications();
 
   Swal.fire({
     icon: 'success',
@@ -327,7 +336,6 @@ const bulkApprove = async () => {
     showConfirmButton: false,
   });
 };
-
 
 const bulkReject = async () => {
   const selectedApps = leaveApplications.value.filter(app => app.selected);
@@ -340,28 +348,32 @@ const bulkReject = async () => {
     return;
   }
 
-  for (const app of selectedApps) {
-    const rawStatus = reverseStatusMap[app.status];
-    const isApplicantHR = app.userRoles?.includes('hr') ?? false;
-    const isApplicantManager = app.userRoles?.includes('manager') ?? false;
+  await Promise.all(
+    selectedApps.map(async (app) => {
+      const rawStatus = reverseStatusMap[app.status];
+      const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+      const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
-    const isManagerAction = rawStatus === 'P' && isManager.value;
-    const isHRAction = isHR.value && (
-      rawStatus === 'M' ||
-      (rawStatus === 'P' && (isApplicantHR || isApplicantManager))
-    );
+      const isManagerAction = rawStatus === 'P' && isManager.value;
+      const isHRAction = isHR.value && (
+        rawStatus === 'M' ||
+        (rawStatus === 'P' && (isApplicantHR || isApplicantManager))
+      );
 
-    if (isManagerAction || isHRAction) {
-      const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
-      app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
-      selectedLeave.value = app;
+      if (isManagerAction || isHRAction) {
+        const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
+        app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
+        selectedLeave.value = app;
 
-      const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
-      await saveChanges(newStatus);
-    }
+        const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
+        await saveChanges(newStatus, false, true);  // silent toast
+      }
 
-    app.selected = false;
-  }
+      app.selected = false;
+    })
+  );
+
+  await fetchLeaveApplications();
 
   Swal.fire({
     icon: 'success',
@@ -371,7 +383,6 @@ const bulkReject = async () => {
     showConfirmButton: false,
   });
 };
-
 
 
 const formatDuration = (code: string) => {
@@ -386,6 +397,8 @@ const formatDuration = (code: string) => {
 const leaveDetailsModal = ref<HTMLElement | null>(null);
 
 const showLeaveDetails = (application: LeaveApplication) => {
+    console.log('application:', application); // 🔍 Inspect this in browser devtools
+
   selectedLeave.value = application;
   if (leaveDetailsModal.value) {
     const modal = new Modal(leaveDetailsModal.value);
@@ -628,10 +641,19 @@ onMounted(async () => {
                   <label class="info-label">Name:</label>
                   <div class="info-badge">{{ selectedLeave.employeeName }}</div>
                 </div>
-                <div class="mb-3">
+               <div class="mb-3">
                   <label class="info-label">Department:</label>
-                  <div class="info-badge">{{ selectedLeave.department }}</div>
+                  <div class="info-badge">
+                    <template v-if="selectedLeave.submitted_by_department_name  !== selectedLeave.department ">
+                      {{ selectedLeave.submitted_by_department_name  }} → {{ selectedLeave.department  }}
+                    </template>
+                    <template v-else>
+                      {{ selectedLeave.department  }}
+                    </template>
+                  </div>
+
                 </div>
+
                 <div class="mb-3">
                   <label class="info-label">Reasons:</label>
                   <div class="info-badge">{{ selectedLeave.reasons }}</div>

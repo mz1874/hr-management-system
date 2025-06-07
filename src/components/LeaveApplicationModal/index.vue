@@ -196,7 +196,7 @@ const handleSubmit = async (event?: Event) => {
 
     const payload = {
       reason: formData.reasons,
-      department: formData.department,
+      // department: formData.department,
       leave_dates: formData.selectedDates,
       ...(uploadedFileId ? { attachment: uploadedFileId } : {})
     };
