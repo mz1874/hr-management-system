@@ -7,4 +7,11 @@ export interface PersonalKPIInterface{
     task_completion_date: string;
     individual_unit: string;
     current_status : string;
+    kpi:{
+        task_description:string
+        seventy_percent:number,
+        ninety_percent:number,
+        hundred_percent:number,
+        hundred_twenty_percent:number
+    }
 }

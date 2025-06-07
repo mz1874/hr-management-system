@@ -14,6 +14,23 @@ const {
   fetchPersonalKPI
 } = useKPIDashboard();
 
+const showTermsModal = ref(false);
+const description = ref("");
+const seventy_percent = ref("");
+const ninety_percent = ref("");
+const hundred_percent = ref("");
+const hundred_twenty_percent = ref("");
+
+const openTermsModal = (desc: any) => {
+  description.value = desc.kpi.task_description
+  seventy_percent.value = desc.kpi.seventy_percent
+  ninety_percent.value = desc.kpi.ninety_percent
+  hundred_percent.value = desc.kpi.hundred_percent
+  hundred_twenty_percent.value = desc.kpi.hundred_twenty_percent
+  showTermsModal.value = true;
+};
+
+
 // 当前页码
 let currentPage = ref<number>(1);
 
@@ -195,6 +212,11 @@ function handleStatusChange() {
                   <span>Status</span>
                 </div>
               </th>
+              <th>
+                <div class="th-content">
+                  <span>Description</span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -236,10 +258,61 @@ function handleStatusChange() {
                 {{ kpi.current_status }}
               </span>
               </td>
+              <td class="status-cell">
+                <button class="terms-button text-muted" @click="openTermsModal(kpi)">
+                  <i class="bi bi-eye"></i>
+                  View
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+        <!--      查看-->
+      <div class="modal fade" id="termsAndConditionsModal" :class="{ show: showTermsModal }" style="display: block" v-if="showTermsModal">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <div class="header-content">
+                <i class="bi bi-file-text" style="font-size: 30px;"></i>
+                <h3>Detailed KPI description</h3>
+              </div>
+            </div>
+            <div class="modal-body">
+              <div class="terms-text mb-3">{{ description }}</div>
+              <div class="points-section">
+                <h5>KPI Completion Score Levels</h5>
+                <ul class="list-group">
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    70% Completion
+                    <span class="badge bg-secondary rounded-pill">Base Score ({{seventy_percent}})</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    90% Completion
+                    <span class="badge bg-info rounded-pill">Good Score ({{ninety_percent}})</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    100% Completion
+                    <span class="badge bg-success rounded-pill">Full Score  ({{hundred_percent}})</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    120% Completion
+                    <span class="badge bg-warning text-dark rounded-pill">Bonus Score ({{hundred_twenty_percent}})</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary"  @click="showTermsModal = false">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="modal-backdrop fade show" v-if="showTermsModal"></div>
 
       <!-- Enhanced Pagination -->
       <div class="pagination-section">
@@ -303,6 +376,23 @@ function handleStatusChange() {
   text-shadow: none;
 }
 
+.terms-button {
+  background: #B8D8F1;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  gap: 0.25rem;
+}
+
+.terms-button:hover {
+  background-color: #adcce6;
+  box-shadow: 0 4px 12px rgba(168, 237, 234, 0.3);
+}
 .title-icon {
   font-size: 3rem;
   filter: none;

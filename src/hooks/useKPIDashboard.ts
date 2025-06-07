@@ -37,7 +37,14 @@ export default function () {
                     task_start_date: item.kpi.task_start_date,
                     task_completion_date: item.kpi.task_completion_date,
                     individual_unit: item.kpi.individual_unit,
-                    current_status: item.current_status
+                    current_status: item.current_status,
+                    kpi:{
+                        task_description:item.kpi.task_description,
+                        seventy_percent:item.kpi.seventy_percent,
+                        ninety_percent:item.kpi.ninety_percent,
+                        hundred_percent:item.kpi.hundred_percent,
+                        hundred_twenty_percent:item.kpi.hundred_twenty_percent
+                    }
                 };
             });
 
