@@ -10,6 +10,8 @@ export default function () {
     let ongoing = ref(0);
     let delayed = ref(0);
     let done = ref(0);
+    let notYetStarted = ref(0);
+    let terminated = ref(0);
 
     async function fetchPersonalKPI(page: number = 1, search: string = '') {
         try {
@@ -20,6 +22,8 @@ export default function () {
             ongoing.value = res.data.data.summary.ongoing;
             delayed.value = res.data.data.summary.delayed;
             done.value = res.data.data.summary.completed;
+            notYetStarted.value = res.data.data.summary.not_yet_started;
+            terminated.value = res.data.data.summary. terminated;
 
             // 清空现有数据
             tableData.splice(0, tableData.length);
@@ -57,5 +61,7 @@ export default function () {
         ongoing,
         delayed,
         done,
+        notYetStarted,
+        terminated
     };
 }

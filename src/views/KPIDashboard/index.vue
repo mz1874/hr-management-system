@@ -8,6 +8,8 @@ const {
   ongoing,
   done,
   delayed,
+  notYetStarted,
+  terminated,
   count,
   fetchPersonalKPI
 } = useKPIDashboard();
@@ -64,7 +66,6 @@ function handleStatusChange() {
           <div class="card-number">{{ tableData.length }}</div>
           <div class="card-label">Total Tasks</div>
         </div>
-        <div class="card-trend">+12%</div>
       </div>
 
       <div class="kpi-card ongoing-card">
@@ -73,7 +74,6 @@ function handleStatusChange() {
           <div class="card-number">{{ ongoing }}</div>
           <div class="card-label">Ongoing</div>
         </div>
-        <div class="card-trend">+5%</div>
       </div>
 
       <div class="kpi-card done-card">
@@ -82,7 +82,6 @@ function handleStatusChange() {
           <div class="card-number">{{ done }}</div>
           <div class="card-label">Completed</div>
         </div>
-        <div class="card-trend">+23%</div>
       </div>
 
       <div class="kpi-card delayed-card">
@@ -91,8 +90,26 @@ function handleStatusChange() {
           <div class="card-number">{{ delayed }}</div>
           <div class="card-label">Delayed</div>
         </div>
-        <div class="card-trend">-8%</div>
       </div>
+
+      <div class="kpi-card not-yet-started-card">
+        <div class="card-background"></div>
+          <div class="card-icon">🔒</div>
+          <div class="card-content">
+            <div class="card-number">{{ notYetStarted }}</div>
+            <div class="card-label">Not Yet Started</div>
+          </div>
+      </div>
+
+      <div class="kpi-card terminated-card">
+        <div class="card-background"></div>
+          <div class="card-icon">✖️</div>
+          <div class="card-content">
+            <div class="card-number">{{ terminated }}</div>
+            <div class="card-label">Terminated</div>
+          </div>
+      </div>
+
     </div>
 
     <!-- Main Table Section -->
@@ -116,6 +133,9 @@ function handleStatusChange() {
               <option value="C">✅ Completed</option>
               <option value="O">⏳ Ongoing</option>
               <option value="D">⚠️ Delayed</option>
+              <option value="N">🔒 Not Yet Started</option>
+              <option value="D">✖️ Terminated</option>
+              <option value="F">📝 Confirming</option>
             </select>
           </div>
         </div>
@@ -211,10 +231,10 @@ function handleStatusChange() {
                 <span class="unit-badge">{{ kpi.individual_unit }}</span>
               </td>
               <td class="status-cell">
-                <span class="status-badge" :class="'status-' + kpi.current_status">
-                  <span class="status-dot"></span>
-                  {{ kpi.current_status }}
-                </span>
+                <span class="status-badge" :class="'status-' + kpi.current_status.replace(/\s+/g, '-')">
+                <span class="status-dot"></span>
+                {{ kpi.current_status }}
+              </span>
               </td>
             </tr>
           </tbody>
@@ -362,13 +382,30 @@ function handleStatusChange() {
   background: #EF4444;
 }
 
+.not-yet-started-card {
+  border-left-color: #60A5FA;
+}
+.not-yet-started-card .card-background {
+  background: #60A5FA;
+}
+
+.terminated-card {
+  border-left-color: #9CA3AF;
+}
+.terminated-card .card-background {
+  background: #9CA3AF;
+}
+
 .card-icon {
   font-size: 3rem;
   opacity: 0.8;
+  margin-right: -2rem;
+  margin-left: 1rem;
 }
 
 .card-content {
   flex: 1;
+  text-align: center;
 }
 
 .card-number {
@@ -614,22 +651,49 @@ function handleStatusChange() {
   background: #10B981;
 }
 
+/* Ongoing */
 .status-Ongoing {
-  background: rgba(245, 158, 11, 0.1);
-  color: #92400E;
+  background-color: #fff7ed;
+  color: #92400e;
 }
-
 .status-Ongoing .status-dot {
-  background: #F59E0B;
+  background-color: #f59e0b;
 }
 
+/* Delayed */
 .status-Delayed {
-  background: rgba(239, 68, 68, 0.1);
-  color: #991B1B;
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+.status-Delayed .status-dot {
+  background-color: #ef4444;
 }
 
-.status-Delayed .status-dot {
-  background: #EF4444;
+/* Not Yet Started */
+.status-Not-Yet-Started {
+  background-color: #eff6ff;
+  color: #1e40af;
+}
+.status-Not-Yet-Started .status-dot {
+  background-color: #3b82f6;
+}
+
+/* Terminated */
+.status-Terminated {
+  background-color: #f9fafb;
+  color: #374151;
+}
+.status-Terminated .status-dot {
+  background-color: #9ca3af;
+}
+
+/* Confirming */
+.status-Confirming {
+  background-color: #fefce8; 
+  color: #92400e;    
+}
+.status-Confirming .status-dot {
+  background-color: #f59e0b; /* 橙色点 */
 }
 
 /* Enhanced Pagination */
