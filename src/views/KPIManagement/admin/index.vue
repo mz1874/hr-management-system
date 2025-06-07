@@ -424,6 +424,7 @@ import {searchStaff, assignKpiToDepartment} from "@/api/staff.ts";
 import {isSuccess} from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
 import useKPI from "@/hooks/useKPI.ts";
+import {setKpiDepartment} from "@/api/kpiAdmin.ts";
 import {
   updateKpi,
   createKpi,
@@ -976,15 +977,11 @@ const saveEditedTask = () => {
           handlerFetchKpis({page: 1});
         }
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
-        // 分配给部门所有成员的逻辑保持不变
-        console.log(assignedCopy.value);
-        assignedCopy.value.forEach((item) => {
-          const detailId = item.detailId
-          removeKpiFromStaff(detailId)
-        })
+
 
         assignKpiToDepartment(kpiId, selectedDepartment.value.id, currentTask.value.totalTarget)
             .then(() => {
+              setKpiDepartment(kpiId,selectedDepartment.value.id);
               Swal.fire({
                 position: "top-end",
                 icon: "success",
@@ -992,7 +989,9 @@ const saveEditedTask = () => {
                 showConfirmButton: false,
                 timer: 1500,
               });
-              handlerFetchKpis({page: 1});
+              setTimeout(() => {
+                handlerFetchKpis({ page: 1 });
+              }, 300); // 200~500ms 通常足够
             })
             .catch((error) => {
               console.error("Failed to assign task to department:", error);
