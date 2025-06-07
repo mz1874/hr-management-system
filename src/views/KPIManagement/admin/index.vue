@@ -274,9 +274,9 @@
                 <div class="mb-3">
                   <label class="form-label">Assign task to:</label>
                   <div>
-                    <input type="radio" id="assignUser" value="user" v-model="assignType">
+                    <input type="radio" id="assignUser" value="user" @change="revertAllUsers" v-model="assignType">
                     <label for="assignUser">Employee</label>
-                    <input type="radio" id="assignDept" value="department" v-model="assignType" class="ms-3">
+                    <input type="radio" id="assignDept" value="department" @change="cancelAllUsers"  v-model="assignType" class="ms-3">
                     <label for="assignDept">Whole department</label>
                   </div>
                 </div>
@@ -438,6 +438,7 @@ import isBetween from 'dayjs/plugin/isBetween';
 
 dayjs.extend(isBetween);
 
+const assignedCopy = ref<any[]>([])
 
 
 const {
@@ -463,6 +464,19 @@ const staffSearchResults = ref<any[]>([]);
 
 const assignToAllMembers = ref(false);
 
+const today = ref(new Date())
+
+const cancelAllUsers = () => {
+  assignedCopy.value = JSON.parse(JSON.stringify(currentTask.value.assignedUsers));
+  currentTask.value.assignedUsers = [];
+  console.log(assignedCopy.value);
+}
+
+const revertAllUsers = () => {
+   currentTask.value.assignedUsers = JSON.parse(JSON.stringify(assignedCopy.value));
+   assignedCopy.value = [];
+   console.log(currentTask.value.assignedUsers);
+}
 /**
  *  搜索员工开始
  *  用于新建员工时从所有员工中查询某个指定的员工设置KPI任务
@@ -518,7 +532,10 @@ const selectStaffMember = (staff: any) => {
   }
 };
 
-const currentTask = ref<any>({});
+// 当前任务对象
+const currentTask = ref<any>({
+  tempAssignedUser: []
+})
 
 const departments = ref<any[]>([]);
 
@@ -751,10 +768,12 @@ const createTask = () => {
 const showModal = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 
+
+
+
 const openEditTaskModal = (task: Task) => {
   // 创建一个深拷贝，确保所有属性都被正确复制
   currentTask.value = {...task};
-  console.log(currentTask.value, "SSS");
 
   // 处理已分配用户数据
   // 从 personal_details 中提取用户信息
@@ -763,10 +782,12 @@ const openEditTaskModal = (task: Task) => {
       return {
         id: detail.staff_id,
         username: detail.staff_name,
-        department_id: detail.department_id
+        department_id: detail.department_id,
+        detailId : detail.id,
       };
     });
     console.log("Users extracted from personal_details:", currentTask.value.assignedUsers);
+    assignedCopy.value = JSON.parse(JSON.stringify(currentTask.value.assignedUsers))
   } else if (!currentTask.value.assignedUsers) {
     currentTask.value.assignedUsers = [];
   }
@@ -820,16 +841,6 @@ const saveEditedTask = () => {
       throw new Error("Invalid end date");
     }
     endDate = endDate.format("YYYY-MM-DD");
-
-
-    if (dayjs(currentDate).isAfter(dayjs(startDate))) {
-      Swal.fire({
-        icon: "error",
-        title: "Invalid Date",
-        text: "Current day can not ahead of startDate "
-      });
-      return;
-    }
 
     if (dayjs(startDate).isAfter(dayjs(endDate))) {
       Swal.fire({
@@ -966,6 +977,12 @@ const saveEditedTask = () => {
         }
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
         // 分配给部门所有成员的逻辑保持不变
+        console.log(assignedCopy.value);
+        assignedCopy.value.forEach((item) => {
+          const detailId = item.detailId
+          removeKpiFromStaff(detailId)
+        })
+
         assignKpiToDepartment(kpiId, selectedDepartment.value.id, currentTask.value.totalTarget)
             .then(() => {
               Swal.fire({
