@@ -291,6 +291,13 @@ const execDescCn = computed(() => {
   return getCombinedRatingDescriptionForStar(ratingForDescriptionModal.value, 'cn', EXECUTIVE_RATING_CONFIG);
 });
 
+// Computed property to check if the department evaluation for the current form in the modal is submitted
+const isDepartmentEvaluationSubmittedForCurrentForm = computed(() => {
+  if (!currentForm.value) return false;
+  // currentForm.value is set from a DisplayEvaluationForm, so it has the necessary properties.
+  return getEvaluationStatus(currentForm.value as DisplayEvaluationForm) === 'SUBMITTED';
+});
+
 
 // --- Methods ---
 
@@ -413,15 +420,37 @@ const formatDate = (dateString: string | null | undefined): string => {
 
 // Helper function to get evaluation status for the main table
 const getEvaluationStatus = (form: DisplayEvaluationForm): string => {
-  // The status is 'SUBMITTED' if the current manager's department has finalized their evaluation for this form.
-  // This is determined by 'user_instance_status' being 'SUBMITTED' or 'REVIEWED'.
+  const completed = form.completed_staff_count;
+  const total = form.total_staff_count;
+  let isProgressFull = false;
+
+  if (typeof total === 'number') {
+    if (total > 0 && typeof completed === 'number' && completed === total) {
+      isProgressFull = true;
+    } else if (total === 0) {
+      // If total staff is 0, consider progress "full" as there's nothing to complete.
+      isProgressFull = true;
+    }
+  }
+  // If total is undefined, or (total > 0 and completed is undefined/not equal), isProgressFull remains false.
+
+  // New rule: If progress is not full, status is PUBLISHED (unless form is globally CLOSED).
+  if (!isProgressFull) {
+    if ((form.status as string) === 'CLOSED') { // Global form status 'CLOSED' takes precedence.
+      return 'CLOSED';
+    }
+    return 'PUBLISHED'; // Otherwise, if not full, it's PUBLISHED.
+  }
+
+  // If progress IS full, then the original logic for SUBMITTED (based on user_instance_status) applies.
   if (form.user_instance_status === 'SUBMITTED' || form.user_instance_status === 'REVIEWED') {
     return 'SUBMITTED';
   }
-  // Otherwise, the status displayed reflects the form's general status (e.g., 'PUBLISHED', 'CLOSED').
-  // If the department hasn't submitted and the form is globally 'PUBLISHED', it will show 'PUBLISHED'.
-  // If the form is globally 'CLOSED' and the department hasn't submitted, it will show 'CLOSED'.
-  return form.status || 'N/A'; // Fallback to 'N/A' if form.status is null/undefined
+
+  // If progress is full, but user_instance_status is not SUBMITTED/REVIEWED
+  // (e.g., it's 'PUBLISHED' or 'PENDING' at the department level),
+  // then fall back to the form's global status.
+  return form.status || 'N/A';
 };
 
 // Helper function to get evaluation progress for the main table
@@ -589,7 +618,8 @@ const openFormModal = async (formItem: EvaluationForm) => {
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
       // Assuming searchStaff returns paginated results, store only results for now
       // TODO: Handle pagination if needed for staff list within modal
-      departmentStaff.value = response.data.data.results; // Assign staff if fetch is successful
+      // Filter out inactive staff members (status === false)
+      departmentStaff.value = response.data.data.results.filter((staff: Staff) => staff.status === true); // Assign active staff
 
       // --- Fetch Evaluation Statuses for these staff (Moved outside the else block) ---
       if (departmentStaff.value.length > 0 && currentForm.value?.id !== undefined) {
@@ -715,7 +745,16 @@ const handleEdit = async (staff: Staff) => {
     showCancelButton: true,
     confirmButtonColor: '#3085d6',
     cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, edit it!'
+    confirmButtonText: 'Yes, edit it!',
+    didOpen: () => {
+      document.body.classList.add('modal-open-no-scroll');
+    },
+    didClose: () => {
+      // Re-apply scroll lock if the main modal is still open
+      if (showFormModal.value) {
+        document.body.classList.add('modal-open-no-scroll');
+      }
+    }
   });
 
   if (result.isConfirmed) {
@@ -1072,10 +1111,17 @@ watch(showRatingDescriptionModal, (newValue) => {
           </td>
           <td>{{ getEvaluationProgress(form) }}</td>
           <td>
-            <!-- Action Button - Always show "Evaluate Staff" -->
-            <button type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
-                Evaluate Staff
-            </button>
+            <!-- Action Button - Conditional based on department evaluation status -->
+            <template v-if="getEvaluationStatus(form) !== 'SUBMITTED'">
+              <button type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
+                  Evaluate Staff
+              </button>
+            </template>
+            <template v-else>
+              <button type="button" class="btn btn-info btn-action" @click="openFormModal(form)">
+                  View Submitted Evaluation
+              </button>
+            </template>
             <!-- TODO: Add a way to view results later, maybe another button or link -->
             <!-- <button type="button" class="btn btn-info btn-action ms-2" @click="openResultsModal(form)">
                 View Results
@@ -1153,21 +1199,37 @@ watch(showRatingDescriptionModal, (newValue) => {
 
                    <!-- Action Buttons -->
                    <div>
-                     <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
-                             type="button" class="btn btn-sm btn-outline-info me-2"
-                             @click="openViewModal(staff)">
-                       <i class="fas fa-eye me-1"></i> View
-                     </button>
-                     <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
-                             type="button" class="btn btn-sm btn-outline-warning"
-                             @click="handleEdit(staff)">
-                       <i class="fas fa-edit me-1"></i> Edit
-                     </button>
-                     <button v-if="staffCompletionStatus.get(staff.id) !== 'Completed'"
-                             type="button" class="btn btn-sm btn-primary"
-                             @click="selectStaffForEvaluation(staff)">
-                       <i class="fas fa-play me-1"></i> Evaluate
-                     </button>
+                     <template v-if="!isDepartmentEvaluationSubmittedForCurrentForm">
+                       <!-- Logic for when department evaluation is NOT submitted -->
+                       <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
+                               type="button" class="btn btn-sm btn-outline-info me-2"
+                               @click="openViewModal(staff)">
+                         <i class="fas fa-eye me-1"></i> View
+                       </button>
+                       <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
+                               type="button" class="btn btn-sm btn-outline-warning"
+                               @click="handleEdit(staff)">
+                         <i class="fas fa-edit me-1"></i> Edit
+                       </button>
+                       <button v-if="staffCompletionStatus.get(staff.id) !== 'Completed'"
+                               type="button" class="btn btn-sm btn-primary"
+                               @click="selectStaffForEvaluation(staff)">
+                         <i class="fas fa-play me-1"></i> Evaluate
+                       </button>
+                     </template>
+                     <template v-else>
+                       <!-- Logic for when department evaluation IS submitted -->
+                       <button type="button" class="btn btn-sm btn-outline-info me-2"
+                               @click="openViewModal(staff)"
+                               :disabled="staffCompletionStatus.get(staff.id) !== 'Completed' && !staffInstanceDataMap.has(staff.id)">
+                         <i class="fas fa-eye me-1"></i> View
+                       </button>
+                       <button type="button" class="btn btn-sm btn-outline-warning"
+                               @click="handleEdit(staff)"
+                               :disabled="!staffInstanceDataMap.has(staff.id)">
+                         <i class="fas fa-edit me-1"></i> Edit
+                       </button>
+                     </template>
                    </div>
                  </div>
                </div>
@@ -1193,7 +1255,7 @@ watch(showRatingDescriptionModal, (newValue) => {
                 <div v-for="(question, index) in currentForm.questions" :key="question.id" class="mb-3 border p-3 rounded">
                   <div class="d-flex justify-content-between align-items-center">
                         <!-- Display based on backend question_type -->
-                        <h6>{{ index + 1 }}. {{ question.question_type === 'RATING' ? 'Rating Question' : question.question_type === 'TEXT' ? 'Text Question' : question.question_type === 'OPTIONS' ? 'Option Question' : 'Text Input Question' }}</h6>
+                        <h6>{{ index + 1 }}.</h6>
                   </div>
                       <!-- Use backend 'text' field -->
                       <p class="form-control mb-2 bg-light">{{ question.text }}</p>
@@ -1299,11 +1361,11 @@ watch(showRatingDescriptionModal, (newValue) => {
                    @click="submitEvaluation"
                    :disabled="isLoadingStaff || isLoadingStatuses"
                  >
-                   Save Evaluation for {{ selectedStaffForEvaluation?.username }}
+                  Save Evaluation for {{ selectedStaffForEvaluation?.username }}
                  </button>
-                 <!-- New Final Submit Button -->
+                 <!-- Final Submit Button: visible only if not selected staff AND department eval not submitted -->
                  <button
-                   v-if="!selectedStaffForEvaluation" 
+                   v-if="!selectedStaffForEvaluation && !isDepartmentEvaluationSubmittedForCurrentForm"
                    type="button"
                    class="btn btn-success"
                    @click="handleFinalSubmit"
