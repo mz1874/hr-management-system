@@ -3,8 +3,6 @@
     <h2>KPI Management</h2>
   </div>
 
-  <!-- Search and filter -->
-  <!-- 仅当当前角色不包含 'manager' 时显示 -->
   <div class="d-flex gap-3 mb-4 mt-3">
     <!-- search task name -->
     <div class="input-group w-25">
@@ -15,11 +13,11 @@
     <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">🔍 All Status</option>
-      <option>🔒 Not Yet Started</option>
-      <option>✅ Completed</option>
-      <option>⏳ Ongoing</option>
-      <option>⚠️ Delayed</option>
-      <option>✖️ Terminated</option>
+      <option value="Not Yet Started">🔒 Not Yet Started</option>
+      <option value="Completed">✅ Completed</option>
+      <option value="Ongoing">⏳ Ongoing</option>
+      <option value="Delayed">⚠️ Delayed</option>
+      <option value="Terminated">✖️ Terminated</option>
     </select>
 
     <select class="form-select w-25" v-model="searchDepartment" v-if="!isManager">
