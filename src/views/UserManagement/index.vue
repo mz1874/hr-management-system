@@ -211,10 +211,19 @@ const addStaff = () => {
 }
 
 const saveEditedStaff = () => {
-  handlerEditStaff(selectedStaff.value)
-  showEditStaffModal.value = false
+  // 👇 Add this to include updated entitlements
+  selectedStaff.value.leave_entitlements = (selectedStaff.value.leaveBalances || [])
+    .filter(l => ['AL', 'MC'].includes(l.code))
+    .map(l => ({
+      code: l.code,
+      days: l.totalDays
+    }));
+
+  handlerEditStaff(selectedStaff.value);
+  showEditStaffModal.value = false;
   enableBodyScroll();
 }
+
 
 const confirmDeleteStaff = () => {
   deleteStaff(selectedStaff.value.id)
