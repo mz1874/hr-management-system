@@ -3,8 +3,6 @@
     <h2>KPI Management</h2>
   </div>
 
-  <!-- Search and filter -->
-  <!-- 仅当当前角色不包含 'manager' 时显示 -->
   <div class="d-flex gap-3 mb-4 mt-3">
     <!-- search task name -->
     <div class="input-group w-25">
@@ -15,11 +13,11 @@
     <!-- search status -->
     <select v-model="selectedStatus" class="form-select w-25">
       <option value="">🔍 All Status</option>
-      <option>🔒 Not Yet Started</option>
-      <option>✅ Completed</option>
-      <option>⏳ Ongoing</option>
-      <option>⚠️ Delayed</option>
-      <option>✖️ Terminated</option>
+      <option value="Not Yet Started">🔒 Not Yet Started</option>
+      <option value="Completed">✅ Completed</option>
+      <option value="Ongoing">⏳ Ongoing</option>
+      <option value="Delayed">⚠️ Delayed</option>
+      <option value="Terminated">✖️ Terminated</option>
     </select>
 
     <select class="form-select w-25" v-model="searchDepartment" v-if="!isManager">
@@ -1245,36 +1243,43 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 .btn {
   display: inline-block;
   padding: 0.5rem 0.9rem;
-  border-radius: 10px;
-  border: none;
-  font-size: 16px;
-  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 14.5px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  /* 减少悬停位移 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #3ba1ff, #006eff);
+  background: linear-gradient(135deg, #035eb3c7 0%, #0042ac 100%);
   color: white;
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(90deg, #3390e0, #005ecf);
+  background: linear-gradient(90deg, #115da0, #00326f);
 }
 
 .btn-warning {
-  background: linear-gradient(90deg, #facc15, #f59e0b);
+  background: linear-gradient(90deg, #ffbb00, #ff9100);
   color: white;
 }
 
 .btn-warning:hover {
-  background: linear-gradient(90deg, #e0b800, #e07d00);
+  background: linear-gradient(90deg, #ffd102, #ff8c00);
 }
 
 .btn-danger {
-  background: linear-gradient(90deg, #f87171, #ef4444);
+  background: linear-gradient(90deg, #f96060, #ef4444);
   color: white;
 }
 
@@ -1284,35 +1289,35 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
 }
 
 .btn-success {
   margin-top: 0.7rem;
   margin-right: 0.5rem;
-  background: linear-gradient(90deg, #44d278, #1b9f4b);
+  background: linear-gradient(90deg, #327942, #2a900c);
   color: white;
 }
+
 .btn-success:hover {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
+  background: linear-gradient(90deg, #10602d, #11813a);
 }
 
 .badge {
   display: inline-block;
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 550;
   text-align: center;
   white-space: nowrap;
   text-transform: uppercase;
   vertical-align: middle;
   border-radius: 999px;
   cursor: default;
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.2), 
-              0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.2);
   color: white;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .rounded-circle {
@@ -1331,30 +1336,31 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .table th {
   font-weight: normal;
-  
+
 }
+
 .table thead th {
-  background-color:  #ffffff !important;
+  background-color: #ffffff !important;
   color: #333;
   font-weight: 600;
   padding: 0.75rem;
   border-bottom: 1px solid #f9fafb;
-  
+
 }
 
 .table tbody td {
-  background-color:  #ffffff !important;
+  background-color: #ffffff !important;
 }
 
 .line {
   border: 1px solid #e9e9e9;
-  
+
 }
 
 /* 统计卡整体容器 */
 .stats-section {
   max-width: 1900px;
-  margin:  1rem auto 3rem;
+  margin: 1rem auto 3rem;
   padding: 0 2rem;
 }
 
@@ -1368,9 +1374,8 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 /* 卡片本身 */
 .stat-card {
-  background: white;
   border-radius: 20px;
-  padding: 1rem ;
+  padding: 1rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
@@ -1399,17 +1404,41 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 }
 
 /* 颜色配置 */
-.total-card { border-left-color: #3b82f6; }
-.total-card .card-background { background: #3b82f6; }
+.total-card {
+  border-left-color: #3b82f6;
+  background: #4b8ffe1b;
+}
 
-.completed-card { border-left-color: #10b981; }
-.completed-card .card-background { background: #10b981; }
+.total-card .card-background {
+  background: #3b82f6;
+}
 
-.ongoing-card { border-left-color: #f59e0b; }
-.ongoing-card .card-background { background: #f59e0b; }
+.completed-card {
+  border-left-color: #10b981;
+  background: #10b9811b;
+}
 
-.delayed-card { border-left-color: #ef4444; }
-.delayed-card .card-background { background: #ef4444; }
+.completed-card .card-background {
+  background: #10b981;
+}
+
+.ongoing-card {
+  border-left-color: #f59e0b;
+  background: #f59f0b1e;
+}
+
+.ongoing-card .card-background {
+  background: #f59e0b;
+}
+
+.delayed-card {
+  border-left-color: #ef4444;
+  background: #ef444419;
+}
+
+.delayed-card .card-background {
+  background: #ef4444;
+}
 
 /* 卡片图标 */
 .card-icon {
@@ -1439,13 +1468,10 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   font-weight: 500;
 }
 
-
-
-
 .task-overall {
   display: flex;
   flex-direction: column;
-  
+
 }
 
 .task-text {
@@ -1460,11 +1486,11 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .pagination {
   margin-bottom: 0;
-  
+
 }
 
 .modal-content {
-  background: white;
+  background: rgb(255, 255, 255);
   border-radius: 8px;
   width: 100%;
   margin: 0 1rem;
@@ -1498,6 +1524,7 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 .cursor-pointer {
   cursor: pointer;
 }
+
 .pagination .page-link {
   border-radius: 8px !important;
   margin: 0 5px;
@@ -1505,8 +1532,8 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   border: 1px solid #ddd;
   background-color: #ffffff;
   color: #333;
-  padding: 13px 20px;  
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 13px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: background-color 0.3s, color 0.3s;
 }
 
