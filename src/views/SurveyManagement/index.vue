@@ -132,7 +132,7 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
     text_en: 'Morality and Talent',
     text_cn: '道德与才能', // Assuming translation, please verify
     rating_texts: {
-      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a)散播谣言扰乱军心 (b)欺骗，作假 (c)愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
+      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a)散播谣言扰乱军心 (b)欺骗，作假 (c)愁眉苦脸，衣衫不整，言行不正，埋播负能量" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
       5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a)言行一致，向上向善 (b)拥有正面的道德品行，礼貌谦卑 (c)以饱满的热情和精神投入工作，正面应对工作挑战" }
     }
@@ -381,6 +381,47 @@ watch(selectedStatus, () => {
 watch(currentPage, () => {
   // Fetch data for the new page
   fetchSurveys();
+});
+
+// Watchers to control body scroll when modals are open
+watch(showModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
+});
+
+watch(showPublishModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
+});
+
+watch(showDeleteConfirmModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
+});
+
+watch(showDetailsModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
+});
+
+watch(showAdminRatingDescriptionModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
 });
 
 // Removed handleSearch as fetching is now handled by the watchers
@@ -1678,5 +1719,76 @@ const closeAdminRatingDescriptionModal = () => {
   font-family: inherit; /* Inherit font from parent */
   margin: 0; /* Remove default pre margins */
   font-size: 0.875rem; /* Adjust as needed */
+}
+
+/* Global style for body scroll control when modal is open */
+</style>
+
+<style>
+body.modal-open-no-scroll {
+  overflow: hidden !important;
+}
+</style>
+
+<style scoped>
+/* Styles from NotificationCenter/index.vue */
+
+/* Main Content Padding */
+.main-content {
+  padding: 1.5rem;
+}
+
+/* Search Container */
+.announcement-toolbar {
+  display: flex;
+  align-items: center; /* Align items vertically in the center */
+  gap: 1rem;
+}
+
+/* Button Hover Effect */
+button.btn:hover,
+.btn-action:hover,
+.new-announcement-btn:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+/* Specific hover styles for buttons to ensure black background */
+.btn-warning:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-primary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-info:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-danger:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-success:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-outline-danger:hover,
+.btn-outline-secondary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
 }
 </style>

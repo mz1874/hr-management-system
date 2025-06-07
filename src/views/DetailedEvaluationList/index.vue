@@ -270,6 +270,27 @@ const formsForCurrentPage = computed(() => {
   return clientFilteredResults.value.slice(start, end);
 });
 
+// Computed properties for rating descriptions in the modal
+const nonExecDescEn = computed(() => {
+  if (ratingForDescriptionModal.value === null) return 'N/A';
+  return getCombinedRatingDescriptionForStar(ratingForDescriptionModal.value, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG);
+});
+
+const nonExecDescCn = computed(() => {
+  if (ratingForDescriptionModal.value === null) return 'N/A';
+  return getCombinedRatingDescriptionForStar(ratingForDescriptionModal.value, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG);
+});
+
+const execDescEn = computed(() => {
+  if (ratingForDescriptionModal.value === null) return 'N/A';
+  return getCombinedRatingDescriptionForStar(ratingForDescriptionModal.value, 'en', EXECUTIVE_RATING_CONFIG);
+});
+
+const execDescCn = computed(() => {
+  if (ratingForDescriptionModal.value === null) return 'N/A';
+  return getCombinedRatingDescriptionForStar(ratingForDescriptionModal.value, 'cn', EXECUTIVE_RATING_CONFIG);
+});
+
 
 // --- Methods ---
 
@@ -307,16 +328,53 @@ const getPredefinedConfigByText = (questionText: string | undefined, configSourc
 // Helper to get combined rating description for a given rating and language from a config source
 const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, lang: 'en' | 'cn', configSource: any[]) => {
   if (rating === undefined || rating === null || rating < 1 || rating > 5) return '';
-  let descriptions: string[] = [];
-  configSource.forEach(config => {
-    // For ratings 2 and 4, the texts are already combined in the config.
-    // For ratings 1, 3, 5, they are direct.
-    const desc = config.rating_texts[rating]?.[lang];
-    if (desc) {
-      descriptions.push(desc);
-    }
-  });
-  return descriptions.join('\n\n'); // Join descriptions from all categories with a double newline
+
+  const allDescriptionsForRating = configSource
+    .map(config => config.rating_texts[rating]?.[lang])
+    .filter(desc => desc !== undefined && desc !== null);
+
+  if (allDescriptionsForRating.length === 0) return 'N/A';
+
+  // Check if all descriptions for this rating are identical
+  const firstDesc = allDescriptionsForRating[0];
+  const allSame = allDescriptionsForRating.every(desc => desc === firstDesc);
+
+  if (allSame) {
+    return firstDesc; // Return the single common description
+  } else {
+    // If descriptions vary, list them by category
+    let variedDescriptions: string[] = [];
+    configSource.forEach(config => {
+      const desc = config.rating_texts[rating]?.[lang];
+      // Attempt to get a more descriptive category name
+      let categoryName = config[`text_${lang}`] || config.key || 'Category'; 
+      // For executive config, the keys might be like 'be_responsible_executive'. Try to clean it.
+      if (config.key && config.key.includes('_executive')) {
+          const baseKey = config.key.replace('_executive', '');
+          const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === baseKey);
+          if (matchingPredefined) {
+              categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
+          } else {
+            // Basic fallback for executive-specific categories not in predefined
+            categoryName = (config[`text_${lang}`] || config.key).replace(/_executive/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          }
+      } else if (config.key) {
+          // For predefined, try to use its text_en/cn
+           const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === config.key);
+           if (matchingPredefined) {
+               categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
+           }
+      }
+
+
+      if (desc) {
+        // Use v-html in template for this, so ensure output is safe or sanitize if necessary.
+        // Here, we are just constructing the string.
+        variedDescriptions.push(`<strong>${categoryName}:</strong>\n${desc}`);
+      }
+    });
+    return variedDescriptions.join('\n\n');
+  }
 };
 
 
@@ -921,6 +979,31 @@ watch(searchName, () => {
   currentPage.value = 1; // Reset to first page on search change
   fetchAvailableForms();
 });
+
+// Watchers to control body scroll when modals are open
+watch(showFormModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
+});
+
+watch(showViewAnswersModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
+});
+
+watch(showRatingDescriptionModal, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('modal-open-no-scroll');
+  } else {
+    document.body.classList.remove('modal-open-no-scroll');
+  }
+});
 </script>
 
 <template>
@@ -1238,6 +1321,7 @@ watch(searchName, () => {
       <!-- Pagination - Matching SurveyManagement layout -->
       
   </div> <!-- Close main-content -->
+  <div class="modal-backdrop fade show" v-if="showFormModal"></div>
 
   <!-- View Answers Modal -->
   <div class="modal fade" :class="{ show: showViewAnswersModal }" style="display: block;" v-if="showViewAnswersModal" tabindex="-1" aria-labelledby="viewAnswersModalLabel" aria-hidden="true">
@@ -1311,6 +1395,7 @@ watch(searchName, () => {
       </div>
     </div>
   </div>
+  <div class="modal-backdrop fade show" v-if="showViewAnswersModal"></div>
   <!-- End View Answers Modal -->
 
   <!-- Rating Description Modal -->
@@ -1325,29 +1410,73 @@ watch(searchName, () => {
         </div>
         <div class="modal-body">
           <div v-if="ratingForDescriptionModal !== null">
-            <!-- Non-Executive Descriptions -->
+            <!-- English Descriptions -->
             <div class="mb-4">
-              <h6>Non-Executive Staff Descriptions:</h6>
-              <div class="p-2 border rounded bg-light-subtle">
-                <p class="mb-1"><strong>EN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
-                <hr>
-                <p class="mb-1"><strong>CN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
-              </div>
+              <template v-if="nonExecDescEn && execDescEn && nonExecDescEn === execDescEn && nonExecDescEn !== 'N/A' && !nonExecDescEn.includes('<strong>')">
+                <h6>Common Description (Non-Executive & Executive):</h6>
+                <div class="p-2 border rounded bg-light-subtle">
+                  <p class="mb-1"><strong>EN:</strong></p>
+                  <pre class="description-text" v-html="nonExecDescEn"></pre>
+                </div>
+              </template>
+              <template v-else>
+                <div class="mb-3" v-if="nonExecDescEn && nonExecDescEn !== 'N/A'">
+                  <h6>Non-Executive Staff Descriptions (EN):</h6>
+                  <div class="p-2 border rounded bg-light-subtle">
+                    <pre class="description-text" v-html="nonExecDescEn"></pre>
+                  </div>
+                </div>
+                <div v-if="execDescEn && execDescEn !== 'N/A'">
+                  <h6>Executive Staff Descriptions (EN):</h6>
+                  <div class="p-2 border rounded bg-light-subtle">
+                    <pre class="description-text" v-html="execDescEn"></pre>
+                  </div>
+                </div>
+              </template>
             </div>
 
-            <!-- Executive Descriptions -->
-            <div>
-              <h6>Executive Staff Descriptions:</h6>
-              <div class="p-2 border rounded bg-light-subtle">
-                <p class="mb-1"><strong>EN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'en', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
-                <hr>
-                <p class="mb-1"><strong>CN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(ratingForDescriptionModal, 'cn', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
-              </div>
+            <hr v-if="(nonExecDescEn !== 'N/A' || execDescEn !== 'N/A') && (nonExecDescCn !== 'N/A' || execDescCn !== 'N/A')">
+
+            <!-- Chinese Descriptions -->
+            <div class="mb-4">
+              <template v-if="ratingForDescriptionModal === 3 && (nonExecDescEn && execDescEn && nonExecDescEn === execDescEn && !nonExecDescEn.includes('<strong>')) && (execDescCn && !execDescCn.includes('<strong>') && execDescCn !== 'N/A')">
+                <!-- Special case for 3-stars: If English is common, and Executive Chinese is common (plain), use Executive Chinese as the common CN description -->
+                <h6>通用描述 (非行政与行政):</h6>
+                <div class="p-2 border rounded bg-light-subtle">
+                  <p class="mb-1"><strong>CN:</strong></p>
+                  <pre class="description-text" v-html="execDescCn"></pre>
+                </div>
+              </template>
+              <template v-else-if="nonExecDescCn && execDescCn && nonExecDescCn === execDescCn && nonExecDescCn !== 'N/A' && !nonExecDescCn.includes('<strong>')">
+                <!-- Original common logic for other ratings -->
+                <h6>通用描述 (非行政与行政):</h6>
+                <div class="p-2 border rounded bg-light-subtle">
+                  <p class="mb-1"><strong>CN:</strong></p>
+                  <pre class="description-text" v-html="nonExecDescCn"></pre>
+                </div>
+              </template>
+              <template v-else>
+                <!-- Fallback to separate display if not common -->
+                <div class="mb-3" v-if="nonExecDescCn && nonExecDescCn !== 'N/A'">
+                  <h6>非行政员工描述 (CN):</h6>
+                  <div class="p-2 border rounded bg-light-subtle">
+                    <pre class="description-text" v-html="nonExecDescCn"></pre>
+                  </div>
+                </div>
+                <div v-if="execDescCn && execDescCn !== 'N/A' && !(ratingForDescriptionModal === 3 && (nonExecDescEn && execDescEn && nonExecDescEn === execDescEn && !nonExecDescEn.includes('<strong>')) && (execDescCn && !execDescCn.includes('<strong>')))">
+                  <!-- Also ensure not to show separate exec CN if it was already used in the 3-star common case -->
+                  <h6>行政员工描述 (CN):</h6>
+                  <div class="p-2 border rounded bg-light-subtle">
+                    <pre class="description-text" v-html="execDescCn"></pre>
+                  </div>
+                </div>
+              </template>
             </div>
+            
+            <div v-if="nonExecDescEn === 'N/A' && execDescEn === 'N/A' && nonExecDescCn === 'N/A' && execDescCn === 'N/A'" class="text-center text-muted">
+              No specific descriptions available for this rating.
+            </div>
+
           </div>
           <div v-else class="text-center text-muted">
             No rating selected to display descriptions.
@@ -1359,6 +1488,7 @@ watch(searchName, () => {
       </div>
     </div>
   </div>
+  <div class="modal-backdrop fade show" v-if="showRatingDescriptionModal"></div>
   <!-- End Rating Description Modal -->
 
 </template>
@@ -1591,4 +1721,123 @@ watch(searchName, () => {
       margin: 0; /* Remove default pre margins */
     }
 
-    </style>
+/* Button Hover Effect */
+button.btn:hover,
+.btn-action:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+/* Specific hover styles for buttons to ensure black background */
+.btn-primary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-secondary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-info:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-warning:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-danger:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-success:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-outline-info:hover,
+.btn-outline-warning:hover,
+.btn-outline-secondary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+/* Filter Container - Ensure alignment and background */
+.filter-container {
+  padding: 1rem 1.5rem;
+  /* background-color: #f8f9fa; */ /* Removed background */
+  border-radius: 0.5rem;
+  /* border: 1px solid #dee2e6; */ /* Removed border */
+}
+
+/* Button Hover Effect */
+button.btn:hover,
+.btn-action:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+/* Specific hover styles for buttons to ensure black background */
+.btn-primary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-secondary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-info:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-warning:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-danger:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-success:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+
+.btn-outline-info:hover,
+.btn-outline-warning:hover,
+.btn-outline-secondary:hover {
+  background-color: black !important;
+  color: white !important;
+  border-color: black !important;
+}
+</style>
+
+<style>
+body.modal-open-no-scroll {
+  overflow: hidden !important;
+}
+</style>
