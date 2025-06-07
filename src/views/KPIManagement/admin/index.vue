@@ -473,9 +473,15 @@ const cancelAllUsers = () => {
 }
 
 const revertAllUsers = () => {
-   currentTask.value.assignedUsers = JSON.parse(JSON.stringify(assignedCopy.value));
-   assignedCopy.value = [];
-   console.log(currentTask.value.assignedUsers);
+  //证明是从部门更新到员工
+  if(currentTask.value.department){
+    currentTask.value.assignedUsers = []
+  }else{
+    currentTask.value.assignedUsers = JSON.parse(JSON.stringify(assignedCopy.value));
+    assignedCopy.value = [];
+    console.log(currentTask.value.assignedUsers);
+  }
+
 }
 /**
  *  搜索员工开始
