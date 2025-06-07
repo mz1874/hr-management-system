@@ -89,84 +89,50 @@
       </div>
 
       <!-- Statistics Cards -->
-      <div class="row mt-4">
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-total-task">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                     class="bi bi-file-earmark-text" viewBox="0 0 16 16">
-                  <path
-                      d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-                  <path
-                      d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-3">
-                <span class="task-text">Total Tasks</span>
-                <span class="task-num">{{ count }}</span>
-              </div>
+      <div class="stats-section">
+        <div class="stats-grid">
+          <!-- Total Tasks -->
+          <div class="stat-card total-card">
+            <div class="card-background"></div>
+            <div class="card-icon">📋</div>
+            <div class="card-content">
+              <div class="card-number">{{ count }}</div>
+              <div class="card-label">Total Tasks</div>
             </div>
           </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-completed">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                     class="bi bi-calendar-check" viewBox="0 0 16 16">
-                  <path
-                      d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
-                  <path
-                      d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-3">
-                <span class="task-text">Completed</span>
-                <span class="task-num">{{ completedTasks }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-ongoing">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                     class="bi bi-pencil-square" viewBox="0 0 16 16">
-                  <path
-                      d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                  <path fill-rule="evenodd"
-                        d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-3">
-                <span class="task-text">Ongoing</span>
-                <span class="task-num">{{ ongoingTasks }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card text-center">
-            <div class="card-body d-flex align-items-center justify-content-center">
-              <div class="circle circle-delayed">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                     class="bi bi-calendar-x" viewBox="0 0 16 16">
-                  <path
-                      d="M6.146 7.146a.5.5 0 0 1 .708 0L8 8.293l1.146-1.147a.5.5 0 1 1 .708.708L8.707 9l1.147 1.146a.5.5 0 0 1-.708.708L8 9.707l-1.146 1.147a.5.5 0 0 1-.708-.708L7.293 9 6.146 7.854a.5.5 0 0 1 0-.708"/>
-                  <path
-                      d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
-                </svg>
-              </div>
-              <div class="task-overall ms-3">
-                <span class="task-text">Delayed</span>
-                <span class="task-num">{{ delayedTasks }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+         <!-- Completed Tasks -->
+         <div class="stat-card completed-card">
+           <div class="card-background"></div>
+           <div class="card-icon">✅</div>
+           <div class="card-content">
+             <div class="card-number">{{ completedTasks }}</div>
+             <div class="card-label">Completed</div>
+           </div>
+         </div>
+
+         <!-- Ongoing Tasks -->
+         <div class="stat-card ongoing-card">
+           <div class="card-background"></div>
+           <div class="card-icon">⏳</div>
+           <div class="card-content">
+             <div class="card-number">{{ ongoingTasks }}</div>
+             <div class="card-label">Ongoing</div>
+           </div>
+         </div>
+
+         <!-- Delayed Tasks -->
+         <div class="stat-card delayed-card">
+           <div class="card-background"></div>
+           <div class="card-icon">⚠️</div>
+           <div class="card-content">
+             <div class="card-number">{{ delayedTasks }}</div>
+             <div class="card-label">Delayed</div>
+           </div>
+         </div>
+       </div>
+     </div>
+
 
       <!-- Pagination -->
       <div class="d-flex justify-content-between align-items-center mt-3">
@@ -1256,7 +1222,7 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   padding: 0.5rem 0.9rem;
   border-radius: 10px;
   border: none;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   text-align: center;
   cursor: pointer;
@@ -1360,47 +1326,96 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   
 }
 
-/* statistic card */
-.card {
-  border-radius: 15px;
+/* 统计卡整体容器 */
+.stats-section {
+  max-width: 1900px;
+  margin:  1rem auto 3rem;
+  padding: 0 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+
+
+/* 卡片本身 */
+.stat-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1rem ;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  position: relative;
   overflow: hidden;
-  border: 1px solid #ddd;
-  background-color: #ffffff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-
-.circle {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
+  transition: all 0.3s ease;
+  border-left: 5px solid;
   display: flex;
-  justify-content: center;
   align-items: center;
+  gap: 1.5rem;
 }
 
-.circle-total-task {
-  background: linear-gradient(to bottom, #a3bfe9, #4957f0);
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
-.circle-completed {
-  background: linear-gradient(to bottom, #85dda5, #1b9f4b);
-  border-color: #16a34a;
+/* 卡片背景圆圈 */
+.card-background {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  opacity: 0.05;
+  transform: translate(40px, -40px);
 }
 
-.circle-ongoing {
-  background: linear-gradient(to bottom, #facc15, #f59e0b);
-  border-color: #d97706;
+/* 颜色配置 */
+.total-card { border-left-color: #3b82f6; }
+.total-card .card-background { background: #3b82f6; }
+
+.completed-card { border-left-color: #10b981; }
+.completed-card .card-background { background: #10b981; }
+
+.ongoing-card { border-left-color: #f59e0b; }
+.ongoing-card .card-background { background: #f59e0b; }
+
+.delayed-card { border-left-color: #ef4444; }
+.delayed-card .card-background { background: #ef4444; }
+
+/* 卡片图标 */
+.card-icon {
+  font-size: 2.8rem;
+  opacity: 0.8;
+  margin-right: -2rem;
+  margin-left: 1rem;
 }
 
-.circle-delayed {
-  background: linear-gradient(to bottom, #fbb3ae, #fa5959);
+/* 卡片内容 */
+.card-content {
+  flex: 1;
+  text-align: center;
 }
 
-.circle svg {
-  width: 28px;
-  height: 30px;
+.card-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
 }
+
+.card-label {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+
+
 
 .task-overall {
   display: flex;
