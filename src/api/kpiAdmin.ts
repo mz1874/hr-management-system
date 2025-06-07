@@ -80,3 +80,13 @@ export function setKpiDepartment(kpiId: number, departmentId: number) {
         department_id: departmentId
     });
 }
+
+export function removeKpiDepartment(kpiId:number) {
+    return axios.post(`/api/kpi/${kpiId}/clear-department/`)
+        .then(res => {
+            console.log(res.data.message);
+        })
+        .catch(err => {
+            console.error("取消部门失败", err);
+        });
+}

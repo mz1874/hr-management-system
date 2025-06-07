@@ -424,7 +424,7 @@ import {searchStaff, assignKpiToDepartment} from "@/api/staff.ts";
 import {isSuccess} from '@/utils/httpStatus';
 import Swal from 'sweetalert2';
 import useKPI from "@/hooks/useKPI.ts";
-import {setKpiDepartment} from "@/api/kpiAdmin.ts";
+import {setKpiDepartment, removeKpiDepartment} from "@/api/kpiAdmin.ts";
 import {
   updateKpi,
   createKpi,
@@ -912,6 +912,10 @@ const saveEditedTask = () => {
         existingDetails.forEach((detail: any) => {
           existingStaffMap.set(detail.staff_id, detail.id);
         });
+
+        if(currentTask.value.department){
+          removeKpiDepartment(currentTask.value.id);
+        }
 
         // 获取新的用户ID列表
         const newUserIds = currentTask.value.assignedUsers.map((user: any) => user.id);
