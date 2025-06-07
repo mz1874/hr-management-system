@@ -73,3 +73,20 @@ export function removeKpiFromStaff(personalDetailId: number): any {
 export function markPersonalKpiAsComplete(personalDetailId: number) {
     return axios.post(`/api/personal-details/${personalDetailId}/mark-complete/`);
 }
+
+/* 设置/更新 KPI 的部门 */
+export function setKpiDepartment(kpiId: number, departmentId: number) {
+    return axios.post(`/api/kpi/${kpiId}/set-department/`, {
+        department_id: departmentId
+    });
+}
+
+export function removeKpiDepartment(kpiId:number) {
+    return axios.post(`/api/kpi/${kpiId}/clear-department/`)
+        .then(res => {
+            console.log(res.data.message);
+        })
+        .catch(err => {
+            console.error("取消部门失败", err);
+        });
+}

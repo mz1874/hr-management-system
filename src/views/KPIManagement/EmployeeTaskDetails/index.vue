@@ -447,16 +447,16 @@ onMounted(() => {
 }
 
 .border-blue {
-  background: linear-gradient(to right,rgb(224, 221, 250), #ffffff);
+  background: linear-gradient(to right,rgba(224, 221, 250, 0.516), #ccd6fef3);
 }
 .border-green {
-  background: linear-gradient(to right, #e6f9f4, #ffffff);
+  background: linear-gradient(to right, #e6f9f4, #c2f5e7);
 }
 .border-yellow {
-  background: linear-gradient(to right, #fff9e6, #ffffff);
+  background: linear-gradient(to right, #fff9e6, #ffeeb8);
 }
 .border-red {
-  background: linear-gradient(to right, #ffe6e6, #ffffff);
+  background: linear-gradient(to right, #fff2f2, rgb(255, 231, 231));
 }
 
 .stat-card:hover {
@@ -574,13 +574,9 @@ onMounted(() => {
   display: inline-block;
   padding: 0.55rem 1rem;
   font-size: 0.8rem;
-  font-weight: bold;
   text-align: center;
   text-transform: uppercase;
   border-radius: 30px;
-  box-shadow:
-    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
-    0 4px 6px rgba(0, 0, 0, 0.2);
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
   color: white;
   transition: all 0.3s ease;
@@ -601,32 +597,25 @@ onMounted(() => {
 }
 
 .btn-info {
-  background: linear-gradient(to bottom, #64c3e6, #1e90ff);
+  background: linear-gradient(to bottom, #189bca, #0e6cc9);
   border-color: #1e90ff;
   color: white;
-  font-weight: bold;
   border-radius: 20px;
   padding: 0.5rem 1rem;
   box-shadow:
-    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
-    0 4px 6px rgba(0, 0, 0, 0.2);
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-  transition: all 0.3s ease;
+    inset 0 -2px 0 rgba(0, 0, 0, 0.2),
+    0 2px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
 }
 
 .btn-info:hover {
-  background: linear-gradient(to bottom, #5db0e6, #187bcd);
+  background: linear-gradient(to bottom, #083a5c, #187bcd);
 }
 
 .btn-success {
-  background: linear-gradient(to bottom, #55d986, #27924e);
+  background: linear-gradient(to bottom, #10a948, #0e8a3b);
   color: white;
-  font-weight: bold;
   border-radius: 30px;
-  box-shadow:
-    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
-    0 4px 6px rgba(0, 0, 0, 0.2);
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
 
