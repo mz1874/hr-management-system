@@ -283,7 +283,7 @@
 
                 <div class="gap-3 mb-3" v-show="assignType === 'department'">
                   <select class="form-select" v-model="selectedDepartment" @change="handleDepartmentChange">
-                    <option v-for="dept in departments" :key="dept.id" :value="dept">
+                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">
                       {{ dept.department_name }}
                     </option>
                   </select>
@@ -333,9 +333,9 @@
 
                 <!-- 部门分配选项 -->
                 <div v-if="assignType === 'department'" class="mb-3">
-                  <p>Assign to all employees in the <strong>{{ selectedDepartment.department_name }}</strong>
-                    department.
-                  </p>
+<!--                  <p>Assign to all employees in the <strong>{{ selectedDepartment.department_name }}</strong>-->
+<!--                    department.-->
+<!--                  </p>-->
 
                   <div class="form-check mt-2">
                     <input class="form-check-input" type="checkbox" v-model="assignToAllMembers"
@@ -452,8 +452,7 @@ const {
 let currentUserDepartment = ref("")
 let currentUserDepartmentId = ref(0)
 let currentRoles = reactive([])
-
-
+let currentKPIDepartmentID = ref(0)
 let isManager = computed(()=>{
   return currentRoles.includes('manager');
 })
@@ -775,7 +774,7 @@ const modalType = ref<'create' | 'edit'>('create')
 const openEditTaskModal = (task: Task) => {
   // 创建一个深拷贝，确保所有属性都被正确复制
   currentTask.value = {...task};
-
+  selectedDepartment.value = currentTask.value.department_id;
   // 处理已分配用户数据
   // 从 personal_details 中提取用户信息
   if (task.personal_details && Array.isArray(task.personal_details) && task.personal_details.length > 0) {
@@ -797,10 +796,10 @@ const openEditTaskModal = (task: Task) => {
   showModal.value = true
 
   // 根据已分配用户设置分配类型
-  if (currentTask.value.assignedUsers && currentTask.value.assignedUsers.length > 0) {
-    assignType.value = 'user';
-  } else {
+  if (currentTask.value.department) {
     assignType.value = 'department';
+  } else {
+    assignType.value = 'user';
   }
 
   // 调试信息
@@ -979,9 +978,9 @@ const saveEditedTask = () => {
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
 
 
-        assignKpiToDepartment(kpiId, selectedDepartment.value.id, currentTask.value.totalTarget)
+        assignKpiToDepartment(kpiId, selectedDepartment.value, currentTask.value.totalTarget)
             .then(() => {
-              setKpiDepartment(kpiId,selectedDepartment.value.id);
+              setKpiDepartment(kpiId,selectedDepartment.value);
               Swal.fire({
                 position: "top-end",
                 icon: "success",
@@ -1118,7 +1117,7 @@ const searchTaskName = ref('')
 const selectedStatus = ref('')
 const searchDepartment = ref('all')
 
-const selectedDepartment = ref('all')
+const selectedDepartment = ref(0)
 
 const completedTasks = computed(() => {
   return kpiData.value.filter((task: any) => task.status === 'Completed').length;
