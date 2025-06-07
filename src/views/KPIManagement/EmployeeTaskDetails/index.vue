@@ -29,69 +29,36 @@
   </div>
 
   <!-- Statistics Cards -->
-  <div class="row mt-4">
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle circle-total-task">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
-              <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5" />
-              <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" />
-            </svg>
-          </div>
-          <div class="task-overall ms-3">
-            <span class="task-text">Total Employee</span>
-            <span class="task-num">{{ totalTasks }}</span>
-          </div>
-        </div>
+  <div class="stats-section">
+    <div class="stat-card border-blue">
+      <div class="icon-wrapper">👤</div>
+      <div class="content">
+        <div class="number">{{ totalTasks }}</div>
+        <div class="label">Total Employee</div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle circle-completed">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-check" viewBox="0 0 16 16">
-              <path d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0" />
-              <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
-            </svg>
-          </div>
-          <div class="task-overall ms-3">
-            <span class="task-text">Completed</span>
-            <span class="task-num">{{ completedTasks }}</span>
-          </div>
-        </div>
+  
+    <div class="stat-card border-green">
+      <div class="icon-wrapper">✅</div>
+      <div class="content">
+        <div class="number">{{ completedTasks }}</div>
+        <div class="label">Completed</div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle circle-ongoing">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
-              <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-              <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
-            </svg>
-          </div>
-          <div class="task-overall ms-3">
-            <span class="task-text">Ongoing</span>
-            <span class="task-num">{{ ongoingTasks }}</span>
-          </div>
-        </div>
+  
+    <div class="stat-card border-yellow">
+      <div class="icon-wrapper">⏳</div>
+      <div class="content">
+        <div class="number">{{ ongoingTasks }}</div>
+        <div class="label">Ongoing</div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-center">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          <div class="circle circle-delayed">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-x" viewBox="0 0 16 16">
-              <path d="M6.146 7.146a.5.5 0 0 1 .708 0L8 8.293l1.146-1.147a.5.5 0 1 1 .708.708L8.707 9l1.147 1.146a.5.5 0 0 1-.708.708L8 9.707l-1.146 1.147a.5.5 0 0 1-.708-.708L7.293 9 6.146 7.854a.5.5 0 0 1 0-.708" />
-              <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
-            </svg>
-          </div>
-          <div class="task-overall ms-3">
-            <span class="task-text">Delayed</span>
-            <span class="task-num">{{ delayedTasks }}</span>
-          </div>
-        </div>
+  
+    <div class="stat-card border-red">
+      <div class="icon-wrapper">⚠️</div>
+      <div class="content">
+        <div class="number">{{ delayedTasks }}</div>
+        <div class="label">Delayed</div>
       </div>
     </div>
   </div>
@@ -458,51 +425,94 @@ onMounted(() => {
     margin-bottom: 0; 
 }
 
-.card {
-  margin-bottom: 20px;
-}
-
-.clickable-card {
-  cursor: pointer;
-  border: 1px solid #e9e9e9;
-  border-radius: 10px;
-  transition: transform 0.2s ease;
-}
-
-.clickable-card:hover {
-  transform: scale(1.05);
-}
-
-.card-active {
-  background-color: #f0f9ff;
-}
-
-.circle {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
+.stats-section {
   display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
   justify-content: center;
+}
+
+.stat-card {
+  display: flex;
   align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1),0 6px 12px rgba(0, 0, 0, 0.08);
+  padding: 15px 20px;
+  margin: 2rem; 
+  max-width: 280px;
+  flex: 1 1 220px;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.circle svg {
-  width: 30px; 
-  height: 30px;
+.border-blue {
+  background: linear-gradient(to right,rgb(224, 221, 250), #ffffff);
+}
+.border-green {
+  background: linear-gradient(to right, #e6f9f4, #ffffff);
+}
+.border-yellow {
+  background: linear-gradient(to right, #fff9e6, #ffffff);
+}
+.border-red {
+  background: linear-gradient(to right, #ffe6e6, #ffffff);
 }
 
-.circle-total-task {
-  background: linear-gradient(to bottom, #a3bfe9, #4957f0);
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.circle-completed {
-  background: linear-gradient(to bottom, #85dda5, #1b9f4b);
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  border-radius: 12px 0 0 12px;
 }
-.circle-ongoing {
-  background: linear-gradient(to bottom, #facc15, #f59e0b);
+
+.border-blue::before {
+  background: linear-gradient(to bottom,rgb(148, 123, 202), #60a5fa);
 }
-.circle-delayed {
-  background: linear-gradient(to bottom, #fbb3ae, #fa5959);
+.border-green::before {
+  background: linear-gradient(to bottom, #10b981, #34d399);
 }
+.border-yellow::before {
+  background: linear-gradient(to bottom, #f59e0b, #fbbf24);
+}
+.border-red::before {
+  background: linear-gradient(to bottom, #ef4444, #f87171);
+}
+
+.icon-wrapper {
+  font-size: 2rem;
+  margin-right: 25px;
+  margin-left: 15px;
+  color: #3b82f6; 
+  flex-shrink: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.number {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.label {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
 
 .table th {
   font-weight: normal;
@@ -577,9 +587,6 @@ onMounted(() => {
 }
 
 /* 状态色 */
-.badge-primary {
-  background: linear-gradient(to bottom, #3ba1ff, #006eff);
-}
 .badge-success {
   background: linear-gradient(to bottom, #44d278, #1b9f4b);
 }
