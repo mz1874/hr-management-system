@@ -151,7 +151,7 @@ function handleStatusChange() {
               <option value="O">⏳ Ongoing</option>
               <option value="D">⚠️ Delayed</option>
               <option value="N">🔒 Not Yet Started</option>
-              <option value="D">✖️ Terminated</option>
+              <option value="T">✖️ Terminated</option>
               <option value="F">📝 Confirming</option>
             </select>
           </div>
