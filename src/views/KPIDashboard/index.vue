@@ -269,7 +269,6 @@ function handleStatusChange() {
         </table>
       </div>
 
-        <!--      查看-->
       <div class="modal fade" id="termsAndConditionsModal" :class="{ show: showTermsModal }" style="display: block" v-if="showTermsModal">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div class="modal-content">
@@ -286,19 +285,19 @@ function handleStatusChange() {
                 <ul class="list-group">
                   <li class="list-group-item d-flex justify-content-between align-items-center">
                     70% Completion
-                    <span class="badge bg-secondary rounded-pill">Base Score ({{seventy_percent}})</span>
+                    <span class="badge bg-secondary rounded-pill">Get {{seventy_percent}} points</span>
                   </li>
                   <li class="list-group-item d-flex justify-content-between align-items-center">
                     90% Completion
-                    <span class="badge bg-info rounded-pill">Good Score ({{ninety_percent}})</span>
+                    <span class="badge bg-info rounded-pill">Get {{ninety_percent}} points</span>
                   </li>
                   <li class="list-group-item d-flex justify-content-between align-items-center">
                     100% Completion
-                    <span class="badge bg-success rounded-pill">Full Score  ({{hundred_percent}})</span>
+                    <span class="badge bg-success rounded-pill">Get {{hundred_percent}}  points</span>
                   </li>
                   <li class="list-group-item d-flex justify-content-between align-items-center">
                     120% Completion
-                    <span class="badge bg-warning text-dark rounded-pill">Bonus Score ({{hundred_twenty_percent}})</span>
+                    <span class="badge bg-warning text-dark rounded-pill">Get {{hundred_twenty_percent}} points</span>
                   </li>
                 </ul>
               </div>
@@ -404,6 +403,7 @@ function handleStatusChange() {
   margin-top: 0.5rem;
   font-weight: 300;
 }
+
 
 /* KPI Summary Cards */
 .kpi-summary {
