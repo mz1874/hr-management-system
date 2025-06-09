@@ -75,9 +75,10 @@
                 </span>
             </td>
             <td>
-               <template v-if="task.status !== 'Terminated'">
-              <button @click="goToEmployeeDetailsPage(task.id)" class="btn btn-primary btn-sm">Employee Details</button>
-              <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
+              <template v-if="task.status !== 'Terminated'">
+                <button @click="goToEmployeeDetailsPage(task.id)" class="btn btn-primary btn-sm">Employee Details
+                </button>
+                <button @click="openEditTaskModal(task)" class="btn btn-warning btn-sm">Edit</button>
               </template>
               <button @click="openDeleteModal(task)" class="btn btn-danger btn-sm">Delete</button>
             </td>
@@ -99,37 +100,37 @@
             </div>
           </div>
 
-         <!-- Completed Tasks -->
-         <div class="stat-card completed-card">
-           <div class="card-background"></div>
-           <div class="card-icon">✅</div>
-           <div class="card-content">
-             <div class="card-number">{{ completedTasks }}</div>
-             <div class="card-label">Completed</div>
-           </div>
-         </div>
+          <!-- Completed Tasks -->
+          <div class="stat-card completed-card">
+            <div class="card-background"></div>
+            <div class="card-icon">✅</div>
+            <div class="card-content">
+              <div class="card-number">{{ completedTasks }}</div>
+              <div class="card-label">Completed</div>
+            </div>
+          </div>
 
-         <!-- Ongoing Tasks -->
-         <div class="stat-card ongoing-card">
-           <div class="card-background"></div>
-           <div class="card-icon">⏳</div>
-           <div class="card-content">
-             <div class="card-number">{{ ongoingTasks }}</div>
-             <div class="card-label">Ongoing</div>
-           </div>
-         </div>
+          <!-- Ongoing Tasks -->
+          <div class="stat-card ongoing-card">
+            <div class="card-background"></div>
+            <div class="card-icon">⏳</div>
+            <div class="card-content">
+              <div class="card-number">{{ ongoingTasks }}</div>
+              <div class="card-label">Ongoing</div>
+            </div>
+          </div>
 
-         <!-- Delayed Tasks -->
-         <div class="stat-card delayed-card">
-           <div class="card-background"></div>
-           <div class="card-icon">⚠️</div>
-           <div class="card-content">
-             <div class="card-number">{{ delayedTasks }}</div>
-             <div class="card-label">Delayed</div>
-           </div>
-         </div>
-       </div>
-     </div>
+          <!-- Delayed Tasks -->
+          <div class="stat-card delayed-card">
+            <div class="card-background"></div>
+            <div class="card-icon">⚠️</div>
+            <div class="card-content">
+              <div class="card-number">{{ delayedTasks }}</div>
+              <div class="card-label">Delayed</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
 
       <!-- Pagination -->
@@ -171,7 +172,7 @@
         </div>
         <div class="modal-body">
           <form @submit.prevent="handleSubmit">
-          <div class="row">
+            <div class="row">
               <!-- Left Column - Task Details -->
               <div class="col-md-6 border-end">
                 <!-- Task Name -->
@@ -194,7 +195,8 @@
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="startDate" class="form-label">Start Date:</label>
-                    <input type="date" class="form-control" id="startDate" required :min="today" v-model="currentTask.startDate">
+                    <input type="date" class="form-control" id="startDate" required :min="today"
+                           v-model="currentTask.startDate">
                   </div>
                   <div class="col-md-6">
                     <label for="completionDate" class="form-label">Completion Date:</label>
@@ -236,7 +238,8 @@
                   </div>
                   <div class="col-md-6 d-flex align-items-center">
                     <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                    <input type="number" class="form-control" id="unit"  min="0" required v-model="currentTask.seventy_percent">
+                    <input type="number" class="form-control" id="unit" min="0" required
+                           v-model="currentTask.seventy_percent">
                   </div>
                 </div>
                 <div class="row mb-3">
@@ -245,7 +248,8 @@
                   </div>
                   <div class="col-md-6 d-flex align-items-center">
                     <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                    <input type="number" class="form-control" id="unit" required min="0" v-model="currentTask.ninety_percent">
+                    <input type="number" class="form-control" id="unit" required min="0"
+                           v-model="currentTask.ninety_percent">
                   </div>
                 </div>
                 <div class="row mb-3">
@@ -254,7 +258,8 @@
                   </div>
                   <div class="col-md-6 d-flex align-items-center">
                     <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                    <input type="number" class="form-control" id="unit" required min="0" v-model="currentTask.hundred_percent">
+                    <input type="number" class="form-control" id="unit" required min="0"
+                           v-model="currentTask.hundred_percent">
                   </div>
                 </div>
                 <div class="row mb-3">
@@ -263,61 +268,63 @@
                   </div>
                   <div class="col-md-6 d-flex align-items-center">
                     <label for="unit" class="form-label me-2 mb-0">Points:</label>
-                    <input type="number" class="form-control" id="unit" min="0" required v-model="currentTask.hundred_twenty_percent">
+                    <input type="number" class="form-control" id="unit" min="0" required
+                           v-model="currentTask.hundred_twenty_percent">
                   </div>
                 </div>
 
-
-                <!-- Assignment Type Toggle -->
-                <div class="mb-3">
-                  <label class="form-label">Assign task to:</label>
-                  <div>
-                    <input type="radio" id="assignUser" value="user" @change="revertAllUsers" v-model="assignType">
-                    <label for="assignUser">Employee</label>
-                    <input type="radio" id="assignDept" value="department" @change="cancelAllUsers"  v-model="assignType" class="ms-3">
-                    <label for="assignDept">Whole department</label>
-                  </div>
-                </div>
-
-                <div class="gap-3 mb-3" v-show="assignType === 'department'">
-                  <select class="form-select" v-model="selectedDepartment" @change="handleDepartmentChange">
-                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">
-                      {{ dept.department_name }}
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Conditionally show the assign input for Employee -->
-                <div v-if="assignType === 'user'" class="mb-3">
-                  <label for="assignTo" class="form-label">Assign to employees:</label>
-                  <div class="input-group mb-2">
-                    <input
-                        type="text"
-                        class="form-control"
-                        placeholder="Search employees..."
-                        v-model="staffSearchKeyword"
-                    />
-                    <button class="btn btn-outline-secondary" type="button" @click="searchStaffMembers">
-                      <i class="fas fa-search"></i>
-                    </button>
-                  </div>
-
-                  <!-- 搜索结果下拉列表 -->
-                  <div v-if="staffSearchResults && staffSearchResults.length > 0"
-                       class="search-results border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;">
-                    <div
-                        v-for="staff in staffSearchResults"
-                        :key="staff.id"
-                        class="search-result-item p-2 hover-bg-light cursor-pointer"
-                        @click="selectStaffMember(staff)"
-                    >
-                      {{ staff.username }} ({{ staff.department_name }})
+                <div v-if="!isManager">
+                  <!-- Assignment Type Toggle -->
+                  <div class="mb-3">
+                    <label class="form-label">Assign task to:</label>
+                    <div>
+                      <input type="radio" id="assignUser" value="user" @change="revertAllUsers" v-model="assignType">
+                      <label for="assignUser">Employee</label>
+                      <input type="radio" id="assignDept" value="department" @change="cancelAllUsers"
+                             v-model="assignType" class="ms-3">
+                      <label for="assignDept">Whole department</label>
                     </div>
                   </div>
 
-                  <!-- 已选择的员工标签 -->
-                  <div class="mt-2">
-                    <div class="d-flex flex-wrap gap-2">
+                  <div class="gap-3 mb-3" v-show="assignType === 'department'">
+                    <select class="form-select" v-model="selectedDepartment" @change="handleDepartmentChange">
+                      <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+                        {{ dept.department_name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Conditionally show the assign input for Employee -->
+                  <div v-if="assignType === 'user'" class="mb-3">
+                    <label for="assignTo" class="form-label">Assign to employees:</label>
+                    <div class="input-group mb-2">
+                      <input
+                          type="text"
+                          class="form-control"
+                          placeholder="Search employees..."
+                          v-model="staffSearchKeyword"
+                      />
+                      <button class="btn btn-outline-secondary" type="button" @click="searchStaffMembers">
+                        <i class="fas fa-search"></i>
+                      </button>
+                    </div>
+
+                    <!-- 搜索结果下拉列表 -->
+                    <div v-if="staffSearchResults && staffSearchResults.length > 0"
+                         class="search-results border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;">
+                      <div
+                          v-for="staff in staffSearchResults"
+                          :key="staff.id"
+                          class="search-result-item p-2 hover-bg-light cursor-pointer"
+                          @click="selectStaffMember(staff)"
+                      >
+                        {{ staff.username }} ({{ staff.department_name }})
+                      </div>
+                    </div>
+
+                    <!-- 已选择的员工标签 -->
+                    <div class="mt-2">
+                      <div class="d-flex flex-wrap gap-2">
                     <span v-for="(user, index) in (currentTask.assignedUsers || [])" :key="index"
                           class="badge bg-light text-dark border d-flex align-items-center py-2 px-3">
                       <i class="fas fa-user-circle me-2"></i>
@@ -325,25 +332,27 @@
                       <button type="button" class="btn-close ms-2" aria-label="Remove"
                               @click="removeAssignedUser(index)"></button>
                     </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 部门分配选项 -->
+                  <div v-if="assignType === 'department'" class="mb-3">
+                    <!--                  <p>Assign to all employees in the <strong>{{ selectedDepartment.department_name }}</strong>-->
+                    <!--                    department.-->
+                    <!--                  </p>-->
+
+                    <div class="form-check mt-2">
+                      <input class="form-check-input" type="checkbox" v-model="assignToAllMembers"
+                             id="assignToAllMembers">
+                      <label class="form-check-label" for="assignToAllMembers">
+                        Confirm assignment to all members
+                      </label>
                     </div>
                   </div>
                 </div>
-
-                <!-- 部门分配选项 -->
-                <div v-if="assignType === 'department'" class="mb-3">
-<!--                  <p>Assign to all employees in the <strong>{{ selectedDepartment.department_name }}</strong>-->
-<!--                    department.-->
-<!--                  </p>-->
-
-                  <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" v-model="assignToAllMembers"
-                           id="assignToAllMembers">
-                    <label class="form-check-label" for="assignToAllMembers">
-                      Confirm assignment to all members
-                    </label>
-                  </div>
-                </div>
               </div>
+
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" @click="showModal = false">Close</button>
@@ -451,7 +460,7 @@ let currentUserDepartment = ref("")
 let currentUserDepartmentId = ref(0)
 let currentRoles = reactive([])
 let currentKPIDepartmentID = ref(0)
-let isManager = computed(()=>{
+let isManager = computed(() => {
   return currentRoles.includes('manager');
 })
 
@@ -472,9 +481,9 @@ const cancelAllUsers = () => {
 
 const revertAllUsers = () => {
   //证明是从部门更新到员工
-  if(currentTask.value.department){
+  if (currentTask.value.department) {
     currentTask.value.assignedUsers = []
-  }else{
+  } else {
     currentTask.value.assignedUsers = JSON.parse(JSON.stringify(assignedCopy.value));
     assignedCopy.value = [];
     console.log(currentTask.value.assignedUsers);
@@ -545,16 +554,16 @@ const departments = ref<any[]>([]);
 
 const fetchDepartments = () => {
   selectAllDepartments().then((res) => {
-    
-    if (isSuccess(res.status) && res.data.code === 200) {
-       const fetchedDepartments = res.data.data.results;
-      // 默认选择第一个部门
-        const allDepartmentsOption = { id: 'all', department_name: 'All Departments' };
-        departments.value = [allDepartmentsOption, ...fetchedDepartments];
 
-        // 默认选择“全部部门”
-        selectedDepartment.value = 'all';
-      }  else {
+    if (isSuccess(res.status) && res.data.code === 200) {
+      const fetchedDepartments = res.data.data.results;
+      // 默认选择第一个部门
+      const allDepartmentsOption = {id: 'all', department_name: 'All Departments'};
+      departments.value = [allDepartmentsOption, ...fetchedDepartments];
+
+      // 默认选择“全部部门”
+      selectedDepartment.value = 'all';
+    } else {
       console.error('Failed to fetch department list:', res);
     }
   }).catch((error) => {
@@ -566,23 +575,22 @@ const fetchDepartments = () => {
 onMounted(() => {
   fetchDepartments();
   const currentUserInStorage = localStorage.getItem("currentUser");
-   if(currentUserInStorage != null)
-   {
-     let jsonObj = JSON.parse(currentUserInStorage);
-     console.log(jsonObj);
-     currentUserDepartment.value = jsonObj.department;
-     currentRoles.splice(0, currentRoles.length, ...jsonObj.roles);
-     currentUserDepartmentId.value = jsonObj.department_id;
-   }
+  if (currentUserInStorage != null) {
+    let jsonObj = JSON.parse(currentUserInStorage);
+    console.log(jsonObj);
+    currentUserDepartment.value = jsonObj.department;
+    currentRoles.splice(0, currentRoles.length, ...jsonObj.roles);
+    currentUserDepartmentId.value = jsonObj.department_id;
+  }
 
   // 包含manager的情况下按照manager处理
-  if(isManager.value){
+  if (isManager.value) {
     const queryParams = {
       page: 1,
       department_id: currentUserDepartmentId.value,
     };
     handlerFetchKpis(queryParams);
-  }else {
+  } else {
     handlerFetchKpis({page: 1});
   }
 
@@ -773,8 +781,6 @@ const showModal = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 
 
-
-
 const openEditTaskModal = (task: Task) => {
   // 创建一个深拷贝，确保所有属性都被正确复制
   currentTask.value = {...task};
@@ -787,7 +793,7 @@ const openEditTaskModal = (task: Task) => {
         id: detail.staff_id,
         username: detail.staff_name,
         department_id: detail.department_id,
-        detailId : detail.id,
+        detailId: detail.id,
       };
     });
     console.log("Users extracted from personal_details:", currentTask.value.assignedUsers);
@@ -829,7 +835,6 @@ const saveEditedTask = () => {
   // 修改：确保日期格式符合 yyyy-MM-dd
   let startDate;
   let endDate;
-
 
 
   try {
@@ -917,7 +922,7 @@ const saveEditedTask = () => {
           existingStaffMap.set(detail.staff_id, detail.id);
         });
 
-        if(currentTask.value.department){
+        if (currentTask.value.department) {
           removeKpiDepartment(currentTask.value.id);
         }
 
@@ -988,7 +993,7 @@ const saveEditedTask = () => {
 
         assignKpiToDepartment(kpiId, selectedDepartment.value, currentTask.value.totalTarget)
             .then(() => {
-              setKpiDepartment(kpiId,selectedDepartment.value);
+              setKpiDepartment(kpiId, selectedDepartment.value);
               Swal.fire({
                 position: "top-end",
                 icon: "success",
@@ -997,7 +1002,7 @@ const saveEditedTask = () => {
                 timer: 1500,
               });
               setTimeout(() => {
-                handlerFetchKpis({ page: 1 });
+                handlerFetchKpis({page: 1});
               }, 300); // 200~500ms 通常足够
             })
             .catch((error) => {
@@ -1068,7 +1073,7 @@ const showTerminateModal = ref(false)
 // Function to open Terminate Task modal
 const openTerminateModal = (task: any) => {
   console.log("Opening terminate modal for task:", task);
-  showModal.value = false;  
+  showModal.value = false;
   currentTask.value = task;
   showTerminateModal.value = true; // Show Terminate confirmation modal
 }
@@ -1167,7 +1172,6 @@ function searchKPI() {
   };
   handlerFetchKpis(queryParams);
 }
-
 
 
 function cleanSearchCondition() {
@@ -1315,7 +1319,7 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   border-radius: 999px;
   cursor: default;
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 1px 3px rgba(0, 0, 0, 0.2);
+  0 1px 3px rgba(0, 0, 0, 0.2);
   color: white;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1369,7 +1373,6 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   grid-template-columns: repeat(4, minmax(300px, 1fr));
   gap: 2rem;
 }
-
 
 
 /* 卡片本身 */
