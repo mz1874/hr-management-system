@@ -990,7 +990,7 @@ const closeAdminRatingDescriptionModal = () => {
           <tbody>
             <tr v-for="instance in currentResultsData" :key="instance.id">
               <td>{{ instance.id }}</td>
-              <td>{{ instance.employee?.username || 'N/A' }}</td>
+              <td>{{ instance.employee?.staffName || 'N/A' }}</td>
               <td>{{ formatDateTime(instance.submitted_at) }}</td> <!-- Use formatDateTime -->
               <td>
                 <span :class="['badge', instance.status === 'SUBMITTED' ? 'bg-success' : instance.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary']">
