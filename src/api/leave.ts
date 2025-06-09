@@ -88,3 +88,14 @@ export function getLeaveBalance(options: { userId?: number; year?: number } = {}
 
   return axios.get(`/api/leave-request/leave-balance/?${params.toString()}`);
 }
+
+
+export function exportLeaveApplications(params: {
+  department_id?: string | number;
+  start_date?: string;
+  end_date?: string;
+}) {
+  return axios.post('/api/leave-request/export/', params, {
+    responseType: 'blob'
+  });
+}

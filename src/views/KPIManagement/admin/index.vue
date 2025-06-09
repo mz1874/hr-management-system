@@ -21,10 +21,10 @@
     </select>
 
     <select class="form-select w-25" v-model="searchDepartment" v-if="!isManager">
-  <option v-for="dept in departments" :key="dept.id" :value="dept.id">
-    {{ dept.department_name }}
-  </option>
-</select>
+      <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+        {{ dept.department_name }}
+      </option>
+    </select>
 
 
     <button class="btn btn-primary" @click="searchKPI">Search</button>
