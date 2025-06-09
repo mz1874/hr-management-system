@@ -282,34 +282,10 @@ function onImageSelected(event) {
     }).catch(err => {
 
     })
-
   }
 }
 
 
-function resetPassword(staff: Staff) {
-  Swal.fire({
-    title: "Confirmation of reset password?",
-    text: "The current password will be reset!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Yes, reset it!"
-  }).then((result) => {
-    if (result.isConfirmed) {
-      resPwd(staff.id).then((res) => {
-        if (isSuccess(res.status)) {
-          Swal.fire({
-            title: "Reset password successfully!",
-            text: "The password was reset successfully!.",
-            icon: "success"
-          });
-        }
-      })
-    }
-  });
-}
 </script>
 
 <template>

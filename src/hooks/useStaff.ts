@@ -125,10 +125,18 @@ export default function useStaff() {
                 });
                 fetchAllStaffs();
             } else {
-                throw new Error(response.data);
+                Swal.fire({
+                    icon: "error",
+                    title: "Failed to edit staff",
+                    text: "Email should be unique!",
+                });
             }
         } catch (error) {
-            console.error("Search failed:", error);
+            Swal.fire({
+                icon: "error",
+                title: "Failed to edit staff",
+                text: "Email should be unique!",
+            });
         }
     }
 
