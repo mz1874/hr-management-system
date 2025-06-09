@@ -230,23 +230,26 @@ const summaryStats = computed(() => ({
 const filteredApplications = computed(() => leaveApplications.value);
 
 const pageNumbers = computed(() => {
+  const pages: (number | string)[] = [];
   const total = totalPages.value;
   const current = currentPage.value;
-  const maxVisible = 5;
-  const range: number[] = [];
 
-  let start = Math.max(1, current - Math.floor(maxVisible / 2));
-  let end = Math.min(total, start + maxVisible - 1);
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1); // Always show first
 
-  if (end - start < maxVisible - 1) {
-    start = Math.max(1, end - maxVisible + 1);
+    if (current > 4) pages.push('...');
+
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < total - 3) pages.push('...');
+    pages.push(total); // Always show last
   }
 
-  for (let i = start; i <= end; i++) {
-    range.push(i);
-  }
-
-  return range;
+  return pages;
 });
 
 
@@ -419,27 +422,38 @@ const pageNumbers = computed(() => {
         Total Application: {{ totalCount }}
       </div>
 
-      <nav>
-        <ul class="pagination mb-0">
-          <li :class="['page-item', { disabled: currentPage === 1 }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
-          </li>
+    <nav>
+      <ul class="pagination mb-0">
+        <!-- Previous Button -->
+        <li :class="['page-item', { disabled: currentPage === 1 }]">
+          <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
+        </li>
 
-          <li
-            v-for="page in pageNumbers"
-            :key="page"
-            :class="['page-item', { active: currentPage === page }]"
+        <!-- Numbered Pages & Ellipses -->
+        <li
+          v-for="(page, index) in pageNumbers"
+          :key="index"
+          :class="['page-item', { active: currentPage === page, disabled: page === '...' }]"
+        >
+          <a
+            class="page-link"
+            href="#"
+            v-if="page !== '...'"
+            @click.prevent="changePage(page as number)"
           >
-            <a class="page-link" href="#" @click.prevent="changePage(page)">
-              {{ page }}
-            </a>
-          </li>
+            {{ page }}
+          </a>
+          <span v-else class="page-link disabled">…</span>
+        </li>
 
-          <li :class="['page-item', { disabled: currentPage === totalPages }]">
-            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
-          </li>
-        </ul>
-      </nav>
+        <!-- Next Button -->
+        <li :class="['page-item', { disabled: currentPage === totalPages }]">
+          <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
+        </li>
+      </ul>
+    </nav>
+
+
     </div>
 
     <!-- Leave Application Modal -->
@@ -761,6 +775,35 @@ const pageNumbers = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.page-link {
+  border: 1px solid #cccccc;
+  color: #008080; /* Teal base */
+}
+
+.page-link:hover {
+  background-color: #e0f7f7;
+  color: #006666;
+}
+
+.page-item.active .page-link {
+  background-color: #008080;
+  border-color: #008080;
+  color: #ffffff;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
 }
 
 </style>
