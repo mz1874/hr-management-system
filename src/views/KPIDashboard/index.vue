@@ -65,7 +65,7 @@ function handleStatusChange() {
 </script>
 
 <template>
-  <div class="dashboard-wrapper">
+  <div class="dashboard-wrapper main-content">
     <!-- Header Section -->
     <div class="header-section">
       <h1 class="dashboard-title">

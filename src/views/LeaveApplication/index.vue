@@ -256,7 +256,7 @@ const pageNumbers = computed(() => {
 </script>
 
 <template>
-  <div class="container-fluid main-content">
+  <div class="container-fluid main-content"z>
     <!-- Summary Cards -->
     <div class="row my-3">
       <div class="col-12">
