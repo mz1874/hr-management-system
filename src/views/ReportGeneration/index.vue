@@ -33,6 +33,7 @@
         <option disabled value="">-- Select Report --</option>
         <option value="leave">Leave Application</option>
         <option value="kpi">KPI Report</option>
+        <option value="personal">Personal KPI Report</option>
         <option value="point">Point System</option>
         <option value="reward">Reward Redemption</option>
       </select>
@@ -63,7 +64,7 @@ import axios from "axios";
 import {selectAllDepartments} from "@/api/department.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
 import {exportLeaveApplications} from "@/api/leave.ts";
-import {exportKPI} from "@/api/kpiAdmin.ts";
+import {exportKPI, exportPersonalKPI} from "@/api/kpiAdmin.ts";
 
 let departments = reactive<any[]>([]);
 const selectedReport = ref("");
@@ -119,6 +120,23 @@ const generateReport = async () => {
   }else if(selectedReport.value == "kpi") {
     try {
       const response = await exportKPI({
+        department_id: selectedDept.value,
+        start_date: startDate.value,
+        end_date: endDate.value,
+      });
+
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `${selectedReport.value}_report.xlsx`;
+      link.click();
+    } catch (error) {
+      console.error('导出失败', error);
+      alert('导出失败，请重试');
+    }
+  }else if(selectedReport.value == "personal") {
+    try {
+      const response = await exportPersonalKPI({
         department_id: selectedDept.value,
         start_date: startDate.value,
         end_date: endDate.value,

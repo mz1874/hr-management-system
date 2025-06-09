@@ -91,8 +91,19 @@ export function removeKpiDepartment(kpiId:number) {
         });
 }
 
+export function exportPersonalKPI(params: {
+    department_id?: string | number |null;
+    start_date?: string;
+    end_date?: string;
+}) {
+    return axios.post('/api/kpi/export-personal-kpi/', params, {
+        responseType: 'blob'
+    });
+}
+
+
 export function exportKPI(params: {
-    department_id?: string | number;
+    department_id?: string | number | null;
     start_date?: string;
     end_date?: string;
 }) {
