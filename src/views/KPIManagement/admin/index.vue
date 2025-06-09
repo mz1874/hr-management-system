@@ -733,7 +733,15 @@ const createTask = () => {
                 title: "Warning",
                 text: "Task has been created, but there was an issue assigning to employees"
               });
-              handlerFetchKpis({page: 1});
+              if (isManager.value) {
+                const queryParams = {
+                  page: 1,
+                  department_id: currentUserDepartmentId.value,
+                };
+                handlerFetchKpis(queryParams);
+              } else {
+                handlerFetchKpis({page: 1});
+              }
             });
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
         // 分配给部门所有成员
@@ -746,7 +754,15 @@ const createTask = () => {
                 showConfirmButton: false,
                 timer: 1500,
               });
-              handlerFetchKpis({page: 1});
+              if (isManager.value) {
+                const queryParams = {
+                  page: 1,
+                  department_id: currentUserDepartmentId.value,
+                };
+                handlerFetchKpis(queryParams);
+              } else {
+                handlerFetchKpis({page: 1});
+              }
             })
             .catch((error) => {
               console.error("Failed to assign task to department:", error);
@@ -755,7 +771,15 @@ const createTask = () => {
                 title: "Warning",
                 text: "Task has been created, but there was an issue assigning to department members"
               });
-              handlerFetchKpis({page: 1});
+              if (isManager.value) {
+                const queryParams = {
+                  page: 1,
+                  department_id: currentUserDepartmentId.value,
+                };
+                handlerFetchKpis(queryParams);
+              } else {
+                handlerFetchKpis({page: 1});
+              }
             });
       } else {
         // 仅创建任务，不分配
@@ -766,7 +790,15 @@ const createTask = () => {
           showConfirmButton: false,
           timer: 1500,
         });
-        handlerFetchKpis({page: 1});
+        if (isManager.value) {
+          const queryParams = {
+            page: 1,
+            department_id: currentUserDepartmentId.value,
+          };
+          handlerFetchKpis(queryParams);
+        } else {
+          handlerFetchKpis({page: 1});
+        }
       }
     }
   }).catch((error) => {
@@ -969,7 +1001,15 @@ const saveEditedTask = () => {
                   showConfirmButton: false,
                   timer: 1500,
                 });
-                handlerFetchKpis({page: 1});
+                if (isManager.value) {
+                  const queryParams = {
+                    page: 1,
+                    department_id: currentUserDepartmentId.value,
+                  };
+                  handlerFetchKpis(queryParams);
+                } else {
+                  handlerFetchKpis({page: 1});
+                }
               })
               .catch((error) => {
                 console.error("Failed to reassign task:", error);
@@ -978,7 +1018,15 @@ const saveEditedTask = () => {
                   title: "Warning",
                   text: "Task has been updated, but there was an issue reassigning to staff"
                 });
-                handlerFetchKpis({page: 1});
+                if (isManager.value) {
+                  const queryParams = {
+                    page: 1,
+                    department_id: currentUserDepartmentId.value,
+                  };
+                  handlerFetchKpis(queryParams);
+                } else {
+                  handlerFetchKpis({page: 1});
+                }
               });
         } else {
           // 如果没有新的分配操作，直接显示成功
@@ -989,7 +1037,15 @@ const saveEditedTask = () => {
             showConfirmButton: false,
             timer: 1500,
           });
-          handlerFetchKpis({page: 1});
+          if (isManager.value) {
+            const queryParams = {
+              page: 1,
+              department_id: currentUserDepartmentId.value,
+            };
+            handlerFetchKpis(queryParams);
+          } else {
+            handlerFetchKpis({page: 1});
+          }
         }
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
 
@@ -1005,7 +1061,15 @@ const saveEditedTask = () => {
                 timer: 1500,
               });
               setTimeout(() => {
-                handlerFetchKpis({page: 1});
+                if (isManager.value) {
+                  const queryParams = {
+                    page: 1,
+                    department_id: currentUserDepartmentId.value,
+                  };
+                  handlerFetchKpis(queryParams);
+                } else {
+                  handlerFetchKpis({page: 1});
+                }
               }, 300); // 200~500ms 通常足够
             })
             .catch((error) => {
@@ -1015,7 +1079,15 @@ const saveEditedTask = () => {
                 title: "Warning",
                 text: "Task updated, but there was an issue assigning to department members"
               });
-              handlerFetchKpis({page: 1});
+              if (isManager.value) {
+                const queryParams = {
+                  page: 1,
+                  department_id: currentUserDepartmentId.value,
+                };
+                handlerFetchKpis(queryParams);
+              } else {
+                handlerFetchKpis({page: 1});
+              }
             });
       } else {
         // 仅更新任务，不重新分配
@@ -1026,7 +1098,15 @@ const saveEditedTask = () => {
           showConfirmButton: false,
           timer: 1500,
         });
-        handlerFetchKpis({page: 1});
+        if (isManager.value) {
+          const queryParams = {
+            page: 1,
+            department_id: currentUserDepartmentId.value,
+          };
+          handlerFetchKpis(queryParams);
+        } else {
+          handlerFetchKpis({page: 1});
+        }
       }
     }
   }).catch((error) => {
