@@ -90,3 +90,13 @@ export function removeKpiDepartment(kpiId:number) {
             console.error("取消部门失败", err);
         });
 }
+
+export function exportKPI(params: {
+    department_id?: string | number;
+    start_date?: string;
+    end_date?: string;
+}) {
+    return axios.post('/api/kpi/export/', params, {
+        responseType: 'blob'
+    });
+}

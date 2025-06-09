@@ -63,6 +63,7 @@ import axios from "axios";
 import {selectAllDepartments} from "@/api/department.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
 import {exportLeaveApplications} from "@/api/leave.ts";
+import {exportKPI} from "@/api/kpiAdmin.ts";
 
 let departments = reactive<any[]>([]);
 const selectedReport = ref("");
@@ -98,22 +99,42 @@ onMounted(async () => {
 
 const generateReport = async () => {
 
-  try {
-    const response = await exportLeaveApplications({
-      department_id: selectedDept.value,
-      start_date: startDate.value,
-      end_date: endDate.value,
-    });
+  if (selectedReport.value == "leave") {
+    try {
+      const response = await exportLeaveApplications({
+        department_id: selectedDept.value,
+        start_date: startDate.value,
+        end_date: endDate.value,
+      });
 
-    const blob = new Blob([response.data], { type: response.headers['content-type'] });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = `${selectedReport.value}_report.xlsx`;
-    link.click();
-  } catch (error) {
-    console.error('导出失败', error);
-    alert('导出失败，请重试');
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `${selectedReport.value}_report.xlsx`;
+      link.click();
+    } catch (error) {
+      console.error('导出失败', error);
+      alert('导出失败，请重试');
+    }
+  }else if(selectedReport.value == "kpi") {
+    try {
+      const response = await exportKPI({
+        department_id: selectedDept.value,
+        start_date: startDate.value,
+        end_date: endDate.value,
+      });
+
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `${selectedReport.value}_report.xlsx`;
+      link.click();
+    } catch (error) {
+      console.error('导出失败', error);
+      alert('导出失败，请重试');
+    }
   }
+
 };
 
 </script>
