@@ -35,7 +35,7 @@
   <!-- Table section -->
   <div class="card">
     <div class="card-body ">
-      <div class="d-flex justify-content-end mb-3" v-if="!isManager">
+      <div class="d-flex justify-content-end mb-3">
         <button @click="openCreateTaskModal" class="btn btn-success">Create A New Task</button>
       </div>
 
@@ -690,7 +690,7 @@ const createTask = () => {
     points_earned: currentTask.value.pointsGiven || 0,
     update_by: 'admin',  // 默认值
     // assigned_users: currentTask.value.assignedUsers || [],  // 正确处理已分配用户
-    department: selectedDepartment.value.id,
+    department: selectedDepartment.value,
     seventy_percent: currentTask.value.seventy_percent,
     ninety_percent: currentTask.value.ninety_percent,
     hundred_percent: currentTask.value.hundred_percent,
@@ -704,12 +704,15 @@ const createTask = () => {
   createKpi(payload).then((res) => {
     if (isSuccess(res.status)) {
       const kpiId = res.data.data.id;
-
+      if (isManager){
+        assignType.value = "department";
+        assignToAllMembers.value = true;
+      }
       // 根据分配类型处理任务分配
       if (assignType.value === 'user' && currentTask.value.assignedUsers?.length > 0) {
         // 分配给选定的员工
         const assignPromises = currentTask.value.assignedUsers.map((user: any) => {
-          return assignKpiToStaff(kpiId, user.id, user.department_id || selectedDepartment.value.id, currentTask.value.totalTarget);
+          return assignKpiToStaff(kpiId, user.id, user.department_id || selectedDepartment.value, currentTask.value.totalTarget);
         });
 
         Promise.all(assignPromises)
@@ -734,7 +737,7 @@ const createTask = () => {
             });
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
         // 分配给部门所有成员
-        assignKpiToDepartment(kpiId, selectedDepartment.value.id, currentTask.value.totalTarget)
+        assignKpiToDepartment(kpiId, selectedDepartment.value, currentTask.value.totalTarget)
             .then(() => {
               Swal.fire({
                 position: "top-end",
@@ -946,7 +949,7 @@ const saveEditedTask = () => {
         // 添加新用户的Promise
         usersToAdd.forEach((userId: number) => {
           const user = currentTask.value.assignedUsers.find((u: any) => u.id === userId);
-          const departmentId = user?.department_id || selectedDepartment.value.id;
+          const departmentId = user?.department_id || selectedDepartment.value;
           promises.push(assignKpiToStaff(kpiId, userId, departmentId, currentTask.value.totalTarget));
         });
 
@@ -1190,6 +1193,7 @@ const handleDepartmentChange = () => {
 const assignType = ref('user')  // default assignment type is 'user'
 
 const openCreateTaskModal = () => {
+
   currentTask.value = {
     id: 0,
     taskTitle: '',
@@ -1202,6 +1206,10 @@ const openCreateTaskModal = () => {
     individualUnit: '',
     assignedUsers: [], // 确保这个数组被初始化
     department: selectedDepartment.value?.department_name || ''
+  }
+  if (isManager) {
+    currentTask.value.departments = currentUserDepartmentId.value;
+    selectedDepartment.value = currentUserDepartmentId.value;
   }
   modalType.value = 'create'
   assignType.value = 'user' // reset assignment type to default
