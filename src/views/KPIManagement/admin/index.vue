@@ -64,9 +64,11 @@
             <td>{{ calculateTotalTarget(task) }} {{ task.individualUnit }}</td>
             <td>{{ calculateTotalProgress(task) }} {{ task.individualUnit }}</td>
             <td>{{ task.department }}</td>
+          <tr>
             <td>
                 <span
-                    :class="['badge',
+                    :class="[
+                    'badge',
                     task.status === 'Not Yet Started' ? 'bg-primary' :
                     task.status === 'Completed' ? 'bg-success' : 
                     task.status === 'Ongoing' ? 'bg-warning' : 
@@ -75,6 +77,7 @@
                   {{ task.status }}
                 </span>
             </td>
+          </tr>
             <td>
               <template v-if="task.status !== 'Terminated'">
                 <button @click="goToEmployeeDetailsPage(task.id)" class="btn btn-primary btn-sm">Employee Details
@@ -134,23 +137,41 @@
       </div>
 
 
-      <!-- Pagination -->
-      <div class="d-flex justify-content-between align-items-center mt-3">
-        <nav>
-          <ul class="pagination mb-0">
-            <li :class="['page-item', { disabled: currentPage === 1 }]" @click="changePage(currentPage - 1)">
-              <button class="page-link">&laquo;</button>
-            </li>
-            <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]"
-                @click="changePage(page)">
-              <button class="page-link">{{ page }}</button>
-            </li>
-            <li :class="['page-item', { disabled: currentPage === totalPages }]" @click="changePage(currentPage + 1)">
-              <button class="page-link">&raquo;</button>
-            </li>
-          </ul>
-        </nav>
-      </div>
+      <!-- Pagination & total count -->
+  <div class="d-flex align-items-center mt-3 justify-content-start">
+    <!-- Left: Total count -->
+    <span class="me-3">Total KPI Tasks: {{ count }}</span>
+
+    <!-- Right: Pagination -->
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+          <button class="page-link" @click="prevPage">Previous</button>
+        </li>
+        <li
+            class="page-item"
+            v-for="(page, index) in visiblePages"
+            :key="index"
+            :class="{ active: page === currentPage, disabled: page === '...'}"
+        >
+          <button
+              class="page-link"
+              v-if="page !== '...'"
+              @click="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <span v-else class="page-link">…</span>
+        </li>
+        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+          <button class="page-link" @click="nextPage">Next</button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+ 
+
+
     </div>
   </div>
 
@@ -491,10 +512,7 @@ const revertAllUsers = () => {
   }
 
 }
-/**
- *  搜索员工开始
- *  用于新建员工时从所有员工中查询某个指定的员工设置KPI任务
- */
+
 const searchStaffMembers = () => {
   if (staffSearchKeyword.value.trim().length < 2) {
     staffSearchResults.value = [];
@@ -602,6 +620,53 @@ const removeAssignedUser = (index: number) => {
   currentTask.value.assignedUsers.splice(index, 1);
 }
 
+const itemsPerPage = 10;
+const totalPages = computed(() => Math.ceil(count.value / itemsPerPage));
+
+const visiblePages = computed(() => {
+  const pages: (number | string)[] = [];
+  const total = totalPages.value;
+  const current = currentPage.value;
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 4) pages.push('...');
+
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
+
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < total - 3) pages.push('...');
+    pages.push(total);
+  }
+
+  return pages;
+});
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    handlerFetchKpis({ page: currentPage.value });
+  }
+};
+
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    handlerFetchKpis({ page: currentPage.value });
+  }
+}
+
+const goToPage = (page: number) => {
+  if (page !== currentPage.value) {
+    currentPage.value = page;
+    handlerFetchKpis({ page: currentPage.value }); 
+  }
+}
 
 //Create function
 const createTask = () => {
@@ -1228,15 +1293,6 @@ const delayedTasks = computed(() => {
   return kpiData.value.filter((task: any) => task.status === 'Delayed').length;
 });
 
-// pagination
-const totalPages = computed(() => {
-  return Math.ceil(count.value / 10)
-})
-
-const changePage = (page: number) => {
-  currentPage.value = page;
-  handlerFetchKpis({page: currentPage.value})
-}
 
 /**
  * 根据状态或者KPI的名称查询KPI信息
@@ -1459,8 +1515,8 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(300px, 1fr));
-  gap: 2rem;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 
@@ -1617,33 +1673,7 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   cursor: pointer;
 }
 
-.pagination .page-link {
-  border-radius: 8px !important;
-  margin: 0 5px;
-  margin-bottom: 5px;
-  border: 1px solid #ddd;
-  background-color: #ffffff;
-  color: #333;
-  padding: 13px 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s, color 0.3s;
-}
-
-.pagination .page-link:hover {
-  background-color: #e0e0e0;
-  color: #000;
-}
-
-.pagination .page-item.active .page-link {
-  background: linear-gradient(90deg, #9ba1a7, #acb7c6);
-  color: white;
-  border-color: #ffffff;
-}
-
-.pagination .page-item.disabled .page-link {
-  background-color: #f5f5f5;
-  color: #999;
-  cursor: not-allowed;
-  box-shadow: none;
-}
+.pagination .page-link { border-radius:8px; margin:0 5px; border:1px solid #ddd; padding:8px 14px; }
+.page-item.active .page-link { background:linear-gradient(90deg,#9ba1a7,#acb7c6); color:white; }
+.page-item.disabled .page-link { background:#f5f5f5; color:#999; cursor:not-allowed; }
 </style>
