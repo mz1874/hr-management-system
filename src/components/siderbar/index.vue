@@ -10,6 +10,10 @@ const sidebarOpen = ref(false);
 const isCollapsed = ref(false);
 const isMobile = ref(false);
 
+const toggleMenu = (name: string) => {
+  expandedMenus.value[name] = !expandedMenus.value[name];
+};
+
 const toggleSidebar = () => {
   if (isMobile.value) {
     sidebarOpen.value = !sidebarOpen.value;
@@ -135,7 +139,30 @@ onUnmounted(() => {
 
       <div class="full-menu">
         <template v-for="item in menuTree" :key="item.name">
+          <!-- 父菜单（有子菜单） -->
+          <div v-if="item.children && item.children.length">
+            <div class="nav-item parent-item" @click="toggleMenu(item.name)">
+              {{ item.name }}
+              <span class="arrow-icon">
+                {{ expandedMenus[item.name] ? '▲' : '▼' }}
+              </span>
+            </div>
+            <div v-if="expandedMenus[item.name]" class="submenu">
+              <router-link
+                v-for="sub in item.children"
+                :key="sub.name"
+                :to="sub.link"
+                class="nav-item sub-item"
+                @click="closeMobileSidebar"
+              >
+                {{ sub.name }}
+              </router-link>
+            </div>
+          </div>
+
+          <!-- 普通一级菜单 -->
           <router-link
+            v-else
             :to="item.link"
             class="nav-item"
             @click="closeMobileSidebar"
@@ -225,9 +252,31 @@ body {
   color: white;
   text-decoration: none;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.parent-item {
+  font-weight: bold;
+}
+
+.arrow-icon {
+  float: right;
+}
+
+.submenu {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sub-item {
+  padding-left: 2rem;
+  font-size: 0.9rem;
+}
+
+.sub-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 

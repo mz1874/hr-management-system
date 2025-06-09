@@ -1,0 +1,2375 @@
+[33mcommit 95de40f818ab87c5640997589bcf60bf511e2009[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: d7ff061 5409b77
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Mon Jun 9 21:30:46 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit d7ff061f461ce703c254ece3c479d545f41eac64[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Mon Jun 9 21:29:41 2025 +0800
+
+    fix sidebar
+
+[33mcommit 5409b77d92dabb42480ed58163359244341c911a[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 19:46:08 2025 +0800
+
+    # bug fixing
+
+[33mcommit d7c077598e232e4332a7f5992383fc1cc5c139b8[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 19:21:26 2025 +0800
+
+    # bug fixing
+
+[33mcommit 73c785e2e90dc36293ec87dec0621a683a6ae0cd[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 19:17:37 2025 +0800
+
+    # bug fixing
+
+[33mcommit 43ef81eb29e8bcc54bad0fe0a6122c89b16e4919[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 19:09:07 2025 +0800
+
+    # bug fixing
+
+[33mcommit 8a16205176bd9587d431500cc8c24c346dec29da[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 19:06:33 2025 +0800
+
+    # bug fixing
+
+[33mcommit a059f0f10e10c286550adb5940a889dbd519229b[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 18:46:16 2025 +0800
+
+    # bug fixing
+    1- do not allow department manager to edit kpi assignment
+
+[33mcommit db60d8c5daf4aad801ee749d4ba07301b6185333[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 18:40:19 2025 +0800
+
+    # bug fixing
+
+[33mcommit 481d4b22082dac0f720b8893bd04d8e2a7aff28d[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 18:32:24 2025 +0800
+
+    # Added feature
+    1- Finished report generation
+
+[33mcommit 398197b2df1213c91341100b081326a1ecd50995[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Jun 9 17:50:18 2025 +0800
+
+    # Added feature
+    1- Added personal kpi generate
+
+[33mcommit 57abf3723b6f178472d4f813c9dd4789752ebd7e[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Jun 9 17:26:24 2025 +0800
+
+    # KPI export
+
+[33mcommit fa4211920443c3a22c1ace90f5e2db0dbeb45e6a[m
+Merge: c75f341 51061f3
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Jun 9 09:32:03 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit c75f34193aa0316a74a4fc0398df78323d44a753[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Jun 9 09:31:53 2025 +0800
+
+    # finished Leave export
+
+[33mcommit 51061f3982e52764553d8b171ee4cf80d7f4dd75[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Mon Jun 9 08:38:46 2025 +0800
+
+    update UI
+
+[33mcommit 92a954fd4015616ea380446c5be073af8ac451d5[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Mon Jun 9 04:14:56 2025 +0800
+
+    modify
+
+[33mcommit 6c5593852cbf5a119e7b297abaad796878e694e6[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sun Jun 8 08:33:13 2025 +0800
+
+    fix UI
+
+[33mcommit 01232a0c36ca9275762d5cf51d7aa79836450008[m
+Merge: 801b9d9 a28defb
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 07:16:17 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit 801b9d9a6a85dc98befe31d9fecbe41859c53e77[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 07:16:07 2025 +0800
+
+    # Added feature
+    1- allow user check KPI information including Desc and Point gaven
+
+[33mcommit a28defb396c6c10ad9f3fe43f010a493693d220d[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sun Jun 8 06:53:27 2025 +0800
+
+    fix
+
+[33mcommit 38eb26303096abf62103596745c1c31f635e4746[m
+Merge: a1db98e 81f5f15
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sun Jun 8 06:27:05 2025 +0800
+
+    resolve conflict
+
+[33mcommit 81f5f15e38383bd65751b70945aefe2eabe4f4af[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 05:54:50 2025 +0800
+
+    # Bug fix .13
+
+[33mcommit a1db98e429809beac60bf68135a2431a282fc01c[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sun Jun 8 05:54:30 2025 +0800
+
+    fix
+
+[33mcommit 166e8289d9124908e8509be53e95e7164d7f2ddd[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 05:49:22 2025 +0800
+
+    # Bug fix .13
+
+[33mcommit 9f42c4a21527ad9bb4b47d4895b104beac001c37[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 05:33:55 2025 +0800
+
+    # Bug fix .13
+
+[33mcommit 49829904cb5c3ff7d0c41778ee2b3eb52a938070[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 05:03:01 2025 +0800
+
+    # Bug fix .13
+
+[33mcommit 3d71237beb778051244fbd6e14b08996cb94b327[m
+Merge: cf0f1a9 533d3a5
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 04:07:30 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit cf0f1a9b064bf690eadcf61bb3ba02e69348ffb3[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 8 04:07:13 2025 +0800
+
+    # Bug fix .13
+
+[33mcommit 533d3a552be80392df7e5a9dd5c7fce4ad612d46[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sun Jun 8 03:16:12 2025 +0800
+
+    fix bug
+
+[33mcommit 95ef49e38174fb0ee2691bc25985aa507ed2f504[m
+Author: Ruoying0 <132165682+Ruoying0@users.noreply.github.com>
+Date:   Sun Jun 8 02:20:47 2025 +0800
+
+    fix ui
+
+[33mcommit 7eec3e5419813b1ce012846c768dafbc2d2eb750[m
+Author: Ruoying0 <132165682+Ruoying0@users.noreply.github.com>
+Date:   Sun Jun 8 02:19:05 2025 +0800
+
+    fix ui
+
+[33mcommit bea3cbf14a0665153e34908ceaf1c1c33b6544a7[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Jun 8 00:51:15 2025 +0800
+
+    removed inactive users from evaluation list, submit department evaluation can be used only once after all staff eval is done
+
+[33mcommit 8bde4fb94e860df3849f5c58ac8d4e19899ea81f[m
+Merge: 5bfb890 faed30c
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat Jun 7 21:37:49 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 5bfb890c14d5d428848c4137369cf292e2745eeb[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat Jun 7 21:37:05 2025 +0800
+
+    fixed backround color and scrolling, removed duplicated text from rating description
+
+[33mcommit faed30c9578fb81daf96a69454ca1f1e8a09ecd9[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat Jun 7 18:37:40 2025 +0800
+
+    fix bugs for edit leave
+
+[33mcommit 3db3fe6fc5270d2486e202ae95b90fbc315df92b[m
+Merge: 1ae91f3 5802eb7
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat Jun 7 18:07:30 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 1ae91f3a28a48a8e4ffe1a52c4d45d1aa7d32252[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat Jun 7 18:07:18 2025 +0800
+
+    fix bugs
+
+[33mcommit 5802eb7a8161fc165022b5a04805590023a385f2[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sat Jun 7 06:41:15 2025 +0800
+
+    fixed bugs and change UI
+
+[33mcommit 1111d28a4a32a847c056ff23e6d709881e300c20[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sat Jun 7 01:54:20 2025 +0800
+
+    modify Homepage UI
+
+[33mcommit e620914db089866281fec77b3ed7ab3a3f68fbe9[m
+Merge: 2e2aa1c 83fd9d0
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri Jun 6 23:29:26 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 2e2aa1c0375b6620b53cdeb2bf095c0044fac81c[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri Jun 6 23:29:17 2025 +0800
+
+    fix name
+
+[33mcommit 83fd9d0002ecd6a6c18c5411c1bde00706af30bc[m
+Merge: 468dedc 16fb97a
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Fri Jun 6 22:54:11 2025 +0800
+
+    Resolve conflict in KPIDashboard/index.vue
+
+[33mcommit 468dedc981099eb3aee19a37c1fef034f507e3f8[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Fri Jun 6 22:39:53 2025 +0800
+
+    change UI
+
+[33mcommit 2666dd1c879f4082cec33eaf471f7158357842bb[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri Jun 6 17:54:42 2025 +0800
+
+    show child department
+
+[33mcommit 16fb97a00b874b8ce5b45800db5a6d338e2f96b3[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri Jun 6 15:34:09 2025 +0800
+
+    fix bugs for pfp
+
+[33mcommit 30fd6e90241744a45d775b079bc2a0b79c92dbd6[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Fri Jun 6 13:21:31 2025 +0800
+
+    update reward
+
+[33mcommit f157aa855efe566df74443c250bf76b8c88ccfba[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Fri Jun 6 09:24:47 2025 +0800
+
+    #bug fixing
+
+[33mcommit 237555091922d5afa40ab5a8e51437fb6d6348c0[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Fri Jun 6 09:02:44 2025 +0800
+
+    #bug fixing
+
+[33mcommit 248336b1e12637c1704a1e85bebde8668049df08[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Jun 6 07:15:41 2025 +0800
+
+    # Added system log function
+
+[33mcommit 759418c392a9ba02f850f7483b5bb0831bc737f2[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Jun 6 06:30:50 2025 +0800
+
+    # bug fixing
+
+[33mcommit 4161d29ca01bcfcac08017a94730639a7bc32d38[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Jun 6 06:06:09 2025 +0800
+
+    # bug fixing
+
+[33mcommit 260e35ea685c46134abf3972d8dfde7f6c14183f[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Jun 6 05:48:09 2025 +0800
+
+    # Added feature
+    1- Allow edit password when admin create user
+
+[33mcommit 40cbccb47a5b34fb9bd09e880d9fbb4c75dc1b86[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Jun 6 05:31:43 2025 +0800
+
+    # Added feature
+    1- Finished personal information add
+
+[33mcommit 7a70413387f004ef33d887701f94ece79f649106[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Jun 6 04:02:45 2025 +0800
+
+    # bug fix
+
+[33mcommit 7497d4377202f34a11fe09f6efc161d470e5d275[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Fri Jun 6 02:20:02 2025 +0800
+
+    update reward UI, and modify leaderboard profile pic
+
+[33mcommit e8f0021d2c99bffc534cc03794f86b723c687d6c[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu Jun 5 15:22:21 2025 +0800
+
+    # Added personal information
+
+[33mcommit 41ac6407c0bc60fee7982de57de641c980227bf8[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Thu Jun 5 10:04:34 2025 +0800
+
+    fixed bugs
+
+[33mcommit 00b67569c94f1cdca0cd3f4ef6393d20bb8fa988[m
+Merge: 6090dc6 5f2f23b
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Thu Jun 5 06:26:10 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 6090dc68fc428120e3398fe2594e2f325cabfbb1[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Thu Jun 5 06:25:56 2025 +0800
+
+    fixed pagination
+
+[33mcommit 5f2f23b6f150357c1493f8e530511957cde9ac75[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu Jun 5 01:40:33 2025 +0800
+
+    # bug fix
+    1- fixed bug 9.16 - 9.18
+
+[33mcommit 6ccd9eedd0fce9828fdb5e08c725b5d45a10b896[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu Jun 5 01:35:35 2025 +0800
+
+    # bug fix
+    1- fixed bug 9.14 9.15
+
+[33mcommit 801be24a8b28dc224e78a7d0577647bb4fa614cb[m
+Merge: ac8eb42 755b26b
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu Jun 5 01:27:03 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit ac8eb424238d4eb3fcdd0ca3583028638718198e[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu Jun 5 01:26:08 2025 +0800
+
+    # bug fix
+    1- fixed bug 9.13
+
+[33mcommit 64d8ba631690e00864cb35623d534ccba430ad16[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Thu Jun 5 00:44:29 2025 +0800
+
+    added pagination and removed redirection to results after submission of whole department evaluation
+
+[33mcommit 9ef30815710d53ae80d98438e09261f0da5892d8[m
+Merge: d4565e9 4794368
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Wed Jun 4 20:18:11 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit d4565e93d54aea84f0086c2fcb88ae09f2138977[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Wed Jun 4 20:18:04 2025 +0800
+
+    fixed wrong staff list for different departments
+
+[33mcommit 755b26be1be0333d6d4321f70e00aa116ec2ec1f[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Jun 4 14:14:06 2025 +0800
+
+    #bug fixing
+
+[33mcommit 479436868567b385d60cd4c37b807fedaf241190[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Wed Jun 4 11:48:18 2025 +0800
+
+    fix all the bugs mentioned in the test case, and improve UI for reward part
+
+[33mcommit a29d5cdb7838179e392b1f3ca26b5933a0a0664b[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Jun 4 11:34:56 2025 +0800
+
+    #bug fixing
+
+[33mcommit f02884e707dc348e694c26f771ab5588ce9c4ac3[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Jun 4 10:41:35 2025 +0800
+
+    # bug fixed
+    1- fixed bug 9.4
+
+[33mcommit 2cea3c92387f23489551d40ebcb8f59f5e0e96f6[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 02:00:40 2025 +0800
+
+    # bug fix
+    1- fixed bug 5.21
+
+[33mcommit 07366ee1ade8637bc2972e8658a7f237f6c365a1[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 01:35:02 2025 +0800
+
+    # bug fix
+    1- fixed bug 5.17
+
+[33mcommit d1030337123cbb5bfc6de030e0619535562b56a3[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 01:23:04 2025 +0800
+
+    # bug fix
+    1- fixed bug 5.14
+
+[33mcommit 57e89468dcc642423c822c0eb9bd5041e8d44cd0[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 01:14:00 2025 +0800
+
+    # bug fix
+    1- fixed bug 5.12
+
+[33mcommit b874a5eb298e394930e2abf98ba4d83839ec1f31[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 01:01:38 2025 +0800
+
+    # bug fix
+    1- fixed bug
+
+[33mcommit d3e8c9493b207d9157763f66473c58fabf953a7f[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 00:57:15 2025 +0800
+
+    # bug fix
+    1- fixed bug 5.11
+
+[33mcommit 04d71f2b09115073f039ec667e2a26c58bd41316[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 00:50:41 2025 +0800
+
+    # bug fix
+    1- fixed bug 5.5
+
+[33mcommit 0957defecaff19efc36f4c8b26009f47ddd6d9c9[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Jun 4 00:36:25 2025 +0800
+
+    # bug fix
+    1- Allowed user to upload user image
+
+[33mcommit c4323fa97389a42dbf55147241bd95998857c0a8[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Jun 3 20:36:03 2025 +0800
+
+    # bug fixed
+    1- fixed 1.2
+
+[33mcommit 947b5e81acb6ae1d70f37e10efd19e83768a7f45[m
+Merge: 1f3c6b5 50f91a7
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue Jun 3 19:06:14 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 1f3c6b502e712179bdb5ee6fa1e8aee065b2a6e1[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue Jun 3 19:05:27 2025 +0800
+
+    fix bugs
+
+[33mcommit 50f91a71e5d733b323e482e0dfdb83e0bede95a2[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Mon Jun 2 01:59:19 2025 +0800
+
+    removed duplicated description below stars
+
+[33mcommit afd5664244c7cb4e5a154766d64f8f8ddbb6981a[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Mon Jun 2 01:48:42 2025 +0800
+
+    fixed stars and rating description
+
+[33mcommit 637b7d693e71a402988b71280e8f9f669375554d[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Jun 1 21:17:21 2025 +0800
+
+    # Ruoying said, i make her functions appear a lot of bugs. Sad!
+
+[33mcommit a898c758de2915a985fe4fc86adec7b670ebb840[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat May 31 19:16:32 2025 +0800
+
+    # ui change
+
+[33mcommit abe61486f85dd037e962aef06978a52503f04b57[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat May 31 15:16:21 2025 +0800
+
+    #bug fix
+
+[33mcommit 28dcbc71ef78997d5769018c3d6bf9dc6fb554cb[m
+Merge: 7a73b0f 620babc
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri May 30 23:47:32 2025 +0800
+
+    Merge remote-tracking branch 'origin/evaluation'
+
+[33mcommit 7a73b0f7140b468fd2a36c44e910ba5944b34772[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri May 30 18:56:43 2025 +0800
+
+    fixed bugs
+
+[33mcommit 1c56baf2cfead35ca06a2660b1c05440e21675d7[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri May 30 17:45:39 2025 +0800
+
+    fixed modal bugs
+
+[33mcommit 608fda5fe06f31a2a36abfc3a5ee363e9dfb6fd9[m
+Merge: ad33b95 b63062e
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu May 29 12:53:03 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit ad33b958fbf1b8df50b9861652a3445f91df7a0b[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu May 29 12:52:52 2025 +0800
+
+    fix bugs
+
+[33mcommit b63062e020fef86c0973c3e19b7ad952fb1f4de3[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Thu May 29 10:05:06 2025 +0800
+
+    fix small bug
+
+[33mcommit f9e7de9d8a4977b34389a9df3b722b1b8210ad1c[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Thu May 29 09:08:45 2025 +0800
+
+    display kpi points records, reset all user points,
+
+[33mcommit d9ae475bbd5b44ba2a433432bec881f58211682b[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue May 27 09:02:05 2025 +0800
+
+    fix bug
+    - details button
+
+[33mcommit 00f42fa22d575e30c77c238c78b4e29737ca2c8c[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue May 27 08:50:28 2025 +0800
+
+    only AL need to submit leave 3 days in advance
+
+[33mcommit 41f887b8d34ce9a17f7b06c79ebfc8ab465448f9[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon May 26 15:49:15 2025 +0800
+
+    manager leave request
+
+[33mcommit 50a8fa72390d86252d481f05cce08f9920e6e2d9[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon May 26 12:51:02 2025 +0800
+
+    leave application need three days adcance
+
+[33mcommit 16873420e4121f496bb5f68522dca0510f6d1247[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon May 26 12:21:38 2025 +0800
+
+    editted date and department name
+
+[33mcommit 37124dc07631141aee6dd0a5db6f0090638f42ba[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun May 25 00:03:52 2025 +0800
+
+    # Added feature
+    1- Allow user update kpi points
+
+[33mcommit f32ea34e9c504c2d2799a62e93711bdf2d09f9f4[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat May 24 23:31:10 2025 +0800
+
+    # Modified
+    1- change confirmation text
+
+[33mcommit e38703addb8b066b8cbd59591f2b6d3f911b51be[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat May 24 23:28:09 2025 +0800
+
+    # Added feature
+    1- Rollback medical and annual leave
+
+[33mcommit 7c5bd9a538875d57c2d13bf621dfe8b6c5a4c046[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat May 24 21:51:33 2025 +0800
+
+    # Added feature
+    1- Add email , AL + ML
+
+[33mcommit 6404223fe2832f85f2fe32666e835a5f71ff55af[m
+Merge: a3e3578 75a9a29
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat May 24 13:49:38 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit a3e35786bb2b916b8373240538231415215b9739[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat May 24 13:49:24 2025 +0800
+
+    bd announcement views
+
+[33mcommit 75a9a29bd689a6675d5ec0de5c51b5d2104e0100[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Sat May 24 02:46:51 2025 +0800
+
+    add filter and pagination to point system
+
+[33mcommit d5716ed5a459b9fc5b9d0a07d1e01de72ef6637b[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Tue May 20 14:58:33 2025 +0800
+
+    update leaderboard script and api
+
+[33mcommit 620babc1633eb1d28ee8f17bbe263293c8146d63[m[33m ([m[1;31morigin/evaluation[m[33m)[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Tue May 20 00:53:05 2025 +0800
+
+    added new evaluation form
+
+[33mcommit 9e7ceb2e602f215e88cecc5a6525f3020aa8f52d[m
+Merge: f70925e 6f40f18
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon May 19 17:01:00 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit f70925e77b624d81d3c4324cda2c452aa2d44708[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon May 19 17:00:45 2025 +0800
+
+    update naming
+
+[33mcommit 6f40f18c8d3d51e38e843adf8915d4730035d45a[m
+Author: Enqi <leeenqi0407@gmail.com>
+Date:   Mon May 19 10:15:28 2025 +0800
+
+    added point addition and deduction, fix pagination, fix display current user details from backend
+
+[33mcommit ba31fda3440d9cdab84597fe1b144c774356d793[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon May 19 03:35:26 2025 +0800
+
+    # Added feature
+    1- Finished Personal KPI dashboard
+
+[33mcommit f89f16c0033a2f217909300f02a47a1001afb798[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun May 18 02:38:36 2025 +0800
+
+    # Added feature
+    1-Added Personal KPI dashboard shown(Only table data)
+
+[33mcommit 8902520899f6037c40a435757b53ab5f4a53c5c7[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat May 17 21:30:47 2025 +0800
+
+    added progress and status column, fixed error message
+
+[33mcommit 6a0af801a4ce86af7d73acb365674b688d2f802e[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat May 10 23:15:08 2025 +0800
+
+    evaluation function fixes
+
+[33mcommit 921c87deaa5db3246c7c790ac3271c73483fe8b3[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Sat May 10 10:15:53 2025 +0800
+
+    update point deduct and point add ui
+
+[33mcommit 8286f6d0acb38ef9c85cc37d78914e682e547c94[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Thu May 8 23:15:12 2025 +0800
+
+    evaluate staff ui update and bug fix
+
+[33mcommit c53be1616f1e06675b32e9a81eafebbcf90e5f9c[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Thu May 8 08:01:00 2025 +0800
+
+    add total point and current point
+
+[33mcommit 995f48987efddacb64515b9b53ec28a7f4eda0f8[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Thu May 8 07:53:18 2025 +0800
+
+    fix delete function, fix reward mall ui and add pagination
+
+[33mcommit a02b1e6e4ae0e777e22b5212b7bea36965c98359[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Thu May 8 01:48:48 2025 +0800
+
+    UI changes for modals, api updates
+
+[33mcommit 4b6223683d4edf5fb088da0c80ccec03f16c78dc[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon May 5 10:17:23 2025 +0800
+
+    #update
+
+[33mcommit 5389115c6ede98b52d517dc445b3684b7fdf0fcf[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon May 5 07:34:52 2025 +0800
+
+    # Bugfix and added feature
+    1- hidden router
+    2- change UI
+
+[33mcommit a697fcc1d0139bf6c50d2b76f6380076bd891842[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon May 5 07:20:24 2025 +0800
+
+    # Update
+    1- updated all staff name information from username to staffName
+
+[33mcommit 92f6c43ca6da25a8d85fc8a1e2e7f1fcacbf556b[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat May 3 12:21:06 2025 +0800
+
+    fix bug
+
+[33mcommit 83cbe1474e219fe30731b2b7669cd82b5bcf5373[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat May 3 12:08:54 2025 +0800
+
+    fixed bug
+
+[33mcommit fb13de41951c68785b5b65a941f40ac790cdd0f6[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat May 3 01:22:26 2025 +0800
+
+    UI updates for dep.eval
+
+[33mcommit 467b131636e5e5063734dde74d9a582dcbf5e696[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri May 2 21:37:12 2025 +0800
+
+    hr can self approve
+
+[33mcommit d94fe2fc795e5c20067cf6d78fe595f17c7a46ee[m
+Merge: 0106d20 e66c3d5
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri May 2 16:10:13 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 0106d200b97116988af792b50c339528569b9de1[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri May 2 16:10:03 2025 +0800
+
+    fixed bug
+
+[33mcommit cf9187dffb784b8346155eceb81f9b7117bee8af[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Fri May 2 09:50:40 2025 +0800
+
+    UI changes for manager
+
+[33mcommit e66c3d58c057cfcb0d8ac67a5dd73b8663f9ed02[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri May 2 03:35:15 2025 +0800
+
+    # Added feature
+    1- 除了状态显示和状态查询, 完成了所有的KPI页面展示
+
+[33mcommit f6386e84d48daa9fc10fa81e302e6f31f81dba9b[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri May 2 02:46:50 2025 +0800
+
+    #format code
+
+[33mcommit 83934f9000947022ef62d3977edf4c8ef327c1e6[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Thu May 1 22:54:47 2025 +0800
+
+    fixed hover background bug for department-evaluation
+
+[33mcommit 88051207864979805c1472ac150d5b8d7362d5f9[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu May 1 20:04:51 2025 +0800
+
+    # bug fixing
+    1- Fixed KPI pagination
+
+[33mcommit 1da012ebfe9f8ada7ef5ba5064afb830ce4bca7e[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu May 1 12:56:53 2025 +0800
+
+    # Added feature
+    1- allow user to show the search result
+    2- 移除了,搜索的时候每次type调用搜索接口
+
+[33mcommit c70da9c654252b3406f2973c1a9fadbe625ae3b8[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu May 1 12:47:28 2025 +0800
+
+    # removed feature
+    1- reconstructed KPI API
+
+[33mcommit afffe9754f0fb527f7699241096883b17e96ece3[m
+Merge: 739af13 9b42d6e
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu May 1 09:22:22 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 739af13a3c188ab98b3c1f8972bf26d3cc94ad85[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu May 1 09:21:10 2025 +0800
+
+    update the workflow
+    -managers are now involved to proceess the leave LeaveApplication
+    -once managers approves then it will only send to hr
+
+[33mcommit 062125627846745171ac3763ac1bb9f3deac0104[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Thu May 1 02:44:08 2025 +0800
+
+    changes for manager
+
+[33mcommit 9b42d6e76f6844cfbfe429182776ca22f0da99c1[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Apr 30 00:24:13 2025 +0800
+
+    # Added feature
+    1- When user is admin, not allow to edit department
+
+[33mcommit 9dc9fb9090edb84441810341b56b255aebd4d1d9[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Apr 30 00:20:24 2025 +0800
+
+    # Added feature
+    1- finished assign role to user
+    2- finished edit user
+
+[33mcommit c04d7ada380d007330de11c12d52d666dc7de741[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 29 23:46:58 2025 +0800
+
+    # Bug fixing
+    1- Removed view button
+
+[33mcommit 5ea94badd2ef31386fca8c3742915d378667ca14[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 29 23:39:26 2025 +0800
+
+    # Bug fixing
+    1- Allow user select child permissions
+
+[33mcommit 2a324292688d7b2f306de44feb658214ff8b6b18[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Tue Apr 29 22:33:57 2025 +0800
+
+    UI changes, add status filter, fixed pagination, etc
+
+[33mcommit 1bbc014849192d975c8dff784e255978e58a3729[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 29 19:31:16 2025 +0800
+
+    # Added features
+    1- Allow user authorize permission to role
+
+[33mcommit 1ea1882302aad75e7bf24f299684115a4fcdc5bf[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Tue Apr 29 00:48:26 2025 +0800
+
+    fixed search pagination, dates also department assign and edit published evaluation
+
+[33mcommit faf1a1f1a9e063f4d67c9d100f2f3611868a5f6a[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 27 22:24:17 2025 +0800
+
+    department evaluation added
+
+[33mcommit 4081008b7f68a727682aea00f06015d9830604d6[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 27 15:51:12 2025 +0800
+
+    UI improvements, publish function is working
+
+[33mcommit 5910cab80156ff20f48fd76200257d1ddd7ed4fa[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 27 04:08:25 2025 +0800
+
+    bugs-fixed
+
+[33mcommit 0db0b30a89df40f7a02fef6d95244b727babc49e[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat Apr 26 22:38:30 2025 +0800
+
+    bug fixes, design updates
+
+[33mcommit 589320f4c8db8b2afbf923392faccb3d5b0bbc9e[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Thu Apr 24 17:50:29 2025 +0800
+
+    # bug fixing
+
+[33mcommit 8ccdd4e31af7ec1ba315daa0d298ca16b38d1674[m
+Merge: 8f2f3b5 fad2405
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Thu Apr 24 12:05:10 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit 8f2f3b5a3195fbe9bf714080b9add5b477934baa[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Thu Apr 24 11:45:07 2025 +0800
+
+    # update router management
+
+[33mcommit fad2405da7a64adaa6b9c3bc398f8631ab9d8ea4[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Thu Apr 24 11:45:07 2025 +0800
+
+    # update router management
+
+[33mcommit 36674b962e0b9536aa0e4e19e8314577aaf782bf[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Apr 23 09:42:23 2025 +0800
+
+    # Change function in staff management
+
+[33mcommit 6ce58851166abb53a23455764548511abd4ac5a6[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Apr 23 09:38:23 2025 +0800
+
+    # update staff ui
+
+[33mcommit d5b775adcd86ad10a08049d1ebafa6d761d6ca4b[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Apr 22 14:24:47 2025 +0800
+
+    # merge
+
+[33mcommit 786804cb2cf47deb591bdd3ae19c75f5f32a4fa4[m
+Merge: 7a3c3ec fa113ea
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Apr 22 14:14:26 2025 +0800
+
+    # merge router branch to main
+
+[33mcommit 7a3c3ec6f61ab7618461fcf19762e6303bd3da26[m
+Merge: 5074b85 42c1d77
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Apr 22 14:09:38 2025 +0800
+
+    # merge
+
+[33mcommit a9ce3f402d5efda90fcb8cd0d546f41063e2e92e[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue Apr 22 13:36:41 2025 +0800
+
+    update
+
+[33mcommit fa113eaae62f67f02421ebb7833618f20bccc1ee[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Apr 21 13:52:34 2025 +0800
+
+    # Added finished add user function
+
+[33mcommit 1da94b8777698baf6cf1a26321cb947fd67526e6[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Mon Apr 21 13:16:04 2025 +0800
+
+    # Added feature
+    1- Change UI
+
+[33mcommit 42c1d7792a5333f9dca8f7292e08083300464cf7[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Mon Apr 21 11:25:52 2025 +0800
+
+    fix evaluation
+
+[33mcommit 87a556570f097a10aa43a4d4dbb339649cc962b1[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Mon Apr 21 10:39:16 2025 +0800
+
+    fix evaluation
+
+[33mcommit 5074b85f7a8fe94281720dfeec7107590fd713f3[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Apr 21 10:34:46 2025 +0800
+
+    # Bug fixing
+    1- Change the return format
+
+[33mcommit ba5d78732654c155a30e77b2aa9d2ae892145b65[m
+Merge: a4af378 6c913e6
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Mon Apr 21 10:21:53 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit a4af37816e27a8bb6b8e3d4d4da5fa0f8d9e9416[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Mon Apr 21 10:21:07 2025 +0800
+
+    evaluation index.vue update
+
+[33mcommit 6c913e6fbf4c15b4f0c385ce4bbddb60a409fa52[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Mon Apr 21 10:12:08 2025 +0800
+
+    add leaderboard, fix pagination, search, reward image, datetime
+
+[33mcommit 3726fe9fe8c7f57af7fad2700bb5c43d8b5faabb[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Apr 21 09:51:21 2025 +0800
+
+    # Added feature
+    1- change the add user UI
+
+[33mcommit 3c5389a42541104a8c9b3de64fcb83c0b54b7386[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Apr 21 09:47:00 2025 +0800
+
+    fixed kpi
+
+[33mcommit 84a7f9cbfab52d215deaa2acbfdf5c68f6830c35[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Apr 21 08:47:47 2025 +0800
+
+    # Allow user to according one router to add sub router
+
+[33mcommit eccfa57b79d1542be9d89fe0251b8428f3ad8ab4[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 20 22:58:28 2025 +0800
+
+    evaluation updates
+
+[33mcommit 53d0cdcca08f372246ea3eb041c6073beab75742[m
+Merge: 301d204 8403c8c
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 20 22:57:19 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 8403c8cefedba95de19b9204097770b97318aba1[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 20 21:56:28 2025 +0800
+
+    added toast with sweetalert
+
+[33mcommit 301d20480111ec46ab09380ce8b8b657101c88ee[m
+Merge: df47a97 669ff93
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 20 19:39:22 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 669ff935a6ae5b664f77842aac007058d1c10306[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 20 19:20:28 2025 +0800
+
+    Revert "Merge branch 'main' of https://github.com/mz1874/hr-management-system"
+    
+    This reverts commit 3cd4e569cfc1b6f48fe829660c358897cd48187c, reversing
+    changes made to b20fe13e1c4c532b59c724aacc3a831ce9f5e5d8.
+
+[33mcommit df47a973785c06e629e14ef1a7d574107e352ea2[m
+Merge: 001a905 3cd4e56
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 20 18:51:52 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 3cd4e569cfc1b6f48fe829660c358897cd48187c[m
+Merge: b20fe13 3022398
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 20 18:45:46 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit b20fe13e1c4c532b59c724aacc3a831ce9f5e5d8[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 20 18:45:35 2025 +0800
+
+    finalised everything
+
+[33mcommit 001a905d954e565ce1d2cf689efe7164a49d29c6[m
+Merge: 4469379 3022398
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sun Apr 20 16:11:15 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 30223981a2c2c4a56302dc68534d5c37560214ab[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sun Apr 20 15:20:24 2025 +0800
+
+    complete all homppage function
+
+[33mcommit 4469379e3f62e6eb1cb0d71b5c3d88309f662651[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 20 13:21:18 2025 +0800
+
+    assign/edit leave days for user done
+
+[33mcommit 0167575278ea37e47c7f910734d6b84f65c16cb3[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 20 12:19:05 2025 +0800
+
+    # Added feature
+    1- Router is finished except add in table list
+
+[33mcommit eda96183a60e240afef242f4cd2128a4c4814966[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 20 09:25:53 2025 +0800
+
+    # Added feature
+    1- Dynamic routing is complete
+
+[33mcommit 87d54063163728c0fd5a4cf0120dbd1872653452[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 20 08:42:51 2025 +0800
+
+    # bug fixing
+    1- fixed router missing
+
+[33mcommit fac8becfe6339df44ebd45f03399c146ed994b43[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat Apr 19 23:52:03 2025 +0800
+
+    updated leave entitlement
+
+[33mcommit dd98d08c64d833c43b12cae4f5f40588e2a46b91[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 23:50:16 2025 +0800
+
+    # bug fixing
+
+[33mcommit aa790a1ca5c0acfee16b616e5064f32be0f0bece[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 22:15:01 2025 +0800
+
+    # Added feature
+    1- dynamic router finished
+
+[33mcommit 4bccc3b6fec29120e0496dcdd50661ca8e6ebe0c[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 20:41:59 2025 +0800
+
+    # merge
+
+[33mcommit 2630de04bd18cd480ccb99a6e4f09d2416d9dadd[m
+Merge: 1e687bd 5e8f650
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 19:05:38 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+    
+    # Conflicts:
+    #       src/api/kpiAdmin.ts
+    #       src/views/KPIManagement/admin/index.vue
+
+[33mcommit 1e687bd741a1cce80f6d507443091af7788d25a1[m
+Merge: c193a35 71297a9
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 19:05:28 2025 +0800
+
+    # merge
+
+[33mcommit 5e8f65077416d3d7877c097741b2a1aa18f264fe[m
+Merge: 32c85f1 71297a9
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat Apr 19 19:02:18 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 38ee696acea5dda2b8444c346fc5c4e973a67239[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 18:58:19 2025 +0800
+
+    # Not finished, partially finished router function
+
+[33mcommit 71297a9e84530a5501ccdc0fd954773acca23172[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sat Apr 19 16:09:28 2025 +0800
+
+    Update frontend: modify KPIAdmin and staff APIs, routing, and related view components
+
+[33mcommit 32c85f18e49a6fcdceb0e5576e4bcdbdb260a3c1[m
+Author: Ismail2603 <mamedovismail975@gmail.com>
+Date:   Sat Apr 19 14:31:52 2025 +0800
+
+    evaluation frontend updated, established connection with backend
+
+[33mcommit c193a351570960d26541f9de605a6e7c354640c7[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 11:50:09 2025 +0800
+
+    # Added feature, reconstructed code
+
+[33mcommit 4f71254430f58aad257ae30f93c77a9787c21f77[m
+Merge: 2acc94b 38dfa9d
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 07:27:35 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit 2acc94be622e480a0d890a75826bab39a840a3de[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 19 07:27:08 2025 +0800
+
+    # Modified
+    1- re-format code
+
+[33mcommit 38dfa9d3baccd9747d2cedcdeb7404ff63baf394[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri Apr 18 20:19:17 2025 +0800
+
+    pagination fixed
+
+[33mcommit 2d44a87381748cc6612483be8370c0a7c1de4453[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Apr 17 23:23:53 2025 +0800
+
+    update
+    -integrated search with backend
+    -added filter function
+
+[33mcommit 45e709e3b78b86677995620bf23072daa577fa9b[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Apr 17 17:44:52 2025 +0800
+
+    updated leave application page
+    -added filter from backend
+    -the pending application count from backend
+
+[33mcommit 802cec000fdc264cb41bedf7cd4ebee8dbbff3e2[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Apr 17 16:59:23 2025 +0800
+
+    update Leave Management:
+    - Add summary stats from backend
+    - Support pagination and filter from backend
+    - Update interface definitions
+
+[33mcommit 31e360f98655afa7c0d746ab72ab4699e3b0f8da[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Apr 16 10:55:02 2025 +0800
+
+    Added system log
+
+[33mcommit a563847543edd73500dbe0b5364045ccadd01ba9[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Apr 16 10:53:35 2025 +0800
+
+    # Added feature
+    1- Added system log
+
+[33mcommit 34fa29d10b2c097386699fb30dd57d0d1abc8796[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Apr 16 09:39:12 2025 +0800
+
+    # Modified
+    1- change the search function in staff management
+
+[33mcommit 1c009bc83f0abfcd4211a631fbb5acabf54cab83[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Apr 16 09:08:58 2025 +0800
+
+    # Bug fixing
+    1- fixed pagination function in staff management
+
+[33mcommit f4c763ed07bcae8e98d7ef34502ca1ebaaab4ca7[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue Apr 15 17:15:22 2025 +0800
+
+    department completed
+
+[33mcommit eb55ef9892d5e15fcec224c38a2debbde522b6c3[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue Apr 15 16:41:00 2025 +0800
+
+    department upload done
+
+[33mcommit 1017da0834752c7c7484d7ba4c0624345f478145[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 16:15:30 2025 +0800
+
+    # Fix bugs
+
+[33mcommit ed6f3b228db2ff0bcc0c68caa786e92f7747d28d[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 15:31:51 2025 +0800
+
+    # Fix bugs
+    1- remove not meaningful API call
+
+[33mcommit 3ba05902e6ee05d6886446d93575191420b3f638[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 15:27:38 2025 +0800
+
+    # Fix bugs
+    1- extract interface to hook, then show total page
+
+[33mcommit 1d916c9a0d9d2cfbfd412ce44ebb89e52f2b6749[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 15:10:03 2025 +0800
+
+    # Fix bugs
+    1- removed front-end filter
+
+[33mcommit 8dbecd5e0d4dc763b60765d64b6c7724793b113d[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 15:05:47 2025 +0800
+
+    # Fix bugs
+    1- Change pagination layout
+
+[33mcommit 371d2a1a5e7bd0fa5a0f5c35b5d397b76894c64a[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 14:59:33 2025 +0800
+
+    # Fix bugs
+    1- remove unused code
+
+[33mcommit a1f56dfc978147da69113295465a1838a767818b[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 14:56:45 2025 +0800
+
+    # Fix bugs
+    1- change KPI UI
+    2- Change not meaning-ful function call
+
+[33mcommit d73bbca57717ab4d89d4b43aa06946c90a7b133d[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Tue Apr 15 14:17:33 2025 +0800
+
+    Updated kpiAdmin, KpiInterface, and KPIManagement admin files
+
+[33mcommit 5ab6385adbbc46ec630b24ef606b619c92c54c78[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Apr 15 08:48:40 2025 +0800
+
+    # Added feature
+    1- Finished role edit
+
+[33mcommit 728aa48b7d4a227ec1d0395e70b4d28227ab318b[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 02:50:40 2025 +0800
+
+    # Added feature
+    1- Finished search function
+
+[33mcommit 11ac03bfd11170382c57671599253edc69b6c43d[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 01:56:09 2025 +0800
+
+    # Added feature
+    1- Finished pagination function
+
+[33mcommit b703c7571d43976e226cda1c253f922511a47a6c[m
+Merge: a9d8e0e 2b75454
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 01:19:15 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit a9d8e0e02b99fdb461ce7efee55041032aebbac0[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 15 01:18:52 2025 +0800
+
+    # Added feature
+    1- Added role add function
+
+[33mcommit 2b75454a040eff65179f4081e705c8bae7ab8073[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Tue Apr 15 00:36:19 2025 +0800
+
+    update reward part
+    1. admin - done reward management (except image upload), done redemption status, partially done point system
+    2. employee - done reward mall (except image), reward history
+
+[33mcommit 177e85ed14e3dbf40611dc912ff246675a5f59d8[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Apr 14 21:55:43 2025 +0800
+
+    added department, but dk why department is not prefilled in edit modal even when it exists
+
+[33mcommit bbd8a33387cace0bd4f58f53fe75ddcb70674ff8[m
+Merge: b972c61 383689a
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 13 21:21:10 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit b972c614027c8681e53c87485ea6b24937b34d70[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 13 21:21:03 2025 +0800
+
+    file upload and preview done
+
+[33mcommit 383689a310526703a0b06d23bebb7e656607333e[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 13 11:37:51 2025 +0800
+
+    # Added UI for shown staff image
+
+[33mcommit 8d9ee9bff4354b2e815af98417ee201fd6cdaa64[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 13 11:17:45 2025 +0800
+
+    # Added feature
+    1 - Allowed user to reset password
+
+[33mcommit 5bccd0a89cc1639dd1878f18a1d00c9b69e5af95[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 13 04:20:38 2025 +0800
+
+    # Added feature
+    1 - Allowed user to reset password
+
+[33mcommit 2f7e6f18e084f766414ab3dd6d0129034082853b[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 13 00:43:29 2025 +0800
+
+    # Added feature
+    1 - Finished delete current staff
+
+[33mcommit ae4af7ba0e83e0456d4cc9e68c4f679d3be45de5[m
+Merge: 4398d2f 04b78c6
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 13 00:31:37 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit 4398d2fe00c79347448ad210538b0eea01bb29cf[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 13 00:31:13 2025 +0800
+
+    # Added feature
+    1 - When the account is inactive, user can not login
+
+[33mcommit 04b78c69f1c9791c5c2488d700b9392bbadeefde[m
+Merge: 796b2cb 7bd8a87
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sat Apr 12 18:26:18 2025 +0800
+
+    Resolved merge conflict in admin/index.vue
+
+[33mcommit 796b2cbbb15a3506b9d773cc3d5cc0df497cd9d0[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Sat Apr 12 18:11:11 2025 +0800
+
+    add interface of KPI admin
+
+[33mcommit 7bd8a8709eb8aca31053b039a8a9f901f42f31f2[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 12 11:18:09 2025 +0800
+
+    # finished edit department name shown
+
+[33mcommit c6239ca9358164a1f2fb8cb0d18f86250a3a5fac[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 12 10:52:59 2025 +0800
+
+    #finished department name shown
+
+[33mcommit fa40a67c0867b4d46466bc8f5aa285ea1ad78bb9[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 12 10:37:27 2025 +0800
+
+    #Use pinia to manage states
+
+[33mcommit f0b1e898369638707ee625917dcb3dc3adb38556[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Apr 10 22:23:56 2025 +0800
+
+    status couldnt update
+
+[33mcommit b170c98fcb3cb8c00ef4522fe4dfaecc3f7f8c7c[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Apr 10 11:41:22 2025 +0800
+
+    interaction for hr page done for fetching
+
+[33mcommit d1d116bdfc8e01b8e402e5ab4f34ddf657945d11[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Wed Apr 9 10:04:30 2025 +0800
+
+    able to submit leave application
+
+[33mcommit 95f7ce6eff66cddf5a13b93ae1b425c2502a9445[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Apr 9 01:11:57 2025 +0800
+
+    # finished staff pagination function
+
+[33mcommit d773a51d77f3e44ccbe7273090aa10f42e1f17fd[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Apr 9 00:54:51 2025 +0800
+
+    # finished basic staff list
+
+[33mcommit 02cee86fb4f1b8d246a475c60bd79df3f4ca0033[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Apr 9 00:46:33 2025 +0800
+
+    # finished basic staff list
+
+[33mcommit fd9ceda1522a53bf6dd5bcb97dd1b7c4b91f0ad6[m
+Merge: 881d187 063e4d2
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Apr 8 13:47:21 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+
+[33mcommit 881d187373687a89a1a3508a44be6620b012fce4[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Apr 8 13:46:51 2025 +0800
+
+    # removed search area
+
+[33mcommit 063e4d25abdadf854b6f75a82a58f4234fae1032[m
+Merge: fe1e621 29cb70d
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue Apr 8 10:57:22 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit fe1e6217d05c6101b0bb7a0e571c458edf6f96ea[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Tue Apr 8 10:57:08 2025 +0800
+
+    leave application
+
+[33mcommit 29cb70d54107e0e17fa7393bba863e71faf3f9c1[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Apr 8 09:07:20 2025 +0800
+
+    # finished department update function
+
+[33mcommit 44bc7027bd6c662efdd1b895aba52c5feeb1137c[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Tue Apr 8 00:48:00 2025 +0800
+
+    # 更新部署脚本
+
+[33mcommit c867841503020bad546f2d664125ff5cccc4bba5[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Apr 7 09:31:23 2025 +0800
+
+    # Added Todo LIST
+
+[33mcommit 5f204f63914417e197ff0d464c0b2358b809529c[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 6 23:26:36 2025 +0800
+
+    # Format data field
+
+[33mcommit e60cfee0d6b4add778816a75953936266885eebe[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 6 23:06:34 2025 +0800
+
+    # Finished department delete
+
+[33mcommit 758ac16447869fa93c84360522066dd2d2bdbb9e[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 6 22:49:04 2025 +0800
+
+    # finished department added
+
+[33mcommit ccce0dd31f98579539fd430937b8e31249976dee[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 6 22:24:02 2025 +0800
+
+    # remove department status
+
+[33mcommit 6b1e07ffea12371b90e7a5d30d95828b6c1d9aaa[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 6 21:55:16 2025 +0800
+
+    # Added finished department tree
+
+[33mcommit c31890eba5ff5cab2b8d888bb945704d6c596279[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sun Apr 6 21:36:41 2025 +0800
+
+    # reformat code that extract interface
+
+[33mcommit ddb338c3c55f696dfcccee9bda6bd37a1fe31eca[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 6 12:30:47 2025 +0800
+
+    notification integrating with backend left file upload
+
+[33mcommit 32ca084766c2e855b83ba05e1a67a21745c1f3a3[m
+Merge: 31b4ee4 78fabe6
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 6 08:21:29 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 31b4ee4592f9b95708132f08fb7cbcbd9090c47f[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Apr 6 08:21:20 2025 +0800
+
+    notification try
+
+[33mcommit 78fabe6503afdd358f449ad93d1611451a6a539f[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 5 21:51:11 2025 +0800
+
+    # finished Role delete function
+
+[33mcommit 1062296d19087e08fdaa5115d14f05e5dccedf43[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 5 21:32:06 2025 +0800
+
+    # finished Role list interaction
+
+[33mcommit bee12ab8b031a204145faf1ae7d82977471e8559[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 5 21:02:58 2025 +0800
+
+    # finished login function , when user enter to home page , it will get current user
+
+[33mcommit 47b8b993573de820fcb36f00299b02cb2f8e2208[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 5 16:49:54 2025 +0800
+
+    # 存在bug, 晚点再修复
+
+[33mcommit e13d2f299c463335d9e887a44b0d45b1204665c3[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 5 16:20:58 2025 +0800
+
+    # finished when user logged, get current user information
+
+[33mcommit 8b1c64c50c2bcbb4bab93bf74e15b0c023f401d1[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Sat Apr 5 15:19:43 2025 +0800
+
+    # Added feature Implement login and logout function
+
+[33mcommit 3b1a93fee88f5004c71c85631dc0365cecdf9794[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Mon Mar 31 15:41:32 2025 +0800
+
+    add terminated and not yet started status to kpi department management
+
+[33mcommit 9703833bb25124379b00d8e0dce8c7d0160cd021[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Thu Mar 27 04:19:06 2025 +0800
+
+    KPI Admin Confirmation for Task Completed
+
+[33mcommit 24fb7e337905740e4562a35cd21b080fc4be2529[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Mon Mar 24 09:42:19 2025 +0800
+
+    fix status
+
+[33mcommit 78f867bf155dae11029c49d378d4fe861d3cd74a[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Mar 24 09:17:20 2025 +0800
+
+    fix bug
+
+[33mcommit 72b4757f9785f1ab569fc5d558ebc86ce8f08d69[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Mar 23 11:57:43 2025 +0800
+
+    fix document uploading bug
+
+[33mcommit 0c4dd241c41432dfd987bfef83f81c9c640de5fa[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri Mar 21 17:29:29 2025 +0800
+
+    fix acc to client request left image zooming issues
+
+[33mcommit 190e64ef7639364ce81eaf04e2e039847033af59[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sun Mar 9 22:27:10 2025 +0800
+
+    Updated header includes personal info & logout
+
+[33mcommit 946be831518e0745609154a1c82bd8143492b1a8[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sun Mar 9 22:25:30 2025 +0800
+
+    Updated index.ts
+    
+    added route for personal info page
+
+[33mcommit 61621f04c06460aeea36b5639798688e7b289550[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sun Mar 9 22:19:13 2025 +0800
+
+    personal info page
+
+[33mcommit 1c8a49c4433712e6db48f03c23bd668d38f96399[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sat Mar 8 01:33:45 2025 +0800
+
+    Updated user management
+    
+    added resignation date which is linked to the delete function
+    employment date made set automatically, cannot be edited
+
+[33mcommit af4e1b7040afca2122bb8524afae3359740044b9[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Mar 7 21:41:46 2025 +0800
+
+    small change
+
+[33mcommit b548436a2a2df47006ae1b29188b2f7db4640dfc[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Mar 7 21:37:42 2025 +0800
+
+    leaderboard image
+
+[33mcommit 18f2389412d5bae28e31699de828cc037c2e6a8c[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Mar 7 21:33:42 2025 +0800
+
+    modify kpi management, fix image, fix leaderboard
+
+[33mcommit e6a187861087633d5221387cb3da396055166025[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Mar 7 17:37:14 2025 +0800
+
+    # Added feature
+    1- Add department manager can evaluate staff
+    2- format style
+
+[33mcommit 24e41de868d70c9d7acdfb0127ceb73634e6229b[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Fri Mar 7 17:22:23 2025 +0800
+
+    # Added feature
+    1- Add detailed department evaluation list
+
+[33mcommit 628ec3ee3ecbd4b9e406a5a7ecc523b8c8e50d55[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Fri Mar 7 16:23:40 2025 +0800
+
+    added
+
+[33mcommit 1a8e57bffafde5f72d9977f02333c18193e05094[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Mar 7 16:08:59 2025 +0800
+
+    add employee task details page, and modify admin kpi management
+
+[33mcommit 3b3dd5a0f235e23f013c1175b3ebbd8eeb839eba[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Mar 6 22:42:56 2025 +0800
+
+    did modification acc to client request added dynamic
+
+[33mcommit 7ba92d50034d487d92117e3a86f3d30293af3b81[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Thu Mar 6 22:42:13 2025 +0800
+
+    changes
+    
+    1. add draft status to reward management
+    2. modify html for leaderboard
+    3. add point system page to view total points of each employee
+
+[33mcommit a0d59e95197e4c0be8c7663523b8544a61f5f340[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Mar 6 20:18:14 2025 +0800
+
+    did modification acc to client request
+
+[33mcommit 05682dc8d6c840831e6b5ae622ad801b4b45c635[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Mar 3 12:15:38 2025 +0800
+
+    did modification acc to client request
+
+[33mcommit c78a5882541483b0b7552f0439db0a5a000cb8b3[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Mar 3 12:07:19 2025 +0800
+
+    did modification acc to client request
+
+[33mcommit d4cb5395716dbced8022ba784158e2cbacd5aae0[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Mon Mar 3 05:32:07 2025 +0800
+
+    Updated user management index.vue
+    
+    -added Medical leave and annual leave
+
+[33mcommit 1c36b7a0bad0149dbd81dcbeed02c475f0bfea24[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sun Mar 2 19:49:45 2025 +0800
+
+    Update user management
+    
+    added employment date which is selectable
+
+[33mcommit 6158b741b1988a4ab8f3685ba7c674157d59485b[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sun Mar 2 19:47:19 2025 +0800
+
+    Updated department management
+    
+    hierarchy structure, ui changes, search fix
+
+[33mcommit 8a0b5e2ad037a4597eb23eb4a42cf983a1f21a61[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Mar 2 12:24:03 2025 +0800
+
+    modified acc to client request
+
+[33mcommit e7ae6c17ef09c53c6c69d40032c40f757eb65a5b[m
+Merge: 5f86d97 d184b97
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Mar 2 11:45:50 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 5f86d9799c7d0c0505bb015d94cce7d1e0b919b1[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Mar 2 11:45:46 2025 +0800
+
+    modify
+
+[33mcommit d184b97db3fc0e3cae22eece3c6ca329bc0282fa[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Wed Feb 26 10:44:42 2025 +0800
+
+    add status for reward management
+
+[33mcommit 7e2464ef68178e1b269aece09ba84d318c7a5c54[m
+Author: WangChong <mz1874@aliyun.com>
+Date:   Wed Feb 26 04:35:39 2025 +0800
+
+    # bug fix
+
+[33mcommit 2301cd0c79e8ab4e396489d7c3117ac108b6af45[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Mon Feb 24 09:58:21 2025 +0800
+
+    fixed User management index.vue
+
+[33mcommit ceada0278433aed834da3db164e13b03bc658b9f[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Mon Feb 24 09:57:24 2025 +0800
+
+    fixed department management index.vue
+
+[33mcommit ff272241c7e7decee966ba50e018eb17db5b4130[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Mon Feb 24 02:28:20 2025 +0800
+
+    leaderboard
+
+[33mcommit bfb1f89ffa34c73fa5e6a020df2658c00b395428[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Mon Feb 24 02:18:40 2025 +0800
+
+    leaderboard
+
+[33mcommit 786931be973904194a82063cd86502945f5b59db[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 23 12:30:06 2025 +0800
+
+    added responsive
+
+[33mcommit 0da98edaa0bae8dd0f54b7177685af8e984b35b2[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 23 09:27:01 2025 +0800
+
+    modify leave management
+
+[33mcommit 7655cc0e1a446bdfbb9f0471171d80e2f38a6fbe[m
+Merge: 1bd3c58 e976cd7
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 23 08:52:12 2025 +0800
+
+    Merged main branch into my branch to sync latest changes.
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 1bd3c58424f95d2995b15fd9f5fa67eb4d7e2f24[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 23 08:52:07 2025 +0800
+
+    added filter function
+
+[33mcommit e976cd76ef5efb74abd80bcbe1a2f8dbf09c25a9[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Sun Feb 23 05:16:50 2025 +0800
+
+    # Add feature
+    1- Added half of evaluation center
+    2- change the sidebar style
+
+[33mcommit 32a8a57f02e0964eceff158a238d87d7360b07e3[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Sun Feb 23 02:22:52 2025 +0800
+
+    add point icon and crown icon for leaderboard page
+
+[33mcommit 8088425422c6ae8e1474282e7c47c9e7e11bc7d0[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Sun Feb 23 00:11:11 2025 +0800
+
+    add point reward icon in reward page, and add kpi management for manager
+
+[33mcommit 8280f54e31c4340ca6b4864f0efa9a07f23a921a[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Sat Feb 22 09:26:07 2025 +0800
+
+    add report generation page
+
+[33mcommit 44e785812e7c6ad895acd38cc520ada45a53b2a7[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Sat Feb 22 02:14:55 2025 +0800
+
+    # Added feature
+    1- Add role management
+    2- unify style
+    3- fixed router error in some page
+
+[33mcommit f87643620ab08e93c955b88eea6dd69d74c58c6a[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Feb 21 22:39:59 2025 +0800
+
+    complete department filter for kpi management
+
+[33mcommit dddebcf596ebe61293f5d848e2df1437895b1773[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Feb 21 16:25:25 2025 +0800
+
+    add department filter for kpi management, disabled button after confirmation for reward page
+
+[33mcommit 1d02e45411e391375df0718faef445473fd78d0a[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Feb 21 13:48:13 2025 +0800
+
+    modify template and style for kpi management, disabled modification for view modal (for reward page)
+
+[33mcommit ec5f4efe6088e5cf3d41104472c3781c1cc231f3[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Fri Feb 21 10:12:37 2025 +0800
+
+    Create KPI Management
+
+[33mcommit 11855522614b16fef895d691b0ac042c8059e7c8[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Fri Feb 21 05:02:22 2025 +0800
+
+    Create MyKPIDashboard
+
+[33mcommit b36ccac6d195a5a0d49f4719fe98c758794a9141[m
+Author: CHEAH RUO YING <a021014141166@gmail.com>
+Date:   Fri Feb 21 03:28:16 2025 +0800
+
+    Create Homepage and Update sidebar
+
+[33mcommit 592cdf54d26b5bd844d023879111a857935bcd77[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Thu Feb 20 16:51:00 2025 +0800
+
+    done leave application just the filter need to be fixed
+
+[33mcommit 55ee456a49e7c48dfbcc46cd0fc04ea1154976e6[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Wed Feb 19 22:19:52 2025 +0800
+
+    add kpi dashboard router
+
+[33mcommit b8249c66764a4c044520451cb761ee6b2485c9b9[m
+Merge: 8afe618 5d497ba
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Wed Feb 19 22:12:32 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 8afe6181b8b4576a7ef4e4e6d141554a268806db[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Wed Feb 19 22:12:05 2025 +0800
+
+    add KPI dashboard router
+
+[33mcommit 5d497baae70a0779e0bb50dea6b88adf06e49542[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Wed Feb 19 18:20:04 2025 +0800
+
+    completed notification view and half way throught apply leave
+
+[33mcommit 02d2af1da31f39b973457c7d6c4ec968e348525d[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Wed Feb 19 10:22:57 2025 +0800
+
+    Fix and add
+    
+    1. Combine reward management, redemption status, and leaderboard page
+    2. fix search bar for point details page, and view history page
+    3. fix modal padding and icon for reward mall page
+
+[33mcommit ab07679b2025361593abfe5340c2ab189282a297[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 17 07:46:36 2025 +0800
+
+    # Fix bug
+    1- 弥补缺失的showmodal组件
+    2- 使用ref的方式查找引用，并且显示模态框，修复bug
+
+[33mcommit b14c072527a17beea3e6e8d612bf541b6de3627b[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 17 02:19:49 2025 +0800
+
+    # Fix bug
+    1- 弥补缺失的showmodal组件
+    2- 使用ref的方式查找引用，并且显示模态框，修复bug
+
+[33mcommit 1c833c90340eca3f6c1fad4f48d934744036efb0[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 16 22:19:55 2025 +0800
+
+    updated template for edit modal but script hasnt
+
+[33mcommit 196b417921c9e4aa2a73b481ed9d67fbc03a844e[m
+Merge: 80eccf6 60eb147
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 16 12:46:14 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 80eccf6b178b4592d0b51e92d8323bd7f64d28e9[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 16 12:46:09 2025 +0800
+
+    updated notication center with button indicating status
+
+[33mcommit 60eb1472ffdd28ea2c8c71c34131762e4412aa04[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sun Feb 16 12:42:15 2025 +0800
+
+    Updated user management
+
+[33mcommit 224e4c2398f0f5141b8cba822040fe6d7416d030[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Sun Feb 16 12:32:35 2025 +0800
+
+    Updated department management
+
+[33mcommit f01b0385b431d19d45663323764fcfcd77feac94[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sun Feb 16 09:43:02 2025 +0800
+
+    updated notication center left edit
+
+[33mcommit 0d129ca4a8a14541f28e3e5c4eda1555322444d3[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat Feb 15 11:47:31 2025 +0800
+
+    updated router from kpi to kpi details
+
+[33mcommit 9c904a9d3d095c3166065fe92b6cf96e7bbf6782[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat Feb 15 11:27:30 2025 +0800
+
+    personal kpi management details done
+
+[33mcommit fa4a17f27dd678ea4b7d4c7f659a5679bdf34777[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Sat Feb 15 11:13:09 2025 +0800
+
+    personal tracking page done
+
+[33mcommit 48e1bd90fde0fa0334aecd10eef38690f596e0b1[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Fri Feb 14 21:09:05 2025 +0800
+
+    # Add feature
+    1- Added router management
+
+[33mcommit 1c1eb3a4980edea5b8644470599d8b2c41a4da55[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Fri Feb 14 20:33:37 2025 +0800
+
+    # update style
+    1- unify the style in system log
+
+[33mcommit fddd9d047660575e529ae6235e06dee907704cdf[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Fri Feb 14 13:12:50 2025 +0800
+
+    combine view reward history page. add reward administration router, add image
+
+[33mcommit fddbe0a9db70e0b3e1d89be0339af1ccab9e8dfb[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Thu Feb 13 14:28:18 2025 +0800
+
+    combine point details page and change font
+    
+    1. change font in HomeView
+    2. combine point details page
+
+[33mcommit d5d6c79650ee3eb38672ca1dd1527eb4732b1e43[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Thu Feb 13 08:15:44 2025 +0800
+
+    Updated user management
+
+[33mcommit 990cb5c0c5b1de8607123a3f211d502241d656c8[m
+Author: Ismail2603 <132675248+Ismail2603@users.noreply.github.com>
+Date:   Thu Feb 13 08:14:49 2025 +0800
+
+    Updated department management
+
+[33mcommit 8578de2a1e4df3d8e3a52152c9f334ce61e73a12[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Feb 12 17:33:12 2025 +0800
+
+    # Add feature
+    1- Added personal kpi page
+    2- fix css
+    3- remove unused page
+
+[33mcommit 2810c097d5106f86cc2184050d4a44913344adfa[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Wed Feb 12 17:23:37 2025 +0800
+
+    # bug fix
+    1- fixed router
+    2- fixed Leave application page , ts
+
+[33mcommit f6d0d77d75c53a3a6ad0dca56233f390b1ba0b14[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Wed Feb 12 16:49:28 2025 +0800
+
+    router for leave appliation
+
+[33mcommit a013ce215b0640ecc7e55c16d3b883adfd8a2327[m
+Merge: 61d0a60 53690df
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Wed Feb 12 16:40:06 2025 +0800
+
+    Merge branch 'main' of https://github.com/mz1874/hr-management-system
+
+[33mcommit 61d0a605b0f1ef90822e1593f4ab2275256e8353[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Wed Feb 12 16:37:14 2025 +0800
+
+    leave application for admin done
+
+[33mcommit 53690df94f30aae6efcf793973a819ce3329ec2e[m
+Author: unknown <leeenqi0407@gmail.com>
+Date:   Wed Feb 12 10:59:08 2025 +0800
+
+    Change and Add
+    
+    1. Updated HomeView template
+    2. Removed all contentHeader and col styling from all pages
+    3. Combine Reward Mall (employee) page and added Point Details page
+
+[33mcommit 22dc2b3fb8dc91dedbb8e35c8d8f6d73d253227e[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 22:39:59 2025 +0800
+
+    # update
+    1- update the position of Modal in system log
+
+[33mcommit 99dfbc3367623f6111c522a8ce2ce2b107fee86b[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 22:35:31 2025 +0800
+
+    # Remove
+    1- remove unused page
+
+[33mcommit 5748ec421d9628d0ca39edf1c1056ecf94dd2602[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 22:34:10 2025 +0800
+
+    # Add feature
+    1- Add support for Home Default page
+    2- Add support for KPI Management
+    3- Add support for leaderBoard
+    4- Add support for LeaveApplication
+    5- Add support for notification center
+    6- Add support for rewardMall
+    7- Add router and nav
+
+[33mcommit f8d4e9d01ebfb234c9d16f963dc30a8c1e12b87d[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 18:13:09 2025 +0800
+
+    #Added feature
+    1- 增加点击action时模态框的支持
+
+[33mcommit be2475ec63cc3a5466190964bc7d89c139a3f08b[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 18:03:19 2025 +0800
+
+    # Change style
+    1- Changed style in system log
+
+[33mcommit 29f0f771ee7aecb02a0e4b5a272e0b3cc560830b[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 17:58:47 2025 +0800
+
+    # Added feature
+    1- combined system log
+
+[33mcommit c4d3f9dfc9b9ef821b5aaf4bf38f2c0881d0bcb1[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 04:29:49 2025 +0800
+
+    # Add Feature
+    1- Added basic page for auth-management
+    2- Added basic page for router-management
+
+[33mcommit 00dee4530768d09593df935b7cb07c4d09a80aa0[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Tue Feb 11 04:22:11 2025 +0800
+
+    # Add Feature
+    1- add public component header
+    2- combine header to System log 、Department management 、User management
+
+[33mcommit 3e988f5b718208c1d33727723472eff0963d3194[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 21:46:09 2025 +0800
+
+    # Added feature
+    1- Redirect / page to Login path
+    2- Change all sub-function to home's child route
+    3- Change login page from vue 2 to vue 3 and when user click the button , it will jump to home page
+
+[33mcommit fdf1a104e0537a89123f4f3c0e249c2769166b8f[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 21:21:53 2025 +0800
+
+    # Added feature (basic page)
+    1- Add page of user Management
+    2- add page of depart Management
+    3- Add page of system log
+    4- Add router for above
+
+[33mcommit a5ea840d4678198d861c6e4e346d93838fe5c431[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 21:05:23 2025 +0800
+
+    # fix symbol
+
+[33mcommit 0a9448c6744fee5506af9f1170705a720eaf7005[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 21:04:44 2025 +0800
+
+    # add features
+    1- Change sidebar data from static to dynamic
+
+[33mcommit 425c488f74e67b75b8652f54394a98366b90be57[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 20:41:28 2025 +0800
+
+    # add features
+    1 - Add public component sidebar
+    2- Add public component footer
+
+[33mcommit dc08a5da4581fa5733e04636ca2d3cbe6de37ec1[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Feb 10 17:25:35 2025 +0800
+
+    login
+
+[33mcommit 5936e15af0987b481903f7a90d5da43cc97e8fd9[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 17:11:29 2025 +0800
+
+    merge
+
+[33mcommit d243199ba5a739dd9ea1ad6f41afd5557a33d155[m
+Merge: 7ae7e58 0704b65
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 17:10:29 2025 +0800
+
+    Merge remote-tracking branch 'origin/main'
+    
+    # Conflicts:
+    #       src/views/Login.vue
+
+[33mcommit 7ae7e58fbb2119dfb6539d570744320676bb806f[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 17:09:49 2025 +0800
+
+    update login page
+
+[33mcommit 0704b65f90d579c48b0da7a681ad4a47fd46b996[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Feb 10 17:06:32 2025 +0800
+
+    login
+
+[33mcommit b498a7b2153eaaad04edbd67df30c253986ba88d[m
+Author: jayla25 <147042557+jayla25@users.noreply.github.com>
+Date:   Mon Feb 10 16:39:25 2025 +0800
+
+    login
+
+[33mcommit ceb3e929f14e04459b87bdccf549fd11a73ef6c3[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 16:05:11 2025 +0800
+
+    update read me
+
+[33mcommit 0ff2d733577592d10ec2dca8b8a1231a6067dc17[m
+Author: Wang Chong <mz1874@aliyun.com>
+Date:   Mon Feb 10 15:48:49 2025 +0800
+
+    Init the basic demo for vue3 + vite project
