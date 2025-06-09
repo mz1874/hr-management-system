@@ -163,6 +163,26 @@ onMounted(() => {
   if (viewModal.value) modalInstance = new Modal(viewModal.value);
 });
 
+const pageNumbers = computed(() => {
+  const pages: (number | string)[] = [];
+  const total = totalPages.value;
+  const current = currentPage.value;
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 4) pages.push('...');
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 3) pages.push('...');
+    pages.push(total);
+  }
+
+  return pages;
+});
+
 </script>
 
 
@@ -233,11 +253,19 @@ onMounted(() => {
           </li>
 
           <li
-            v-for="page in totalPages"
-            :key="page"
-            :class="['page-item', { active: currentPage === page }]"
+            v-for="(page, index) in pageNumbers"
+            :key="index"
+            :class="['page-item', { active: currentPage === page, disabled: page === '...' }]"
           >
-            <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+            <a
+              v-if="page !== '...'"
+              class="page-link"
+              href="#"
+              @click.prevent="changePage(page as number)"
+            >
+              {{ page }}
+            </a>
+            <span v-else class="page-link disabled">…</span>
           </li>
 
           <li :class="['page-item', { disabled: currentPage === totalPages }]">
@@ -245,6 +273,7 @@ onMounted(() => {
           </li>
         </ul>
       </nav>
+
     </div>
 
 
@@ -493,6 +522,17 @@ onMounted(() => {
   font-family: Georgia, serif;
   line-height: 1.6;
   text-align: left;
+}
+
+.page-link {
+  border: 1px solid #cccccc;
+  color: #008080;
+}
+
+.page-item.active .page-link {
+  color: #fff;
+  background-color: #008080;
+  border-color: #008080;
 }
 
 
