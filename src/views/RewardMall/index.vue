@@ -51,10 +51,14 @@
         <div class="reward-content">
           <!-- Updated reward title with read more functionality -->
           <div class="reward-title-container">
-            <h4 :class="['reward-title', { 'expanded': expandedTitles[item.id] }]" @click="toggleTitle(item.id)">
+            <h4 
+              :ref="(el: any) => titleRefs[item.id] = el"
+              :class="['reward-title', { 'expanded': expandedTitles[item.id] }]" 
+              @click="toggleTitle(item.id)"
+            >
               {{ item.rewardName }}
             </h4>
-            <button v-if="shouldShowTitleToggle(item.id)" class="expand-button" @click="toggleTitle(item.id)">
+            <button v-if="shouldShowTitleToggle[item.id]" class="expand-button" @click="toggleTitle(item.id)">
               <span v-if="!expandedTitles[item.id]">Read more</span>
               <span v-else>Read less</span>
               <i class="bi bi-chevron-down" v-if="!expandedTitles[item.id]"></i>
@@ -64,16 +68,20 @@
           
           <!-- Description -->
           <div class="reward-description">
-            <div :class="['description-text', { 'expanded': expandedRewards[item.id] }]" @click="toggleDescription(item.id)">
+            <div 
+              :ref="(el: any) => descriptionRefs[item.id] = el"
+              :class="['description-text', { 'expanded': expandedRewards[item.id] }]" 
+              @click="toggleDescription(item.id)"
+            >
               {{ item.description }}
             </div>
 
-              <button v-if="shouldShowToggle(item.id)" class="expand-button" @click="toggleDescription(item.id)">
-                <span v-if="!expandedRewards[item.id]">Read more</span>
-                <span v-else>Read less</span>
-                <i class="bi bi-chevron-down" v-if="!expandedRewards[item.id]"></i>
-                <i class="bi bi-chevron-up" v-else></i>
-              </button>
+            <button v-if="shouldShowToggle[item.id]" class="expand-button" @click="toggleDescription(item.id)">
+              <span v-if="!expandedRewards[item.id]">Read more</span>
+              <span v-else>Read less</span>
+              <i class="bi bi-chevron-down" v-if="!expandedRewards[item.id]"></i>
+              <i class="bi bi-chevron-up" v-else></i>
+            </button>
           </div>
           
           <!-- Details -->
@@ -195,42 +203,58 @@ import type { RewardItem} from '@/interface/RewardInterface.ts';
 // ===================== Toggle Reward Title =====================
 // reactive references
 const expandedTitles = ref<Record<number, boolean>>({})
-const titleRefs = ref<Record<number, HTMLElement>>({})
+const titleRefs = ref<Record<number, Element | null>>({})
+const shouldShowTitleToggle = ref<Record<number, boolean>>({})
+
+// Check if title overflows beyond 2 lines
+const checkTitleOverflow = (id: number) => {
+  nextTick(() => {
+    const element = titleRefs.value[id] as HTMLElement
+    if (!element) return
+    
+    // Get the computed line height and element height
+    const lineHeight = parseInt(window.getComputedStyle(element).lineHeight)
+    const elementHeight = element.scrollHeight
+    
+    // Calculate how many lines the text actually takes
+    const numberOfLines = Math.ceil(elementHeight / lineHeight)
+    
+    // Show toggle if text takes more than 2 lines
+    shouldShowTitleToggle.value[id] = numberOfLines > 2
+  })
+}
 
 // Toggling title
 const toggleTitle = (id: number) => {
   expandedTitles.value[id] = !expandedTitles.value[id]
 }
 
-// Check if title needs toggle button
-const shouldShowTitleToggle = (id: number): boolean => {
-  // Find the item by id
-  const item = tableData.value.find(item => item.id === id)
-  if (!item) return false
-  
-  // Text length check
-  const shouldShow = item.rewardName && item.rewardName.length > 30
-  return shouldShow
-}
-
 // ===================== Toggle Description =====================
 const expandedRewards = ref<Record<number, boolean>>({})
-const descriptionRefs = ref<Record<number, HTMLElement>>({})
+const descriptionRefs = ref<Record<number, Element | null>>({})
+const shouldShowToggle = ref<Record<number, boolean>>({})
+
+// Check if description overflows beyond 2 lines
+const checkDescriptionOverflow = (id: number) => {
+  nextTick(() => {
+    const element = descriptionRefs.value[id] as HTMLElement
+    if (!element) return
+    
+    // Get the computed line height and element height
+    const lineHeight = parseInt(window.getComputedStyle(element).lineHeight)
+    const elementHeight = element.scrollHeight
+    
+    // Calculate how many lines the text actually takes
+    const numberOfLines = Math.ceil(elementHeight / lineHeight)
+    
+    // Show toggle if text takes more than 2 lines
+    shouldShowToggle.value[id] = numberOfLines > 2
+  })
+}
 
 // Toggle open/close
 const toggleDescription = (id: number) => {
   expandedRewards.value[id] = !expandedRewards.value[id]
-}
-
-// Decide if "Read More" is needed
-const shouldShowToggle = (id: number): boolean => {
-  // Find the item by id
-  const item = tableData.value.find(item => item.id === id)
-  if (!item) return false
-  
-  // Text length check 
-  const shouldShow = item.description && item.description.length > 100
-  return shouldShow
 }
 
 // ===================== Pagination =====================
@@ -292,6 +316,12 @@ const fetchRewards = (page = 1) => {
         file: item.file?.file_url || ''
       }
     }));
+    nextTick(() => {
+      tableData.value.forEach(item => {
+        checkTitleOverflow(item.id)
+        checkDescriptionOverflow(item.id)
+      })
+    })
   });
 };
 
@@ -325,6 +355,13 @@ onMounted(async () => {
   await fetchPoints();
   fetchRewardRedemption();
 });
+
+window.addEventListener('resize', () => {
+  tableData.value.forEach(item => {
+    checkTitleOverflow(item.id)
+    checkDescriptionOverflow(item.id)
+  })
+})
 
 
 // ===================== Check if the user has redeemed the reward =====================
@@ -519,12 +556,8 @@ function goToRewardHistory() {
   background-color: rgb(242, 242, 242);
 } 
 
-.points-button i {
-  margin-left: 0.2rem;
-}
-
 .points-label {
-  margin-left: 0.8rem;
+  margin-left: 0.5rem;
 }
 
 .points-value {
@@ -532,7 +565,7 @@ function goToRewardHistory() {
   font-weight: 700;
   color: #8b4513;
   margin-bottom: 0;
-  margin-left: 0.8rem;
+  margin-left: 0.5rem;
 }
 
 /* Rewards Grid */
@@ -601,11 +634,10 @@ function goToRewardHistory() {
   cursor: pointer;
   position: relative;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: all 0.3s ease;
-  line-height: 1.5;
 }
 
 .reward-title.expanded {

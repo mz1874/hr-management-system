@@ -126,7 +126,7 @@
                         <p class="text-muted">No point transactions found.</p>
                     </div>
                     
-                    <!-- Transaction List -->
+                   <!-- Transaction List -->
                     <div v-else>
                         <div class="point-details-item mb-3 p-3 border rounded" 
                             v-for="transaction in combinedPointTransactions" 

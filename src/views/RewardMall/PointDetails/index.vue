@@ -51,7 +51,7 @@
                     'text-success fw-bold': details.pointType === 'Addition' || details.pointType === 'KPI Completed',
                     'text-danger fw-bold': details.pointType === 'Deduction'
                   }">
-                {{ details.pointsValues }}
+                {{ (details.pointType === 'Addition' || details.pointType === 'KPI Completed') ? '+' + details.pointsValues : '' + details.pointsValues }}
               </td>
 
               <td>                    
