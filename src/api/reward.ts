@@ -120,3 +120,33 @@ export function getCombinedPointTransactions(
   };
   return axios.get(`/api/combined-transactions/staff/${id}/`, { params });
 }
+
+/**
+ * 导出Point history
+ */
+
+export function exportPointHistory(params: {
+    department_id?: string | number |null;
+    start_date?: string;
+    end_date?: string;
+}) {
+    return axios.post('/api/reward/export-point-history/', params, {
+        responseType: 'blob'
+    });
+}
+
+
+/**
+ * 导出兑换历史
+ */
+
+export function exportRewardRedemption(params: {
+    department_id?: string | number |null;
+    start_date?: string;
+    end_date?: string;
+}) {
+    return axios.post('/api/reward/export-reward-redemption/', params, {
+        responseType: 'blob'
+    });
+}
+
