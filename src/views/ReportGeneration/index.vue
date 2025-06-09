@@ -47,6 +47,20 @@
   >
     Generate Report
   </button>
+  <div v-if="isExporting" class="mt-3">
+    <div class="progress">
+      <div
+          class="progress-bar progress-bar-striped progress-bar-animated"
+          role="progressbar"
+          style="width: 100%"
+          aria-valuenow="100"
+          aria-valuemin="0"
+          aria-valuemax="100"
+      ></div>
+    </div>
+    <p class="mt-2">Exporting，Please wait...</p>
+  </div>
+
 
   <div v-if="filepath" class="mt-4">
     <iframe
@@ -60,18 +74,20 @@
 
 <script setup lang="ts">
 import {ref, onMounted, reactive} from "vue";
-import axios from "axios";
 import {selectAllDepartments} from "@/api/department.ts";
 import {isSuccess} from "@/utils/httpStatus.ts";
 import {exportLeaveApplications} from "@/api/leave.ts";
 import {exportKPI, exportPersonalKPI} from "@/api/kpiAdmin.ts";
-
+import {exportPointHistory, exportRewardRedemption} from "@/api/reward.ts";
+import Swal from "sweetalert2";
 let departments = reactive<any[]>([]);
 const selectedReport = ref("");
 const selectedDept = ref(0);
 const startDate = ref("");
 const endDate = ref("");
 const filepath = ref("");
+const isExporting = ref(false);
+
 
 const reset = () =>{
   selectedReport.value = "";
@@ -99,61 +115,64 @@ onMounted(async () => {
 });
 
 const generateReport = async () => {
+  const reportType = selectedReport.value;
+  const params = {
+    department_id: selectedDept.value,
+    start_date: startDate.value,
+    end_date: endDate.value,
+  };
 
-  if (selectedReport.value == "leave") {
-    try {
-      const response = await exportLeaveApplications({
-        department_id: selectedDept.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
-      });
+  const reportMap = {
+    leave: exportLeaveApplications,
+    kpi: exportKPI,
+    personal: exportPersonalKPI,
+    point: exportPointHistory,
+    reward: exportRewardRedemption,
+  };
 
-      const blob = new Blob([response.data], { type: response.headers['content-type'] });
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `${selectedReport.value}_report.xlsx`;
-      link.click();
-    } catch (error) {
-      console.error('导出失败', error);
-      alert('导出失败，请重试');
-    }
-  }else if(selectedReport.value == "kpi") {
-    try {
-      const response = await exportKPI({
-        department_id: selectedDept.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
-      });
+  const exportFunc = reportMap[reportType];
 
-      const blob = new Blob([response.data], { type: response.headers['content-type'] });
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `${selectedReport.value}_report.xlsx`;
-      link.click();
-    } catch (error) {
-      console.error('导出失败', error);
-      alert('导出失败，请重试');
-    }
-  }else if(selectedReport.value == "personal") {
-    try {
-      const response = await exportPersonalKPI({
-        department_id: selectedDept.value,
-        start_date: startDate.value,
-        end_date: endDate.value,
-      });
-
-      const blob = new Blob([response.data], { type: response.headers['content-type'] });
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `${selectedReport.value}_report.xlsx`;
-      link.click();
-    } catch (error) {
-      console.error('导出失败', error);
-      alert('导出失败，请重试');
-    }
+  if (!exportFunc) {
+    await Swal.fire({
+      icon: 'warning',
+      title: '无效的报表类型',
+      text: '请选择正确的报表类型再导出',
+    });
+    return;
   }
 
+  isExporting.value = true;  // 开始导出，显示进度条
+
+  try {
+    const response = await exportFunc(params);
+    const blob = new Blob([response.data], {
+      type: response.headers['content-type'],
+    });
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${reportType}_report.xlsx`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    await Swal.fire({
+      icon: 'success',
+      title: '导出成功',
+      text: '报表已成功生成并下载',
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  } catch (error) {
+    console.error('导出失败', error);
+    await Swal.fire({
+      icon: 'error',
+      title: '导出失败',
+      text: '请检查网络或稍后重试',
+    });
+  } finally {
+    isExporting.value = false;  // 导出完成，隐藏进度条
+  }
 };
+
 
 </script>
 
