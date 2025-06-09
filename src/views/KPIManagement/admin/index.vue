@@ -1,4 +1,5 @@
 <template>
+  <div class="main-content">
   <div class="d-flex mb-4">
     <h2>KPI Management</h2>
   </div>
@@ -420,7 +421,7 @@
     </div>
   </div>
   <div class="modal-backdrop fade show" v-if="showDeleteModal"></div>
-
+</div>
 </template>
 
 <script setup lang="ts">
