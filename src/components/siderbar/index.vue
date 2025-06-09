@@ -1,49 +1,36 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { getUserRoutes } from '@/api/router.ts';
-import { useRouter } from 'vue-router';
 
-const router = useRouter();
 const menuTree = ref([]);
 const expandedMenus = ref<Record<string, boolean>>({});
-const sidebarOpen = ref(false);
-const isCollapsed = ref(false);
 const isMobile = ref(false);
 
 const toggleMenu = (name: string) => {
   expandedMenus.value[name] = !expandedMenus.value[name];
 };
 
-const toggleSidebar = () => {
-  if (isMobile.value) {
-    sidebarOpen.value = !sidebarOpen.value;
-  } else {
-    isCollapsed.value = !isCollapsed.value;
-    updateBodyClass();
-  }
-};
-
 const closeMobileSidebar = () => {
   if (isMobile.value) {
-    sidebarOpen.value = false;
+    // 移动端可以添加一些特殊处理逻辑
   }
 };
-
-watch(() => router.currentRoute.value.path, () => {
-  if (!isMobile.value) {
-    isCollapsed.value = true;
-    updateBodyClass();
-    expandedMenus.value = {};
-  }
-});
 
 const updateBodyClass = () => {
   if (typeof document !== 'undefined') {
     const body = document.body;
-    if (!isMobile.value && isCollapsed.value) {
-      body.classList.add('sidebar-collapsed');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!isMobile.value) {
+      body.classList.add('has-sidebar');
+      if (mainContent) {
+        mainContent.style.marginLeft = '250px';
+      }
     } else {
-      body.classList.remove('sidebar-collapsed');
+      body.classList.remove('has-sidebar');
+      if (mainContent) {
+        mainContent.style.marginLeft = '0';
+      }
     }
   }
 };
@@ -51,13 +38,6 @@ const updateBodyClass = () => {
 const checkScreenSize = () => {
   const width = window.innerWidth;
   isMobile.value = width <= 768;
-
-  if (isMobile.value) {
-    sidebarOpen.value = false;
-    isCollapsed.value = false;
-  } else {
-    sidebarOpen.value = true;
-  }
   updateBodyClass();
 };
 
@@ -88,133 +68,103 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 移动端菜单按钮 -->
-  <button 
-    class="mobile-menu-toggle" 
-    @click="toggleSidebar"
-    :class="{ 'show': isMobile }"
-  >
-    ☰
-  </button>
-
-  <!-- 移动端遮罩层 -->
+  <!-- 移动端遮罩层（可选） -->
   <div 
-    v-if="isMobile && sidebarOpen" 
+    v-if="isMobile" 
     class="sidebar-overlay"
     @click="closeMobileSidebar"
   ></div>
 
+  <!-- 侧边栏 - 始终显示 -->
   <nav 
     class="sidebar"
     :class="{
-      'show': sidebarOpen,
-      'collapsed': isCollapsed && !isMobile,
       'mobile': isMobile
     }"
   >
-    <!-- 折叠时只显示折叠按钮 -->
-    <template v-if="isCollapsed && !isMobile">
-      <button 
-        class="collapse-toggle-btn" 
-        @click="toggleSidebar"
-        :title="'展开侧边栏'"
-      >
-        ☰
-      </button>
-    </template>
+    <!-- Logo区域 -->
+    <div class="logo-container">
+      <img src="/logo.png" alt="ROWY Hardware" class="logo-img" />
+    </div>
 
-    <!-- 展开时显示Logo和完整菜单 -->
-    <template v-else>
-      <div class="logo-container">
-        <img src="/logo.png" alt="ROWY Hardware" class="logo-img" />
-        <button 
-          v-if="!isMobile"
-          class="collapse-toggle-btn" 
-          @click="toggleSidebar"
-          :title="'折叠侧边栏'"
-        >
-          ◄
-        </button>
-      </div>
-
-      <div class="full-menu">
-        <template v-for="item in menuTree" :key="item.name">
-          <!-- 父菜单（有子菜单） -->
-          <div v-if="item.children && item.children.length">
-            <div class="nav-item parent-item" @click="toggleMenu(item.name)">
-              {{ item.name }}
-              <span class="arrow-icon">
-                {{ expandedMenus[item.name] ? '▲' : '▼' }}
-              </span>
-            </div>
-            <div v-if="expandedMenus[item.name]" class="submenu">
-              <router-link
-                v-for="sub in item.children"
-                :key="sub.name"
-                :to="sub.link"
-                class="nav-item sub-item"
-                @click="closeMobileSidebar"
-              >
-                {{ sub.name }}
-              </router-link>
-            </div>
-          </div>
-
-          <!-- 普通一级菜单 -->
-          <router-link
-            v-else
-            :to="item.link"
-            class="nav-item"
-            @click="closeMobileSidebar"
-          >
+    <!-- 菜单内容 -->
+    <div class="menu-content">
+      <template v-for="item in menuTree" :key="item.name">
+        <!-- 父菜单（有子菜单） -->
+        <div v-if="item.children && item.children.length">
+          <div class="nav-item parent-item" @click="toggleMenu(item.name)">
             {{ item.name }}
-          </router-link>
-        </template>
-      </div>
-    </template>
+            <span class="arrow-icon">
+              {{ expandedMenus[item.name] ? '▲' : '▼' }}
+            </span>
+          </div>
+          <div v-if="expandedMenus[item.name]" class="submenu">
+            <router-link
+              v-for="sub in item.children"
+              :key="sub.name"
+              :to="sub.link"
+              class="nav-item sub-item"
+              @click="closeMobileSidebar"
+            >
+              {{ sub.name }}
+            </router-link>
+          </div>
+        </div>
+
+        <!-- 普通一级菜单 -->
+        <router-link
+          v-else
+          :to="item.link"
+          class="nav-item"
+          @click="closeMobileSidebar"
+        >
+          {{ item.name }}
+        </router-link>
+      </template>
+    </div>
   </nav>
 </template>
 
 <style scoped>
-body {
-  min-height: 100vh;
-  font-family: 'Nunito', sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
+/* 侧边栏 - 始终显示 */
 .sidebar {
   background-color: #406f8c;
   color: white;
-  min-height: 100vh;
+  height: 100vh;
   width: 250px;
   position: fixed;
   top: 0;
   left: 0;
   overflow-y: auto;
   z-index: 1031;
-  transition: all 0.3s ease;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  padding-top: 20px;
 }
 
-.sidebar.collapsed {
-  width: 60px;
+.sidebar::-webkit-scrollbar {
+  width: 6px;
 }
 
-@media (max-width: 768px) {
-  .sidebar.mobile {
-    left: -250px;
-    z-index: 1040;
-  }
-  .sidebar.mobile.show {
-    left: 0;
-  }
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Logo容器 */
 .logo-container {
   padding: 1rem;
   text-align: center;
-  position: relative;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 20px;
 }
 
 .logo-img {
@@ -223,40 +173,29 @@ body {
   transition: all 0.3s ease;
 }
 
-.collapse-toggle-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  padding: 0.3rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.collapse-toggle-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-.full-menu {
-  padding: 0;
+/* 菜单内容 */
+.menu-content {
+  padding: 0 0 0 0;
+  margin-right: 10px;
 }
 
 .nav-item {
-  display: block;
-  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 12px 32px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
   text-decoration: none;
   transition: all 0.3s ease;
   cursor: pointer;
+  font-size: 16px;
+  min-height: 40px;
 }
 
 .nav-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
+  color: #f1f1f1;
 }
 
 .parent-item {
@@ -264,7 +203,8 @@ body {
 }
 
 .arrow-icon {
-  float: right;
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 .submenu {
@@ -272,39 +212,98 @@ body {
 }
 
 .sub-item {
-  padding-left: 2rem;
-  font-size: 0.9rem;
+  padding-left: 3rem;
+  font-size: 14px;
+  min-height: 36px;
 }
 
 .sub-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-.mobile-menu-toggle {
-  display: none;
-  position: fixed;
-  top: 15px;
-  left: 15px;
-  z-index: 1041;
-  background-color: #406f8c;
-  color: white;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 1.2rem;
+/* 移动端样式 */
+@media (max-width: 768px) {
+  .sidebar.mobile {
+    z-index: 1040;
+    width: 100%;
+    padding-top: 20px;
+  }
+  
+  .nav-item {
+    font-size: 18px;
+    padding: 15px 20px 15px 32px;
+    min-height: 44px;
+  }
+  
+  .sub-item {
+    font-size: 16px;
+    min-height: 40px;
+  }
 }
 
-.mobile-menu-toggle.show {
-  display: block;
-}
-
+/* 遮罩层（移动端可选使用） */
 .sidebar-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1039;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1030;
+}
+
+/* 小屏幕适配 */
+@media screen and (max-height: 600px) {
+  .sidebar {
+    padding-top: 15px;
+  }
+  
+  .logo-container {
+    padding: 0.5rem;
+    margin-top: 5px;
+  }
+  
+  .logo-img {
+    max-width: 120px;
+  }
+  
+  .nav-item {
+    font-size: 14px;
+    padding: 8px 16px 8px 20px;
+    min-height: 36px;
+  }
+  
+  .sub-item {
+    font-size: 12px;
+    min-height: 32px;
+    padding-left: 2rem;
+  }
+}
+
+@media screen and (max-height: 450px) {
+  .sidebar {
+    padding-top: 10px;
+  }
+  
+  .logo-container {
+    padding: 0.3rem;
+    margin-top: 0;
+  }
+  
+  .logo-img {
+    max-width: 100px;
+  }
+  
+  .nav-item {
+    font-size: 13px;
+    padding: 6px 12px 6px 18px;
+    min-height: 32px;
+  }
+  
+  .sub-item {
+    font-size: 11px;
+    min-height: 28px;
+    padding-left: 1.8rem;
+  }
 }
 </style>
