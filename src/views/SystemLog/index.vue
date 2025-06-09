@@ -59,8 +59,20 @@
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
           <button class="page-link" @click="prevPage">Previous</button>
         </li>
-        <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
-          <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+        <li
+            class="page-item"
+            v-for="(page, index) in visiblePages"
+            :key="index"
+            :class="{ active: page === currentPage, disabled: page === '...'}"
+        >
+          <button
+              class="page-link"
+              v-if="page !== '...'"
+              @click="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <span v-else class="page-link">…</span>
         </li>
         <li class="page-item" :class="{ disabled: currentPage === totalPages }">
           <button class="page-link" @click="nextPage">Next</button>
@@ -110,6 +122,31 @@ const totalLogs = ref(0);
 const currentPage = ref(1);
 const itemsPerPage = 10;
 const ordering = ref('-operation_time'); // Default: newest first
+
+
+const visiblePages = computed(() => {
+  const pages: (number | string)[] = [];
+  const total = totalPages.value;
+  const current = currentPage.value;
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 4) pages.push('...');
+
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
+
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < total - 3) pages.push('...');
+    pages.push(total);
+  }
+
+  return pages;
+});
+
 
 // Selected log for modal
 const selectedLog = ref({
@@ -169,7 +206,7 @@ const nextPage = () => {
   }
 };
 
-const goToPage = (page: number) => {
+const goToPage = (page: any) => {
   currentPage.value = page;
   fetchLogs();
 };
