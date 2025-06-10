@@ -1,4 +1,5 @@
 <template>
+<div class="main-content">
   <div class="title-page mb-4">
     <svg @click="goToRewardMall()" xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-arrow-left-short" viewBox="0 0 16 16">
         <path fill-rule="evenodd" d="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5"/>
@@ -12,6 +13,14 @@
       <i class="fas fa-search search-icon"></i>
       <input class="form-control" type="search" placeholder="Search Remarks" v-model="remarksSearch">
     </form>
+
+    <!-- Status Search -->
+    <select class="search-container form-select" v-model="statusSearch">
+      <option value="">All Types</option>
+      <option value="Addition">Addition</option>
+      <option value="KPI Completed">KPI Completed</option>
+      <option value="Deduction">Deduction</option>
+    </select>
 
     <!-- Custom Date Range (Right) -->
     <div class="d-flex align-items-center gap-3">
@@ -156,7 +165,7 @@
     </div>
   </div>
   <div class="modal-backdrop fade show" v-if="showModal"></div>
-
+</div>
 </template>
 
 
@@ -175,6 +184,7 @@ const currentPointEarned = ref<any>({})
 const tableData = ref<PointHistoryItem[]>([])
 
 const remarksSearch = ref('')
+const statusSearch = ref('')
 const searchStartDate = ref('')
 const searchEndDate = ref('')
 
@@ -203,7 +213,7 @@ const fetchUserId = async () => {
 const fetchPointHistory = (page: number) => {
   currentPage.value = page
 
-  getPointHistory(currentUserData.id, page, remarksSearch.value.trim(), searchStartDate.value, searchEndDate.value).then((res) => {
+  getPointHistory(currentUserData.id, page, remarksSearch.value.trim(), statusSearch.value.trim(), searchStartDate.value, searchEndDate.value).then((res) => {
     console.log(res.data);
     totalCount.value = res.data.data.count;  
     
@@ -262,7 +272,7 @@ onMounted(async () => {
   fetchPointHistory(1);
 });
 
-watch([remarksSearch, searchStartDate, searchEndDate], () => {
+watch([remarksSearch, statusSearch, searchStartDate, searchEndDate], () => {
   fetchPointHistory(1);
 });
 
@@ -375,7 +385,7 @@ function goToRewardMall()
 .form-label {
   font-weight: bold;
 }
-.form-control {
+.form-control, .form-select {
   border-color: #ababab;
 }
 .textarea {

@@ -1,4 +1,5 @@
 <template>
+<div class="main-content">
   <div class="mb-2">
     <h1 >Leaderboard for {{ currentUserData.department }}</h1>
     <p class="text-muted" style="font-size:18px;">Ranking is based on total accumulated points</p>
@@ -126,7 +127,7 @@
       </div>
     </div>
   </div>
-
+</div>
 </template>
 
 
