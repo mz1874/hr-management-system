@@ -58,10 +58,11 @@ export function createRedemption(data: any) {
 }
 
 // Fetch specific employee reward redemption
-export function getUserRewardRedemption(id: Number, page = 1, rewardName = '', startDate = '', endDate = '') {
+export function getUserRewardRedemption(id: Number, page = 1, rewardName = '', status = '', startDate = '', endDate = '') {
     const params = {
         page,
         ...(rewardName ? { reward_title: rewardName } : {}),
+        ...(status ? { reward_redemption_status: status } : {}),
         ...(startDate ? { start_date: startDate } : {}),
         ...(endDate ? { end_date: endDate } : {}),
     };
@@ -70,11 +71,11 @@ export function getUserRewardRedemption(id: Number, page = 1, rewardName = '', s
 }
 
 // Fetch all employee reward redemption
-export function getAllRewardRedemption(page = 1, rewardName = '', username = '', status = '', startDate = '', endDate = '') {
+export function getAllRewardRedemption(page = 1, rewardName = '', staffName = '', status = '', startDate = '', endDate = '') {
     const params = {
         page,
         ...(rewardName ? { reward_title: rewardName } : {}),
-        ...(username ? { username: username } : {}),
+        ...(staffName ? { staffName: staffName } : {}),
         ...(status ? { reward_redemption_status: status } : {}),
         ...(startDate ? { start_date: startDate } : {}),
         ...(endDate ? { end_date: endDate } : {}),
@@ -92,10 +93,11 @@ export const getDepartmentLeaderboard = (departmentId: number) => {
 };
 
 // Point History
-export function getPointHistory(id: Number, page = 1, remarks = '', startDate = '', endDate = '') {
+export function getPointHistory(id: Number, page = 1, remarks = '', pointType = '', startDate = '', endDate = '') {
     const params = {
         page,
         ...(remarks ? { remarks } : {}),
+        ...(pointType ? { point_type: pointType } : {}),
         ...(startDate ? { start_date: startDate } : {}),
         ...(endDate ? { end_date: endDate } : {}),
     };

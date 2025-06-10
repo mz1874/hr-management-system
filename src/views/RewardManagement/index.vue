@@ -1,4 +1,5 @@
 <template>
+<div class="main-content">
     <div class="d-flex mb-4">
         <h2>Reward Management</h2>
     </div>
@@ -89,23 +90,27 @@
                     </tbody>
                 </table>
             </div>
-            <!-- pagination -->
+
+            <!-- Pagination & total count -->
             <div class="d-flex align-items-center mt-3 justify-content-start">
-                <span class="me-3">Total: {{ totalCount }}</span>
-                
-                <nav>
-                    <ul class="pagination mb-0">
-                    <li :class="['page-item', { disabled: currentPage === 1 }]">
-                        <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
-                    </li>
+                <!-- Left: Total count -->
+                <span class="me-3 mb-3">Total Logs: {{ totalCount }}</span>
 
-                    <li v-for="page in totalPages" :key="page" :class="['page-item', { active: currentPage === page }]">
-                        <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-                    </li>
-
-                    <li :class="['page-item', { disabled: currentPage === totalPages }]">
-                        <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
-                    </li>
+                <!-- Right: Pagination -->
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                            <button class="page-link" @click="prevPage">Previous</button>
+                        </li>
+                        <li class="page-item" v-for="(page, index) in visiblePages" :key="index":class="{ active: page === currentPage, disabled: page === '...'}">
+                            <button class="page-link" v-if="page !== '...'"@click="goToPage(page)">
+                                {{ page }}
+                            </button>
+                            <span v-else class="page-link">…</span>
+                        </li>
+                        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                            <button class="page-link" @click="nextPage">Next</button>
+                        </li>
                     </ul>
                 </nav>
             </div>
@@ -268,7 +273,7 @@
         </div>
     </div>
     <div class="modal-backdrop fade show" v-if="showRemoveModal"></div>
-
+</div>
 </template>
 
 
@@ -284,6 +289,46 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
 import Datepicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';  
+
+const visiblePages = computed(() => {
+  const pages: (number | string)[] = [];
+  const total = totalPages.value;
+  const current = currentPage.value;
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 4) pages.push('...');
+
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
+
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < total - 3) pages.push('...');
+    pages.push(total);
+  }
+
+  return pages;
+});
+
+// Pagination functions
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const goToPage = (page: any) => {
+  currentPage.value = page;
+};
 
 // ===================== Open modal =====================
 const tableData = ref<RewardItem[]>([])
@@ -351,9 +396,6 @@ const pageSize = 10
 const totalCount = ref(0)
 const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
 
-const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) fetchRewards(page)
-}
 const fetchRewards = (page = 1) => {
     currentPage.value = page
 
