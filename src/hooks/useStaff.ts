@@ -43,6 +43,8 @@ export default function useStaff() {
             totalPoints: item.total_point,
             currentPoints: item.current_point,
             leave_entitlements: item.leave_entitlements,
+            position:item.position,
+            isExecutive:item.isExecutive,
         };
     }
 

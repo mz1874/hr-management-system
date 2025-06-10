@@ -14,7 +14,9 @@ export interface Staff {
     resignationDate?: string
     totalPoints: number
     currentPoints: number
-    picture : number
+    picture : number,
+    position: string,
+    isExecutive : boolean,
     leave_entitlements?: {
         [key: string]: number
     }

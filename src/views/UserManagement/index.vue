@@ -90,7 +90,9 @@ const selectedStaff = ref<Staff>({
   imgUrl: '',
   status: false,
   employment_time: new Date().toISOString().split('T')[0], // Set default to current date
-  leave_entitlements: []
+  leave_entitlements: [],
+  position : '',
+  isExecutive: false
 })
 
 const imageUrl = computed(() => {
@@ -134,7 +136,9 @@ const openAddStaffModal = () => {
     imgUrl: '',
     employment_time: new Date().toISOString().split('T')[0], // Will be set automatically
     totalPoints: 0,
-    leave_entitlements: []
+    leave_entitlements: [],
+    position : '',
+    isExecutive: false
   }
   if (Array.isArray(leaveTypes.value)) {
     leaveEntitlements.value = {};
@@ -512,6 +516,51 @@ function onImageSelected(event) {
             </div>
 
             <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="position" class="form-label">Position</label>
+                <input
+                    v-model="selectedStaff.position"
+                    type="text"
+                    class="form-control"
+                    id="position"
+                    placeholder="Please input position name"
+                    required
+                >
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Is a executive staff?</label>
+                <div>
+                  <div class="form-check form-check-inline">
+                    <input
+                        class="form-check-input"
+                        type="radio"
+                        id="executiveYes"
+                        value="true"
+                        name="isExecutive"
+                        required
+                        v-model="selectedStaff.isExecutive"
+                    >
+                    <label class="form-check-label" for="executiveYes">Yes</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input
+                        class="form-check-input"
+                        type="radio"
+                        id="executiveNo"
+                        value="false"
+                        required
+                        name="isExecutive"
+                        v-model="selectedStaff.isExecutive"
+                    >
+                    <label class="form-check-label" for="executiveNo">No</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="row">
               <div
                   class="col-md-6"
                   v-for="type in leaveTypes.filter(t => ['AL', 'MC'].includes(t.name))"
@@ -714,6 +763,50 @@ function onImageSelected(event) {
           </div>
 
           <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="position" class="form-label">Position</label>
+              <input
+                  v-model="selectedStaff.position"
+                  type="text"
+                  class="form-control"
+                  id="position"
+                  disabled
+                  placeholder="Please input position name"
+              >
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Is a executive staff?</label>
+              <div>
+                <div class="form-check form-check-inline">
+                  <input
+                      class="form-check-input"
+                      type="radio"
+                      id="executiveYes"
+                      value="true"
+                      name="isExecutive"
+                      disabled
+                      v-model="selectedStaff.isExecutive"
+                  >
+                  <label class="form-check-label" for="executiveYes">Yes</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input
+                      class="form-check-input"
+                      type="radio"
+                      id="executiveNo"
+                      value="false"
+                      disabled
+                      name="isExecutive"
+                      v-model="selectedStaff.isExecutive"
+                  >
+                  <label class="form-check-label" for="executiveNo">No</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
             <div class="mb-3 col-md-6">
               <label class="form-label">Profile Image</label>
               <div v-if="selectedStaff.imgUrl">
@@ -881,6 +974,49 @@ function onImageSelected(event) {
                 >
               </div>
             </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="position" class="form-label">Position</label>
+                <input
+                    v-model="selectedStaff.position"
+                    type="text"
+                    class="form-control"
+                    id="position"
+                    placeholder="Please input position name"
+                >
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Is a executive staff?</label>
+                <div>
+                  <div class="form-check form-check-inline">
+                    <input
+                        class="form-check-input"
+                        type="radio"
+                        id="executiveYes"
+                        value="true"
+                        name="isExecutive"
+                        required
+                        v-model="selectedStaff.isExecutive"
+                    >
+                    <label class="form-check-label" for="executiveYes">Yes</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input
+                        class="form-check-input"
+                        type="radio"
+                        id="executiveNo"
+                        value="false"
+                        name="isExecutive"
+                        required
+                        v-model="selectedStaff.isExecutive"
+                    >
+                    <label class="form-check-label" for="executiveNo">No</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
 
             <div class="row">
               <div
