@@ -226,15 +226,6 @@
                   </div>
                 </div>
 
-
-                <!-- Points Given -->
-                <div class="mb-3">
-                  <label for="pointsGiven" class="form-label">Points Given For Each Individual:</label>
-                  <input type="number" class="form-control" id="pointsGiven" required placeholder="Enter points"
-                         min="0"
-                         v-model="currentTask.pointsGiven">
-                </div>
-
                 <!-- Target -->
                 <div class="row mb-3">
                   <label for="target" class="form-label">Target For Each Individual:</label>
