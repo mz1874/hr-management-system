@@ -64,7 +64,6 @@
             <td>{{ calculateTotalTarget(task) }} {{ task.individualUnit }}</td>
             <td>{{ calculateTotalProgress(task) }} {{ task.individualUnit }}</td>
             <td>{{ task.department }}</td>
-          <tr>
             <td>
                 <span
                     :class="[
@@ -77,7 +76,6 @@
                   {{ task.status }}
                 </span>
             </td>
-          </tr>
             <td>
               <template v-if="task.status !== 'Terminated'">
                 <button @click="goToEmployeeDetailsPage(task.id)" class="btn btn-primary btn-sm">Employee Details
@@ -1382,7 +1380,7 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 .btn {
   display: inline-block;
-  padding: 0.5rem 0.9rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 14.5px;
@@ -1497,7 +1495,6 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
 
 }
 
-/* 统计卡整体容器 */
 .stats-section {
   max-width: 1900px;
   margin: 1rem auto 3rem;
@@ -1510,8 +1507,6 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-
-/* 卡片本身 */
 .stat-card {
   border-radius: 20px;
   padding: 1rem;
@@ -1579,7 +1574,6 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   background: #ef4444;
 }
 
-/* 卡片图标 */
 .card-icon {
   font-size: 2.8rem;
   opacity: 0.8;
@@ -1587,7 +1581,6 @@ const goToEmployeeDetailsPage = (taskId: string | number) => {
   margin-left: 1rem;
 }
 
-/* 卡片内容 */
 .card-content {
   flex: 1;
   text-align: center;
