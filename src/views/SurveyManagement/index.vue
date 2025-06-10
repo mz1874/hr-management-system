@@ -13,6 +13,29 @@ import {
 } from '@/api/survey'
 import { selectAllDepartments } from '@/api/department'
 import type { EvaluationForm, EvaluationQuestion, RowyQuestionOption, EvaluationInstance, EvaluationAnswerView } from '@/api/survey' // Import EvaluationInstance & EvaluationAnswerView types
+import type { Staff } from '@/interface/UserInterface'; // Import Staff type
+
+// Define star rating meanings
+const starRatingMeanings: Record<number, string> = {
+  1: 'Below Expectation',
+  2: 'Fair',
+  3: 'Meet Expectation',
+  4: 'Good',
+  5: 'Role Model',
+  6: 'Outstanding'
+};
+
+// --- Position Lists ---
+const EXECUTIVE_POSITIONS = [
+  "SENIOR HUMAN RESOURCE EXECUTIVE", "SALES EXECUTIVE", "WAREHOUSE SUPERVISOR",
+  "HUMAN RESOURCE EXECUTIVE", "LOGISTIC SUPERVISOR", "SENIOR SUPPLY CHAIN EXECUTIVE",
+  "MARKETING EXECUTIVE", "SALES COORDINATOR", "ACCOUNT EXECUTIVE",
+  "PURCHASING EXECUTIVE", "SUPPLY CHAIN EXECUTIVE", "ACCOUNT ASSISTANT"
+].map(p => p.toUpperCase());
+
+const NON_EXECUTIVE_POSITIONS = [
+  "CLEANER", "PICKER", "PACKER", "DRIVER", "RECEIVER", "ATTENDANT", "LOGISTIC ASSISTANT"
+].map(p => p.toUpperCase());
 
 // Interface for the evaluation form list items (matches backend EvaluationForm structure)
 interface EvaluationItem extends Omit<EvaluationForm, 'questions'> {
@@ -25,7 +48,6 @@ interface QuestionItem extends Omit<EvaluationQuestion, 'options'> {
     options?: RowyQuestionOptionItem[]; // Use local RowyQuestionOptionItem interface for UI state
     isPredefined?: boolean; // Flag for predefined behavioral questions
     predefinedKey?: string; // Key to link to predefined config
-    // adminSelectedRating is no longer needed here
 }
 
 // Interface for question options within the UI state
@@ -103,7 +125,7 @@ const detailsError = ref<string | null>(null);
 // State for Admin Rating Description Modal
 const showAdminRatingDescriptionModal = ref(false);
 const adminRatingForDescriptionModal = ref<number | null>(null);
-// We will also need EXECUTIVE_RATING_CONFIG and getCombinedRatingDescriptionForStar here
+const isContextExecutiveForRatingModal = ref(false); // Added for conditional description display
 
 // --- Configuration for Predefined Behavioral Questions ---
 const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
@@ -120,7 +142,7 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
   {
     key: 'striving_for_excellence',
     text_en: 'Striving for Excellence',
-    text_cn: '追求卓越', // Assuming translation, please verify
+    text_cn: '追求卓越',
     rating_texts: {
       1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a)没有明确的工作计划，结果欠佳 (b)工作草率，马虎 (c)停滞不前，不寻求进步" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
@@ -130,7 +152,7 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
   {
     key: 'morality_and_talent',
     text_en: 'Morality and Talent',
-    text_cn: '道德与才能', // Assuming translation, please verify
+    text_cn: '道德与才能',
     rating_texts: {
       1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a)散播谣言扰乱军心 (b)欺骗，作假 (c)愁眉苦脸，衣衫不整，言行不正，埋播负能量" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
@@ -140,7 +162,7 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
   {
     key: 'discipline',
     text_en: 'Discipline',
-    text_cn: '纪律', // Assuming translation, please verify
+    text_cn: '纪律',
     rating_texts: {
       1: { en: "(a) Arriving late and leaving early, absent from work without excuse and in frequent. (b) Disobey superior's instructions and treat work casually. (c) Failed to comply with company regulations and work procedures.", cn: "(a)迟到早退，无故旷工，频繁缺勤 (b)不听从上司指示，随性对待工作 (c)不遵守公司规定和工作流程" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
@@ -150,7 +172,7 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
   {
     key: 'hardworking_and_proactive',
     text_en: 'Hardworking and Proactive',
-    text_cn: '勤奋与主动', // Assuming translation, please verify
+    text_cn: '勤奋与主动',
     rating_texts: {
       1: { en: "(a) Lazy work attitude, playing on mobile phones, surfing the Internet, chatting etc. during working hours. (b) Delay in completing a task or work, affecting progress. (c) Unwillingness to learn, explore, or improve work methods.", cn: "(a)懒散的工作态度，在工作时间玩手机，上网，聊天等 (b)延迟完成任务或工作，影响进度 (c)不愿意学习，探索或改进工作方法" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
@@ -175,7 +197,7 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
   return { ...q, rating_texts: combined_rating_texts };
 });
 
-// --- Configuration for Executive Rating Questions (Copied from DetailedEvaluationList) ---
+// --- Configuration for Executive Rating Questions ---
 const EXECUTIVE_RATING_CONFIG = [
   {
     key: 'be_responsible_executive',
@@ -184,7 +206,8 @@ const EXECUTIVE_RATING_CONFIG = [
     rating_texts: {
       1: { en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.", cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a) 在期间前自动自发完成任务 (b) 有主人翁精神，愿意承担工作 (c) 关注，参与和配合公司事务" }
+      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a) 在期间前自动自发完成任务 (b) 有主人翁精神，愿意承担工作 (c) 关注，参与和配合公司事务" },
+      6: { en: "(a) Consistently exceeds expectations by completing tasks well ahead of deadlines with exceptional quality. (b) Demonstrates profound ownership, proactively identifies and undertakes crucial work beyond assigned responsibilities. (c) Leads and inspires others in company affairs through active, insightful participation and cooperation.", cn: "(a) 始终超出预期，以卓越的质量远早于截止日期完成任务。(b) 表现出深刻的主人翁精神，主动识别并承担超出职责范围的关键工作。(c) 通过积极、有见地的参与和合作，在公司事务中领导和激励他人。" }
     }
   },
   {
@@ -194,7 +217,8 @@ const EXECUTIVE_RATING_CONFIG = [
     rating_texts: {
       1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a) 没有明确的工作计划，结果欠佳 (b) 工作草率，马虎 (c) 停滞不前，不寻求进步" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a) 自行安排时间表和细节，效率高 (b) 时刻产出高水准和品质的工作 (c) 不断创造更有效率的工作方式" }
+      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a) 自行安排时间表和细节，效率高 (b) 时刻产出高水准和品质的工作 (c) 不断创造更有效率的工作方式" },
+      6: { en: "(a) Masterfully organizes schedules and details, achieving peak efficiency and setting new standards. (b) Consistently delivers work of the highest caliber, often exceeding expectations. (c) Innovates and pioneers highly efficient work methods that are adopted by others.", cn: "(a) 精通组织日程和细节，达到顶峰效率并设定新标准。(b) 始终交付最高水准的工作，经常超出预期。(c) 创新并开创高效的工作方法，被他人采纳。" }
     }
   },
   {
@@ -204,7 +228,8 @@ const EXECUTIVE_RATING_CONFIG = [
     rating_texts: {
       1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a) 散播谣言扰乱军心 (b) 欺骗，作假 (c) 愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a) 言行一致，向上向善 (b) 拥有正面的道德品行，礼貌谦卑 (c) 以饱满的热情和精神投入工作，正面应对工作挑战" }
+      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a) 言行一致，向上向善 (b) 拥有正面的道德品行，礼貌谦卑 (c) 以饱满的热情和精神投入工作，正面应对工作挑战" },
+      6: { en: "(a) Exemplifies integrity and kindness, serving as a role model for ethical conduct. (b) Embodies exceptional moral character, humility, and respect, inspiring these qualities in others. (c) Approaches work and challenges with unparalleled enthusiasm and a positive spirit, significantly uplifting team morale.", cn: "(a) 展现诚信和善良的典范，成为道德行为的楷模。(b) 体现卓越的道德品格、谦逊和尊重，激励他人具备这些品质。(c) 以无与伦比的热情和积极的精神对待工作和挑战，显著提升团队士气。" }
     }
   },
   {
@@ -214,7 +239,8 @@ const EXECUTIVE_RATING_CONFIG = [
     rating_texts: {
       1: { en: "(a) Turn a blind eye to or avoid problems. (b) Failure to provide timely feedback on problems that arise at work and do not proactively look for solutions. (c) Making the same mistakes over and over again.", cn: "(a) 对问题视而不见或逃避问题 (b) 没有及时反馈工作中出现的问题，也没有主动寻找解决方案 (c) 反复犯同样的错误" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Have the courage to face up to problems and be willing to try to solve them. (b) Solve problems in a timely manner, provide preventive measures and share with others as a reference. (c) Able to implement solution and evaluate the results.", cn: "(a) 勇于正视问题，愿意尝试解决问题 (b) 及时解决问题，给予预防措施并分享给大家作为借鉴 (c) 有能力落实具体措施，并对结果进行评估和反思" }
+      5: { en: "(a) Have the courage to face up to problems and be willing to try to solve them. (b) Solve problems in a timely manner, provide preventive measures and share with others as a reference. (c) Able to implement solution and evaluate the results.", cn: "(a) 勇于正视问题，愿意尝试解决问题 (b) 及时解决问题，给予预防措施并分享给大家作为借鉴 (c) 有能力落实具体措施，并对结果进行评估和反思" },
+      6: { en: "(a) Proactively seeks out and confronts complex problems with exceptional courage and innovative solutions. (b) Not only solves problems swiftly but also develops and disseminates robust preventative strategies that benefit the entire organization. (c) Expertly implements solutions, meticulously evaluates outcomes, and drives continuous improvement based on deep insights.", cn: "(a) 以非凡的勇气和创新的解决方案主动寻找并应对复杂问题。(b) 不仅迅速解决问题，还制定并推广有益于整个组织的强大预防策略。(c) 专业地实施解决方案，仔细评估结果，并基于深刻的洞察力推动持续改进。" }
     }
   },
   {
@@ -224,7 +250,8 @@ const EXECUTIVE_RATING_CONFIG = [
     rating_texts: {
       1: { en: "(a) Blindly listening to others without considering the authenticity of the information. (b) Unable to analyze problems and evaluate the pros and cons. (c) Lack of ability to challenge conventional practices.", cn: "(a) 盲目听信他人，不考虑信息的真实性 (b) 无法分析问题，不能评估事情的利与弊 (c) 缺乏挑战现状和常规做法的能力" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Analyze and collect required information and evaluate its authenticity. (b) Able to weigh the pro and cons based on analysis and evaluation. (c) Able to propose innovative, feasible, and constructive suggestions.", cn: "(a) 分析及收集所需信息，并评估其真实性 (b) 基于分析和评估，可以权衡事情的利与弊 (c) 能够提出创新性，可行性，有建设性的提议" }
+      5: { en: "(a) Analyze and collect required information and evaluate its authenticity. (b) Able to weigh the pro and cons based on analysis and evaluation. (c) Able to propose innovative, feasible, and constructive suggestions.", cn: "(a) 分析及收集所需信息，并评估其真实性 (b) 基于分析和评估，可以权衡事情的利与弊 (c) 能够提出创新性，可行性，有建设性的提议" },
+      6: { en: "(a) Demonstrates superior ability in analyzing and synthesizing complex information, rigorously verifying authenticity and uncovering deep insights. (b) Exhibits exceptional judgment in weighing pros and cons, leading to optimal strategic decisions. (c) Consistently generates highly innovative, feasible, and impactful suggestions that drive significant organizational improvements.", cn: "(a) 在分析和综合复杂信息方面表现出卓越能力，严格验证真实性并揭示深刻见解。(b) 在权衡利弊方面表现出非凡的判断力，从而做出最佳战略决策。(c) 持续提出高度创新、可行且具影响力的建议，推动重大的组织改进。" }
     }
   },
   {
@@ -234,7 +261,8 @@ const EXECUTIVE_RATING_CONFIG = [
     rating_texts: {
       1: { en: "(a) Unable to accept innovations and suggestions. (b) Unable to manage own emotions in response to challenges and stress. (c) Feeling overwhelmed when multitasking.", cn: "(a) 无法接受创新和建议，一成不变 (b) 无法管理自己的情绪以应对挑战和压力 (c) 在处理多项任务时手忙脚乱，无法应付" },
       3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Accept change and adapt quickly. (b) Stay calm and optimistic under pressure and challenges. (c) Able to handle multiple tasks effectively and switch flexibly.", cn: "(a) 接受变化并迅速适应 (b) 在压力和挑战下保持冷静和乐观 (c) 能够有效地处理多项任务和项目，灵活切换" }
+      5: { en: "(a) Accept change and adapt quickly. (b) Stay calm and optimistic under pressure and challenges. (c) Able to handle multiple tasks effectively and switch flexibly.", cn: "(a) 接受变化并迅速适应 (b) 在压力和挑战下保持冷静和乐观 (c) 能够有效地处理多项任务和项目，灵活切换" },
+      6: { en: "(a) Champions change and adapts with exceptional speed and agility, often anticipating future needs. (b) Maintains remarkable composure and optimism in high-pressure situations, inspiring confidence in others. (c) Masterfully juggles numerous complex tasks and projects, seamlessly switching focus and delivering outstanding results across the board.", cn: "(a) 倡导变革并以非凡的速度和敏捷性适应，经常预测未来需求。(b) 在高压情况下保持非凡的镇定和乐观，激励他人信心。(c) 精通处理众多复杂任务和项目，无缝切换重点并在各方面取得卓越成果。" }
     }
   }
 ].map(q => {
@@ -250,23 +278,68 @@ const EXECUTIVE_RATING_CONFIG = [
       en: `${texts[3].en} / ${texts[5].en}`,
       cn: `${texts[3].cn} / ${texts[5].cn}`
     },
-    5: texts[5]
+    5: texts[5],
+    6: texts[6] // Added 6th star
   };
   return { ...q, rating_texts: combined_rating_texts };
 });
 
-// Helper to get combined rating description for a given rating and language from a config source (Copied from DetailedEvaluationList)
-const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, lang: 'en' | 'cn', configSource: any[]) => {
-  if (rating === undefined || rating === null || rating < 1 || rating > 5) return '';
-  let descriptions: string[] = [];
-  configSource.forEach(config => {
-    const desc = config.rating_texts[rating]?.[lang];
-    if (desc) {
-      descriptions.push(desc);
-    }
-  });
-  return descriptions.join('\n\n');
+// Helper function to determine if staff is executive type
+const isStaffExecutiveType = (staff: Partial<Staff> | null | undefined): boolean => {
+  if (!staff) return false;
+  const positionUpper = staff.position?.toUpperCase();
+  if (positionUpper) {
+    if (EXECUTIVE_POSITIONS.includes(positionUpper)) return true;
+    if (NON_EXECUTIVE_POSITIONS.includes(positionUpper)) return false;
+  }
+  return staff.isExecutive || false;
 };
+
+// Helper to get combined rating description for a given rating and language from a config source
+const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, lang: 'en' | 'cn', configSource: any[]) => {
+  const maxRating = configSource === EXECUTIVE_RATING_CONFIG ? 6 : 5;
+  if (rating === undefined || rating === null || rating < 1 || rating > maxRating) return 'N/A'; // Return N/A for invalid ratings
+
+  const allDescriptionsForRating = configSource
+    .map(config => config.rating_texts[rating]?.[lang])
+    .filter(desc => desc !== undefined && desc !== null);
+
+  if (allDescriptionsForRating.length === 0) return 'N/A';
+
+  // Check if all descriptions for this rating are identical
+  const firstDesc = allDescriptionsForRating[0];
+  const allSame = allDescriptionsForRating.every(desc => desc === firstDesc);
+
+  if (allSame) {
+    return firstDesc; // Return the single common description
+  } else {
+    // If descriptions vary, list them by category
+    let variedDescriptions: string[] = [];
+    configSource.forEach(config => {
+      const desc = config.rating_texts[rating]?.[lang];
+      let categoryName = config[`text_${lang}`] || config.key || 'Category'; 
+      if (config.key && config.key.includes('_executive')) {
+          const baseKey = config.key.replace('_executive', '');
+          const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === baseKey);
+          if (matchingPredefined) {
+              categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
+          } else {
+            categoryName = (config[`text_${lang}`] || config.key).replace(/_executive/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          }
+      } else if (config.key) {
+           const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === config.key);
+           if (matchingPredefined) {
+               categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
+           }
+      }
+      if (desc) {
+        variedDescriptions.push(`<strong>${categoryName}:</strong>\n${desc}`);
+      }
+    });
+    return variedDescriptions.join('\n\n');
+  }
+};
+
 
 // --- Fetching Data ---
 const fetchSurveys = async () => {
@@ -839,6 +912,12 @@ const closeDetailsModal = () => {
 // Methods for Admin Rating Description Modal
 const openAdminRatingDescriptionModal = (rating: number) => {
   adminRatingForDescriptionModal.value = rating;
+  // Determine context based on the employee whose details are being viewed
+  if (selectedInstanceForDetails.value && selectedInstanceForDetails.value.employee) {
+    isContextExecutiveForRatingModal.value = isStaffExecutiveType(selectedInstanceForDetails.value.employee);
+  } else {
+    isContextExecutiveForRatingModal.value = false; // Default if no specific employee context
+  }
   showAdminRatingDescriptionModal.value = true;
 };
 
@@ -846,6 +925,10 @@ const closeAdminRatingDescriptionModal = () => {
   showAdminRatingDescriptionModal.value = false;
   adminRatingForDescriptionModal.value = null;
 };
+
+const starsForSelectedInstanceDetails = computed(() => {
+  return isStaffExecutiveType(selectedInstanceForDetails.value?.employee) ? 6 : 5;
+});
 
 </script>
 
@@ -990,7 +1073,7 @@ const closeAdminRatingDescriptionModal = () => {
           <tbody>
             <tr v-for="instance in currentResultsData" :key="instance.id">
               <td>{{ instance.id }}</td>
-              <td>{{ instance.employee?.staffName || 'N/A' }}</td>
+              <td>{{ instance.employee?.username || 'N/A' }}</td>
               <td>{{ formatDateTime(instance.submitted_at) }}</td> <!-- Use formatDateTime -->
               <td>
                 <span :class="['badge', instance.status === 'SUBMITTED' ? 'bg-success' : instance.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary']">
@@ -1258,7 +1341,7 @@ const closeAdminRatingDescriptionModal = () => {
                 <p class="mb-0"><strong>Answer:</strong></p>
                 <!-- Display answer based on question type -->
                 <template v-if="answer.question?.question_type === 'RATING'">
-                  <span class="badge bg-info">{{ answer.rating ?? 'N/A' }} / 5</span>
+                  <span class="badge bg-info">{{ answer.rating ?? 'N/A' }} / {{ starsForSelectedInstanceDetails }}</span>
                   <button 
                     v-if="answer.rating !== null && answer.rating !== undefined"
                     type="button" 
@@ -1302,33 +1385,35 @@ const closeAdminRatingDescriptionModal = () => {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="adminRatingDescriptionModalLabel">
-            Rating Descriptions for {{ adminRatingForDescriptionModal }} Star(s)
+            Rating Descriptions for {{ adminRatingForDescriptionModal }} Star(s) ({{ isContextExecutiveForRatingModal ? 'Executive' : 'Non-Executive' }})
           </h5>
           <button type="button" class="btn-close" @click="closeAdminRatingDescriptionModal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div v-if="adminRatingForDescriptionModal !== null">
-            <!-- Non-Executive Descriptions -->
-            <div class="mb-4">
-              <h6>Non-Executive Staff Descriptions:</h6>
-              <div class="p-2 border rounded bg-light-subtle">
+            <!-- Executive Descriptions -->
+            <div v-if="isContextExecutiveForRatingModal">
+              <h6>Executive Staff Descriptions:</h6>
+              <div class="p-2 border rounded bg-light-subtle mb-3">
                 <p class="mb-1"><strong>EN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
-                <hr>
+                <pre class="description-text" v-html="getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'en', EXECUTIVE_RATING_CONFIG) || 'N/A'"></pre>
+              </div>
+              <div class="p-2 border rounded bg-light-subtle">
                 <p class="mb-1"><strong>CN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A' }}</pre>
+                <pre class="description-text" v-html="getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'cn', EXECUTIVE_RATING_CONFIG) || 'N/A'"></pre>
               </div>
             </div>
 
-            <!-- Executive Descriptions -->
-            <div>
-              <h6>Executive Staff Descriptions:</h6>
-              <div class="p-2 border rounded bg-light-subtle">
+            <!-- Non-Executive Descriptions -->
+            <div v-else>
+              <h6>Non-Executive Staff Descriptions:</h6>
+              <div class="p-2 border rounded bg-light-subtle mb-3">
                 <p class="mb-1"><strong>EN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'en', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
-                <hr>
+                <pre class="description-text" v-html="getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'en', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A'"></pre>
+              </div>
+              <div class="p-2 border rounded bg-light-subtle">
                 <p class="mb-1"><strong>CN:</strong></p>
-                <pre class="description-text">{{ getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'cn', EXECUTIVE_RATING_CONFIG) || 'N/A' }}</pre>
+                <pre class="description-text" v-html="getCombinedRatingDescriptionForStar(adminRatingForDescriptionModal, 'cn', PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG) || 'N/A'"></pre>
               </div>
             </div>
           </div>
