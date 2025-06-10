@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getUserRoutes } from '@/api/router.ts';
-
+import logo from '@/assets/logo.png'
 const menuTree = ref([]);
 const expandedMenus = ref<Record<string, boolean>>({});
 const isMobile = ref(false);
@@ -84,7 +84,7 @@ onUnmounted(() => {
   >
     <!-- Logo区域 -->
     <div class="logo-container">
-      <img src="/logo.png" alt="ROWY Hardware" class="logo-img" />
+      <img :src="logo" alt="ROWY Hardware" class="logo-img" />
     </div>
 
     <!-- 菜单内容 -->
