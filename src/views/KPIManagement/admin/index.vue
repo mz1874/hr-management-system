@@ -1249,6 +1249,36 @@ const confirmTerminate = () => {
  * 判断当前的表单提交类型
  */
 const handleSubmit = () => {
+  // 验证 assignType 是否有选择
+  if (!assignType.value) {
+    Swal.fire({
+      icon: "error",
+      title: "Assignment Missing",
+      text: "Please select an assignment type (Employee or Department)."
+    });
+    return;
+  }
+
+  // 验证 user 类型是否选择了员工
+  if (assignType.value === 'user' && (!currentTask.value.assignedUsers || currentTask.value.assignedUsers.length === 0)) {
+    Swal.fire({
+      icon: "error",
+      title: "Assignment Missing",
+      text: "Please assign at least one employee."
+    });
+    return;
+  }
+
+  // 验证 department 类型是否选择了部门
+  if (assignType.value === 'department' && (!selectedDepartment.value || selectedDepartment.value === 'all')) {
+    Swal.fire({
+      icon: "error",
+      title: "Department Missing",
+      text: "Please select a department to assign the task to."
+    });
+    return;
+  }
+
   if (modalType.value === 'create') {
     createTask();
   } else if (modalType.value === 'edit') {
