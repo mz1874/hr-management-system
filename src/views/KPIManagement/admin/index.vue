@@ -472,6 +472,7 @@ let currentUserDepartmentId = ref(0)
 let currentRoles = reactive([])
 let currentKPIDepartmentID = ref(0)
 let isManager = computed(() => {
+  console.log(currentRoles,"ssssss")
   return currentRoles.includes('manager');
 })
 
@@ -660,7 +661,8 @@ const goToPage = (page: number) => {
 //Create function
 const createTask = () => {
   const currentDate = dayjs().format("YYYY-MM-DD");
-
+  console.log(assignType.value)
+  console.log(isManager)
   // 修改：加强日期验证和处理
   if (!currentTask.value.startDate || !currentTask.value.endDate) {
     Swal.fire({
@@ -757,9 +759,10 @@ const createTask = () => {
 
   // 调用API创建任务
   createKpi(payload).then((res) => {
+
     if (isSuccess(res.status)) {
       const kpiId = res.data.data.id;
-      if (isManager){
+      if (isManager.value){
         assignType.value = "department";
         assignToAllMembers.value = true;
       }
@@ -1103,8 +1106,6 @@ const saveEditedTask = () => {
           }
         }
       } else if (assignType.value === 'department' && assignToAllMembers.value) {
-
-
         assignKpiToDepartment(kpiId, selectedDepartment.value, currentTask.value.totalTarget)
             .then(() => {
               setKpiDepartment(kpiId, selectedDepartment.value);
