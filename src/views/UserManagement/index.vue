@@ -794,19 +794,32 @@ function onImageSelected(event) {
           <p v-if="selectedStaff.resignationDate">
             <strong>Resignation Date:</strong> {{ selectedStaff.resignationDate }}
           </p>
-          <div class="leaves-info" v-if="selectedStaff.leaveBalances && selectedStaff.leaveBalances.length">
-            <p><strong>Leave Balances:</strong></p>
-            <ul class="ms-3">
-              <li v-for="leave in selectedStaff.leaveBalances" :key="leave.code">
-                <template v-if="['AL', 'MC'].includes(leave.code)">
-                  {{ leave.type }} ({{ leave.code }}): {{ leave.remainingDays }} remaining / {{ leave.totalDays }} total
-                </template>
-                <template v-else>
-                  {{ leave.type }} ({{ leave.code }}): {{ leave.usedDays }} used
-                </template>
-              </li>
-            </ul>
+          <div class="leaves-info mt-4" v-if="selectedStaff.leaveBalances && selectedStaff.leaveBalances.length">
+            <h6 class="mb-3">Leave Balances</h6>
+            <div class="row">
+              <div
+                class="col-md-6 mb-3"
+                v-for="leave in selectedStaff.leaveBalances"
+                :key="leave.code"
+              >
+                <div class="card shadow-sm border-0">
+                  <div class="card-body p-3">
+                    <h6 class="card-title mb-2">
+                      {{ leave.type }} <span class="text-muted">({{ leave.code }})</span>
+                    </h6>
+                    <p class="mb-0" v-if="['AL', 'MC'].includes(leave.code)">
+                      <strong>{{ leave.remainingDays }}</strong> days remaining /
+                      <strong>{{ leave.totalDays }}</strong> total
+                    </p>
+                    <p class="mb-0 text-muted" v-else>
+                      <strong>{{ leave.usedDays }}</strong> days used
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
           <button
