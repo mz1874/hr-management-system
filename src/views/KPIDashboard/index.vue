@@ -274,8 +274,7 @@ function handleStatusChange() {
           <div class="modal-content">
             <div class="modal-header">
               <div class="header-content">
-                <i class="bi bi-file-text" style="font-size: 30px;"></i>
-                <h3>Detailed KPI description</h3>
+                <h3><i class="bi bi-file-text" style="font-size: 30px;"></i> Detailed KPI description</h3>
               </div>
             </div>
             <div class="modal-body">
