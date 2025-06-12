@@ -53,11 +53,12 @@ export default {
 <script setup lang="ts">
 import Swal from 'sweetalert2'
 import logo from '../../assets/logo.png';
-import {ref} from "vue";
+import {computed, reactive, ref} from "vue";
 import {useRouter} from "vue-router";
-import {login, logout} from "@/api/login.ts";
+import {getCurrentUser, login, logout} from "@/api/login.ts";
 import {getUserRoutes} from "@/api/router.ts";
-import {mapBackendRoutes} from "@/router/asyncRoutes.ts"; // 上面我们写的路由映射函数
+import {mapBackendRoutes} from "@/router/asyncRoutes.ts";
+import type {Staff} from "@/interface/UserInterface.ts"; // 上面我们写的路由映射函数
 
 
 const router = useRouter()
@@ -66,10 +67,33 @@ const username = ref("")
 const password = ref("")
 const logoUrl = ref(logo)
 const showPassword = ref(false)
+let currentRoles = reactive([])
+
+let isStaff = computed(() => {
+  return currentRoles.includes('staff');
+})
 
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
 }
+const currentUser = ref<Staff | null>(null);
+
+const fetchCurrentUser = async () => {
+  try {
+    const response = await getCurrentUser();
+    if (response.data && response.data.data) {
+      currentUser.value = response.data.data;
+      currentRoles.splice(0, currentRoles.length, ...currentUser.value.roles);
+      localStorage.setItem("currentUser", JSON.stringify(currentUser.value));
+      console.log(currentRoles, "roles");
+    } else {
+      Swal.fire('Error', 'Could not load your user details. Please try again.', 'error');
+    }
+  } catch (error) {
+    console.error("Failed to fetch current user:", error);
+    Swal.fire('Error', 'Could not load your user details. Please try again.', 'error');
+  }
+};
 
 async function submitData() {
   if (!username.value.trim()) {
@@ -89,7 +113,9 @@ async function submitData() {
     if (tokens?.access && tokens?.refresh) {
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
+      fetchCurrentUser();
       const routeRes = await getUserRoutes();
+      console.log(routeRes);
       const backendRoutes = routeRes.data?.data;
       const dynamicRoutes = mapBackendRoutes(backendRoutes);
       const homeRoute = router.getRoutes().find(r => r.name === 'home');
@@ -98,6 +124,10 @@ async function submitData() {
           router.addRoute('home', r); // 正确注册
         });
       }
+      console.log('注册的所有路由：');
+      router.getRoutes().forEach(route => {
+        console.log(`name: ${route.name}, path: ${route.path}`);
+      });
 
       Swal.fire({
         position: "top-end",
@@ -106,9 +136,11 @@ async function submitData() {
         showConfirmButton: false,
         timer: 1500
       }).then(() => {
-        //TODO Admin -> home-default
-        //TODO STAFF -> KPI dashboard
-        router.push({name: 'home-default'});
+        if (isStaff.value) {
+          router.push({name: 'kpi-dashboard'});
+        }else {
+          router.push({name: 'home-default'});
+        }
       });
     } else {
       throw new Error("Invalid token structure");

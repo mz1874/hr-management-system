@@ -10,8 +10,9 @@ export function refreshToken(refresh) {
 }
 
 export function logout() {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
 }
 
 export function getCurrentUser() {

@@ -470,9 +470,7 @@ const {
 let currentUserDepartment = ref("")
 let currentUserDepartmentId = ref(0)
 let currentRoles = reactive([])
-let currentKPIDepartmentID = ref(0)
 let isManager = computed(() => {
-  console.log(currentRoles,"ssssss")
   return currentRoles.includes('manager');
 })
 
