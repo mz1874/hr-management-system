@@ -272,7 +272,8 @@ export default {
         <td>{{ item.createdOn }}</td>
         <td>
           <button type="button" class="btn btn-sm btn-warning me-1" @click="openEditModal(item)">Edit</button>
-          <button type="button" v-show="item.name.toLowerCase() !== 'admin'.toLowerCase()" class="btn btn-sm btn-danger" @click="openDeleteModal(item)">
+          <button type="button" v-show="!['admin', 'manager', 'staff'].includes(item.name.toLowerCase())"
+                  class="btn btn-sm btn-danger" @click="openDeleteModal(item)">
             Delete
           </button>
         </td>
