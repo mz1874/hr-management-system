@@ -68,6 +68,7 @@ const password = ref("")
 const logoUrl = ref(logo)
 const showPassword = ref(false)
 let currentRoles = reactive([])
+let dynamicRouteNames: string[] = [];
 
 let isStaff = computed(() => {
   return currentRoles.includes('staff');
@@ -95,7 +96,17 @@ const fetchCurrentUser = async () => {
   }
 };
 
+function resetDynamicRoutes() {
+  dynamicRouteNames.forEach(name => {
+    if (router.hasRoute(name)) {
+      router.removeRoute(name);
+    }
+  });
+  dynamicRouteNames = [];
+}
+
 async function submitData() {
+  resetDynamicRoutes();
   if (!username.value.trim()) {
     Swal.fire("Username is required");
     return;
@@ -109,7 +120,6 @@ async function submitData() {
   try {
     const res = await login(username.value, password.value);
     const tokens = res.data?.data;
-
     if (tokens?.access && tokens?.refresh) {
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
@@ -122,6 +132,9 @@ async function submitData() {
       if (homeRoute) {
         dynamicRoutes.forEach(r => {
           router.addRoute('home', r); // 正确注册
+          if (r.name) {
+            dynamicRouteNames.push(r.name);
+          }
         });
       }
       console.log('注册的所有路由：');
