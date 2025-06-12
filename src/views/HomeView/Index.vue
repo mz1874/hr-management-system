@@ -62,6 +62,5 @@ onMounted(() => {
   flex: 1;
   margin-bottom: 50px;
   transition: margin-left 0.3s ease; /* Smooth transition */
-  margin-left: 30px;
 }
 </style>
