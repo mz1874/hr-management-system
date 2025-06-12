@@ -149,11 +149,7 @@ async function submitData() {
         showConfirmButton: false,
         timer: 1500
       }).then(() => {
-        if (isStaff.value) {
-          router.push({name: 'kpi-dashboard'});
-        }else {
-          router.push({name: 'home-default'});
-        }
+        router.replace({ name: isStaff.value ? 'kpi-dashboard' : 'home-default' });
       });
     } else {
       throw new Error("Invalid token structure");
