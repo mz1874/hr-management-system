@@ -18,8 +18,8 @@ const staticRoutes: RouteRecordRaw[]  = [
         component: Login,
     },
     {
-        path: '/home',
-        name: 'home',
+        path: '/main',
+        name: 'main',
         component: HomeView,
         children: [
            // Removed static routes for evaluation center views,
@@ -54,7 +54,7 @@ router.beforeEach(async (to, from, next) => {
         const dynamicRoutes = mapBackendRoutes(backendRoutes);
 
         dynamicRoutes.forEach(r => {
-            router.addRoute('home', r);
+            router.addRoute('main', r);
         });
         dynamicRoutesLoaded = true;
         return next({ ...to, replace: true });

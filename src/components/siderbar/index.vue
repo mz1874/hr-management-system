@@ -44,7 +44,7 @@ const checkScreenSize = () => {
 const buildMenuTree = (routes) => {
   return routes.filter(route => !route.hidden).map(route => ({
     name: route.name,
-    link: route.path ? '/home/' + route.path : null,
+    link: route.path ? '/main/' + route.path : null,
     children: route.children?.length ? buildMenuTree(route.children) : []
   }));
 };

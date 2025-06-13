@@ -70,9 +70,11 @@ const showPassword = ref(false)
 let currentRoles = reactive([])
 let dynamicRouteNames: string[] = [];
 
-let isStaff = computed(() => {
-  return currentRoles.includes('staff');
-})
+let isSupervisor = computed(() => {
+  const supervisorRoles = ['admin', 'hr', 'ADMIN', 'HR', 'administrator', 'ADMINISTRATOR'];
+  return supervisorRoles.some(role => currentRoles.includes(role));
+});
+
 
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
@@ -123,25 +125,20 @@ async function submitData() {
     if (tokens?.access && tokens?.refresh) {
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
-      fetchCurrentUser();
+      await fetchCurrentUser();
       const routeRes = await getUserRoutes();
       console.log(routeRes);
       const backendRoutes = routeRes.data?.data;
       const dynamicRoutes = mapBackendRoutes(backendRoutes);
-      const homeRoute = router.getRoutes().find(r => r.name === 'home');
+      const homeRoute = router.getRoutes().find(r => r.name === 'main');
       if (homeRoute) {
         dynamicRoutes.forEach(r => {
-          router.addRoute('home', r); // 正确注册
+          router.addRoute('main', r); // 正确注册
           if (r.name) {
             dynamicRouteNames.push(r.name);
           }
         });
       }
-      console.log('注册的所有路由：');
-      router.getRoutes().forEach(route => {
-        console.log(`name: ${route.name}, path: ${route.path}`);
-      });
-
       Swal.fire({
         position: "top-end",
         icon: "success",
@@ -149,12 +146,21 @@ async function submitData() {
         showConfirmButton: false,
         timer: 1500
       }).then(() => {
-        router.replace({ name: isStaff.value ? 'kpi-dashboard' : 'home-default' });
+        try {
+          router.replace({ name: isSupervisor.value ? 'home' : 'kpi-dashboard' });
+        }catch (error) {
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "Current user may don‘t have permission.",
+          });
+        }
       });
     } else {
       throw new Error("Invalid token structure");
     }
   } catch (err) {
+    console.log(err);
     if (err.response?.status === 401) {
       const jsonErrorCode = JSON.parse(err.request.response)
       Swal.fire({
