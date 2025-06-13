@@ -336,7 +336,6 @@ function onImageSelected(event) {
               <th>Account</th>
               <th>Department</th>
               <th>Status</th>
-              <th>No of Leaves</th> <!-- Add new column header -->
               <th>Actions</th>
             </tr>
             </thead>
@@ -356,7 +355,6 @@ function onImageSelected(event) {
                     {{ staff.status ? "Active" : "Inactive" }}
                   </span>
               </td>
-              <td>{{ staff.medicalLeaves + staff.annualLeaves }}</td>
               <td>
                 <button @click="openViewStaffModal(staff)" class="btn btn-primary btn-sm">View</button>
 <!--                <button @click="resetPassword(staff)" class="btn btn-secondary btn-sm">reset</button>-->
