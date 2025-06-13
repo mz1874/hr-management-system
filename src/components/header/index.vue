@@ -33,7 +33,7 @@ const handleLogout = () => {
         <div class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
           <span class="username">{{props.userName }}</span>
           <div class="dropdown-menu" :class="{ show: showDropdown }">
-            <router-link to="/home/personal-information" class="dropdown-item">
+            <router-link to="/main/personal-information" class="dropdown-item">
               <i class="bi bi-person me-2"></i>Personal Information
             </router-link>
             <div class="dropdown-divider"></div>
