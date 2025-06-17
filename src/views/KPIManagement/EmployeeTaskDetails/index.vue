@@ -306,6 +306,16 @@ const fetchPersonalDetails = async () => {
 }
 
 const updateEmployeeProgress = async (employee: Employee) => {
+  if (employee.status === 'Not Yet Started') {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Task Not Started',
+      text: 'Please wait for the task to start before updating the progress.',
+    });
+
+    fetchPersonalDetails();
+    return; 
+  }
   try {
     const response = await updateKpiProgress(employee.id, {
       completed_unit: employee.progress,
