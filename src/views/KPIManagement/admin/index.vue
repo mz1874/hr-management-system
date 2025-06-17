@@ -1385,7 +1385,7 @@ const calculateTotalProgress = (task: any) => {
 };
 
 const goToEmployeeDetailsPage = (taskId: string | number) => {
-  router.push(`/home/employee-task-details/${taskId}`);
+  router.push(`/main/employee-task-details/${taskId}`);
 };
 
 </script>

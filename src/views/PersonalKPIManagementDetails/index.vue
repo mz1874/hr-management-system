@@ -400,7 +400,7 @@ const formatDate = (dateString: string) => {
 
 // 返回 KPI 管理页面
 function goToKPIManagement() {
-  router.push('/home/KPI-management')
+  router.push('/main/kpi-management')
 }
 
 // 组件挂载时获取数据
