@@ -212,22 +212,22 @@
       <div class="actions-container">
         <h3 class="actions-title">Quick Actions</h3>
         <div class="actions-grid">
-          <button class="action-btn primary-action" @click="navigateTo('/home/KPI-Dashboard')">
+          <button class="action-btn primary-action" @click="navigateTo('/main/KPI-Dashboard')">
             <span class="action-icon">👤</span>
             <span class="action-text">Personal KPI Dashboard</span>
           </button>
           
-          <button class="action-btn secondary-action" @click="navigateTo('/home/reward-mall')">
+          <button class="action-btn secondary-action" @click="navigateTo('/main/reward-mall')">
             <span class="action-icon">🎁</span>
             <span class="action-text">Reward Mall</span>
           </button>
           
-          <button class="action-btn tertiary-action" @click="navigateTo('/home/leave-application')">
+          <button class="action-btn tertiary-action" @click="navigateTo('/main/leave-application')">
             <span class="action-icon">📋</span>
             <span class="action-text">Leave Application</span>
           </button>
           
-          <button class="action-btn quaternary-action" @click="navigateTo('/home/leader-board')">
+          <button class="action-btn quaternary-action" @click="navigateTo('/main/leader-board')">
             <span class="action-icon">🏆</span>
             <span class="action-text">Leaderboard</span>
           </button>
