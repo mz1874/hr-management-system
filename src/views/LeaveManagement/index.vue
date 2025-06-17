@@ -11,6 +11,7 @@ import type { LeaveApplication } from '@/interface/leaveApplicationManagement'
 import { getCurrentUser } from '@/api/login'
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+
 import Swal from "sweetalert2";
 dayjs.extend(customParseFormat);
 
@@ -22,6 +23,7 @@ const totalCount = ref(0);
 const filterStatus = ref('All');
 const selectedLeave = ref<LeaveApplication | null>(null);
 const summaryStats = ref({ all: 0, pending: 0, approved: 0, rejected: 0 });
+const isBulkProcessing = ref(false);
 
 const currentUser = ref({
   id: 0,
@@ -300,43 +302,59 @@ const bulkApprove = async () => {
     return;
   }
 
-  await Promise.all(
-    selectedApps.map(async (app) => {
-      const rawStatus = reverseStatusMap[app.status];
-      const isApplicantHR = app.userRoles?.includes('hr') ?? false;
-      const isApplicantManager = app.userRoles?.includes('manager') ?? false;
+  isBulkProcessing.value = true;
+  let processedCount = 0;
 
-      const isManagerAction = rawStatus === 'P' && isManager.value;
-      const isHRAction = (
-        rawStatus === 'M' && isHR.value
-      ) || (
-        rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
-      );
+  try {
+    await Promise.all(
+      selectedApps.map(async (app) => {
+        const rawStatus = reverseStatusMap[app.status];
+        const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+        const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
-      if (isManagerAction || isHRAction) {
-        const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
-        app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
-        selectedLeave.value = app;
+        const isManagerAction = rawStatus === 'P' && isManager.value;
+        const isHRAction = (
+          rawStatus === 'M' && isHR.value
+        ) || (
+          rawStatus === 'P' && isHR.value && (isApplicantHR || isApplicantManager)
+        );
 
-        const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';
-        await saveChanges(newStatus, false, true);  // silent toast
-      }
+        if (isManagerAction || isHRAction) {
+          const label = isManagerAction ? "Approved by Manager" : "Approved by HR";
+          app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
+          selectedLeave.value = app;
 
-      app.selected = false;
-    })
-  );
+          const newStatus = isManagerAction ? 'Manager Approved' : 'Approved';
+          await saveChanges(newStatus, false, true);
+          processedCount++;
+        }
 
-  await fetchLeaveApplications();
+        app.selected = false;
+      })
+    );
 
-  Swal.fire({
-    icon: 'success',
-    title: 'Success',
-    text: 'Selected applications approved successfully.',
-    timer: 2000,
-    showConfirmButton: false,
-  });
+    await fetchLeaveApplications();
+
+    Swal.fire({
+      icon: processedCount > 0 ? 'success' : 'info',
+      title: processedCount > 0 ? 'Success' : 'No Applications Updated',
+      text: processedCount > 0
+        ? `${processedCount} application(s) approved successfully.`
+        : 'None of the selected applications were eligible for approval.',
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  } catch (err) {
+    console.error('Bulk approve error:', err);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'An error occurred during bulk approval.',
+    });
+  } finally {
+    isBulkProcessing.value = false;
+  }
 };
-
 const bulkReject = async () => {
   const selectedApps = leaveApplications.value.filter(app => app.selected);
   if (selectedApps.length === 0) {
@@ -348,41 +366,59 @@ const bulkReject = async () => {
     return;
   }
 
-  await Promise.all(
-    selectedApps.map(async (app) => {
-      const rawStatus = reverseStatusMap[app.status];
-      const isApplicantHR = app.userRoles?.includes('hr') ?? false;
-      const isApplicantManager = app.userRoles?.includes('manager') ?? false;
+  isBulkProcessing.value = true;
+  let processedCount = 0;
 
-      const isManagerAction = rawStatus === 'P' && isManager.value;
-      const isHRAction = isHR.value && (
-        rawStatus === 'M' ||
-        (rawStatus === 'P' && (isApplicantHR || isApplicantManager))
-      );
+  try {
+    await Promise.all(
+      selectedApps.map(async (app) => {
+        const rawStatus = reverseStatusMap[app.status];
+        const isApplicantHR = app.userRoles?.includes('hr') ?? false;
+        const isApplicantManager = app.userRoles?.includes('manager') ?? false;
 
-      if (isManagerAction || isHRAction) {
-        const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
-        app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
-        selectedLeave.value = app;
+        const isManagerAction = rawStatus === 'P' && isManager.value;
+        const isHRAction = isHR.value && (
+          rawStatus === 'M' ||
+          (rawStatus === 'P' && (isApplicantHR || isApplicantManager))
+        );
 
-        const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
-        await saveChanges(newStatus, false, true);  // silent toast
-      }
+        if (isManagerAction || isHRAction) {
+          const label = isManagerAction ? "Rejected by Manager" : "Rejected by HR";
+          app.remarks = appendRemarkWithTimestamp(app.remarks || '', label);
+          selectedLeave.value = app;
 
-      app.selected = false;
-    })
-  );
+          const newStatus = isManagerAction ? 'Rejected by Manager' : 'Rejected by HR';
+          await saveChanges(newStatus, false, true);
+          processedCount++;
+        }
 
-  await fetchLeaveApplications();
+        app.selected = false;
+      })
+    );
 
-  Swal.fire({
-    icon: 'success',
-    title: 'Success',
-    text: 'Selected applications rejected successfully.',
-    timer: 2000,
-    showConfirmButton: false,
-  });
+    await fetchLeaveApplications();
+
+    Swal.fire({
+      icon: processedCount > 0 ? 'success' : 'info',
+      title: processedCount > 0 ? 'Success' : 'No Applications Updated',
+      text: processedCount > 0
+        ? `${processedCount} application(s) rejected successfully.`
+        : 'None of the selected applications were eligible for rejection.',
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  } catch (err) {
+    console.error('Bulk reject error:', err);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'An error occurred during bulk rejection.',
+    });
+  } finally {
+    isBulkProcessing.value = false;
+  }
 };
+
 
 
 const formatDuration = (code: string) => {
@@ -547,11 +583,20 @@ const pageNumbers = computed(() => {
     </div>
 
     <!-- Bulk Action Buttons -->
-    <div class="d-flex justify-content-end mt-3 buttons">
-      <button class="btn custom-approve me-2" @click="bulkApprove">Approve</button>
-      <button class="btn custom-reject" @click="bulkReject">Reject</button>
-      <!-- <button class="btn btn-danger">Delete</button> -->
-    </div>
+    <button class="btn custom-approve me-2" @click="bulkApprove" :disabled="isBulkProcessing">
+      <span v-if="isBulkProcessing">
+        <i class="spinner-border spinner-border-sm me-2"></i>Processing...
+      </span>
+      <span v-else>Approve</span>
+    </button>
+
+    <button class="btn custom-reject" @click="bulkReject" :disabled="isBulkProcessing">
+      <span v-if="isBulkProcessing">
+        <i class="spinner-border spinner-border-sm me-2"></i>Processing...
+      </span>
+      <span v-else>Reject</span>
+    </button>
+
 
     
 
