@@ -583,20 +583,23 @@ const pageNumbers = computed(() => {
     </div>
 
     <!-- Bulk Action Buttons -->
-    <button class="btn custom-approve me-2" @click="bulkApprove" :disabled="isBulkProcessing">
-      <span v-if="isBulkProcessing">
-        <i class="spinner-border spinner-border-sm me-2"></i>Processing...
-      </span>
-      <span v-else>Approve</span>
-    </button>
+    <div class="d-flex justify-content-end mt-3 buttons">
+      <button class="btn custom-approve me-2" @click="bulkApprove" :disabled="isBulkProcessing">
+        <span v-if="isBulkProcessing">
+          <i class="spinner-border spinner-border-sm me-2"></i>Processing...
+        </span>
+        <span v-else>Approve</span>
+      </button>
 
-    <button class="btn custom-reject" @click="bulkReject" :disabled="isBulkProcessing">
-      <span v-if="isBulkProcessing">
-        <i class="spinner-border spinner-border-sm me-2"></i>Processing...
-      </span>
-      <span v-else>Reject</span>
-    </button>
+      <button class="btn custom-reject" @click="bulkReject" :disabled="isBulkProcessing">
+        <span v-if="isBulkProcessing">
+          <i class="spinner-border spinner-border-sm me-2"></i>Processing...
+        </span>
+        <span v-else>Reject</span>
+      </button>
 
+      
+    </div>
 
     
 
