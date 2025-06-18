@@ -514,12 +514,12 @@ const confirmedReward = async () => {
 //go to point details page
 const router = useRouter()
 function goToPointDetails() {
-  router.push('/home/reward-mall/point-details');
+  router.push('/main/reward-mall/point-details');
 }
 
 //go to reward history page
 function goToRewardHistory() {
-  router.push('/home/reward-mall/reward-history');
+  router.push('/main/reward-mall/reward-history');
 }
 
 </script>
@@ -628,7 +628,7 @@ function goToRewardHistory() {
 .reward-card {
   background: #ffffff;
   border-radius: 15px; /* Reduced from 20px */
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08); /* Slightly smaller shadow */
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.08); /* Slightly smaller shadow */
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
@@ -636,7 +636,7 @@ function goToRewardHistory() {
 /* Make image container smaller */
 .reward-image-container {
   height: 260px; /* Reduced from 250px */
-  background: #f5f7fa;
+  background: #f0f1f5;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -303,7 +303,7 @@ watch(showModal, (newVal) => {
 const router = useRouter()
 function goToRewardMall()
 {
-  router.push('/home/reward-mall');
+  router.push('/main/reward-mall');
 }
 
 
