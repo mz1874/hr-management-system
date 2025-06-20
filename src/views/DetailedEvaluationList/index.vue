@@ -1359,8 +1359,8 @@ watch(showRatingDescriptionModal, (newValue) => {
 
     <!-- Pagination for Main Table -->
     <div class="d-flex align-items-center gap-3 my-3" v-if="clientFilteredResults.length > 0">
-      <div class="text-muted fs-5">
-        Displaying {{ formsForCurrentPage.length }} of {{ clientFilteredResults.length }} evaluation(s)
+      <div class="text-muted fs-5 mt-3">
+        Total: {{totalItems}} evaluation(s)
       </div>
       <nav aria-label="Page navigation">
         <ul class="pagination mb-0">
