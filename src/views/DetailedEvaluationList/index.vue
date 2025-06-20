@@ -1367,8 +1367,19 @@ watch(showRatingDescriptionModal, (newValue) => {
           <li class="page-item" :class="{ disabled: currentPage === 1 }">
             <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
           </li>
-          <li class="page-item" v-for="page in visiblePages" :key="page" :class="{ active: page === currentPage }">
-            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+          <li
+              class="page-item"
+              v-for="page in visiblePages"
+              :key="page"
+              :class="{ active: page === currentPage, disabled: page === '...' }"
+          >
+            <button
+                class="page-link"
+                @click="page !== '...' && goToPage(page)"
+                :disabled="page === '...'"
+            >
+              {{ page }}
+            </button>
           </li>
           <li class="page-item" :class="{ disabled: currentPage === totalPages || totalPages === 0 }">
             <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages || totalPages === 0">
