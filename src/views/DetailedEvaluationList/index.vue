@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router'; // Import useRouter
+import {ref, computed, onMounted, watch} from 'vue';
+import {useRouter} from 'vue-router'; // Import useRouter
 import Swal from 'sweetalert2'; // Import SweetAlert
 
-import { searchStaff } from '@/api/staff'; // Use searchStaff API
+import {searchStaff} from '@/api/staff'; // Use searchStaff API
 import {
   getAllEvaluationForms,
   getEvaluationInstances, // Import getEvaluationInstances
@@ -13,19 +13,19 @@ import {
   finalizeDepartmentEvaluation, // Import the new function
   sendBackEvaluation // Import sendBackEvaluation
 } from '@/api/survey';
-import { selectAllDepartments } from '@/api/department'; // Import for department lookup
-import type { Department as DeptInterface } from '@/interface/DepartmentInterface'; // Interface for all departments
+import {selectAllDepartments} from '@/api/department'; // Import for department lookup
+import type {Department as DeptInterface} from '@/interface/DepartmentInterface'; // Interface for all departments
 import type {
-    EvaluationForm, // Use EvaluationForm
-    EvaluationAnswerSubmit,
-    EvaluationSubmissionPayload,
-    EvaluationQuestion, // Keep EvaluationQuestion for nested details
-    RowyQuestionOption, // Keep RowyQuestionOption for nested details
-    EvaluationInstance // Import EvaluationInstance
-    // EvaluationAnswerView // EvaluationAnswerView is part of EvaluationInstance
+  EvaluationForm, // Use EvaluationForm
+  EvaluationAnswerSubmit,
+  EvaluationSubmissionPayload,
+  EvaluationQuestion, // Keep EvaluationQuestion for nested details
+  RowyQuestionOption, // Keep RowyQuestionOption for nested details
+  EvaluationInstance // Import EvaluationInstance
+  // EvaluationAnswerView // EvaluationAnswerView is part of EvaluationInstance
 } from '@/api/survey';
-import type { Staff } from '@/interface/UserInterface'; // Import Staff type
-import { getCurrentUser } from '@/api/login';
+import type {Staff} from '@/interface/UserInterface'; // Import Staff type
+import {getCurrentUser} from '@/api/login';
 
 // Define star rating meanings
 const starRatingMeanings: Record<number, string> = {
@@ -58,9 +58,18 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
     text_en: 'Be Responsible',
     text_cn: '负责任',
     rating_texts: {
-      1: { en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.", cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a)在期限前自动自发完成任务 (b)有主人翁精神，愿意承担工作 (c)关注，参与和配合公司事务" }
+      1: {
+        en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.",
+        cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受"
+      },
+      5: {
+        en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.",
+        cn: "(a)在期限前自动自发完成任务 (b)有主人翁精神，愿意承担工作 (c)关注，参与和配合公司事务"
+      }
     }
   },
   {
@@ -68,9 +77,18 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
     text_en: 'Striving for Excellence',
     text_cn: '追求卓越',
     rating_texts: {
-      1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a)没有明确的工作计划，结果欠佳 (b)工作草率，马虎 (c)停滞不前，不寻求进步" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
-      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a)自行安排时间表和细节，效率高 (b)时刻产出高水准和品质的工作 (c)不断创造更有效率的工作方式" }
+      1: {
+        en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.",
+        cn: "(a)没有明确的工作计划，结果欠佳 (b)工作草率，马虎 (c)停滞不前，不寻求进步"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受"
+      },
+      5: {
+        en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.",
+        cn: "(a)自行安排时间表和细节，效率高 (b)时刻产出高水准和品质的工作 (c)不断创造更有效率的工作方式"
+      }
     }
   },
   {
@@ -78,9 +96,18 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
     text_en: 'Morality and Talent',
     text_cn: '道德与才能',
     rating_texts: {
-      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a)散播谣言扰乱军心 (b)欺骗，作假 (c)愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
-      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a)言行一致，向上向善 (b)拥有正面的道德品行，礼貌谦卑 (c)以饱满的热情和精神投入工作，正面应对工作挑战" }
+      1: {
+        en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.",
+        cn: "(a)散播谣言扰乱军心 (b)欺骗，作假 (c)愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受"
+      },
+      5: {
+        en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.",
+        cn: "(a)言行一致，向上向善 (b)拥有正面的道德品行，礼貌谦卑 (c)以饱满的热情和精神投入工作，正面应对工作挑战"
+      }
     }
   },
   {
@@ -88,9 +115,18 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
     text_en: 'Discipline',
     text_cn: '纪律',
     rating_texts: {
-      1: { en: "(a) Arriving late and leaving early, absent from work without excuse and in frequent. (b) Disobey superior's instructions and treat work casually. (c) Failed to comply with company regulations and work procedures.", cn: "(a)迟到早退，无故旷工，频繁缺勤 (b)不听从上司指示，随性对待工作 (c)不遵守公司规定和工作流程" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
-      5: { en: "(a) Arrive on time and have stable attendance. (b) Obey superior's arrangements and take work seriously. (c) Comply with work rules and regulations.", cn: "(a)准时到岗，出勤稳定。 (b)服从管理安排，认真对待工作。 (c)遵守工作规章制度。" }
+      1: {
+        en: "(a) Arriving late and leaving early, absent from work without excuse and in frequent. (b) Disobey superior's instructions and treat work casually. (c) Failed to comply with company regulations and work procedures.",
+        cn: "(a)迟到早退，无故旷工，频繁缺勤 (b)不听从上司指示，随性对待工作 (c)不遵守公司规定和工作流程"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受"
+      },
+      5: {
+        en: "(a) Arrive on time and have stable attendance. (b) Obey superior's arrangements and take work seriously. (c) Comply with work rules and regulations.",
+        cn: "(a)准时到岗，出勤稳定。 (b)服从管理安排，认真对待工作。 (c)遵守工作规章制度。"
+      }
     }
   },
   {
@@ -98,27 +134,36 @@ const PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG = [
     text_en: 'Hardworking and Proactive',
     text_cn: '勤奋与主动',
     rating_texts: {
-      1: { en: "(a) Lazy work attitude, playing on mobile phones, surfing the Internet, chatting etc. during working hours. (b) Delay in completing a task or work, affecting progress. (c) Unwillingness to learn, explore, or improve work methods.", cn: "(a)懒散的工作态度，在工作时间玩手机，上网，聊天等 (b)延迟完成任务或工作，影响进度 (c)不愿意学习，探索或改进工作方法" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受" },
-      5: { en: "(a) Focused on performing tasks during working hours. (b) Seizing time to complete tasks as quickly as possible. (c) Willing to try new ways of working and techniques.", cn: "(a)办公时间专注于执行任务 (b)把握时间，尽可能快速地完成工作 (c)乐于尝试新的工作方式和技术" }
+      1: {
+        en: "(a) Lazy work attitude, playing on mobile phones, surfing the Internet, chatting etc. during working hours. (b) Delay in completing a task or work, affecting progress. (c) Unwillingness to learn, explore, or improve work methods.",
+        cn: "(a)懒散的工作态度，在工作时间玩手机，上网，聊天等 (b)延迟完成任务或工作，影响进度 (c)不愿意学习，探索或改进工作方法"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a)需要上司劝告和提醒 (b)需要上司跟进和指导 (c)表现仍可接受"
+      },
+      5: {
+        en: "(a) Focused on performing tasks during working hours. (b) Seizing time to complete tasks as quickly as possible. (c) Willing to try new ways of working and techniques.",
+        cn: "(a)办公时间专注于执行任务 (b)把握时间，尽可能快速地完成工作 (c)乐于尝试新的工作方式和技术"
+      }
     }
   }
 ].map(q => {
   const texts = q.rating_texts;
   const combined_rating_texts: { [key: number]: { en: string, cn: string } } = {
     1: texts[1],
-    2: { 
-      en: `${texts[1].en} / ${texts[3].en}`, 
+    2: {
+      en: `${texts[1].en} / ${texts[3].en}`,
       cn: `${texts[1].cn} / ${texts[3].cn}`
     },
     3: texts[3],
-    4: { 
-      en: `${texts[3].en} / ${texts[5].en}`, 
+    4: {
+      en: `${texts[3].en} / ${texts[5].en}`,
       cn: `${texts[3].cn} / ${texts[5].cn}`
     },
     5: texts[5]
   };
-  return { ...q, rating_texts: combined_rating_texts };
+  return {...q, rating_texts: combined_rating_texts};
 });
 
 // --- Configuration for Executive Rating Questions ---
@@ -128,10 +173,22 @@ const EXECUTIVE_RATING_CONFIG = [
     text_en: 'Be Responsible (Executive)', // Differentiating text if needed, though not directly used for matching
     text_cn: '负责任 (行政)',
     rating_texts: {
-      1: { en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.", cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.", cn: "(a) 在期间前自动自发完成任务 (b) 有主人翁精神，愿意承担工作 (c) 关注，参与和配合公司事务" },
-      6: { en: "(a) Consistently exceeds expectations by completing tasks well ahead of deadlines with exceptional quality. (b) Demonstrates profound ownership, proactively identifies and undertakes crucial work beyond assigned responsibilities. (c) Leads and inspires others in company affairs through active, insightful participation and cooperation.", cn: "(a) 始终超出预期，以卓越的质量远早于截止日期完成任务。(b) 表现出深刻的主人翁精神，主动识别并承担超出职责范围的关键工作。(c) 通过积极、有见地的参与和合作，在公司事务中领导和激励他人。" }
+      1: {
+        en: "(a) Failed to complete tasks within the allotted time. (b) Ignoring and displacing responsibility and work. (c) Lack of attention and participation in company affairs.",
+        cn: "(a) 无法在规定的时间内完成工作 (b) 忽视和推卸责任与工作 (c) 对公司事务缺乏关注和参与"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受"
+      },
+      5: {
+        en: "(a) Automatically and spontaneously completes tasks before deadlines. (b) Have a sense of ownership and be willing to take on the work. (c) Pay attention to, participate in and cooperate with company affairs.",
+        cn: "(a) 在期间前自动自发完成任务 (b) 有主人翁精神，愿意承担工作 (c) 关注，参与和配合公司事务"
+      },
+      6: {
+        en: "(a) Consistently exceeds expectations by completing tasks well ahead of deadlines with exceptional quality. (b) Demonstrates profound ownership, proactively identifies and undertakes crucial work beyond assigned responsibilities. (c) Leads and inspires others in company affairs through active, insightful participation and cooperation.",
+        cn: "(a) 始终超出预期，以卓越的质量远早于截止日期完成任务。(b) 表现出深刻的主人翁精神，主动识别并承担超出职责范围的关键工作。(c) 通过积极、有见地的参与和合作，在公司事务中领导和激励他人。"
+      }
     }
   },
   {
@@ -139,10 +196,22 @@ const EXECUTIVE_RATING_CONFIG = [
     text_en: 'Striving for Excellence (Executive)',
     text_cn: '追求卓越 (行政)',
     rating_texts: {
-      1: { en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.", cn: "(a) 没有明确的工作计划，结果欠佳 (b) 工作草率，马虎 (c) 停滞不前，不寻求进步" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.", cn: "(a) 自行安排时间表和细节，效率高 (b) 时刻产出高水准和品质的工作 (c) 不断创造更有效率的工作方式" },
-      6: { en: "(a) Masterfully organizes schedules and details, achieving peak efficiency and setting new standards. (b) Consistently delivers work of the highest caliber, often exceeding expectations. (c) Innovates and pioneers highly efficient work methods that are adopted by others.", cn: "(a) 精通组织日程和细节，达到顶峰效率并设定新标准。(b) 始终交付最高水准的工作，经常超出预期。(c) 创新并开创高效的工作方法，被他人采纳。" }
+      1: {
+        en: "(a) Without clear work plans leading to poor quality. (b) Being hastily and carelessly in work. (c) Stagnant, not looking for improvement.",
+        cn: "(a) 没有明确的工作计划，结果欠佳 (b) 工作草率，马虎 (c) 停滞不前，不寻求进步"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受"
+      },
+      5: {
+        en: "(a) Arrange own schedule and details to be efficient. (b) Produce high level and quality work at all times. (c) Continuously create more efficient ways of working.",
+        cn: "(a) 自行安排时间表和细节，效率高 (b) 时刻产出高水准和品质的工作 (c) 不断创造更有效率的工作方式"
+      },
+      6: {
+        en: "(a) Masterfully organizes schedules and details, achieving peak efficiency and setting new standards. (b) Consistently delivers work of the highest caliber, often exceeding expectations. (c) Innovates and pioneers highly efficient work methods that are adopted by others.",
+        cn: "(a) 精通组织日程和细节，达到顶峰效率并设定新标准。(b) 始终交付最高水准的工作，经常超出预期。(c) 创新并开创高效的工作方法，被他人采纳。"
+      }
     }
   },
   {
@@ -150,10 +219,22 @@ const EXECUTIVE_RATING_CONFIG = [
     text_en: 'Morality and Talent (Executive)',
     text_cn: '道德与才能 (行政)',
     rating_texts: {
-      1: { en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.", cn: "(a) 散播谣言扰乱军心 (b) 欺骗，作假 (c) 愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.", cn: "(a) 言行一致，向上向善 (b) 拥有正面的道德品行，礼貌谦卑 (c) 以饱满的热情和精神投入工作，正面应对工作挑战" },
-      6: { en: "(a) Exemplifies integrity and kindness, serving as a role model for ethical conduct. (b) Embodies exceptional moral character, humility, and respect, inspiring these qualities in others. (c) Approaches work and challenges with unparalleled enthusiasm and a positive spirit, significantly uplifting team morale.", cn: "(a) 展现诚信和善良的典范，成为道德行为的楷模。(b) 体现卓越的道德品格、谦逊和尊重，激励他人具备这些品质。(c) 以无与伦比的热情和积极的精神对待工作和挑战，显著提升团队士气。" }
+      1: {
+        en: "(a) Spreading rumors to disrupt morale. (b) Cheating, giving false information. (c) Improper conduct, complaining and spreading negative energy.",
+        cn: "(a) 散播谣言扰乱军心 (b) 欺骗，作假 (c) 愁眉苦脸，衣衫不整，言行不正，埋怨，消极，散播负能量"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受"
+      },
+      5: {
+        en: "(a) Be consistent with own words and deeds, and be kind to others. (b) Possess positive moral character, be polite and humble. (c) Engage in work with full enthusiasm and spirit, and face challenges positively.",
+        cn: "(a) 言行一致，向上向善 (b) 拥有正面的道德品行，礼貌谦卑 (c) 以饱满的热情和精神投入工作，正面应对工作挑战"
+      },
+      6: {
+        en: "(a) Exemplifies integrity and kindness, serving as a role model for ethical conduct. (b) Embodies exceptional moral character, humility, and respect, inspiring these qualities in others. (c) Approaches work and challenges with unparalleled enthusiasm and a positive spirit, significantly uplifting team morale.",
+        cn: "(a) 展现诚信和善良的典范，成为道德行为的楷模。(b) 体现卓越的道德品格、谦逊和尊重，激励他人具备这些品质。(c) 以无与伦比的热情和积极的精神对待工作和挑战，显著提升团队士气。"
+      }
     }
   },
   {
@@ -161,10 +242,22 @@ const EXECUTIVE_RATING_CONFIG = [
     text_en: 'Problem Solving Skill (Executive)',
     text_cn: '解决问题能力 (行政)',
     rating_texts: {
-      1: { en: "(a) Turn a blind eye to or avoid problems. (b) Failure to provide timely feedback on problems that arise at work and do not proactively look for solutions. (c) Making the same mistakes over and over again.", cn: "(a) 对问题视而不见或逃避问题 (b) 没有及时反馈工作中出现的问题，也没有主动寻找解决方案 (c) 反复犯同样的错误" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Have the courage to face up to problems and be willing to try to solve them. (b) Solve problems in a timely manner, provide preventive measures and share with others as a reference. (c) Able to implement solution and evaluate the results.", cn: "(a) 勇于正视问题，愿意尝试解决问题 (b) 及时解决问题，给予预防措施并分享给大家作为借鉴 (c) 有能力落实具体措施，并对结果进行评估和反思" },
-      6: { en: "(a) Proactively seeks out and confronts complex problems with exceptional courage and innovative solutions. (b) Not only solves problems swiftly but also develops and disseminates robust preventative strategies that benefit the entire organization. (c) Expertly implements solutions, meticulously evaluates outcomes, and drives continuous improvement based on deep insights.", cn: "(a) 以非凡的勇气和创新的解决方案主动寻找并应对复杂问题。(b) 不仅迅速解决问题，还制定并推广有益于整个组织的强大预防策略。(c) 专业地实施解决方案，仔细评估结果，并基于深刻的洞察力推动持续改进。" }
+      1: {
+        en: "(a) Turn a blind eye to or avoid problems. (b) Failure to provide timely feedback on problems that arise at work and do not proactively look for solutions. (c) Making the same mistakes over and over again.",
+        cn: "(a) 对问题视而不见或逃避问题 (b) 没有及时反馈工作中出现的问题，也没有主动寻找解决方案 (c) 反复犯同样的错误"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受"
+      },
+      5: {
+        en: "(a) Have the courage to face up to problems and be willing to try to solve them. (b) Solve problems in a timely manner, provide preventive measures and share with others as a reference. (c) Able to implement solution and evaluate the results.",
+        cn: "(a) 勇于正视问题，愿意尝试解决问题 (b) 及时解决问题，给予预防措施并分享给大家作为借鉴 (c) 有能力落实具体措施，并对结果进行评估和反思"
+      },
+      6: {
+        en: "(a) Proactively seeks out and confronts complex problems with exceptional courage and innovative solutions. (b) Not only solves problems swiftly but also develops and disseminates robust preventative strategies that benefit the entire organization. (c) Expertly implements solutions, meticulously evaluates outcomes, and drives continuous improvement based on deep insights.",
+        cn: "(a) 以非凡的勇气和创新的解决方案主动寻找并应对复杂问题。(b) 不仅迅速解决问题，还制定并推广有益于整个组织的强大预防策略。(c) 专业地实施解决方案，仔细评估结果，并基于深刻的洞察力推动持续改进。"
+      }
     }
   },
   {
@@ -172,10 +265,22 @@ const EXECUTIVE_RATING_CONFIG = [
     text_en: 'Critical Thinking (Executive)',
     text_cn: '批判性思维 (行政)',
     rating_texts: {
-      1: { en: "(a) Blindly listening to others without considering the authenticity of the information. (b) Unable to analyze problems and evaluate the pros and cons. (c) Lack of ability to challenge conventional practices.", cn: "(a) 盲目听信他人，不考虑信息的真实性 (b) 无法分析问题，不能评估事情的利与弊 (c) 缺乏挑战现状和常规做法的能力" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Analyze and collect required information and evaluate its authenticity. (b) Able to weigh the pro and cons based on analysis and evaluation. (c) Able to propose innovative, feasible, and constructive suggestions.", cn: "(a) 分析及收集所需信息，并评估其真实性 (b) 基于分析和评估，可以权衡事情的利与弊 (c) 能够提出创新性，可行性，有建设性的提议" },
-      6: { en: "(a) Demonstrates superior ability in analyzing and synthesizing complex information, rigorously verifying authenticity and uncovering deep insights. (b) Exhibits exceptional judgment in weighing pros and cons, leading to optimal strategic decisions. (c) Consistently generates highly innovative, feasible, and impactful suggestions that drive significant organizational improvements.", cn: "(a) 在分析和综合复杂信息方面表现出卓越能力，严格验证真实性并揭示深刻见解。(b) 在权衡利弊方面表现出非凡的判断力，从而做出最佳战略决策。(c) 持续提出高度创新、可行且具影响力的建议，推动重大的组织改进。" }
+      1: {
+        en: "(a) Blindly listening to others without considering the authenticity of the information. (b) Unable to analyze problems and evaluate the pros and cons. (c) Lack of ability to challenge conventional practices.",
+        cn: "(a) 盲目听信他人，不考虑信息的真实性 (b) 无法分析问题，不能评估事情的利与弊 (c) 缺乏挑战现状和常规做法的能力"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受"
+      },
+      5: {
+        en: "(a) Analyze and collect required information and evaluate its authenticity. (b) Able to weigh the pro and cons based on analysis and evaluation. (c) Able to propose innovative, feasible, and constructive suggestions.",
+        cn: "(a) 分析及收集所需信息，并评估其真实性 (b) 基于分析和评估，可以权衡事情的利与弊 (c) 能够提出创新性，可行性，有建设性的提议"
+      },
+      6: {
+        en: "(a) Demonstrates superior ability in analyzing and synthesizing complex information, rigorously verifying authenticity and uncovering deep insights. (b) Exhibits exceptional judgment in weighing pros and cons, leading to optimal strategic decisions. (c) Consistently generates highly innovative, feasible, and impactful suggestions that drive significant organizational improvements.",
+        cn: "(a) 在分析和综合复杂信息方面表现出卓越能力，严格验证真实性并揭示深刻见解。(b) 在权衡利弊方面表现出非凡的判断力，从而做出最佳战略决策。(c) 持续提出高度创新、可行且具影响力的建议，推动重大的组织改进。"
+      }
     }
   },
   {
@@ -183,10 +288,22 @@ const EXECUTIVE_RATING_CONFIG = [
     text_en: 'Flexibility (Executive)',
     text_cn: '灵活性 (行政)',
     rating_texts: {
-      1: { en: "(a) Unable to accept innovations and suggestions. (b) Unable to manage own emotions in response to challenges and stress. (c) Feeling overwhelmed when multitasking.", cn: "(a) 无法接受创新和建议，一成不变 (b) 无法管理自己的情绪以应对挑战和压力 (c) 在处理多项任务时手忙脚乱，无法应付" },
-      3: { en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.", cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受" },
-      5: { en: "(a) Accept change and adapt quickly. (b) Stay calm and optimistic under pressure and challenges. (c) Able to handle multiple tasks effectively and switch flexibly.", cn: "(a) 接受变化并迅速适应 (b) 在压力和挑战下保持冷静和乐观 (c) 能够有效地处理多项任务和项目，灵活切换" },
-      6: { en: "(a) Champions change and adapts with exceptional speed and agility, often anticipating future needs. (b) Maintains remarkable composure and optimism in high-pressure situations, inspiring confidence in others. (c) Masterfully juggles numerous complex tasks and projects, seamlessly switching focus and delivering outstanding results across the board.", cn: "(a) 倡导变革并以非凡的速度和敏捷性适应，经常预测未来需求。(b) 在高压情况下保持非凡的镇定和乐观，激励他人信心。(c) 精通处理众多复杂任务和项目，无缝切换重点并在各方面取得卓越成果。" }
+      1: {
+        en: "(a) Unable to accept innovations and suggestions. (b) Unable to manage own emotions in response to challenges and stress. (c) Feeling overwhelmed when multitasking.",
+        cn: "(a) 无法接受创新和建议，一成不变 (b) 无法管理自己的情绪以应对挑战和压力 (c) 在处理多项任务时手忙脚乱，无法应付"
+      },
+      3: {
+        en: "(a) Need superior advice and reminder. (b) Need superior follow up and coaching. (c) Acceptable behavior.",
+        cn: "(a) 需要上司劝告和提醒 (b) 需要上司跟进和指导 (c) 表现仍可接受"
+      },
+      5: {
+        en: "(a) Accept change and adapt quickly. (b) Stay calm and optimistic under pressure and challenges. (c) Able to handle multiple tasks effectively and switch flexibly.",
+        cn: "(a) 接受变化并迅速适应 (b) 在压力和挑战下保持冷静和乐观 (c) 能够有效地处理多项任务和项目，灵活切换"
+      },
+      6: {
+        en: "(a) Champions change and adapts with exceptional speed and agility, often anticipating future needs. (b) Maintains remarkable composure and optimism in high-pressure situations, inspiring confidence in others. (c) Masterfully juggles numerous complex tasks and projects, seamlessly switching focus and delivering outstanding results across the board.",
+        cn: "(a) 倡导变革并以非凡的速度和敏捷性适应，经常预测未来需求。(b) 在高压情况下保持非凡的镇定和乐观，激励他人信心。(c) 精通处理众多复杂任务和项目，无缝切换重点并在各方面取得卓越成果。"
+      }
     }
   }
 ].map(q => {
@@ -205,7 +322,7 @@ const EXECUTIVE_RATING_CONFIG = [
     5: texts[5],
     6: texts[6] // Added 6th star
   };
-  return { ...q, rating_texts: combined_rating_texts };
+  return {...q, rating_texts: combined_rating_texts};
 });
 
 // Interface for forms in the list
@@ -215,15 +332,12 @@ interface DisplayEvaluationForm extends EvaluationForm {
   total_staff_count?: number;     // For Progress X/Y (from backend annotation)
 }
 
-// --- State ---
-const router = useRouter(); // Initialize router instance
+// Total number of results
+const totalItems = ref(0)
 
 const rawApiResults = ref<DisplayEvaluationForm[]>([]); // Stores all forms fetched from API based on broad filters
-// const availableForms = ref<DisplayEvaluationForm[]>([]) // Forms available to the manager - REPLACED by formsForCurrentPage logic
-// const totalForms = ref(0) // For pagination - REPLACED by computed length of clientFilteredResults
+
 const isLoadingForms = ref(false)
-const isLoadingDetails = ref(false) // Keep for potential future use loading form questions if separated
-const finishedCount = ref(0); // TODO: Revisit if this count is needed and how to calculate it
 
 const showFormModal = ref(false)
 // Holds the full details of the EvaluationForm selected
@@ -273,7 +387,6 @@ const isContextExecutiveForRatingModal = ref(false); // To determine which descr
 // Computed property for client-side filtering of all fetched API results
 const clientFilteredResults = computed(() => {
   const baseForms = rawApiResults.value.filter(form => form.status !== 'DRAFT'); // Ensure DRAFT are always filtered out first
-
   if (selectedStatus.value === 'PUBLISHED') {
     return baseForms.filter(form => getEvaluationStatus(form) === 'PUBLISHED');
   } else if (selectedStatus.value === 'SUBMITTED') {
@@ -283,7 +396,8 @@ const clientFilteredResults = computed(() => {
   return baseForms;
 });
 
-const totalPages = computed(() => Math.ceil(clientFilteredResults.value.length / itemsPerPage.value));
+// Calculate the total pages
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
 
 // Computed property for the forms to display on the current page (paginated from clientFilteredResults)
 const formsForCurrentPage = computed(() => {
@@ -330,16 +444,16 @@ const starsForViewingInstance = computed(() => {
 // Helper function to determine if staff is executive type
 const isStaffExecutiveType = (staff: Partial<Staff> | null | undefined): boolean => {
   if (!staff) return false;
-  
-  const positionUpper = staff.position?.toUpperCase(); 
-  
+
+  const positionUpper = staff.position?.toUpperCase();
+
   if (positionUpper) { // Only use position lists if position is available
     if (EXECUTIVE_POSITIONS.includes(positionUpper)) return true;
     if (NON_EXECUTIVE_POSITIONS.includes(positionUpper)) return false;
   }
-  
+
   // Fallback to isExecutive if position didn't yield a result or was missing, or if isExecutive itself is undefined (then false)
-  return staff.isExecutive || false; 
+  return staff.isExecutive || false;
 };
 
 // Methods for Rating Description Modal
@@ -378,7 +492,7 @@ const clearHoverRating = (questionId: number) => {
 const getPredefinedConfigByText = (questionText: string | undefined, configSource: any[]) => {
   if (!questionText) return null;
   // This matching logic might need adjustment if question.text is not guaranteed to match a config's text_en
-  return configSource.find(c => c.text_en === questionText); 
+  return configSource.find(c => c.text_en === questionText);
 };
 
 // Helper to get combined rating description for a given rating and language from a config source
@@ -387,8 +501,8 @@ const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, 
   if (rating === undefined || rating === null || rating < 1 || rating > maxRating) return '';
 
   const allDescriptionsForRating = configSource
-    .map(config => config.rating_texts[rating]?.[lang])
-    .filter(desc => desc !== undefined && desc !== null);
+      .map(config => config.rating_texts[rating]?.[lang])
+      .filter(desc => desc !== undefined && desc !== null);
 
   if (allDescriptionsForRating.length === 0) return 'N/A';
 
@@ -404,23 +518,23 @@ const getCombinedRatingDescriptionForStar = (rating: number | undefined | null, 
     configSource.forEach(config => {
       const desc = config.rating_texts[rating]?.[lang];
       // Attempt to get a more descriptive category name
-      let categoryName = config[`text_${lang}`] || config.key || 'Category'; 
+      let categoryName = config[`text_${lang}`] || config.key || 'Category';
       // For executive config, the keys might be like 'be_responsible_executive'. Try to clean it.
       if (config.key && config.key.includes('_executive')) {
-          const baseKey = config.key.replace('_executive', '');
-          const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === baseKey);
-          if (matchingPredefined) {
-              categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
-          } else {
-            // Basic fallback for executive-specific categories not in predefined
-            categoryName = (config[`text_${lang}`] || config.key).replace(/_executive/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          }
+        const baseKey = config.key.replace('_executive', '');
+        const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === baseKey);
+        if (matchingPredefined) {
+          categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
+        } else {
+          // Basic fallback for executive-specific categories not in predefined
+          categoryName = (config[`text_${lang}`] || config.key).replace(/_executive/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
       } else if (config.key) {
-          // For predefined, try to use its text_en/cn
-           const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === config.key);
-           if (matchingPredefined) {
-               categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
-           }
+        // For predefined, try to use its text_en/cn
+        const matchingPredefined = PREDEFINED_BEHAVIOURAL_QUESTIONS_CONFIG.find(p => p.key === config.key);
+        if (matchingPredefined) {
+          categoryName = matchingPredefined[`text_${lang}`] || matchingPredefined.key;
+        }
       }
 
 
@@ -536,29 +650,29 @@ const fetchAvailableForms = async () => {
     // Fetch ALL forms matching the API query. Using a large page_size.
     // The page parameter is set to 1 as we want all results starting from the first page.
     const params: { page_size: number; status?: string | null; search?: string; page: number } = {
-        page_size: 10000, // Assuming a large number to fetch all, or API needs specific param for "all"
-        page: 1,
-        search: searchName.value || undefined
+      page_size: 10, // Assuming a large number to fetch all, or API needs specific param for "all"
+      page: 1,
+      search: searchName.value || undefined
     };
 
     if (apiQueryStatus !== null) {
-        params.status = apiQueryStatus;
+      params.status = apiQueryStatus;
     }
 
     const response = await getAllEvaluationForms(params.page, params); // Pass page and params separately if API expects that
 
     // Add checks for response.data and nested data structure
     if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
-        // Store all fetched results. DRAFT filtering is handled by clientFilteredResults.
-        rawApiResults.value = response.data.data.results
-            .map((form: any) => form as DisplayEvaluationForm); // Keep cast for safety
-        
-        // totalForms.value is now derived from clientFilteredResults.value.length, so no need to set it from response.data.data.count
-        console.log("Fetched all raw forms for API status:", apiQueryStatus, rawApiResults.value.length);
+      totalItems.value = response.data.data.count;
+      rawApiResults.value = response.data.data.results
+          .map((form: any) => form as DisplayEvaluationForm); // Keep cast for safety
+      console.log(rawApiResults.value, "&&&");
+      // totalForms.value is now derived from clientFilteredResults.value.length, so no need to set it from response.data.data.count
+      console.log("Fetched all raw forms for API status:", apiQueryStatus, rawApiResults.value.length);
     } else {
-        console.error("Failed to fetch evaluation forms: Unexpected response format", response);
-        rawApiResults.value = [];
-        // TODO: Show a user-friendly error message
+      console.error("Failed to fetch evaluation forms: Unexpected response format", response);
+      rawApiResults.value = [];
+      // TODO: Show a user-friendly error message
     }
   } catch (error) {
     console.error("Failed to fetch available forms:", error);
@@ -633,7 +747,7 @@ const openFormModal = async (formItem: EvaluationForm) => {
           console.error("Error fetching all departments:", deptError);
         }
       }
-      
+
       const departmentNameFromUser = currentUser.value.department as string; // It's a string here
       const foundDept = allSystemDepartments.value.find(d => d.department_name === departmentNameFromUser);
       if (foundDept) {
@@ -642,13 +756,13 @@ const openFormModal = async (formItem: EvaluationForm) => {
         // Fallback: check if department_name field in currentUser matches anything
         const foundDeptByNameField = allSystemDepartments.value.find(d => d.department_name === currentUser.value?.department_name);
         if (foundDeptByNameField) {
-            departmentIdToUse = foundDeptByNameField.id;
+          departmentIdToUse = foundDeptByNameField.id;
         } else {
-            Swal.fire('Error', `Could not find a numeric ID for your department ('${departmentNameFromUser}'). Please contact support.`, 'error');
-            isLoadingStaff.value = false;
-            isLoadingStatuses.value = false;
-            showFormModal.value = false;
-            return;
+          Swal.fire('Error', `Could not find a numeric ID for your department ('${departmentNameFromUser}'). Please contact support.`, 'error');
+          isLoadingStaff.value = false;
+          isLoadingStatuses.value = false;
+          showFormModal.value = false;
+          return;
         }
       }
     }
@@ -660,7 +774,7 @@ const openFormModal = async (formItem: EvaluationForm) => {
       showFormModal.value = false;
       return;
     }
-    
+
     console.log("Fetching staff for department ID:", departmentIdToUse);
 
     // Fetch staff for the manager's department using searchStaff
@@ -676,7 +790,7 @@ const openFormModal = async (formItem: EvaluationForm) => {
         try {
           // Fetch instances for the current form, backend should filter by evaluator implicitly
           // Or add evaluator_id if backend requires it
-          const statusResponse = await getEvaluationInstances(1, { formId: currentForm.value.id });
+          const statusResponse = await getEvaluationInstances(1, {formId: currentForm.value.id});
           console.log("Fetched evaluation instances for status check:", statusResponse.data);
 
           // Adjusting path to the results array based on observed console log
@@ -811,14 +925,14 @@ const handleEdit = async (staff: Staff) => {
     try {
       await sendBackEvaluation(instanceToEdit.id);
       Swal.fire('Sent Back!', 'The evaluation has been reset for editing.', 'success');
-      
+
       // Update local status
-      staffCompletionStatus.value.set(staff.id, 'PENDING'); 
-      staffInstanceDataMap.value.delete(staff.id); 
-      
+      staffCompletionStatus.value.set(staff.id, 'PENDING');
+      staffInstanceDataMap.value.delete(staff.id);
+
       completedStaffCount.value = Array.from(staffCompletionStatus.value.values()).filter(status => status === 'Completed').length;
 
-      selectStaffForEvaluation(staff); 
+      selectStaffForEvaluation(staff);
 
     } catch (error: any) {
       console.error("Failed to send back evaluation:", error);
@@ -832,7 +946,7 @@ const handleEdit = async (staff: Staff) => {
 // --- Results Modal Logic (Placeholder - likely needs rework for staff-specific results) ---
 const openResultsModal = async (form: EvaluationForm) => {
   console.log("Opening results for form:", form);
-  currentSubmissionData.value = form as DisplayEvaluationForm; 
+  currentSubmissionData.value = form as DisplayEvaluationForm;
   showResultsModal.value = true;
   isLoadingSubmissionDetails.value = true;
 
@@ -849,9 +963,9 @@ const closeResultsModal = () => {
 // Submit the evaluation answers for the selected staff member
 const submitEvaluation = async () => {
   if (!currentForm.value || !selectedStaffForEvaluation.value) {
-      console.error("Submission Error: No form or staff selected.");
-      Swal.fire('Error', 'Please select a staff member and ensure a form is loaded.', 'error');
-      return;
+    console.error("Submission Error: No form or staff selected.");
+    Swal.fire('Error', 'Please select a staff member and ensure a form is loaded.', 'error');
+    return;
   }
 
   const staffId = selectedStaffForEvaluation.value.id;
@@ -864,75 +978,75 @@ const submitEvaluation = async () => {
     instanceIdToUse = startResponse.data.data.instance_id;
 
     if (!instanceIdToUse) {
-        throw new Error("Failed to retrieve evaluation instance ID for the selected staff.");
+      throw new Error("Failed to retrieve evaluation instance ID for the selected staff.");
     }
 
-  const answersArray: EvaluationAnswerSubmit[] = Object.values(currentAnswers.value)
-      .filter(ans => ans?.question_id !== undefined) 
-      .map(ans => { 
-          const finalAns: EvaluationAnswerSubmit = { question_id: ans!.question_id! };
+    const answersArray: EvaluationAnswerSubmit[] = Object.values(currentAnswers.value)
+        .filter(ans => ans?.question_id !== undefined)
+        .map(ans => {
+          const finalAns: EvaluationAnswerSubmit = {question_id: ans!.question_id!};
           const question = currentForm.value?.questions.find(q => q.id === ans!.question_id);
 
           if (question?.question_type === 'RATING') {
-              finalAns.rating = ans?.rating !== undefined ? Number(ans.rating) : null;
-              const maxRatingForStaff = isStaffExecutiveType(selectedStaffForEvaluation.value) ? 6 : 5;
-              if (finalAns.rating !== null && (finalAns.rating < 1 || finalAns.rating > maxRatingForStaff)) {
-                  throw new Error(`Invalid rating for question ID ${question.id}. Must be between 1 and ${maxRatingForStaff}.`);
-              }
+            finalAns.rating = ans?.rating !== undefined ? Number(ans.rating) : null;
+            const maxRatingForStaff = isStaffExecutiveType(selectedStaffForEvaluation.value) ? 6 : 5;
+            if (finalAns.rating !== null && (finalAns.rating < 1 || finalAns.rating > maxRatingForStaff)) {
+              throw new Error(`Invalid rating for question ID ${question.id}. Must be between 1 and ${maxRatingForStaff}.`);
+            }
           } else if (['TEXT', 'TEXT_INPUT'].includes(question?.question_type)) {
-              finalAns.text_answer = ans?.text_answer || null; 
+            finalAns.text_answer = ans?.text_answer || null;
           } else if (question?.question_type === 'OPTIONS') {
-              finalAns.selected_option_id = ans?.selected_option_id !== undefined ? ans.selected_option_id : null; 
-              if (finalAns.selected_option_id !== null && !question?.options?.some(opt => opt.id === finalAns.selected_option_id)) {
-                   throw new Error(`Invalid selected option ID for question ID ${question.id}.`);
-              }
+            finalAns.selected_option_id = ans?.selected_option_id !== undefined ? ans.selected_option_id : null;
+            if (finalAns.selected_option_id !== null && !question?.options?.some(opt => opt.id === finalAns.selected_option_id)) {
+              throw new Error(`Invalid selected option ID for question ID ${question.id}.`);
+            }
           }
           return finalAns;
-      });
+        });
 
-  const requiredQuestions = currentForm.value.questions;
-  const answeredQuestionIds = new Set(answersArray.map(ans => ans.question_id));
-  const allRequiredAnswered = requiredQuestions.every(q => answeredQuestionIds.has(q.id!));
+    const requiredQuestions = currentForm.value.questions;
+    const answeredQuestionIds = new Set(answersArray.map(ans => ans.question_id));
+    const allRequiredAnswered = requiredQuestions.every(q => answeredQuestionIds.has(q.id!));
 
-  if (!allRequiredAnswered) {
+    if (!allRequiredAnswered) {
       console.error("Validation failed: Please answer all questions.");
-      Swal.fire('Validation Error', 'Please answer all questions before submitting.', 'warning'); 
+      Swal.fire('Validation Error', 'Please answer all questions before submitting.', 'warning');
       return;
-  }
+    }
 
-  const submissionPayload: EvaluationSubmissionPayload = {
-    answers: answersArray,
-  };
+    const submissionPayload: EvaluationSubmissionPayload = {
+      answers: answersArray,
+    };
 
-  let contentValidationPassed = true;
-  let validationErrorMessage = '';
+    let contentValidationPassed = true;
+    let validationErrorMessage = '';
 
-  for (const answer of answersArray) {
+    for (const answer of answersArray) {
       const question = currentForm.value?.questions.find(q => q.id === answer.question_id);
       if (!question) {
-          contentValidationPassed = false;
-          validationErrorMessage = `Validation Error: Could not find question details for ID ${answer.question_id}.`;
-          break;
+        contentValidationPassed = false;
+        validationErrorMessage = `Validation Error: Could not find question details for ID ${answer.question_id}.`;
+        break;
       }
 
       if (question.question_type === 'RATING' && (answer.rating === null || answer.rating === undefined)) {
-          contentValidationPassed = false;
-          validationErrorMessage = `Validation Error: Rating is required for question ID ${question.id}.`;
-          break;
+        contentValidationPassed = false;
+        validationErrorMessage = `Validation Error: Rating is required for question ID ${question.id}.`;
+        break;
       } else if (['TEXT', 'TEXT_INPUT'].includes(question.question_type) && (answer.text_answer === null || answer.text_answer.trim() === '')) {
-           contentValidationPassed = false;
-           validationErrorMessage = `Validation Error: Text answer is required for question ID ${question.id}.`;
-           break;
+        contentValidationPassed = false;
+        validationErrorMessage = `Validation Error: Text answer is required for question ID ${question.id}.`;
+        break;
       } else if (question.question_type === 'OPTIONS' && (answer.selected_option_id === null || answer.selected_option_id === undefined)) {
-           // Optional: Add validation if an option must be selected
+        // Optional: Add validation if an option must be selected
       }
-  }
+    }
 
-  if (!contentValidationPassed) {
+    if (!contentValidationPassed) {
       console.error("Frontend content validation failed:", validationErrorMessage);
       Swal.fire('Validation Error', validationErrorMessage, 'warning');
       return;
-  }
+    }
 
     await submitEvaluationAnswers(instanceIdToUse, submissionPayload);
 
@@ -970,7 +1084,7 @@ const submitEvaluation = async () => {
           if (Array.isArray(error.response.data[field])) {
             errorMessage += `<strong>${field}:</strong> ${error.response.data[field].join(', ')}<br>`;
           } else {
-             errorMessage += `<strong>${field}:</strong> ${error.response.data[field]}<br>`;
+            errorMessage += `<strong>${field}:</strong> ${error.response.data[field]}<br>`;
           }
         }
       } else {
@@ -992,12 +1106,12 @@ const handleFinalSubmit = async () => {
   }
 
   if (completedStaffCount.value !== departmentStaff.value.length) {
-      console.warn("Attempted final submit before all staff evaluations are completed.");
-      Swal.fire('Warning', 'Please complete all staff evaluations before submitting the department evaluation.', 'warning');
-      return;
+    console.warn("Attempted final submit before all staff evaluations are completed.");
+    Swal.fire('Warning', 'Please complete all staff evaluations before submitting the department evaluation.', 'warning');
+    return;
   }
 
-  isLoadingForms.value = true; 
+  isLoadingForms.value = true;
   try {
     await finalizeDepartmentEvaluation(currentForm.value.id);
     Swal.fire('Success', 'Department evaluation finalized successfully.', 'success');
@@ -1020,7 +1134,7 @@ const handleFinalSubmit = async () => {
     const errorMessage = (error as any).response?.data?.detail || (error as any).message || "An error occurred during finalization.";
     Swal.fire('Error', `Failed to finalize department evaluation: ${errorMessage}`, 'error');
   } finally {
-    isLoadingForms.value = false; 
+    isLoadingForms.value = false;
   }
 }
 
@@ -1033,9 +1147,7 @@ const nextPage = () => {
   if (currentPage.value < totalPages.value) currentPage.value++
 }
 const goToPage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-  currentPage.value = page
-}
+
 }
 
 // --- Lifecycle Hooks ---
@@ -1105,28 +1217,28 @@ watch(showRatingDescriptionModal, (newValue) => {
 
     <!-- Filter Row - Matching SurveyManagement layout -->
     <div class="filter-container announcement-toolbar d-flex flex-wrap align-items-center gap-3 mb-4">
-        <!-- Search Input -->
-        <div class="search-container flex-grow-1"> <!-- Re-added flex-grow-1 -->
-          <i class="fas fa-search search-icon"></i>
-          <input
+      <!-- Search Input -->
+      <div class="search-container flex-grow-1"> <!-- Re-added flex-grow-1 -->
+        <i class="fas fa-search search-icon"></i>
+        <input
             v-model="searchName"
             type="text"
             class="search-input"
             placeholder="Search Evaluation Name"
-          />
-        </div>
+        />
+      </div>
 
-       <!-- Status Filter Dropdown -->
-       <div class="status-filter-container">
-         <!-- Removed label, relying on default option text -->
-         <select id="statusFilter" v-model="selectedStatus" class="form-select status-filter-select">
-           <option :value="null">All Status</option> <!-- Added All Status option -->
-           <option v-for="status in evaluationStatusesForDropdown" :key="status" :value="status">
-             {{ status }}
-           </option>
-         </select>
-       </div>
-       <!-- Add other filters here if needed -->
+      <!-- Status Filter Dropdown -->
+      <div class="status-filter-container">
+        <!-- Removed label, relying on default option text -->
+        <select id="statusFilter" v-model="selectedStatus" class="form-select status-filter-select">
+          <option :value="null">All Status</option> <!-- Added All Status option -->
+          <option v-for="status in evaluationStatusesForDropdown" :key="status" :value="status">
+            {{ status }}
+          </option>
+        </select>
+      </div>
+      <!-- Add other filters here if needed -->
     </div>
 
 
@@ -1134,21 +1246,21 @@ watch(showRatingDescriptionModal, (newValue) => {
     <div class="table-card">
       <table class="table">
         <thead>
-      <tr>
-        <th scope="col">ID</th>
-        <th scope="col">Evaluation Name</th>
-        <th scope="col">Published Date</th>
-        <th scope="col">Status</th>
-        <th scope="col">Progress</th>
-        <th scope="col">Actions</th>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Evaluation Name</th>
+          <th scope="col">Published Date</th>
+          <th scope="col">Status</th>
+          <th scope="col">Progress</th>
+          <th scope="col">Actions</th>
         </tr>
         </thead>
         <tbody>
         <tr v-if="isLoadingForms">
-            <td colspan="6" class="text-center">Loading evaluation forms...</td>
+          <td colspan="6" class="text-center">Loading evaluation forms...</td>
         </tr>
         <tr v-else-if="formsForCurrentPage.length === 0">
-            <td colspan="6" class="text-center">No evaluation forms found matching the criteria.</td>
+          <td colspan="6" class="text-center">No evaluation forms found matching the criteria.</td>
         </tr>
         <!-- Iterate over computed formsForCurrentPage -->
         <tr v-else v-for="form in formsForCurrentPage" :key="form.id">
@@ -1156,7 +1268,8 @@ watch(showRatingDescriptionModal, (newValue) => {
           <td>{{ form.name || 'N/A' }}</td>
           <td>{{ formatDate(form.publish_time) }}</td>
           <td>
-            <span :class="['badge', getEvaluationStatus(form) === 'SUBMITTED' ? 'bg-success' : getEvaluationStatus(form) === 'PUBLISHED' ? 'bg-primary' : 'bg-secondary']">
+            <span
+                :class="['badge', getEvaluationStatus(form) === 'SUBMITTED' ? 'bg-success' : getEvaluationStatus(form) === 'PUBLISHED' ? 'bg-primary' : 'bg-secondary']">
               {{ getEvaluationStatus(form) }}
             </span>
           </td>
@@ -1165,28 +1278,28 @@ watch(showRatingDescriptionModal, (newValue) => {
             <!-- Action Button - Conditional based on department evaluation status -->
             <template v-if="getEvaluationStatus(form) !== 'SUBMITTED'">
               <button type="button" class="btn btn-primary btn-action" @click="openFormModal(form)">
-                  Evaluate Staff
+                Evaluate Staff
               </button>
             </template>
             <template v-else>
               <button type="button" class="btn btn-info btn-action" @click="openFormModal(form)">
-                  View Submitted Evaluation
+                View Submitted Evaluation
               </button>
             </template>
             <!-- TODO: Add a way to view results later, maybe another button or link -->
             <!-- <button type="button" class="btn btn-info btn-action ms-2" @click="openResultsModal(form)">
                 View Results
             </button> -->
-        </td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Pagination for Main Table -->
     <div class="d-flex align-items-center gap-3 my-3" v-if="clientFilteredResults.length > 0">
       <div class="text-muted fs-5">
-      Displaying {{ formsForCurrentPage.length }} of {{ clientFilteredResults.length }} evaluation(s)
+        Displaying {{ formsForCurrentPage.length }} of {{ clientFilteredResults.length }} evaluation(s)
       </div>
       <nav aria-label="Page navigation">
         <ul class="pagination mb-0">
@@ -1197,7 +1310,9 @@ watch(showRatingDescriptionModal, (newValue) => {
             <button class="page-link" @click="goToPage(page)">{{ page }}</button>
           </li>
           <li class="page-item" :class="{ disabled: currentPage === totalPages || totalPages === 0 }">
-            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages || totalPages === 0">Next</button>
+            <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages || totalPages === 0">
+              Next
+            </button>
           </li>
         </ul>
       </nav>
@@ -1223,127 +1338,132 @@ watch(showRatingDescriptionModal, (newValue) => {
           <!-- Show staff list if no staff is selected -->
           <div v-if="!selectedStaffForEvaluation">
             <h5>Select Staff Member from Your Department</h5>
-             <!-- Loading Indicator for Staff and Statuses -->
-             <div v-if="isLoadingStaff || isLoadingStatuses" class="text-center my-3">
+            <!-- Loading Indicator for Staff and Statuses -->
+            <div v-if="isLoadingStaff || isLoadingStatuses" class="text-center my-3">
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading staff & statuses...</span>
               </div>
             </div>
-             <!-- Staff List Display -->
-             <div v-else-if="departmentStaff.length > 0">
-               <!-- Completion Count -->
-               <p class="text-muted mb-2">
-                 Completed: {{ completedStaffCount }} / {{ departmentStaff.length }}
-               </p>
-               <div class="list-group">
-                 <!-- Iterate over department staff -->
-                 <div v-for="staff in departmentStaff" :key="staff.id"
-                      class="list-group-item d-flex justify-content-between align-items-center">
-                   
-                   <!-- Staff Name and Status Badge -->
-                   <div>
-                     {{ staff.username }}
-                     <span v-if="staffCompletionStatus.get(staff.id) === 'Completed'" class="badge bg-success ms-2">Completed</span>
-                     <span v-else-if="staffCompletionStatus.get(staff.id) === 'PENDING'" class="badge bg-warning text-dark ms-2">In Progress</span>
-                     <span v-else class="badge bg-secondary ms-2">Not Started</span>
-                   </div>
+            <!-- Staff List Display -->
+            <div v-else-if="departmentStaff.length > 0">
+              <!-- Completion Count -->
+              <p class="text-muted mb-2">
+                Completed: {{ completedStaffCount }} / {{ departmentStaff.length }}
+              </p>
+              <div class="list-group">
+                <!-- Iterate over department staff -->
+                <div v-for="staff in departmentStaff" :key="staff.id"
+                     class="list-group-item d-flex justify-content-between align-items-center">
 
-                   <!-- Action Buttons -->
-                   <div>
-                     <template v-if="!isDepartmentEvaluationSubmittedForCurrentForm">
-                       <!-- Logic for when department evaluation is NOT submitted -->
-                       <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
-                               type="button" class="btn btn-sm btn-outline-info me-2"
-                               @click="openViewModal(staff)">
-                         <i class="fas fa-eye me-1"></i> View
-                       </button>
-                       <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
-                               type="button" class="btn btn-sm btn-outline-warning"
-                               @click="handleEdit(staff)">
-                         <i class="fas fa-edit me-1"></i> Edit
-                       </button>
-                       <button v-if="staffCompletionStatus.get(staff.id) !== 'Completed'"
-                               type="button" class="btn btn-sm btn-primary"
-                               @click="selectStaffForEvaluation(staff)">
-                         <i class="fas fa-play me-1"></i> Evaluate
-                       </button>
-                     </template>
-                     <template v-else>
-                       <!-- Logic for when department evaluation IS submitted -->
-                       <button type="button" class="btn btn-sm btn-outline-info me-2"
-                               @click="openViewModal(staff)"
-                               :disabled="staffCompletionStatus.get(staff.id) !== 'Completed' && !staffInstanceDataMap.has(staff.id)">
-                         <i class="fas fa-eye me-1"></i> View
-                       </button>
-                       <button type="button" class="btn btn-sm btn-outline-warning"
-                               @click="handleEdit(staff)"
-                               :disabled="!staffInstanceDataMap.has(staff.id)">
-                         <i class="fas fa-edit me-1"></i> Edit
-                       </button>
-                     </template>
-                   </div>
-                 </div>
-               </div>
-             </div>
-             <div v-else class="alert alert-warning">
+                  <!-- Staff Name and Status Badge -->
+                  <div>
+                    {{ staff.username }}
+                    <span v-if="staffCompletionStatus.get(staff.id) === 'Completed'" class="badge bg-success ms-2">Completed</span>
+                    <span v-else-if="staffCompletionStatus.get(staff.id) === 'PENDING'"
+                          class="badge bg-warning text-dark ms-2">In Progress</span>
+                    <span v-else class="badge bg-secondary ms-2">Not Started</span>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div>
+                    <template v-if="!isDepartmentEvaluationSubmittedForCurrentForm">
+                      <!-- Logic for when department evaluation is NOT submitted -->
+                      <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
+                              type="button" class="btn btn-sm btn-outline-info me-2"
+                              @click="openViewModal(staff)">
+                        <i class="fas fa-eye me-1"></i> View
+                      </button>
+                      <button v-if="staffCompletionStatus.get(staff.id) === 'Completed'"
+                              type="button" class="btn btn-sm btn-outline-warning"
+                              @click="handleEdit(staff)">
+                        <i class="fas fa-edit me-1"></i> Edit
+                      </button>
+                      <button v-if="staffCompletionStatus.get(staff.id) !== 'Completed'"
+                              type="button" class="btn btn-sm btn-primary"
+                              @click="selectStaffForEvaluation(staff)">
+                        <i class="fas fa-play me-1"></i> Evaluate
+                      </button>
+                    </template>
+                    <template v-else>
+                      <!-- Logic for when department evaluation IS submitted -->
+                      <button type="button" class="btn btn-sm btn-outline-info me-2"
+                              @click="openViewModal(staff)"
+                              :disabled="staffCompletionStatus.get(staff.id) !== 'Completed' && !staffInstanceDataMap.has(staff.id)">
+                        <i class="fas fa-eye me-1"></i> View
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-warning"
+                              @click="handleEdit(staff)"
+                              :disabled="!staffInstanceDataMap.has(staff.id)">
+                        <i class="fas fa-edit me-1"></i> Edit
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="alert alert-warning">
               No staff members found in your department or failed to load staff list.
             </div>
           </div>
 
           <!-- Show evaluation questions if staff is selected -->
           <div v-else>
-             <!-- Button to go back to staff selection -->
-             <button type="button" class="btn btn-outline-secondary btn-sm mb-3" @click="selectedStaffForEvaluation = null">
-               <i class="fas fa-arrow-left me-1"></i> Back to Staff List
-             </button>
+            <!-- Button to go back to staff selection -->
+            <button type="button" class="btn btn-outline-secondary btn-sm mb-3"
+                    @click="selectedStaffForEvaluation = null">
+              <i class="fas fa-arrow-left me-1"></i> Back to Staff List
+            </button>
 
-             <!-- Existing Question Display Logic -->
-             <div v-if="currentForm && currentForm.questions && currentAnswers">
-               <div class="mb-4 mt-2"> <!-- Adjusted margin -->
-                 <div class="mb-4 text-center">
-                   <h4 class="form-label">Evaluation Questions for {{ selectedStaffForEvaluation.username }}</h4>
+            <!-- Existing Question Display Logic -->
+            <div v-if="currentForm && currentForm.questions && currentAnswers">
+              <div class="mb-4 mt-2"> <!-- Adjusted margin -->
+                <div class="mb-4 text-center">
+                  <h4 class="form-label">Evaluation Questions for {{ selectedStaffForEvaluation.username }}</h4>
                 </div>
-                <div v-for="(question, index) in currentForm.questions" :key="question.id" class="mb-3 border p-3 rounded">
+                <div v-for="(question, index) in currentForm.questions" :key="question.id"
+                     class="mb-3 border p-3 rounded">
                   <div class="d-flex justify-content-between align-items-center">
-                        <!-- Display based on backend question_type -->
-                        <h6>{{ index + 1 }}.</h6>
+                    <!-- Display based on backend question_type -->
+                    <h6>{{ index + 1 }}.</h6>
                   </div>
-                      <!-- Use backend 'text' field -->
-                      <p class="form-control mb-2 bg-light">{{ question.text }}</p>
+                  <!-- Use backend 'text' field -->
+                  <p class="form-control mb-2 bg-light">{{ question.text }}</p>
 
                   <!-- RATING question type -->
                   <div v-if="question.question_type === 'RATING' && question.id !== undefined" class="form-group">
-                    <label class="form-label">Rating (1-{{ isStaffExecutiveType(selectedStaffForEvaluation) ? 6 : 5 }} stars):</label>
+                    <label class="form-label">Rating (1-{{ isStaffExecutiveType(selectedStaffForEvaluation) ? 6 : 5 }}
+                      stars):</label>
                     <div class="d-flex align-items-center">
                       <div class="star-rating" style="position: relative;">
                         <span
-                          v-for="starIndex in (isStaffExecutiveType(selectedStaffForEvaluation) ? 6 : 5)"
-                          :key="starIndex"
-                          class="star"
-                          :class="{
+                            v-for="starIndex in (isStaffExecutiveType(selectedStaffForEvaluation) ? 6 : 5)"
+                            :key="starIndex"
+                            class="star"
+                            :class="{
                             'hover-active': hoverRatings[question.id!] !== null && starIndex <= hoverRatings[question.id!]!,
                             'filled': (hoverRatings[question.id!] === null || hoverRatings[question.id!] === undefined) && currentAnswers[question.id!]?.rating !== undefined && starIndex <= currentAnswers[question.id!]!.rating!
                           }"
-                          @mouseenter="setHoverRating(question.id!, starIndex)"
-                          @mouseleave="clearHoverRating(question.id!)"
-                          @click="currentAnswers[question.id!].rating = starIndex; clearHoverRating(question.id!)"
+                            @mouseenter="setHoverRating(question.id!, starIndex)"
+                            @mouseleave="clearHoverRating(question.id!)"
+                            @click="currentAnswers[question.id!].rating = starIndex; clearHoverRating(question.id!)"
                         >
                           <i class="fas fa-star"></i>
                         </span>
                       </div>
-                      <button 
-                        v-if="currentAnswers[question.id!]?.rating" 
-                        type="button" 
-                        class="btn btn-outline-secondary btn-sm ms-2" 
-                        @click="openRatingDescriptionModal(currentAnswers[question.id!]!.rating!, question.text)"
-                        title="View Rating Descriptions"
-                        style="padding: 0.25rem 0.5rem; line-height: 1;">
+                      <button
+                          v-if="currentAnswers[question.id!]?.rating"
+                          type="button"
+                          class="btn btn-outline-secondary btn-sm ms-2"
+                          @click="openRatingDescriptionModal(currentAnswers[question.id!]!.rating!, question.text)"
+                          title="View Rating Descriptions"
+                          style="padding: 0.25rem 0.5rem; line-height: 1;">
                         <i class="bi bi-file-earmark-text"></i>
                       </button>
                     </div>
                     <!-- Display meaning of selected rating -->
                     <p v-if="currentAnswers[question.id!]?.rating" class="text-muted mt-1 mb-0 small">
-                      Selected: {{ currentAnswers[question.id!]?.rating }} Star(s) - {{ starRatingMeanings[currentAnswers[question.id!]!.rating!] }}
+                      Selected: {{ currentAnswers[question.id!]?.rating }} Star(s) -
+                      {{ starRatingMeanings[currentAnswers[question.id!]!.rating!] }}
                     </p>
                     <!-- Removed direct description display from here -->
                   </div>
@@ -1351,93 +1471,97 @@ watch(showRatingDescriptionModal, (newValue) => {
                   <!-- TEXT question type -->
                   <div v-if="question.question_type === 'TEXT' && question.id !== undefined" class="form-group">
                     <label class="form-label">Response:</label>
-                        <!-- Bind to currentAnswers[question.id].text_answer -->
-                        <textarea class="form-control auto-resize" v-model="currentAnswers[question.id].text_answer"></textarea>
-                      </div>
-                  
+                    <!-- Bind to currentAnswers[question.id].text_answer -->
+                    <textarea class="form-control auto-resize"
+                              v-model="currentAnswers[question.id].text_answer"></textarea>
+                  </div>
+
                   <!-- TEXT_INPUT question type -->
                   <div v-if="question.question_type === 'TEXT_INPUT' && question.id !== undefined" class="form-group">
                     <label class="form-label">Response:</label>
-                        <!-- Bind to currentAnswers[question.id].text_answer -->
-                        <input type="text" class="form-control" v-model="currentAnswers[question.id].text_answer">
-                      </div>
+                    <!-- Bind to currentAnswers[question.id].text_answer -->
+                    <input type="text" class="form-control" v-model="currentAnswers[question.id].text_answer">
+                  </div>
 
                   <!-- OPTIONS question type -->
-                  <div v-if="question.question_type === 'OPTIONS' && question.id !== undefined && question.options && question.options.length > 0" class="form-group">
-                      <label class="form-label">Select Option:</label>
-                      <div v-for="option in question.options" :key="option.id" class="form-check">
-                          <!-- Bind to currentAnswers[question.id].selected_option_id -->
-                          <input
-                              class="form-check-input"
-                              type="radio"
-                              :name="'question_' + question.id"
-                              :id="'option_' + option.id"
-                              :value="option.id"
-                              v-model="currentAnswers[question.id].selected_option_id"
-                          >
-                          <label class="form-check-label" :for="'option_' + option.id">
-                              {{ option.option_text }}
-                          </label>
-                      </div>
-                  </div>
+                  <div
+                      v-if="question.question_type === 'OPTIONS' && question.id !== undefined && question.options && question.options.length > 0"
+                      class="form-group">
+                    <label class="form-label">Select Option:</label>
+                    <div v-for="option in question.options" :key="option.id" class="form-check">
+                      <!-- Bind to currentAnswers[question.id].selected_option_id -->
+                      <input
+                          class="form-check-input"
+                          type="radio"
+                          :name="'question_' + question.id"
+                          :id="'option_' + option.id"
+                          :value="option.id"
+                          v-model="currentAnswers[question.id].selected_option_id"
+                      >
+                      <label class="form-check-label" :for="'option_' + option.id">
+                        {{ option.option_text }}
+                      </label>
                     </div>
-                     <div v-if="!currentForm.questions || currentForm.questions.length === 0" class="text-muted text-center">
-                        This evaluation has no questions.
-                     </div>
                   </div>
                 </div>
-              <div v-else class="text-center text-danger">
-                    Failed to load form details.
+                <div v-if="!currentForm.questions || currentForm.questions.length === 0" class="text-muted text-center">
+                  This evaluation has no questions.
+                </div>
               </div>
             </div>
-            <div class="modal-footer justify-content-between">
-               <!-- Left side: Back to list / Cancel -->
-               <div>
-                 <button 
-                   v-if="selectedStaffForEvaluation" 
-                   type="button" 
-                   class="btn btn-outline-secondary me-2" 
-                   @click="selectedStaffForEvaluation = null"
-                 >
-                   <i class="fas fa-arrow-left me-1"></i> Back to Staff List
-                 </button>
-                 <button type="button" class="btn btn-secondary" @click="closeFormModal">Cancel</button>
-               </div>
-               <!-- Right side: Submit individual / Final Submit -->
-               <div>
-                 <button
-                   v-if="selectedStaffForEvaluation"
-                   type="button"
-                   class="btn btn-primary"
-                   @click="submitEvaluation"
-                   :disabled="isLoadingStaff || isLoadingStatuses"
-                 >
-                  Save Evaluation for {{ selectedStaffForEvaluation?.username }}
-                 </button>
-                 <!-- Final Submit Button: visible only if not selected staff AND department eval not submitted -->
-                 <button
-                   v-if="!selectedStaffForEvaluation && !isDepartmentEvaluationSubmittedForCurrentForm"
-                   type="button"
-                   class="btn btn-success"
-                   @click="handleFinalSubmit"
-                   :disabled="completedStaffCount !== departmentStaff.length || departmentStaff.length === 0"
-                 >
-                   Submit Department Evaluation
-                 </button>
-               </div>
-             </div>
+            <div v-else class="text-center text-danger">
+              Failed to load form details.
+            </div>
+          </div>
+          <div class="modal-footer justify-content-between">
+            <!-- Left side: Back to list / Cancel -->
+            <div>
+              <button
+                  v-if="selectedStaffForEvaluation"
+                  type="button"
+                  class="btn btn-outline-secondary me-2"
+                  @click="selectedStaffForEvaluation = null"
+              >
+                <i class="fas fa-arrow-left me-1"></i> Back to Staff List
+              </button>
+              <button type="button" class="btn btn-secondary" @click="closeFormModal">Cancel</button>
+            </div>
+            <!-- Right side: Submit individual / Final Submit -->
+            <div>
+              <button
+                  v-if="selectedStaffForEvaluation"
+                  type="button"
+                  class="btn btn-primary"
+                  @click="submitEvaluation"
+                  :disabled="isLoadingStaff || isLoadingStatuses"
+              >
+                Save Evaluation for {{ selectedStaffForEvaluation?.username }}
+              </button>
+              <!-- Final Submit Button: visible only if not selected staff AND department eval not submitted -->
+              <button
+                  v-if="!selectedStaffForEvaluation && !isDepartmentEvaluationSubmittedForCurrentForm"
+                  type="button"
+                  class="btn btn-success"
+                  @click="handleFinalSubmit"
+                  :disabled="completedStaffCount !== departmentStaff.length || departmentStaff.length === 0"
+              >
+                Submit Department Evaluation
+              </button>
+            </div>
           </div>
         </div>
       </div>
-      
+    </div>
 
-      <!-- Pagination - Matching SurveyManagement layout -->
-      
+
+    <!-- Pagination - Matching SurveyManagement layout -->
+
   </div> <!-- Close main-content -->
   <div class="modal-backdrop fade show" v-if="showFormModal"></div>
 
   <!-- View Answers Modal -->
-  <div class="modal fade" :class="{ show: showViewAnswersModal }" style="display: block;" v-if="showViewAnswersModal" tabindex="-1" aria-labelledby="viewAnswersModalLabel" aria-hidden="true">
+  <div class="modal fade" :class="{ show: showViewAnswersModal }" style="display: block;" v-if="showViewAnswersModal"
+       tabindex="-1" aria-labelledby="viewAnswersModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -1451,47 +1575,52 @@ watch(showRatingDescriptionModal, (newValue) => {
             <h6>Form: {{ viewingInstance.form?.name }}</h6>
             <hr>
             <div v-if="viewingInstance.answers && viewingInstance.answers.length > 0">
-              <div v-for="(answer, index) in viewingInstance.answers" :key="answer.id || index" class="mb-4 border-bottom pb-3">
+              <div v-for="(answer, index) in viewingInstance.answers" :key="answer.id || index"
+                   class="mb-4 border-bottom pb-3">
                 <p><strong>{{ index + 1 }}. {{ answer.question?.text }}</strong></p>
-                
+
                 <!-- Display Rating -->
                 <div v-if="answer.question?.question_type === 'RATING'">
                   <p class="mb-1">Answer:</p>
                   <div v-if="answer.rating !== null && answer.rating !== undefined" class="star-rating mb-1">
-                     <span v-for="star in starsForViewingInstance" :key="star" class="star" :class="{ 'filled': star <= answer.rating }">
+                     <span v-for="star in starsForViewingInstance" :key="star" class="star"
+                           :class="{ 'filled': star <= answer.rating }">
                        <i class="fas fa-star"></i>
                      </span>
-                     <span class="ms-2 text-muted">({{ answer.rating }} - {{ starRatingMeanings[answer.rating] || '' }})</span>
-                     <button
+                    <span class="ms-2 text-muted">({{ answer.rating }} - {{
+                        starRatingMeanings[answer.rating] || ''
+                      }})</span>
+                    <button
                         v-if="answer.rating !== null && answer.rating !== undefined"
-                        type="button" 
-                        class="btn btn-outline-secondary btn-sm ms-2" 
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm ms-2"
                         @click="openRatingDescriptionModal(answer.rating!, answer.question?.text)"
                         title="View Rating Descriptions"
                         style="padding: 0.25rem 0.5rem; line-height: 1;">
-                        <i class="bi bi-file-earmark-text"></i>
-                      </button>
+                      <i class="bi bi-file-earmark-text"></i>
+                    </button>
                   </div>
-                   <p v-else class="text-muted fst-italic">No rating provided.</p>
+                  <p v-else class="text-muted fst-italic">No rating provided.</p>
                 </div>
 
                 <!-- Display Text/Text Input -->
                 <div v-else-if="['TEXT', 'TEXT_INPUT'].includes(answer.question?.question_type)">
-                   <p class="mb-1">Answer:</p>
-                   <p v-if="answer.text_answer" class="form-control bg-light" style="white-space: pre-wrap;">{{ answer.text_answer }}</p>
-                   <p v-else class="text-muted fst-italic">No text answer provided.</p>
+                  <p class="mb-1">Answer:</p>
+                  <p v-if="answer.text_answer" class="form-control bg-light" style="white-space: pre-wrap;">
+                    {{ answer.text_answer }}</p>
+                  <p v-else class="text-muted fst-italic">No text answer provided.</p>
                 </div>
 
                 <!-- Display Options -->
-                 <div v-else-if="answer.question?.question_type === 'OPTIONS'">
-                   <p class="mb-1">Answer:</p>
-                   <p v-if="answer.selected_option" class="fw-bold">{{ answer.selected_option.option_text }}</p>
-                   <p v-else class="text-muted fst-italic">No option selected.</p>
-                 </div>
+                <div v-else-if="answer.question?.question_type === 'OPTIONS'">
+                  <p class="mb-1">Answer:</p>
+                  <p v-if="answer.selected_option" class="fw-bold">{{ answer.selected_option.option_text }}</p>
+                  <p v-else class="text-muted fst-italic">No option selected.</p>
+                </div>
 
-                 <div v-else>
-                    <p class="text-muted fst-italic">Unknown question type or no answer recorded.</p>
-                 </div>
+                <div v-else>
+                  <p class="text-muted fst-italic">Unknown question type or no answer recorded.</p>
+                </div>
               </div>
             </div>
             <div v-else class="alert alert-info">
@@ -1512,7 +1641,8 @@ watch(showRatingDescriptionModal, (newValue) => {
   <!-- End View Answers Modal -->
 
   <!-- Rating Description Modal -->
-  <div class="modal fade" :class="{ show: showRatingDescriptionModal }" style="display: block;" v-if="showRatingDescriptionModal" tabindex="-1" aria-labelledby="ratingDescriptionModalLabel" aria-hidden="true">
+  <div class="modal fade" :class="{ show: showRatingDescriptionModal }" style="display: block;"
+       v-if="showRatingDescriptionModal" tabindex="-1" aria-labelledby="ratingDescriptionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -1538,7 +1668,8 @@ watch(showRatingDescriptionModal, (newValue) => {
                   <pre class="description-text" v-html="execDescCn"></pre>
                 </div>
               </div>
-              <div v-if="(!execDescEn || execDescEn === 'N/A') && (!execDescCn || execDescCn === 'N/A')" class="text-center text-muted">
+              <div v-if="(!execDescEn || execDescEn === 'N/A') && (!execDescCn || execDescCn === 'N/A')"
+                   class="text-center text-muted">
                 No specific executive descriptions available for this rating.
               </div>
             </div>
@@ -1558,7 +1689,8 @@ watch(showRatingDescriptionModal, (newValue) => {
                   <pre class="description-text" v-html="nonExecDescCn"></pre>
                 </div>
               </div>
-              <div v-if="(!nonExecDescEn || nonExecDescEn === 'N/A') && (!nonExecDescCn || nonExecDescCn === 'N/A')" class="text-center text-muted">
+              <div v-if="(!nonExecDescEn || nonExecDescEn === 'N/A') && (!nonExecDescCn || nonExecDescCn === 'N/A')"
+                   class="text-center text-muted">
                 No specific non-executive descriptions available for this rating.
               </div>
             </div>
@@ -1674,137 +1806,138 @@ watch(showRatingDescriptionModal, (newValue) => {
 
 /* Keep existing relevant styles, remove styles specific to old modals/elements if desired */
 
-    /* Keep existing relevant styles, remove styles specific to old modals/elements if desired */
-    /* Add styles for loading indicators or new elements if needed */
+/* Keep existing relevant styles, remove styles specific to old modals/elements if desired */
+/* Add styles for loading indicators or new elements if needed */
 
-    /* Ensure existing styles for form-group, form-label, table, modal, pagination etc. are suitable */
-    .form-group {
-      margin-bottom: 1rem;
-    }
+/* Ensure existing styles for form-group, form-label, table, modal, pagination etc. are suitable */
+.form-group {
+  margin-bottom: 1rem;
+}
 
-    .form-label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 0.5rem;
-    }
+.form-label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.5rem;
+}
 
-    .modal {
-      display: none;
-    }
+.modal {
+  display: none;
+}
 
-    .modal.show {
-      display: block;
-    }
+.modal.show {
+  display: block;
+}
 
-    .modal-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      z-index: 1040;
-    }
-    .table-card {
-      border: 1px solid #707070;
-      padding: 2rem;
-      margin-bottom: 1rem;
-      border-radius: 20px;
-    }
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+}
 
-    .table th, .table td {
-      padding: 1rem;
-      vertical-align: middle;
-      border-bottom: 1px solid #707070;
-    }
+.table-card {
+  border: 1px solid #707070;
+  padding: 2rem;
+  margin-bottom: 1rem;
+  border-radius: 20px;
+}
 
-    .btn-action {
-      padding: 0.25rem 1rem;
-      margin-left: 0.5rem;
-    }
+.table th, .table td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #707070;
+}
 
-    .modal-content {
-      padding: 15px;
-    }
+.btn-action {
+  padding: 0.25rem 1rem;
+  margin-left: 0.5rem;
+}
 
-    .form-control {
-      border-color: #000000;
-    }
+.modal-content {
+  padding: 15px;
+}
 
-    /* Style for option questions */
-    .option-container {
-        padding-left: 1rem;
-    }
+.form-control {
+  border-color: #000000;
+}
 
-    .auto-resize {
-      resize: none;
-      overflow: hidden;
-    }
+/* Style for option questions */
+.option-container {
+  padding-left: 1rem;
+}
 
-    .pagination {
-      display: flex;
-      justify-content: center;
-      margin-top: 15px;
-    }
+.auto-resize {
+  resize: none;
+  overflow: hidden;
+}
 
-    .page-link {
-      border: 1px solid #cccccc;
-    }
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
 
-    .page-item .page-link {
-      color: #0d6efd;
-    }
+.page-link {
+  border: 1px solid #cccccc;
+}
 
-    .page-item.active .page-link {
-      color: #fff;
-      background-color: #0d6efd;
-      border-color: #0d6efd;
-    }
+.page-item .page-link {
+  color: #0d6efd;
+}
 
-    /* Added style for disabled pagination */
-    .page-item.disabled .page-link {
-        color: #6c757d;
-        pointer-events: none;
-        background-color: #fff;
-        border-color: #dee2e6;
-    }
+.page-item.active .page-link {
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
 
-    /* Ensure question text is readable */
-    .bg-light {
-        background-color: #f8f9fa !important;
-        border: 1px solid #dee2e6;
-        padding: 0.5rem 0.75rem;
-        white-space: pre-wrap; /* Allow text wrapping */
-    word-wrap: break-word; /* Break long words */
-    }
+/* Added style for disabled pagination */
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #fff;
+  border-color: #dee2e6;
+}
 
-    /* Star Rating Styles */
-    .star-rating {
-      display: inline-block; /* Or flex */
-      font-size: 1.5rem; /* Adjust size as needed */
-      color: #ccc; /* Default star color */
-    }
+/* Ensure question text is readable */
+.bg-light {
+  background-color: #f8f9fa !important;
+  border: 1px solid #dee2e6;
+  padding: 0.5rem 0.75rem;
+  white-space: pre-wrap; /* Allow text wrapping */
+  word-wrap: break-word; /* Break long words */
+}
 
-    .star {
-      cursor: pointer;
-      padding: 0 0.1em; /* Spacing between stars */
-      transition: color 0.2s;
-    }
+/* Star Rating Styles */
+.star-rating {
+  display: inline-block; /* Or flex */
+  font-size: 1.5rem; /* Adjust size as needed */
+  color: #ccc; /* Default star color */
+}
 
-    .star.filled {
-      color: #ffc107; /* Filled star color (e.g., gold) */
-    }
+.star {
+  cursor: pointer;
+  padding: 0 0.1em; /* Spacing between stars */
+  transition: color 0.2s;
+}
 
-    .star:hover,
-    .star.hover-active { /* Apply hover to current and preceding stars */
-       color: #ffdd7a;
-    }
+.star.filled {
+  color: #ffc107; /* Filled star color (e.g., gold) */
+}
 
-    .description-text {
-      white-space: pre-wrap; /* Ensures newlines are respected */
-      font-family: inherit; /* Inherit font from parent */
-      margin: 0; /* Remove default pre margins */
-    }
+.star:hover,
+.star.hover-active { /* Apply hover to current and preceding stars */
+  color: #ffdd7a;
+}
+
+.description-text {
+  white-space: pre-wrap; /* Ensures newlines are respected */
+  font-family: inherit; /* Inherit font from parent */
+  margin: 0; /* Remove default pre margins */
+}
 
 /* Button Hover Effect */
 button.btn:hover,
