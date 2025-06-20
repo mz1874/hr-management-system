@@ -332,6 +332,30 @@ interface DisplayEvaluationForm extends EvaluationForm {
   total_staff_count?: number;     // For Progress X/Y (from backend annotation)
 }
 
+
+const visiblePages = computed(() => {
+  const pages: (number | string)[] = [];
+  const total = totalPages.value;
+  const current = currentPage.value;
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 4) pages.push('...');
+
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
+
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < total - 3) pages.push('...');
+    pages.push(total);
+  }
+
+  return pages;
+});
+
 // Total number of results
 const totalItems = ref(0)
 
@@ -401,9 +425,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
 
 // Computed property for the forms to display on the current page (paginated from clientFilteredResults)
 const formsForCurrentPage = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return clientFilteredResults.value.slice(start, end);
+  return clientFilteredResults.value;
 });
 
 // Computed properties for rating descriptions in the modal
@@ -666,7 +688,6 @@ const fetchAvailableForms = async () => {
       totalItems.value = response.data.data.count;
       rawApiResults.value = response.data.data.results
           .map((form: any) => form as DisplayEvaluationForm); // Keep cast for safety
-      console.log(rawApiResults.value, "&&&");
       // totalForms.value is now derived from clientFilteredResults.value.length, so no need to set it from response.data.data.count
       console.log("Fetched all raw forms for API status:", apiQueryStatus, rawApiResults.value.length);
     } else {
@@ -1139,16 +1160,56 @@ const handleFinalSubmit = async () => {
 }
 
 
-// Pagination Navigation
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--
-}
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++
-}
-const goToPage = (page: number) => {
+const fetchPage = async (page: number) => {
+  currentPage.value = page;
+  console.log(currentPage.value, "current page");
 
-}
+  let apiQueryStatus: string | null = null;
+  if (selectedStatus.value === 'PUBLISHED' || selectedStatus.value === 'SUBMITTED') {
+    apiQueryStatus = 'PUBLISHED';
+  } else if (selectedStatus.value === null) {
+    apiQueryStatus = null;
+  }
+
+  const params: {
+    page_size: number;
+    status?: string | null;
+    search?: string;
+    page: number;
+  } = {
+    page_size: 10,
+    page: page,
+    search: searchName.value || undefined,
+  };
+
+  if (apiQueryStatus !== null) {
+    params.status = apiQueryStatus;
+  }
+
+  // 发起请求
+  const response = await getAllEvaluationForms(page, params);
+
+  // 更新分页结果
+  totalItems.value = response.data.data.count;
+
+  rawApiResults.value = response.data.data.results.map(
+      (form: any) => form as DisplayEvaluationForm
+  );
+};
+
+const prevPage = async () => {
+  if (currentPage.value > 1) {
+    await fetchPage(currentPage.value - 1);
+  }
+};
+
+const nextPage = async () => {
+  await fetchPage(currentPage.value + 1);
+};
+
+const goToPage = async (page: number | string) => {
+  await fetchPage(page);
+};
 
 // --- Lifecycle Hooks ---
 onMounted(async () => {
@@ -1306,7 +1367,7 @@ watch(showRatingDescriptionModal, (newValue) => {
           <li class="page-item" :class="{ disabled: currentPage === 1 }">
             <button class="page-link" @click="prevPage" :disabled="currentPage === 1">Previous</button>
           </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: page === currentPage }">
+          <li class="page-item" v-for="page in visiblePages" :key="page" :class="{ active: page === currentPage }">
             <button class="page-link" @click="goToPage(page)">{{ page }}</button>
           </li>
           <li class="page-item" :class="{ disabled: currentPage === totalPages || totalPages === 0 }">
