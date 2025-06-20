@@ -1,4 +1,5 @@
 import axios from './axios'
+import type {Staff} from "@/interface/UserInterface.ts";
 
 // Generic API Response Wrapper (for single item responses)
 export interface ApiResponse<T> {
@@ -65,7 +66,7 @@ export interface EvaluationAnswerView {
 export interface EvaluationInstance {
     id: number;
     form: EvaluationForm; // Nested form details (might include questions/options)
-    employee: { id: number; username: string; /* other staff details */ }; // Nested employee details
+    employee:  Staff; // Nested employee details
     assigned_at: string; // ISO date string
     submitted_at?: string | null; // ISO date string or null
     status: 'PENDING' | 'SUBMITTED' | 'REVIEWED'; // Match backend choices

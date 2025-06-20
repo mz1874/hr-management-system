@@ -1,29 +1,23 @@
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from 'vue';
-import {useRouter} from 'vue-router'; // Import useRouter
+import {computed, onMounted, ref, watch} from 'vue';
 import Swal from 'sweetalert2'; // Import SweetAlert
-
-import {searchStaff} from '@/api/staff'; // Use searchStaff API
+import type {
+  EvaluationAnswerSubmit,
+  EvaluationForm,
+  EvaluationInstance,
+  EvaluationSubmissionPayload
+} from '@/api/survey';
 import {
+  finalizeDepartmentEvaluation,
   getAllEvaluationForms,
-  getEvaluationInstances, // Import getEvaluationInstances
-  getEvaluationInstanceById, // Import getEvaluationInstanceById
-  startEvaluationInstance, // Import the new function
-  submitEvaluationAnswers, // Keep submitEvaluationAnswers
-  finalizeDepartmentEvaluation, // Import the new function
-  sendBackEvaluation // Import sendBackEvaluation
+  getEvaluationInstanceById,
+  getEvaluationInstances,
+  sendBackEvaluation,
+  startEvaluationInstance,
+  submitEvaluationAnswers
 } from '@/api/survey';
 import {selectAllDepartments} from '@/api/department'; // Import for department lookup
 import type {Department as DeptInterface} from '@/interface/DepartmentInterface'; // Interface for all departments
-import type {
-  EvaluationForm, // Use EvaluationForm
-  EvaluationAnswerSubmit,
-  EvaluationSubmissionPayload,
-  EvaluationQuestion, // Keep EvaluationQuestion for nested details
-  RowyQuestionOption, // Keep RowyQuestionOption for nested details
-  EvaluationInstance // Import EvaluationInstance
-  // EvaluationAnswerView // EvaluationAnswerView is part of EvaluationInstance
-} from '@/api/survey';
 import type {Staff} from '@/interface/UserInterface'; // Import Staff type
 import {getCurrentUser} from '@/api/login';
 
@@ -389,7 +383,6 @@ const itemsPerPage = ref(10) // Keep for API call, but hide display
 
 // Filter state
 const searchName = ref(''); // Add state for search input
-const evaluationStatusesForDropdown = ['PUBLISHED', 'SUBMITTED']; // Statuses for the dropdown
 const selectedStatus = ref<string | null>('PUBLISHED'); // Default to PUBLISHED, allow null for 'All' (Backend handles filtering)
 
 // Results Modal State
@@ -407,25 +400,38 @@ const ratingForDescriptionModal = ref<number | null>(null);
 const questionTextForDescriptionModal = ref<string | null>(null); // To pass question context if needed, though current logic uses all categories
 const isContextExecutiveForRatingModal = ref(false); // To determine which descriptions to show
 
-// --- Computed Properties ---
-// Computed property for client-side filtering of all fetched API results
-const clientFilteredResults = computed(() => {
-  const baseForms = rawApiResults.value.filter(form => form.status !== 'DRAFT'); // Ensure DRAFT are always filtered out first
-  if (selectedStatus.value === 'PUBLISHED') {
-    return baseForms.filter(form => getEvaluationStatus(form) === 'PUBLISHED');
-  } else if (selectedStatus.value === 'SUBMITTED') {
-    return baseForms.filter(form => getEvaluationStatus(form) === 'SUBMITTED');
+
+const fetchEvaluationForms = async () => {
+  isLoadingForms.value = true;
+  try {
+    const params = {
+      page_size: itemsPerPage.value,
+      page: currentPage.value,
+      search: searchName.value || undefined,
+      status: selectedStatus.value,
+    };
+
+    const response = await getAllEvaluationForms(params.page, params);
+
+    totalItems.value = response.data.data.count;
+    rawApiResults.value = response.data.data.results.map(
+        (form: any) => form as DisplayEvaluationForm
+    );
+  } catch (error) {
+    console.error("Failed to fetch evaluation forms:", error);
+    rawApiResults.value = [];
+  } finally {
+    isLoadingForms.value = false;
   }
-  // If 'All Status' (selectedStatus.value is null) or any other case, return all non-DRAFT forms from rawApiResults
-  return baseForms;
-});
+};
+
 
 // Calculate the total pages
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
 
 // Computed property for the forms to display on the current page (paginated from clientFilteredResults)
 const formsForCurrentPage = computed(() => {
-  return clientFilteredResults.value;
+  return rawApiResults.value;
 });
 
 // Computed properties for rating descriptions in the modal
@@ -656,12 +662,7 @@ const getEvaluationProgress = (form: DisplayEvaluationForm): string => {
 const fetchAvailableForms = async () => {
   isLoadingForms.value = true;
   try {
-    // Determine the status parameter for the API call.
-    // If the user filters for "SUBMITTED" (department status), we still query for globally "PUBLISHED" forms
-    // from the API, because a department can submit their part while the form is still open/published globally.
-    // The actual filtering for department-submitted forms happens client-side in `clientFilteredResults`.
-    // If the user filters for "PUBLISHED" (department status), we also query for globally "PUBLISHED" forms.
-    // If "All Status" is selected, we don't send a status filter to the API.
+
     let apiQueryStatus: string | null = null;
     if (selectedStatus.value === 'PUBLISHED' || selectedStatus.value === 'SUBMITTED') {
       apiQueryStatus = 'PUBLISHED'; // For both PUBLISHED and SUBMITTED dropdown, fetch PUBLISHED from API
@@ -688,7 +689,7 @@ const fetchAvailableForms = async () => {
       totalItems.value = response.data.data.count;
       rawApiResults.value = response.data.data.results
           .map((form: any) => form as DisplayEvaluationForm); // Keep cast for safety
-      // totalForms.value is now derived from clientFilteredResults.value.length, so no need to set it from response.data.data.count
+
       console.log("Fetched all raw forms for API status:", apiQueryStatus, rawApiResults.value.length);
     } else {
       console.error("Failed to fetch evaluation forms: Unexpected response format", response);
@@ -798,80 +799,62 @@ const openFormModal = async (formItem: EvaluationForm) => {
 
     console.log("Fetching staff for department ID:", departmentIdToUse);
 
-    // Fetch staff for the manager's department using searchStaff
-    const response = await searchStaff('', departmentIdToUse, 1); // Page 1, no specific name search initially
-    if (response.data && response.data.data && Array.isArray(response.data.data.results)) {
-      // Assuming searchStaff returns paginated results, store only results for now
-      // TODO: Handle pagination if needed for staff list within modal
-      // Filter out inactive staff members (status === false)
-      departmentStaff.value = response.data.data.results.filter((staff: Staff) => staff.status === true); // Assign active staff
+    try {
 
-      // --- Fetch Evaluation Statuses for these staff (Moved outside the else block) ---
-      if (departmentStaff.value.length > 0 && currentForm.value?.id !== undefined) {
-        try {
-          // Fetch instances for the current form, backend should filter by evaluator implicitly
-          // Or add evaluator_id if backend requires it
-          const statusResponse = await getEvaluationInstances(1, {formId: currentForm.value.id});
-          console.log("Fetched evaluation instances for status check:", statusResponse.data);
+      const statusResponse = await getEvaluationInstances(1, {formId: currentForm.value.id});
+      console.log("Fetched evaluation instances for status check:", statusResponse.data);
 
-          // Adjusting path to the results array based on observed console log
-          if (statusResponse.data && statusResponse.data.data && statusResponse.data.data.results && Array.isArray(statusResponse.data.data.results.results)) {
-            const instances = statusResponse.data.data.results.results; // Access the correctly nested array
-            const statusMap = new Map<number, string>();
-            const instanceDataMap = new Map<number, EvaluationInstance>();
-            let completedCount = 0;
+      // Adjusting path to the results array based on observed console log
+      if (statusResponse.data && statusResponse.data.data && statusResponse.data.data.results && Array.isArray(statusResponse.data.data.results.results)) {
+        const instances = statusResponse.data.data.results.results; // Access the correctly nested array
+        const statusMap = new Map<number, string>();
+        const instanceDataMap = new Map<number, EvaluationInstance>();
+        let completedCount = 0;
 
-            // Create a map of staff ID -> status from the fetched instances
-            instances.forEach((instance: EvaluationInstance) => {
-              console.log(`Processing instance for employee ID: ${instance.employee?.id}, Status: ${instance.status}`);
-              if (instance.answers && instance.answers.length > 0) {
-                console.log(`Instance for ${instance.employee?.id} has ${instance.answers.length} answer(s).`);
-                const firstAnswer = instance.answers[0];
-                console.log(`First answer details: question.text: ${firstAnswer.question?.text}, selected_option:`, firstAnswer.selected_option);
-              } else {
-                console.log(`Instance for ${instance.employee?.id} has no answers or answers array is empty.`);
-              }
-
-              if (instance.employee?.id && instance.status) {
-                instanceDataMap.set(instance.employee.id, instance); // Store full instance data
-                if (instance.status === 'SUBMITTED' || instance.status === 'REVIEWED') {
-                  statusMap.set(instance.employee.id, 'Completed');
-                  completedCount++;
-                } else if (instance.status === 'PENDING') {
-                  // Display 'PENDING' from API as 'Not Started' initially.
-                  // 'In Progress' will be set explicitly by handleEdit after a 'Send Back'.
-                  statusMap.set(instance.employee.id, 'Not Started');
-                }
-                // If there are other statuses or no status, it will default to "Not Started" in the template logic
-                // (because the template checks for 'Completed' and 'PENDING' specifically, else 'Not Started')
-              }
-            });
-
-            staffCompletionStatus.value = statusMap;
-            staffInstanceDataMap.value = instanceDataMap; // Populate the new map
-            completedStaffCount.value = completedCount;
-            console.log("Staff completion status map:", staffCompletionStatus.value);
-            console.log("Staff instance data map (populated with instances from API):", staffInstanceDataMap.value);
-            console.log("Completed count:", completedStaffCount.value);
+        instances.forEach((instance: EvaluationInstance) => {
+          console.log(`Processing instance for employee ID: ${instance.employee?.id}, Status: ${instance.status}`);
+          if (instance.answers && instance.answers.length > 0) {
+            console.log(`Instance for ${instance.employee?.id} has ${instance.answers.length} answer(s).`);
+            const firstAnswer = instance.answers[0];
+            console.log(`First answer details: question.text: ${firstAnswer.question?.text}, selected_option:`, firstAnswer.selected_option);
           } else {
-            console.warn("No evaluation instances found or unexpected format for status check. API response.data.data.results was not an array or was empty.");
+            console.log(`Instance for ${instance.employee?.id} has no answers or answers array is empty.`);
           }
-        } catch (statusError) {
-          console.error("Failed to fetch evaluation statuses:", statusError);
-          // Don't block the modal, just show staff without status info
-          Swal.fire('Warning', 'Could not load evaluation completion statuses for staff.', 'warning');
-        } finally {
-          isLoadingStatuses.value = false; // Stop loading statuses
-        }
-      } else {
-        isLoadingStatuses.value = false; // No staff or form ID, stop loading statuses
-      }
-      // --- End Fetch Evaluation Statuses ---
+          console.log(instance.employee.department, "员工");
+          console.log(currentUser.value.department, "当前管理员部门");
+          if (instance.employee?.id && instance.status && instance.employee.department === currentUser.value?.department_id) {
+            instanceDataMap.set(instance.employee.id, instance); // Store full instance data
+            if (instance.status === 'SUBMITTED' || instance.status === 'REVIEWED') {
+              statusMap.set(instance.employee.id, 'Completed');
+              completedCount++;
+            } else if (instance.status === 'PENDING') {
+              statusMap.set(instance.employee.id, 'Not Started');
+            }
+            let staff = {
+              ...instance.employee
+            };
+            departmentStaff.value.push(staff);
+          }
+        });
 
-    } else { // This else block now only handles the error case for fetching staff
-      throw new Error("Failed to fetch department staff or unexpected format.");
+        staffCompletionStatus.value = statusMap;
+        staffInstanceDataMap.value = instanceDataMap; // Populate the new map
+        completedStaffCount.value = completedCount;
+        console.log("Staff completion status map:", staffCompletionStatus.value);
+        console.log("Staff instance data map (populated with instances from API):", staffInstanceDataMap.value);
+        console.log("Completed count:", completedStaffCount.value);
+      } else {
+        console.warn("No evaluation instances found or unexpected format for status check. API response.data.data.results was not an array or was empty.");
+      }
+    } catch (statusError) {
+      console.error("Failed to fetch evaluation statuses:", statusError);
+      // Don't block the modal, just show staff without status info
+      Swal.fire('Warning', 'Could not load evaluation completion statuses for staff.', 'warning');
+    } finally {
+      isLoadingStatuses.value = false; // Stop loading statuses
     }
-  } catch (error) { // This catch handles errors from both fetching staff and fetching statuses
+  } catch
+      (error) { // This catch handles errors from both fetching staff and fetching statuses
     console.error("Failed to fetch department staff or statuses:", error);
     Swal.fire('Error', 'Could not load staff list or their evaluation statuses.', 'error');
     // Optionally close the modal or show error within it
@@ -1139,12 +1122,12 @@ const handleFinalSubmit = async () => {
 
     // Removed redirection to SurveyManagement
     // if (currentForm.value && currentForm.value.id !== undefined && currentForm.value.name) {
-    //   router.push({ 
+    //   router.push({
     //     name: 'SurveyManagement', // Ensure this route name is correct in your router config
-    //     query: { 
+    //     query: {
     //       viewResultsFormId: currentForm.value.id.toString(),
-    //       formName: currentForm.value.name 
-    //     } 
+    //       formName: currentForm.value.name
+    //     }
     //   });
     // }
     closeFormModal(); // Close the modal
@@ -1160,7 +1143,7 @@ const handleFinalSubmit = async () => {
 }
 
 
-const fetchPage = async (page: number) => {
+const fetchPage = async (page: number, status: string | null = null) => {
   currentPage.value = page;
   console.log(currentPage.value, "current page");
 
@@ -1228,13 +1211,10 @@ onMounted(async () => {
   fetchAvailableForms(); // Fetch forms on mount
 });
 
-// Refetch data when page changes - REMOVED, pagination is now client-side from full list
-// watch(currentPage, fetchAvailableForms);
 
-// Refetch data when status filter changes
 watch(selectedStatus, () => {
-  currentPage.value = 1; // Reset to first page on filter change
-  fetchAvailableForms();
+  currentPage.value = 1;
+  fetchEvaluationForms();
 });
 
 // Refetch data when search name changes
@@ -1293,10 +1273,8 @@ watch(showRatingDescriptionModal, (newValue) => {
       <div class="status-filter-container">
         <!-- Removed label, relying on default option text -->
         <select id="statusFilter" v-model="selectedStatus" class="form-select status-filter-select">
-          <option :value="null">All Status</option> <!-- Added All Status option -->
-          <option v-for="status in evaluationStatusesForDropdown" :key="status" :value="status">
-            {{ status }}
-          </option>
+          <option :value="null">All Status</option>
+          <option value="PUBLISHED">PUBLISHED</option>
         </select>
       </div>
       <!-- Add other filters here if needed -->
@@ -1312,7 +1290,7 @@ watch(showRatingDescriptionModal, (newValue) => {
           <th scope="col">Evaluation Name</th>
           <th scope="col">Published Date</th>
           <th scope="col">Status</th>
-          <th scope="col">Progress</th>
+<!--          <th scope="col">Progress</th>-->
           <th scope="col">Actions</th>
         </tr>
         </thead>
@@ -1334,7 +1312,7 @@ watch(showRatingDescriptionModal, (newValue) => {
               {{ getEvaluationStatus(form) }}
             </span>
           </td>
-          <td>{{ getEvaluationProgress(form) }}</td>
+<!--          <td>{{ getEvaluationProgress(form) }}</td>-->
           <td>
             <!-- Action Button - Conditional based on department evaluation status -->
             <template v-if="getEvaluationStatus(form) !== 'SUBMITTED'">
@@ -1358,9 +1336,9 @@ watch(showRatingDescriptionModal, (newValue) => {
     </div>
 
     <!-- Pagination for Main Table -->
-    <div class="d-flex align-items-center gap-3 my-3" v-if="clientFilteredResults.length > 0">
-      <div class="text-muted fs-5 mt-3">
-        Total: {{totalItems}} evaluation(s)
+    <div class="d-flex align-items-center gap-3 my-3" v-if="formsForCurrentPage.length > 0">
+      <div class="text-muted fs-5 mt-4">
+        Total: {{ totalItems }} evaluation(s)
       </div>
       <nav aria-label="Page navigation">
         <ul class="pagination mb-0">
@@ -1429,7 +1407,7 @@ watch(showRatingDescriptionModal, (newValue) => {
 
                   <!-- Staff Name and Status Badge -->
                   <div>
-                    {{ staff.username }}
+                    {{ staff.staffName }}
                     <span v-if="staffCompletionStatus.get(staff.id) === 'Completed'" class="badge bg-success ms-2">Completed</span>
                     <span v-else-if="staffCompletionStatus.get(staff.id) === 'PENDING'"
                           class="badge bg-warning text-dark ms-2">In Progress</span>
