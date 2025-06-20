@@ -1,3 +1,4 @@
+//department interface
 export interface Department {
     id: number
     parentId: number | null
