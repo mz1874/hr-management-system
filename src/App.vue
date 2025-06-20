@@ -16,4 +16,5 @@ import {RouterView } from 'vue-router'
 @import '@fortawesome/fontawesome-free/css/all.css';
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
+
 </style>
